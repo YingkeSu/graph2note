@@ -35,3 +35,4 @@ Status: merged
 
 - 2026-09-08 dispatcher：claimed by graph2note-2（Track A 接力，分支 dev/03-parse-pipeline-cli）。**提前启动决策**：依赖 issue 01 的选型结论以「临时选型 glm-5.3-flash + 模型可配置化」替代——依据 Spike 3 报告（glm 是唯一能在真实大图上抽取结构的模型，deepseek 大图空内容）与 FR-017 可替换性要求；01 正式结论若不同，仅切配置不改契约。维持者要求最大化并行度，特此记录。
 - 2026-09-08 graph2note-2：提交实现，Status → in-review。handoff 见 `.scratch/manuscript-compiler-mvp/handoffs/03-parse-pipeline-cli.md`。实时选型待 issue 01 结论；网关速度修复（eval/gateway.py, worker 5）合并后需重录 01 golden（见 handoff §3/§5）。
+- 2026-09-08 graph2note-2：网关速度修复已合并（520a0a6）。按待办用修复后网关 + 已对齐参数（glm-5.3-flash, 直出 session, 1024px/q85 降采样, `reasoning_tokens` 监测）重录 img01 golden（在 issue 06 分支上独立小改动验证）：**img01 仍返回空正文**（165.7s, `finish_reason=length`, completion_tokens=5000 全部被推理阶段消耗，`reasoning_tokens=null` 网关未回传）。结论：img01 的结构抽取依赖更强的模型能力，非网关速度问题；保留既有空回复 golden 并继续断言「干净降级」。「test-images/ 两张手稿产出结构正确 Markdown」AC 仍留未勾（img02 已过，img01 待模型能力升级/评估集跑批后再补勾），原因已记录。

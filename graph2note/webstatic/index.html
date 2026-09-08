@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>graph2note — 手稿电子化</title>
+  <link rel="stylesheet" href="/static/style.css" />
+  <!-- Client-side preview: marked (markdown) + KaTeX (math).  CDN is used for a
+       zero-build local tool; a fallback keeps the editor usable if the CDN is
+       unreachable (preview-only degradation, never touches the editor). -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" onerror="window.__mdMissing=1"></script>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
+          onerror="window.__katexMissing=1"></script>
+</head>
+<body>
+  <header class="topbar">
+    <h1>graph2note</h1>
+    <span class="hint" id="model-label">手稿 → Markdown</span>
+    <span class="spacer"></span>
+    <!-- P1 placeholder: template selector (not implemented). -->
+    <label class="ph" title="模板选择（P1）">模板 <select id="template-select" disabled>
+      <option>简洁 Markdown（默认）</option></select></label>
+  </header>
+
+  <!-- Upload / intro state -->
+  <section id="upload-zone" class="upload-zone">
+    <div class="upload-card" id="upload-card">
+      <div class="upload-icon">📄</div>
+      <p class="upload-title">上传手稿图片（JPG / JPEG / PNG，≤10MB）</p>
+      <p class="upload-sub">个人自用本地应用 · 解析后可在三栏中对照校对</p>
+      <button id="pick-file" class="btn primary">选择图片</button>
+      <input id="file-input" type="file" accept=".jpg,.jpeg,.png" hidden />
+      <p class="upload-sub" id="upload-hint"></p>
+    </div>
+  </section>
+
+  <!-- Working state: spinner + status -->
+  <section id="working-zone" class="working-zone hidden">
+    <div class="spinner"></div>
+    <p id="working-text">正在解析…</p>
+    <p id="working-detail" class="dim"></p>
+  </section>
+
+  <!-- Three-pane work state -->
+  <section id="work-zone" class="work-zone hidden">
+    <div class="panes">
+      <div class="pane pane-image">
+        <div class="pane-head">原图（预处理后）
+          <button class="btn small" id="btn-repic" title="重新加载预处理图">↻</button>
+        </div>
+        <div class="pane-body image-body"><img id="original-img" alt="原图" /></div>
+      </div>
+      <div class="pane pane-md">
+        <div class="pane-head">可编辑 Markdown</div>
+        <textarea id="md-editor" class="md-editor" spellcheck="false"
+                  placeholder="解析完成后，可在此直接编辑 Markdown…"></textarea>
+      </div>
+      <div class="pane pane-preview">
+        <div class="pane-head">实时渲染预览</div>
+        <div id="preview" class="preview"></div>
+      </div>
+    </div>
+
+    <!-- P1 placeholders for issue 09 / issue 10 markers (not implemented). -->
+    <div class="markers">
+      <span id="marker-cv" class="marker ph hidden" title="issue 10：交叉验证分歧标记（P1 占位）">⚖ 交叉验证占位</span>
+      <span id="marker-page" class="marker ph hidden" title="issue 09：缺页/重复版本提示（P1 占位）">📑 缺页/版本占位</span>
+    </div>
+
+    <div class="statusbar" id="statusbar">
+      <span id="status-text" class="dim"></span>
+      <span id="warnings" class="warnings"></span>
+    </div>
+
+    <div class="actions">
+      <button id="btn-reparse" class="btn">重新解析</button>
+      <button id="btn-copy" class="btn">复制到剪贴板</button>
+      <button id="btn-download" class="btn primary">下载 .md + 附件</button>
+    </div>
+  </section>
+
+  <!-- Toast / error -->
+  <div id="toast" class="toast hidden"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
