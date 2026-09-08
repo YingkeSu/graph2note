@@ -1,7 +1,7 @@
 # BOARD：manuscript-compiler-mvp
 
 > 由调度 agent 维护；依赖关系以各 issue 的 Blocked by 为准，本表只是快照。
-> Updated: 2026-09-08（Wave 2 中期：02/04/05 已合并；01 全量评估进行中（数据集 PDF 已到位）；03/06 待解锁）
+> Updated: 2026-09-08（P1 增补：新增 09–11 去重/交叉验证/提速，均阻塞于 03；Wave 2 中期：02/04/05 已合并；01 全量评估进行中；03/06 待解锁）
 > Worktree 位置：AO 管理的 worktree（`~/.ao/data/worktrees/graph2note/<session>`），分支按协议命名 `dev/<NN>-<slug>`；主检出目录不建 `.worktrees/`。
 
 | issue | track | agent | worktree | branch | status | updated |
@@ -14,6 +14,9 @@
 | 06 Web App 三栏 | — | — | — | — | ready-for-agent（阻塞于 03,05✅；03 完成后即启动） | 2026-09-08 |
 | 07 本机文档库 | — | — | — | — | ready-for-agent（阻塞于 06；Wave 3） | 2026-09-08 |
 | 08 Spike2 / Route B | — | — | — | — | ready-for-agent（P1 时机，MVP 主链路稳定后；阻塞于 01） | 2026-09-08 |
+| 09 PDF 拆页+去重+缺页预警 | — | — | — | — | ready-for-agent（P1 增补；阻塞于 03；首批样本：test-images/ 4 个扫描 PDF） | 2026-09-08 |
+| 10 交叉验证引擎 | — | — | — | — | ready-for-agent（P1 增补；阻塞于 03） | 2026-09-08 |
+| 11 解析提速 | — | — | — | — | ready-for-agent（P1 增补；阻塞于 03；先基线后优化） | 2026-09-08 |
 
 ## HITL 汇总（已向维护者提出，见调度会话）
 
