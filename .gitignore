@@ -29,6 +29,9 @@ test-images/*.pdf
 # Never commit source PDFs anywhere
 *.pdf
 
+# Except: the shipped gold-review PDF pack (deliverable) stays tracked
+!eval/reports/gold-review/gold-review-pack.pdf
+
 # Large rendered page images (issue 09) stay local; keep the small reports
 out/*/pages/
 out/*/cache/

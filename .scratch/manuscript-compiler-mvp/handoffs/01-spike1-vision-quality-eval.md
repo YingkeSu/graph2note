@@ -98,3 +98,15 @@ python -m eval.cli run --model <m> --only A15,A17          # 子集
   为真实截断而非污染。报告标注了该检查结果。
 - 部署环境 Python 3.12+；pytest 套件（`tests/`）完全离线（129 passed / 2 skipped）。
 - 未提交任何密钥；密钥仅运行时从环境 / 仓库根 `.env` 读取（`.env` gitignore）。
+
+## 维护者手工抽检材料（gold 复核包）
+
+- 为维护者快速人工校对 gold 准备了两份离线复核产物（数据全来自 fixtures/缓存，未调模型）：
+  - **Markdown 包**：`eval/reports/gold-review/index.md`（每页一节：缩略图 + gold 全文 + glm 预测全文 +
+    差异要点 + 勾选框），另有 `gold/` 30 份可改副本。
+  - **PDF 合集**：`eval/reports/gold-review/gold-review-pack.pdf`（A4 纵向，封面 + 目录 + 30 页每样本
+    1–3 页：清晰页图 + gold/glm 全文 + 差异要点一行 + 复核勾选行；中文用 STSong-Light）。
+- 建议抽检顺序：涂改类 6 页优先 → 公式 4 页 → 其余；改后把 `gold/<id>.gold.md` 同步回
+  `eval/fixtures/gold/` 并置 `gold_proofed=true`。
+- 生成命令：`python -m eval.gold_review`（MD） / `python -m eval.gold_review --pdf`（PDF）；
+  依赖 reportlab（已入 pyproject dev extras）。
