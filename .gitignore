@@ -21,3 +21,6 @@ node_modules/
 
 # Parallel dev worktrees
 .worktrees/
+
+# Scan samples stay local only
+test-images/*.pdf
