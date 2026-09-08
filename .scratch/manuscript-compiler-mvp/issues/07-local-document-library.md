@@ -1,6 +1,6 @@
 # 本机文档库：持久化 + 列表 + 删除
 
-Status: ready-for-agent
+Status: claimed
 
 ## Parent
 
