@@ -66,7 +66,12 @@ def _cmd_parse(args) -> int:
         print(f"error: image not found: {image}", file=sys.stderr)
         return 2
 
-    out_dir = args.out_dir or image.parent
+    # 默认 out-dir：--out-dir 显式给出→用它；否则若 -o 显式给出→用 .md 父目录
+    #（保证 assets/ 与 .md 同址，相对引用可解析）；都未给出→图片父目录。
+    out_dir = args.out_dir
+    if out_dir is None:
+        out_dir = (args.output.parent if args.output is not None
+                   else image.parent)
     out_dir = Path(out_dir)
     cache = pipeline_assets_cache(args.cache_dir)
     timer = StageTimer()
