@@ -1,6 +1,6 @@
 # 分类归纳引擎 + MOC 索引笔记
 
-Status: in-review
+Status: merged
 
 ## Parent
 
