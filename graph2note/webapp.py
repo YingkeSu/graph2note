@@ -69,6 +69,7 @@ class Job:
     doc_id: str | None = None
     document_id: str | None = None
     title: str | None = None
+    merged_into: str | None = None  # issue 13: doc a duplicate page merged into
     warnings: list[str] = field(default_factory=list)
     degraded: list[int] = field(default_factory=list)
     timing: dict | None = None
@@ -90,6 +91,7 @@ class Job:
                 "doc_id": self.doc_id,
                 "document_id": self.document_id,
                 "title": self.title,
+                "merged_into": self.merged_into,
                 "warnings": list(self.warnings),
                 "degraded": list(self.degraded),
                 "timing": self.timing,
@@ -163,7 +165,6 @@ class JobRunner:
         with job.lock:
             if job._cancelled:
                 return  # timed out or superseded — ignore late completion
-            job.status = "done"
             job.markdown = result.markdown
             job.doc_id = result.markdown_path and Path(result.markdown_path).stem
             job.preprocessed_path = result.preprocessed_path
@@ -173,11 +174,42 @@ class JobRunner:
             job.degraded = list(result.route.degraded_block_indices)
             job.timing = result.timing_json
 
-        # Commit into the durable document library (issue 07). A fresh upload
-        # gets its own document_id (stable across that upload's reparses);
-        # re-parse of the SAME document keeps that id -> new immutable version,
-        # never a duplicate record. Failures never reach this point.
-        document_id = job.document_id or _safe_filename(job.doc_id or "doc")
+        # Commit into the durable document library (issue 07 + issue 13).
+        #  * re-parse of the SAME upload keeps its stable document_id -> the
+        #    commit appends a new immutable version, never a duplicate record;
+        #  * a FRESH upload's page is pHash-matched against the library: when a
+        #    near-duplicate page already exists, we MERGE into that document as a
+        #    new candidate version (issue 13, PRD User Story 31) and flag the
+        #    "已并入文档 X" notice for the UI; otherwise a new record is created.
+        # A re-parse stays on its own document_id when that page's own hash still
+        # matches (never steal a page from its own record); only an actually
+        # different/duplicate scan merges elsewhere.
+        # Failures/timeouts never reach this point (no half-finished records).
+        from .ingest import store_bridge
+        from .ingest.hash import hamming
+
+        pg_hash = ""
+        merged_into = None
+        try:
+            pg_hash, _ = store_bridge.hash_page_image(str(original))
+            threshold = app.state.dedup_threshold
+            target = None
+            own = store.get_document(job.document_id) if job.document_id else None
+            own_hash = (own or {}).get("hash") or ""
+            if own_hash and hamming(pg_hash, own_hash) <= threshold:
+                target = None            # re-parse of the same page -> stay
+            else:
+                target = store_bridge.near_duplicate(
+                    store, pg_hash, threshold=threshold)
+                if target == job.document_id:
+                    target = None
+            merged_into = target
+        except Exception:
+            pg_hash = ""
+            merged_into = None
+        document_id = (merged_into
+                       or job.document_id
+                       or _safe_filename(job.doc_id or "doc"))
         store.save_document(
             document_id=document_id,
             title=job.title or job.doc_id or document_id,
@@ -191,9 +223,14 @@ class JobRunner:
             preprocessed_raw_path=result.preprocessed_raw_path,
             assets_dir=result.assets_dir,
             timing_json=result.timing_json,
+            pg_hash=pg_hash,
         )
+        # the record is durable NOW; only then present the job as done so a
+        # poller can rely on the document existing with its final id(s)
         with job.lock:
+            job.status = "done"
             job.document_id = document_id
+            job.merged_into = merged_into
 
 
 # ---------------------------------------------------------------------------
@@ -208,6 +245,7 @@ def create_app(
     document_store: DocumentStore | None = None,
     router_factory=None,
     max_retries: int = 1,
+    dedup_threshold: int = 6,
 ) -> FastAPI:
     """Build the FastAPI app.
 
@@ -226,6 +264,8 @@ def create_app(
     app.state.max_retries = max_retries
     app.state.router_factory = router_factory
     app.state.runner = JobRunner(app)
+    # issue 13: near-dup merge threshold (hamming distance on page pHash)
+    app.state.dedup_threshold = dedup_threshold
 
     def _get_job(job_id: str) -> Job:
         with app.state.jobs_lock:

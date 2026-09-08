@@ -259,4 +259,50 @@ def test_index_served(tmp_path, monkeypatch):
     assert "graph2note" in r.text
     # static assets present
     assert client.get("/static/app.js").status_code == 200
+
+
+# --- issue 13: duplicate upload merges + candidate-version viewing ----------
+
+def test_duplicate_upload_merges_and_versions_viewable(tmp_path, monkeypatch):
+    """AC5 (minimal, offline): uploading the same page twice folds the second
+    scan into the first DocumentRecord as a new candidate version (no new
+    record), the job exposes a "已并入文档 X"-style notice, and the record lists
+    both candidate versions for the UI."""
+    monkeypatch.setenv("GRAPH2NOTE_STORAGE", str(tmp_path / "store"))
+    img_bytes = _make_png()
+    client = TestClient(_app())
+
+    # first upload -> own record
+    r1 = client.post("/api/parse",
+                     files={"file": ("note.png", img_bytes, "image/png")})
+    d1 = _wait_done(client, r1.json()["job_id"])
+    assert d1["status"] == "done"
+    assert d1["document_id"]
+    assert d1["merged_into"] is None
+    store = client.app.state.store
+    first_id = d1["document_id"]
+
+    # second upload, identical page -> merges into first record, notice set
+    r2 = client.post("/api/parse",
+                     files={"file": ("note.png", img_bytes, "image/png")})
+    d2 = _wait_done(client, r2.json()["job_id"])
+    assert d2["status"] == "done"
+    assert d2["merged_into"] == first_id
+    assert d2["document_id"] == first_id
+
+    docs = store.list_documents()
+    assert len(docs) == 1                 # still ONE record, never duplicated
+    rec = store.get_document(first_id)
+    assert rec is not None
+    assert len(rec["versions"]) == 2      # both scans retained as versions
+    # candidate version list is queryable and latest (second scan) is effective
+    vids = [v["version_id"] for v in rec["versions"]]
+    assert d2["document_id"] == first_id
+    assert rec["latest_version_id"] == vids[-1]
+    # document detail endpoint surfaces version data (UI version viewing)
+    detail = client.get(f"/api/documents/{first_id}")
+    assert detail.status_code == 200
+    body = detail.json()
+    assert body.get("document_id") == first_id
+    assert len(body.get("versions", [])) >= 2
     assert client.get("/static/style.css").status_code == 200

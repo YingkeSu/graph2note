@@ -35,8 +35,14 @@ def _make_png(w=640, h=460, text="文档库测试"):
         font = ImageFont.load_default(size=24)
     except TypeError:
         font = ImageFont.load_default()
-    d.rectangle([20, 30, w - 20, h - 20], outline=(30, 30, 30), width=3)
-    d.text((40, 80), text, fill=(20, 20, 20), font=font)
+    # two large filled shapes whose position derives from the page label via a
+    # coprime-of-640 mapping, so consecutive names land far apart in pHash space.
+    # Distinct pages must NOT merge (issue 13); identical pages MUST.
+    pos = ((ord((text or "s")[0]) * 53) % 600) + 20
+    d.rectangle([pos, 40, pos + 140, 180], fill=(35, 35, 35))
+    d.rectangle([pos // 2, 220, pos // 2 + 180, 300], fill=(70, 70, 70))
+    d.rectangle([20, 30, 620, 440], outline=(30, 30, 30), width=3)
+    d.text((40, 360), text, fill=(20, 20, 20), font=font)
     buf = io.BytesIO()
     im.save(buf, "PNG")
     return buf.getvalue()
@@ -56,7 +62,10 @@ def _parse_ok(store_dir, name="sheet.png", content=VALID):
         router_factory=_router_factory(content),
     )
     client = TestClient(app)
-    r = client.post("/api/parse", files={"file": (name, _make_png(), "image/png")})
+    # distinct filenames draw distinct page content so distinct uploads are
+    # genuinely different pages (issue 13 dedup only merges near-duplicates)
+    r = client.post("/api/parse",
+                    files={"file": (name, _make_png(text=Path(name).stem), "image/png")})
     assert r.status_code == 200, r.text
     job_id = r.json()["job_id"]
     return app, client, job_id
