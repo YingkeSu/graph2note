@@ -122,11 +122,14 @@ class RouteARouter(RecognitionRouter):
         caller=None,
         max_retries: int = 2,
         session: str = "graph2note-parse-route-a",
+        second_model: str | None = None,
     ) -> None:
         super().__init__(model)
         self._caller = caller
         self.max_retries = max_retries
         self.session = session
+        self.second_model = second_model
+        self._image_path: str | None = None  # last recognized image (for cross-val)
 
     def _call(self, image_path: str, recover: bool = False) -> tuple[str, dict]:
         if self._caller is not None:
@@ -140,6 +143,42 @@ class RouteARouter(RecognitionRouter):
             image_path, self.model, session=self.session, recover=recover
         )
 
+    def verify_second_model(
+        self,
+        doc,
+        *,
+        image_path: str | None = None,
+        second_model: str | None = None,
+        cache=None,
+        runner=None,
+    ):
+        """Issue 10: dual-model cross-validation diff hook (implemented).
+
+        Diffs the already-recognized ``doc`` against a *fresh* independent
+        parse of the same image by a second model, returning a
+        :class:`CrossValidationReport`.  Needs the image path (stored during
+        :meth:`recognize` when known); without one it raises a clear error.
+        """
+        image_path = image_path or self._image_path
+        second_model = second_model or self.second_model
+        if image_path is None or second_model is None:
+            raise RecognitionError(
+                "cross-validation needs an image path and a second_model"
+            )
+        from .verify.engine import verify_primary_against_second
+        from .verify.model import CrossValidationReport
+
+        report = verify_primary_against_second(
+            doc,
+            image_path,
+            primary_model=self.model,
+            second_model=second_model,
+            runner=runner,
+            cache=cache,
+            max_retries=self.max_retries,
+        )
+        return report
+
     def recognize(
         self,
         image_path: str,
@@ -151,6 +190,7 @@ class RouteARouter(RecognitionRouter):
         raw_content = ""
         document = None
         retries = 0
+        self._image_path = image_path  # remember for cross-validation
 
         for attempt in range(self.max_retries + 1):
             # R4: a retry is a *strategy switch* (tight direct-output prompt,

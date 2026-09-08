@@ -1,0 +1,71 @@
+{
+  "models": {
+    "a": "glm-5.3-flash",
+    "b": "deepseek-v4-flash-vision-exp"
+  },
+  "cached_offline": [
+    {
+      "image": "01-requirements-arch.jpg",
+      "verified": true,
+      "note": "",
+      "counts": {
+        "consistent": 0,
+        "one_side": 14,
+        "conflict": 6
+      },
+      "order_changed": false,
+      "duplicates_a": 0,
+      "duplicates_b": 0,
+      "divergence_rate_%": 100.0,
+      "warnings": []
+    },
+    {
+      "image": "02-digitize-pipeline.jpg",
+      "verified": true,
+      "note": "",
+      "counts": {
+        "consistent": 1,
+        "one_side": 10,
+        "conflict": 1
+      },
+      "order_changed": false,
+      "duplicates_a": 0,
+      "duplicates_b": 0,
+      "divergence_rate_%": 91.67,
+      "warnings": []
+    }
+  ],
+  "rows": [
+    {
+      "image": "01-requirements-arch.jpg",
+      "verified": true,
+      "note": "",
+      "counts": {
+        "consistent": 0,
+        "one_side": 14,
+        "conflict": 6
+      },
+      "order_changed": false,
+      "duplicates_a": 0,
+      "duplicates_b": 0,
+      "divergence_rate_%": 100.0,
+      "warnings": []
+    },
+    {
+      "image": "02-digitize-pipeline.jpg",
+      "verified": true,
+      "note": "",
+      "counts": {
+        "consistent": 1,
+        "one_side": 10,
+        "conflict": 1
+      },
+      "order_changed": false,
+      "duplicates_a": 0,
+      "duplicates_b": 0,
+      "divergence_rate_%": 91.67,
+      "warnings": []
+    }
+  ],
+  "note": "Divergence rate = 非一致块占全部已对齐块的比例（非一致块 = 单侧出现 + 不一致）。仅作选型/调优的横向参考，非绝对准确率。"
+}

@@ -100,13 +100,16 @@ def test_route_a_injects_source_for_structureless_diagram():
 
 
 def test_p1_seams_are_interface_only():
-    r = RouteARouter("glm-5.3-flash")
     # multi-version candidate models (issue 11): MVP returns one
+    r = RouteARouter("glm-5.3-flash")
     assert r.candidate_models == ["glm-5.3-flash"]
-    # cross-validation hook (issue 10) is declared but not implemented
+    # base class seam stays interface-only (other routes); concrete Route A
+    # now implements cross-validation (issue 10): it needs image + second model
     with pytest.raises(NotImplementedError):
-        r.verify_second_model(None)
-    # Route B (OCR) is declared but not implemented
+        RecognitionRouter.verify_second_model(r, None)  # base contract still stub
+    with pytest.raises(Exception):
+        r.verify_second_model(None)  # no image_path/second_model cached
+    # Route B (OCR) is declared but not implemented at any level yet
     with pytest.raises(NotImplementedError):
         r.route_b("/tmp/x.jpg")
 
