@@ -1,6 +1,6 @@
 # 解析 tracer：预处理 → Router → VLM → IR → CLI 出 .md
 
-Status: ready-for-agent
+Status: claimed
 
 ## Parent
 
@@ -28,3 +28,7 @@ Status: ready-for-agent
 
 - 01-spike1-vision-quality-eval（模型选型结论）
 - 02-ir-schema-markdown-renderer（IR schema 与渲染器）
+
+## Comments
+
+- 2026-09-08 dispatcher：claimed by graph2note-2（Track A 接力，分支 dev/03-parse-pipeline-cli）。**提前启动决策**：依赖 issue 01 的选型结论以「临时选型 glm-5.3-flash + 模型可配置化」替代——依据 Spike 3 报告（glm 是唯一能在真实大图上抽取结构的模型，deepseek 大图空内容）与 FR-017 可替换性要求；01 正式结论若不同，仅切配置不改契约。维持者要求最大化并行度，特此记录。
