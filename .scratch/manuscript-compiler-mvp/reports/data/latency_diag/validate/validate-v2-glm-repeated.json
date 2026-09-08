@@ -1,0 +1,72 @@
+{
+  "tag": "v2-glm-repeated",
+  "content_len": 495,
+  "content_head": "# 需求\n\nAccess\n\n层次化通信：\n\n- MacBook 常用终端 ↔ Windows Laptop\n- ↓（连接层）\n- Macmini / Linux",
+  "meta": {
+    "status": "ok",
+    "error": null,
+    "model": "glm-5.3-flash",
+    "session": "graph2note-spike-01",
+    "max_tokens": 3500,
+    "latency_seconds": 24.19,
+    "prompt_tokens": 982,
+    "completion_tokens": 219,
+    "total_tokens": 1201,
+    "reasoning_tokens": null,
+    "finish_reason": "stop",
+    "cost": "0",
+    "prep": {
+      "original": {
+        "width": 1920,
+        "height": 1080,
+        "bytes": 898356
+      },
+      "resized": {
+        "width": 1024,
+        "height": 576,
+        "bytes": 127915,
+        "resized": true,
+        "max_dim": 1024,
+        "quality": 85
+      }
+    },
+    "warnings": [],
+    "attempt": 0,
+    "attempt_kind": "first_direct",
+    "attempts": [
+      {
+        "status": "ok",
+        "error": null,
+        "model": "glm-5.3-flash",
+        "session": "graph2note-spike-01",
+        "max_tokens": 3500,
+        "latency_seconds": 24.19,
+        "prompt_tokens": 982,
+        "completion_tokens": 219,
+        "total_tokens": 1201,
+        "reasoning_tokens": null,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1920,
+            "height": 1080,
+            "bytes": 898356
+          },
+          "resized": {
+            "width": 1024,
+            "height": 576,
+            "bytes": 127915,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [],
+        "attempt": 0,
+        "attempt_kind": "first_direct"
+      }
+    ],
+    "retried": false
+  }
+}

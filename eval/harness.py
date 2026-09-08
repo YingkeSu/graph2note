@@ -15,7 +15,7 @@ from datetime import datetime, timezone
 
 from . import editerate
 from .dataset import CATEGORIES, CATEGORY_ORDER, REPO_ROOT, Sample, load_dataset, read_gold
-from .gateway import FALLBACKS, transcribe_image
+from .gateway import cache_namespace, transcribe_with_policy
 
 # 缓存目录：eval/cache/。报告落盘：eval/reports/。
 CACHE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "cache")
@@ -36,7 +36,9 @@ class EvalRun:
 
     def _cache_path(self, sample: Sample) -> str:
         safe = self.model.replace("/", "_")
-        return os.path.join(CACHE_DIR, f"{safe}__{sample.id}.json")
+        # 缓存指纹：prompt/预算/降采样参数变化时旧缓存失效（img+model+prompt 指纹）。
+        ns = cache_namespace()
+        return os.path.join(CACHE_DIR, f"{safe}__{ns}__{sample.id}.json")
 
     def _run_one(self, sample: Sample, *, use_cache: bool) -> dict:
         cache_path = self._cache_path(sample)
@@ -48,31 +50,12 @@ class EvalRun:
             meta["cached"] = True
         else:
             try:
-                pred, meta = transcribe_image(sample.image_path, self.model)
+                pred, meta = transcribe_with_policy(sample.image_path, self.model)
                 meta["cached"] = False
-            except Exception as exc:  # network/HTTP failures surfaced into the report
+                meta["retried"] = bool(meta.get("retried"))
+            except Exception as exc:  # 配置/解析异常 surfaced into the report
                 pred = ""
                 meta = {"status": "error", "error": str(exc), "cached": False}
-            # 健壮性：模型在 max_tokens=10000 下思考过长被截断且未产出正文时，
-            # 用递减 max_tokens + 精简提示逐级回退，避免空结果污染指标。
-            if meta.get("status") == "ok" and not (pred or "").strip():
-                for attempt, (fallback_mt, fallback_pt) in enumerate(FALLBACKS, start=1):
-                    try:
-                        pred, meta2 = transcribe_image(
-                            sample.image_path,
-                            self.model,
-                            max_tokens=fallback_mt,
-                            prompt_text=fallback_pt,
-                        )
-                        meta2["cached"] = False
-                        meta2["retried"] = True
-                        meta2["retry_attempt"] = attempt
-                        meta = meta2
-                    except Exception as exc:  # pragma: no cover - error path
-                        meta = {**meta, "retried": True, "retry_error": str(exc)}
-                        break
-                    if (pred or "").strip():
-                        break
             if pred:
                 with open(cache_path, "w", encoding="utf-8") as fh:
                     json.dump({"prediction": pred, "meta": meta}, fh, ensure_ascii=False, indent=2)
