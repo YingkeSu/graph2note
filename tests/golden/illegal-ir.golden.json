@@ -1,0 +1,7 @@
+{
+  "document_type": "note",
+  "blocks": [
+    { "type": "heading", "level": 1, "text": "草稿一" },
+    { "type": "bogus_block", "text": "未知类型应触发重试" }
+  ]
+}

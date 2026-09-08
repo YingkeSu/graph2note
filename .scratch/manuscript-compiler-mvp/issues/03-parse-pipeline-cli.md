@@ -1,6 +1,6 @@
 # 解析 tracer：预处理 → Router → VLM → IR → CLI 出 .md
 
-Status: claimed
+Status: in-review
 
 ## Parent
 
@@ -32,3 +32,4 @@ Status: claimed
 ## Comments
 
 - 2026-09-08 dispatcher：claimed by graph2note-2（Track A 接力，分支 dev/03-parse-pipeline-cli）。**提前启动决策**：依赖 issue 01 的选型结论以「临时选型 glm-5.3-flash + 模型可配置化」替代——依据 Spike 3 报告（glm 是唯一能在真实大图上抽取结构的模型，deepseek 大图空内容）与 FR-017 可替换性要求；01 正式结论若不同，仅切配置不改契约。维持者要求最大化并行度，特此记录。
+- 2026-09-08 graph2note-2：提交实现，Status → in-review。handoff 见 `.scratch/manuscript-compiler-mvp/handoffs/03-parse-pipeline-cli.md`。实时选型待 issue 01 结论；网关速度修复（eval/gateway.py, worker 5）合并后需重录 01 golden（见 handoff §3/§5）。

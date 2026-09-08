@@ -169,7 +169,11 @@ def loads_ir(raw: str | bytes) -> DocumentIR:
         raise IRValidationError(
             f"invalid JSON: {exc.msg} at line {exc.lineno} col {exc.colno}"
         ) from exc
+    return load_dict_as_ir(data)
 
+
+def load_dict_as_ir(data) -> DocumentIR:
+    """Validate an already-parsed JSON dict into a DocumentIR."""
     if not isinstance(data, dict):
         raise IRValidationError(
             f"IR root must be a JSON object, got {type(data).__name__}"
@@ -215,5 +219,6 @@ __all__ = [
     "Edge",
     "IRValidationError",
     "loads_ir",
+    "load_dict_as_ir",
     "dumps_ir",
 ]
