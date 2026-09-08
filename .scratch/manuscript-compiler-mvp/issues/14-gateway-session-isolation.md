@@ -1,6 +1,6 @@
 # 网关会话隔离：按用途隔离稳定直出 session
 
-Status: in-review
+Status: merged
 
 ## Parent
 
