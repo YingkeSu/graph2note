@@ -28,6 +28,7 @@ Core guarantees:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import re
 from dataclasses import dataclass, field
@@ -35,6 +36,113 @@ from pathlib import Path
 from typing import Callable, Iterable, Optional
 
 from ..ingest.hash import hamming, phash  # 09's perceptual hash (same-source判据)
+
+
+# ---------------------------------------------------------------------------
+# byte helpers shared by the full exporter and the incremental path
+# ---------------------------------------------------------------------------
+
+
+def _bhash(data: bytes) -> str:
+    """sha256 fingerprint of a system-generated file's bytes."""
+    return hashlib.sha256(data).hexdigest()
+
+
+def _read_bytes(path: str | Path) -> bytes:
+    with open(path, "rb") as fh:
+        return fh.read()
+
+
+def _write(path: Path, data) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if isinstance(data, str):
+        data = data.encode("utf-8")
+    path.write_bytes(data)
+
+
+def _dump(manifest: dict) -> str:
+    return json.dumps(manifest, ensure_ascii=False, indent=2) + "\n"
+
+
+def _conflict_name(path: Path, disk_fp: str) -> Path:
+    """Deterministic-but-unique name for a user-edited file we must preserve."""
+    base = path.name
+    cand = path.with_name(f"{base}.user-{disk_fp[:8]}")
+    n = 1
+    while cand.exists():
+        cand = path.with_name(f"{base}.user-{disk_fp[:8]}-{n}")
+        n += 1
+    return cand
+
+
+def _prune_empty_dirs(root: Path) -> None:
+    """Remove directories under notes/ and mocs/ that became empty after cleanup."""
+    for top in (root / "notes", root / "mocs"):
+        if not top.is_dir():
+            continue
+        for p in sorted(top.rglob("*"), key=lambda x: len(x.parts), reverse=True):
+            if p.is_dir():
+                try:
+                    p.rmdir()
+                except OSError:
+                    pass  # not empty (user files still inside) — keep it
+
+
+def render_vault_files(
+    entries: Iterable[ExportEntry],
+    *,
+    exported_at: str,
+    scheme=None,
+) -> tuple[dict[str, bytes], dict[str, list[str]]]:
+    """Render every system-generated file as ``{relative_path: bytes}``.
+
+    This is the single deterministic render that both ``export_vault`` (full
+    overwrite) and ``export_incremental`` (diff against disk/manifest) build on,
+    so an incremental result is always content-equivalent to a full export of
+    the same input.
+    """
+    from .moc import build_mocs
+
+    files: dict[str, bytes] = {}
+    lists = {"note_files": [], "source_files": [], "attachment_files": [], "moc_files": []}
+    for e in entries:
+        d = f"notes/{e.safe_id}"
+        lists["note_files"].append(f"{d}/note.md")
+        files[f"{d}/note.md"] = build_note(e, exported_at).encode("utf-8")
+        if e.original_path:
+            rel = f"{d}/source{e.source_ext}"
+            lists["source_files"].append(rel)
+            files[rel] = _read_bytes(e.original_path)
+        for name, path in sorted(e.attachments.items()):
+            safe = _safe_name(name)
+            rel = f"{d}/assets/{safe}"
+            lists["attachment_files"].append(rel)
+            files[rel] = _read_bytes(path)
+    if scheme is not None:
+        for topic, content in build_mocs(scheme, entries).items():
+            rel = f"mocs/{_safe_name(topic)}.md"
+            lists["moc_files"].append(rel)
+            files[rel] = content.encode("utf-8")
+    return files, lists
+
+
+def _build_manifest(
+    entries: list[ExportEntry],
+    exported_at: str,
+    lists: dict[str, list[str]],
+    fingerprints: dict[str, str],
+) -> dict:
+    return {
+        "exported_at": exported_at,
+        "documents": [e.document_id for e in entries],
+        "note_files": lists["note_files"],
+        "moc_files": lists["moc_files"],
+        "attachment_files": lists["attachment_files"],
+        "source_files": lists["source_files"],
+        # content fingerprints let a later incremental diff tell "stale system
+        # file" (safe to overwrite/delete) from "user-edited file" (must keep).
+        "fingerprints": fingerprints,
+    }
 
 
 @dataclass
@@ -226,19 +334,14 @@ def export_vault(
     scheme=None,  # ClassificationScheme | None -> also emit per-topic MOCs
     messages: Optional[list[str]] = None,
 ) -> Vault:
-    """Write a complete vault into ``out_dir`` and validate every link.
+    """Write a complete (full-overwrite) vault into ``out_dir`` and validate links.
 
-    When ``scheme`` (a validated :class:`ClassificationScheme`) is given, a MOC
-    index note is also written per topic under ``mocs/`` and included in link
+    Every system-generable file is (re)written and fingerprinted.  When
+    ``scheme`` is given, a MOC is written per topic and included in link
     validation.  Raises :class:`VaultExportError` if any note has a dead link.
     """
-    from .moc import build_mocs
-
     entries = list(entries)
     root = Path(out_dir)
-    notes_dir = root / "notes"
-    moc_dir = root / "mocs"
-    notes_dir.mkdir(parents=True, exist_ok=True)
 
     # deterministic exported_at: explicit arg, else newest record timestamp
     if not exported_at:
@@ -247,71 +350,144 @@ def export_vault(
         )
     exported_at = str(exported_at)
 
-    doc_files, attach_files, source_files = [], [], []
-    for e in entries:
-        d = notes_dir / e.safe_id
-        d.mkdir(parents=True, exist_ok=True)
+    files, lists = render_vault_files(entries, exported_at=exported_at, scheme=scheme)
+    fingerprints = {rel: _bhash(data) for rel, data in files.items()}
+    for rel in sorted(files):
+        _write(root / rel, files[rel])
 
-        # 1. original manuscript image (溯源 embed) — copy beside the note
-        src_image = d / f"source{e.source_ext}"
-        if e.original_path:
-            _copy_file(e.original_path, src_image)
-            source_files.append(f"notes/{e.safe_id}/source{e.source_ext}")
-
-        # 2. attachments -> assets/ beside the note (keep refs valid)
-        assets_dir = d / "assets"
-        assets_dir.mkdir(parents=True, exist_ok=True)
-        for name, path in sorted(e.attachments.items()):
-            safe = _safe_name(name)
-            _copy_file(path, assets_dir / safe)
-            attach_files.append(f"notes/{e.safe_id}/assets/{safe}")
-
-        # 3. note
-        note = build_note(e, exported_at)
-        (d / "note.md").write_text(note, encoding="utf-8")
-        doc_files.append(f"notes/{e.safe_id}/note.md")
-
-    # MOC index notes (issue 02) — deterministic, validated by link check
-    moc_files: list[str] = []
-    if scheme is not None:
-        moc_dir.mkdir(parents=True, exist_ok=True)
-        for topic, content in build_mocs(scheme, entries).items():
-            rel = f"mocs/{_safe_name(topic)}.md"
-            (moc_dir / f"{_safe_name(topic)}.md").write_text(content, encoding="utf-8")
-            moc_files.append(rel)
-
-    documentation = doc_files + moc_files
-    # manifest (deterministic)
-    manifest = {
-        "exported_at": exported_at,
-        "documents": [e.document_id for e in entries],
-        "note_files": doc_files,
-        "moc_files": moc_files,
-        "attachment_files": attach_files,
-        "source_files": source_files,
-    }
     mpath = root / "export-manifest.json"
-    mpath.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
-                     encoding="utf-8")
+    _write(mpath, _dump(_build_manifest(entries, exported_at, lists, fingerprints)))
 
-    vault = Vault(root=root, notes_dir=notes_dir, moc_dir=moc_dir,
-                  documentation=documentation, attachments=attach_files,
-                  sources=source_files, moc_files=moc_files,
-                  manifest_path=mpath)
+    documentation = lists["note_files"] + lists["moc_files"]
+    vault = Vault(
+        root=root, notes_dir=root / "notes", moc_dir=root / "mocs",
+        documentation=documentation, attachments=lists["attachment_files"],
+        sources=lists["source_files"], moc_files=lists["moc_files"],
+        manifest_path=mpath,
+    )
 
     _validate_all_links(vault, exported_at)
     if messages is not None:
-        mocs_note = f" + {len(moc_files)} MOC" if moc_files else ""
+        mocs_note = f" + {len(lists['moc_files'])} MOC" if lists["moc_files"] else ""
         messages.append(
-            f"Exported {len(doc_files)} note(s){mocs_note}, {len(source_files)} "
-            f"source image(s), {len(attach_files)} attachment(s) to {root}"
+            f"Exported {len(lists['note_files'])} note(s){mocs_note}, "
+            f"{len(lists['source_files'])} source image(s), "
+            f"{len(lists['attachment_files'])} attachment(s) to {root}"
         )
     return vault
 
 
-def _copy_file(src: str | Path, dst: Path) -> None:
-    import shutil
-    shutil.copyfile(src, dst)
+def export_incremental(
+    entries: Iterable[ExportEntry],
+    out_dir: str | Path,
+    *,
+    exported_at: Optional[str] = None,
+    scheme=None,  # ClassificationScheme | None -> also emit/refresh MOCs
+    messages: Optional[list[str]] = None,
+) -> tuple[dict, Vault]:
+    """Apply only the changed system files onto an existing vault; preserve user edits.
+
+    Diff is anchored on ``document_id`` paths plus content fingerprints from the
+    previous ``export-manifest.json``:
+
+    * missing file                 -> write (``added``)
+    * byte-identical               -> untouched (``unchanged``; stable mtime)
+    * differs but == previous      -> stale system file -> overwrite (``updated``)
+    * differs and not previous     -> user-edited    -> rename to preserve both,
+                                     then write ours (``conflicts``)
+    * a previous system file with
+      no counterpart today and
+      still unchanged on disk      -> delete (``deleted``)
+
+    Returns ``(report, vault)``; the report lists ``added/updated/unchanged/
+    conflicts(conflict_backups)/deleted/kept_user``.  Dead links still fail via
+    :class:`VaultExportError`.
+    """
+    entries = list(entries)
+    root = Path(out_dir)
+    mpath = root / "export-manifest.json"
+
+    if not exported_at:
+        exported_at = max(
+            (str(e.updated_at) for e in entries if e.updated_at), default=""
+        )
+    exported_at = str(exported_at)
+
+    files, lists = render_vault_files(entries, exported_at=exported_at, scheme=scheme)
+    desired_fp = {rel: _bhash(data) for rel, data in files.items()}
+
+    prev = {}
+    if mpath.exists():
+        try:
+            prev = json.loads(mpath.read_text(encoding="utf-8"))
+        except (ValueError, OSError):
+            prev = {}
+    prev_fp = prev.get("fingerprints") or {}
+
+    report: dict = {
+        "added": [], "updated": [], "unchanged": [],
+        "conflicts": [], "conflict_backups": {}, "deleted": [],
+        "kept_user": [], "exported_at": exported_at,
+    }
+
+    for rel, data in files.items():
+        p = root / rel
+        if not p.is_file():
+            _write(p, data)
+            report["added"].append(rel)
+            continue
+        disk = p.read_bytes()
+        if disk == data:
+            report["unchanged"].append(rel)
+        elif _bhash(disk) == prev_fp.get(rel):
+            _write(p, data)  # stale system file we produced before -> refresh
+            report["updated"].append(rel)
+        else:
+            backup = _conflict_name(p, _bhash(disk))
+            p.rename(backup)  # keep the user's version, both survive
+            _write(p, data)
+            report["conflicts"].append(rel)
+            report["conflict_backups"][rel] = backup.name
+
+    # cleanup of removed documents: only delete files that still match the
+    # previous system fingerprint (safe = never user-edited / user-renamed).
+    for rel in list(prev_fp):
+        if rel in files:
+            continue
+        p = root / rel
+        if not p.exists():
+            continue
+        if p.is_file() and _bhash(p.read_bytes()) == prev_fp.get(rel):
+            p.unlink()
+            report["deleted"].append(rel)
+        else:
+            # user-edited / user-renamed file at a now-unmanaged path -> keep
+            report["kept_user"].append(rel)
+    _prune_empty_dirs(root)
+
+    # manifest: write only when the (deterministic) content actually changed.
+    manifest = _build_manifest(entries, exported_at, lists, desired_fp)
+    manifest_str = _dump(manifest)
+    if not (mpath.exists() and mpath.read_text(encoding="utf-8") == manifest_str):
+        _write(mpath, manifest_str)
+
+    documentation = lists["note_files"] + lists["moc_files"]
+    vault = Vault(
+        root=root, notes_dir=root / "notes", moc_dir=root / "mocs",
+        documentation=documentation, attachments=lists["attachment_files"],
+        sources=lists["source_files"], moc_files=lists["moc_files"],
+        manifest_path=mpath,
+    )
+    _validate_all_links(vault, exported_at)
+
+    if messages is not None:
+        messages.append(
+            f"Incremental: +{len(report['added'])} added, "
+            f"~{len(report['updated'])} updated, {len(report['deleted'])} deleted, "
+            f"!{len(report['conflicts'])} conflicts, "
+            f"{len(report['kept_user'])} kept-user -> {root}"
+        )
+    return report, vault
 
 
 def _validate_all_links(vault: Vault, exported_at: str) -> None:
