@@ -50,6 +50,13 @@ session `graph2note-spike-01`（eval/gateway 默认、vlm 默认、verify 各自
 - `tests/test_session_isolation.py`（新增）：vlm parse 委托默认/env/历史 env、router 默认 None、
   verify 用途独立、三用途全隔离。
 
+## 健康巡检（跑批前自检）
+
+`scripts/validate_sessions.py --check` 提供极简健康巡检入口：逐用途探测并输出
+`ok/degraded` 汇总；任一用途退化时以**非零退出码**结束，便于未来跑批前脚本化门控
+（普通模式恒 0）。聚合逻辑 `eval.gateway.session_health(records)` 为纯函数，离线单测覆盖。
+（本报告基线为 issue-14 合并时 236；追加健康巡检后全量 252 passed, 2 skipped。）
+
 ## 风险 / 说明
 
 - 历史 `graph2note-spike-01` 保留为未知用途兜底只读常量，不再分配给具体用途；旧行为经

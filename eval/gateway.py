@@ -495,6 +495,12 @@ def maybe_validate_direct(purpose: str, model: str | None = None) -> dict | None
     return validate_session_direct(purpose, model)
 
 
+def session_health(records: list[dict]) -> tuple[bool, list[str]]:
+    """聚合直出验证记录：返回 (all_direct, degraded_purposes)。供健康巡检/跑批前自检。"""
+    bad = [r for r in records if not r.get("direct")]
+    return (len(bad) == 0), [r["purpose"] for r in bad]
+
+
 # ================= R2/R4：策略化调用（首调直出 + 换参/换 session + 不隐性双倍调用） =================
 
 def transcribe_with_policy(
