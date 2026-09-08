@@ -1,0 +1,75 @@
+{
+  "n": 6,
+  "n_nonempty": 6,
+  "nonempty_rate": 1.0,
+  "categories_covered": [
+    "architecture",
+    "flowchart",
+    "formula",
+    "handwriting",
+    "mixed",
+    "strikethrough"
+  ],
+  "rows": [
+    {
+      "id": "A02",
+      "category": "formula",
+      "stage1_source": "eval-cache/direct",
+      "stage1_md_len": 1786,
+      "ir_blocks": 18,
+      "rendered_md_len": 1976,
+      "md_nonempty": true,
+      "edit_rate": 0.7676
+    },
+    {
+      "id": "A09",
+      "category": "strikethrough",
+      "stage1_source": "eval-cache/direct",
+      "stage1_md_len": 919,
+      "ir_blocks": 29,
+      "rendered_md_len": 966,
+      "md_nonempty": true,
+      "edit_rate": 1.1053
+    },
+    {
+      "id": "A10",
+      "category": "mixed",
+      "stage1_source": "eval-cache/direct",
+      "stage1_md_len": 974,
+      "ir_blocks": 45,
+      "rendered_md_len": 1000,
+      "md_nonempty": true,
+      "edit_rate": 0.8461
+    },
+    {
+      "id": "A13",
+      "category": "flowchart",
+      "stage1_source": "eval-cache/direct",
+      "stage1_md_len": 600,
+      "ir_blocks": 7,
+      "rendered_md_len": 670,
+      "md_nonempty": true,
+      "edit_rate": 0.8094
+    },
+    {
+      "id": "A15",
+      "category": "handwriting",
+      "stage1_source": "eval-cache/direct",
+      "stage1_md_len": 550,
+      "ir_blocks": 11,
+      "rendered_md_len": 558,
+      "md_nonempty": true,
+      "edit_rate": 0.9032
+    },
+    {
+      "id": "img01",
+      "category": "architecture",
+      "stage1_source": "live/escalated(10000)",
+      "stage1_md_len": 539,
+      "ir_blocks": 11,
+      "rendered_md_len": 539,
+      "md_nonempty": true,
+      "edit_rate": 1.4481
+    }
+  ]
+}

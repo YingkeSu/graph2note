@@ -1,0 +1,131 @@
+{
+  "document_type": "note",
+  "blocks": [
+    {
+      "type": "heading",
+      "level": 1,
+      "text": "架构"
+    },
+    {
+      "type": "heading",
+      "level": 2,
+      "text": "层间通信"
+    },
+    {
+      "type": "list",
+      "ordered": false,
+      "items": [
+        {
+          "text": "Account"
+        },
+        {
+          "text": "第一层：MacBook（常用终端）、Windows Laptop"
+        },
+        {
+          "text": "↓ 网络层"
+        },
+        {
+          "text": "第二层：Macmini、TeirEval 执行、其他服务器"
+        },
+        {
+          "text": "↓ linux"
+        },
+        {
+          "text": "↓ 需求"
+        },
+        {
+          "text": "360 Linux"
+        },
+        {
+          "text": "↓ 任务拆分"
+        },
+        {
+          "text": "↓ 模型 / harness 路由"
+        },
+        {
+          "text": "状态区别 / 任务图 → 节点图"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "level": 1,
+      "text": "通信层"
+    },
+    {
+      "type": "list",
+      "ordered": false,
+      "items": [
+        {
+          "text": "Mac ←→ Mac：Screen sharing"
+        },
+        {
+          "text": "Windows → Mac：Ragget TS"
+        },
+        {
+          "text": "支持 Apple VNC 协议"
+        },
+        {
+          "text": "Jit：Tiger VNC 不好"
+        },
+        {
+          "text": "Win/mac → linux：ssh 都要搞起来！"
+        },
+        {
+          "text": "融合图：critical path 优化 ⭐"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "问：已有多种 harness，直接固定一种，回退？"
+    },
+    {
+      "type": "paragraph",
+      "text": "或：让选一种？cost-benefit trade off"
+    },
+    {
+      "type": "list",
+      "ordered": true,
+      "items": [
+        {
+          "text": "LogiGraph"
+        },
+        {
+          "text": "Codex Session Manage"
+        },
+        {
+          "text": "Suit Orchestrator"
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "text": "Questions："
+    },
+    {
+      "type": "list",
+      "ordered": true,
+      "items": [
+        {
+          "text": "最大方差 gsat 提到全能"
+        }
+      ]
+    },
+    {
+      "type": "list",
+      "ordered": false,
+      "items": [
+        {
+          "text": "Programs / A10 / Project 根目录"
+        },
+        {
+          "text": "/Projects"
+        },
+        {
+          "text": "/tasks —— 工作目录"
+        }
+      ]
+    }
+  ]
+}
