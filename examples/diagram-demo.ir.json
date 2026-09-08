@@ -1,0 +1,45 @@
+{
+  "document_type": "note",
+  "blocks": [
+    {"type": "heading", "level": 1, "text": "算法流程笔记"},
+    {"type": "paragraph", "text": "下面两处结构化流程由 nodes/edges 语义确定性重建，最后一处因抽取失败降级为原图裁剪嵌入。"},
+    {
+      "type": "diagram",
+      "caption": "主流程",
+      "nodes": [
+        {"id": "n1", "label": "开始"},
+        {"id": "n2", "label": "读取配置"},
+        {"id": "n3", "label": "失败？"},
+        {"id": "n4", "label": "输出结果"}
+      ],
+      "edges": [
+        {"from": "n1", "to": "n2", "label": ""},
+        {"from": "n2", "to": "n3", "label": ""},
+        {"from": "n3", "to": "n4", "label": "否"},
+        {"from": "n3", "to": "n2", "label": "是"}
+      ]
+    },
+    {
+      "type": "flow",
+      "caption": "训练回流",
+      "orientation": "TB",
+      "nodes": [
+        {"id": "a", "label": "初始化参数"},
+        {"id": "b", "label": "前向传播"},
+        {"id": "c", "label": "损失计算"},
+        {"id": "d", "label": "收敛？"}
+      ],
+      "edges": [
+        {"from": "a", "to": "b", "label": ""},
+        {"from": "b", "to": "c", "label": ""},
+        {"from": "c", "to": "d", "label": ""},
+        {"from": "d", "to": "a", "label": "否"}
+      ]
+    },
+    {
+      "type": "diagram",
+      "caption": "手稿原样（结构抽取失败，裁剪嵌入）",
+      "source": "test-images/01-requirements-arch.jpg"
+    }
+  ]
+}
