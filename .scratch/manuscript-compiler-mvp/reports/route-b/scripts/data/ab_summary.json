@@ -1,0 +1,401 @@
+{
+  "rows": [
+    {
+      "id": "A15",
+      "category": "handwriting",
+      "route_a": 0.8873239436619719,
+      "route_b": 0.9084507042253521,
+      "route_b_mode": "structured",
+      "route_b_blocks": 25,
+      "ocr_chars": 287,
+      "text_reasoning": 1313,
+      "route_a_cached": true
+    },
+    {
+      "id": "A17",
+      "category": "handwriting",
+      "route_a": 0.5854105571847508,
+      "route_b": 0.8768328445747801,
+      "route_b_mode": "structured",
+      "route_b_blocks": 21,
+      "ocr_chars": 1049,
+      "text_reasoning": 1384,
+      "route_a_cached": true
+    },
+    {
+      "id": "B05",
+      "category": "handwriting",
+      "route_a": 0.7784911717495987,
+      "route_b": 0.8432316746923488,
+      "route_b_mode": "structured",
+      "route_b_blocks": 24,
+      "ocr_chars": 526,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "B10",
+      "category": "handwriting",
+      "route_a": 0.7844611528822055,
+      "route_b": 0.8262322472848789,
+      "route_b_mode": "fallback_ocr",
+      "route_b_blocks": 26,
+      "ocr_chars": 462,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "B13",
+      "category": "handwriting",
+      "route_a": 0.8787210584343991,
+      "route_b": 0.8809261300992283,
+      "route_b_mode": "structured",
+      "route_b_blocks": 29,
+      "ocr_chars": 324,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "B17",
+      "category": "handwriting",
+      "route_a": 0.9046511627906977,
+      "route_b": 0.8843023255813953,
+      "route_b_mode": "structured",
+      "route_b_blocks": 33,
+      "ocr_chars": 795,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "C08",
+      "category": "handwriting",
+      "route_a": 0.5177478580171359,
+      "route_b": 0.8543451652386781,
+      "route_b_mode": "structured",
+      "route_b_blocks": 27,
+      "ocr_chars": 773,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "C23",
+      "category": "handwriting",
+      "route_a": 0.8514851485148515,
+      "route_b": 0.8844884488448845,
+      "route_b_mode": "structured",
+      "route_b_blocks": 9,
+      "ocr_chars": 119,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "C28",
+      "category": "handwriting",
+      "route_a": 0.7425496688741722,
+      "route_b": 0.8253311258278145,
+      "route_b_mode": "structured",
+      "route_b_blocks": 25,
+      "ocr_chars": 896,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "D27",
+      "category": "handwriting",
+      "route_a": 0.7773972602739726,
+      "route_b": 0.8538812785388128,
+      "route_b_mode": "structured",
+      "route_b_blocks": 32,
+      "ocr_chars": 1075,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "A10",
+      "category": "mixed",
+      "route_a": 0.8495359062042013,
+      "route_b": 0.9076697606253054,
+      "route_b_mode": "structured",
+      "route_b_blocks": 34,
+      "ocr_chars": 611,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "C34",
+      "category": "mixed",
+      "route_a": 1.1557649667405765,
+      "route_b": 0.9257206208425721,
+      "route_b_mode": "structured",
+      "route_b_blocks": 4,
+      "ocr_chars": 1010,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "C40",
+      "category": "mixed",
+      "route_a": 0.4802955665024631,
+      "route_b": 0.8575533661740559,
+      "route_b_mode": "structured",
+      "route_b_blocks": 27,
+      "ocr_chars": 933,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "C52",
+      "category": "mixed",
+      "route_a": 0.7917485265225933,
+      "route_b": 0.9700392927308448,
+      "route_b_mode": "structured",
+      "route_b_blocks": 3,
+      "ocr_chars": 1033,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "A02",
+      "category": "formula",
+      "route_a": 0.7573196498641714,
+      "route_b": 0.9058255357681859,
+      "route_b_mode": "structured",
+      "route_b_blocks": 28,
+      "ocr_chars": 934,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "B04",
+      "category": "formula",
+      "route_a": 1.2180851063829787,
+      "route_b": 0.8151595744680851,
+      "route_b_mode": "structured",
+      "route_b_blocks": 19,
+      "ocr_chars": 411,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "C19",
+      "category": "formula",
+      "route_a": 0.4433460076045627,
+      "route_b": 0.844106463878327,
+      "route_b_mode": "structured",
+      "route_b_blocks": 22,
+      "ocr_chars": 428,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "D22",
+      "category": "formula",
+      "route_a": 0.33864760857614074,
+      "route_b": 0.8735568993952721,
+      "route_b_mode": "structured",
+      "route_b_blocks": 29,
+      "ocr_chars": 706,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "A13",
+      "category": "flowchart",
+      "route_a": 0.8027888446215139,
+      "route_b": 0.899070385126162,
+      "route_b_mode": "structured",
+      "route_b_blocks": 26,
+      "ocr_chars": 541,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "A18",
+      "category": "flowchart",
+      "route_a": 0.45666666666666667,
+      "route_b": 0.7525,
+      "route_b_mode": "structured",
+      "route_b_blocks": 31,
+      "ocr_chars": 605,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "C13",
+      "category": "flowchart",
+      "route_a": 1.2925659472422062,
+      "route_b": 0.8289368505195843,
+      "route_b_mode": "structured",
+      "route_b_blocks": 22,
+      "ocr_chars": 772,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "C47",
+      "category": "flowchart",
+      "route_a": 0.48841354723707664,
+      "route_b": 0.8440285204991087,
+      "route_b_mode": "fallback_ocr",
+      "route_b_blocks": 32,
+      "ocr_chars": 877,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "C50",
+      "category": "flowchart",
+      "route_a": 1.0672413793103448,
+      "route_b": 0.8241379310344827,
+      "route_b_mode": "structured",
+      "route_b_blocks": 28,
+      "ocr_chars": 742,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "D35",
+      "category": "flowchart",
+      "route_a": 0.5483870967741935,
+      "route_b": 0.8225806451612904,
+      "route_b_mode": "structured",
+      "route_b_blocks": 7,
+      "ocr_chars": 388,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "A09",
+      "category": "strikethrough",
+      "route_a": 1.0526315789473684,
+      "route_b": 0.8839406207827261,
+      "route_b_mode": "fallback_ocr",
+      "route_b_blocks": 29,
+      "ocr_chars": 618,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "B11",
+      "category": "strikethrough",
+      "route_a": 0.9002574002574003,
+      "route_b": 0.9163449163449163,
+      "route_b_mode": "structured",
+      "route_b_blocks": 22,
+      "ocr_chars": 562,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "C05",
+      "category": "strikethrough",
+      "route_a": 0.7439910564561207,
+      "route_b": 0.8345444382336501,
+      "route_b_mode": "structured",
+      "route_b_blocks": 49,
+      "ocr_chars": 964,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "C09",
+      "category": "strikethrough",
+      "route_a": 0.6361788617886179,
+      "route_b": 0.883130081300813,
+      "route_b_mode": "structured",
+      "route_b_blocks": 28,
+      "ocr_chars": 715,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "C41",
+      "category": "strikethrough",
+      "route_a": 0.8011482254697286,
+      "route_b": 0.842901878914405,
+      "route_b_mode": "structured",
+      "route_b_blocks": 31,
+      "ocr_chars": 1300,
+      "text_reasoning": null,
+      "route_a_cached": true
+    },
+    {
+      "id": "D07",
+      "category": "strikethrough",
+      "route_a": 0.5214698596201487,
+      "route_b": 0.8815028901734104,
+      "route_b_mode": "structured",
+      "route_b_blocks": 30,
+      "ocr_chars": 841,
+      "text_reasoning": null,
+      "route_a_cached": true
+    }
+  ],
+  "summary": {
+    "categories": [
+      {
+        "category": "handwriting",
+        "label": "手写笔记",
+        "n": 10,
+        "route_a_n": 10,
+        "route_a_mean": 0.7708,
+        "route_b_n": 10,
+        "route_b_mean": 0.8638
+      },
+      {
+        "category": "print",
+        "label": "印刷扫描",
+        "n": 0,
+        "route_a_n": 0,
+        "route_a_mean": null,
+        "route_b_n": 0,
+        "route_b_mean": null
+      },
+      {
+        "category": "formula",
+        "label": "数学公式",
+        "n": 4,
+        "route_a_n": 4,
+        "route_a_mean": 0.6893,
+        "route_b_n": 4,
+        "route_b_mean": 0.8597
+      },
+      {
+        "category": "mixed",
+        "label": "中英混排",
+        "n": 4,
+        "route_a_n": 4,
+        "route_a_mean": 0.8193,
+        "route_b_n": 4,
+        "route_b_mean": 0.9152
+      },
+      {
+        "category": "flowchart",
+        "label": "流程图/架构图",
+        "n": 6,
+        "route_a_n": 6,
+        "route_a_mean": 0.776,
+        "route_b_n": 6,
+        "route_b_mean": 0.8285
+      },
+      {
+        "category": "strikethrough",
+        "label": "涂改/删除线",
+        "n": 6,
+        "route_a_n": 6,
+        "route_a_mean": 0.7759,
+        "route_b_n": 6,
+        "route_b_mean": 0.8737
+      }
+    ],
+    "totals": {
+      "route_a_n": 30,
+      "route_a_mean": 0.7685,
+      "route_b_n": 30,
+      "route_b_mean": 0.865
+    }
+  },
+  "route_b_calls_this_run": 30,
+  "route_b_total_calls_ceiling": 35,
+  "note": "route_b max_retries=0：文本 LLM 一次/页，空/拒绝即回退原始 OCR（确定性预算）"
+}

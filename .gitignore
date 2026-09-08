@@ -32,3 +32,6 @@ test-images/*.pdf
 # Large rendered page images (issue 09) stay local; keep the small reports
 out/*/pages/
 out/*/cache/
+
+# Synthetic print sample images (issue 08) — keep the evidence JSON, drop images
+.scratch/**/reports/route-b/scripts/data/synth_print/*.jpg

@@ -100,7 +100,7 @@ Phase: Concept / MVP Definition
   }
   ```
 
-- **Recognition Router 是统一入口接口**：MVP 落地 Route A（Vision LLM 直接输出 IR）；Route B（OCR → LLM 结构化）与 Hybrid（分类器 + Formula OCR + Fusion/Judge）是路由的后续策略。MVP 允许路由实现退化为「恒走 A」，但上游调用必须经 router，不得绕过。
+- **Recognition Router 是统一入口接口**：MVP 落地 Route A（Vision LLM 直接输出 IR）；Route B（OCR → LLM 结构化）与 Hybrid（分类器 + Formula OCR + Fusion/Judge）是路由的后续策略。MVP 允许路由实现退化为「恒走 A」，但上游调用必须经 router，不得绕过。**Spike 2 已落地并测量（2026）**：实现 `RouteBRouter`（OCR+文本 LLM 结构化）与 `AutoRouter`（特征路由，默认 A）；在 30 页评估集上 Route A 全面占优（EditRate 0.768 vs 0.865，24/30 页更优，含公式/手写/混排/图示/涂改全部类目），故默认**恒走 Route A**；仅当输入 OCR 平均置信度高分（≥55，判为清印刷）且以纯文本为主时才切 Route B（合成清中文印刷样本 EditRate 0.114 优于同路径公式页；公式/符号页仍应走 A）。详细对比见 `eval/reports/route-b-ocr-vs-vlm-summary.md`。
 - **LLM 通道（Spike 与 MVP）**：经 opencode go 网关调用，接入文档落在 `docs/llm/opencode-go.md`，密钥在本机 `.env`（已 gitignore）。已实测两个视觉模型：`glm-5.3-flash` 与 `deepseek-v4-flash-vision-exp`（均通过本仓库手稿样本 `test-images/` 冒烟验证，调用参数见接入文档）；Spike 1 对两者做定量对比，若均不达标则引入其他供应商（解析层契约不变）。禁止使用会以用户输入训练模型的 muse 系列。
 - **语义化删除**：解析 prompt 明确指示不输出被删除线/涂抹明确废弃的内容；判断模糊时保守保留（宁可漏删交用户处理，不可误删正文）。系统化的手写编辑语义保证与评测留在 P2。
 - **扫描 PDF 接入与页级去重（P1 增补）**：扫描 PDF 按页拆分为图片进入管线（保留页码可追溯）；感知哈希（pHash/dHash）做页级近重复检测，同页多次扫描/拍摄合并为同一 DocumentRecord 的候选版本（默认取最新、其余版本留存可查）。缺页检测为 best-effort——仅利用可检测线索（页码、日期标题、系列连续性）给出警告，无线索时不做完整性声明。
@@ -148,7 +148,7 @@ Phase: Concept / MVP Definition
 **三个 Spike 先于功能开发**（均可先以 CLI 形态执行——图片进、Markdown 出，UI 在 Spike 1 给出质量结论后再动工；评估 harness 直接复用）：
 
 - **Spike 1**：Vision LLM 能否直接解决？30–50 张真实手稿跑 `Image → Vision LLM → Markdown`（经 opencode go 网关，起始素材已入 `test-images/`），看 EditRate。若足够好，MVP 不需要传统 OCR。
-- **Spike 2**：什么时候 OCR 更好？`Vision LLM` vs `OCR + LLM`，分维度比较：手写体 / 印刷论文 / 公式 / 中英混排 / 小字。结论决定 Router 策略。
+- **Spike 2**：什么时候 OCR 更好？`Vision LLM` vs `OCR + LLM`，分维度比较：手写体 / 印刷论文 / 公式 / 中英混排 / 小字。结论决定 Router 策略。**（已完成，2026）**：Route A 在 30 页手写/图示/公式评估集上全面占优，默认恒走 A；Route B 的适用区间窄——仅清印刷、纯文本为主（OCR 高置信）的文档，公式/符号与手写页一律 A。数据见 `eval/reports/route-b-ocr-vs-vlm-summary.md`，Router 策略已回写本条与「Recognition Router」段落。
 - **Spike 3**：流程图重建路径是否成立？用 `A→B, A→C→D` 类流程手稿测试 VLM 能否稳定提取 nodes/edges 结构语义，以及 matplotlib（或同类）重建图的可读性；提取失败率决定裁原图降级的触发频率。
 
 **已决策**（2026-09-08 与维护者确认）：个人自用本地平台定位；数据保留至用户删除；语义化删除进 MVP；三栏界面含实时渲染预览；流程图以 matplotlib（或同类）重建而非占位；Spike 与测试的 LLM 走 opencode go 网关（`OPENCODE_API_KEY` 在 `.env`，接入文档 `docs/llm/opencode-go.md`）。

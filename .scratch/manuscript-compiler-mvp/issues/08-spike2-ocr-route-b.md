@@ -1,6 +1,6 @@
 # Spike 2 / Route B：OCR+LLM 路径对比与 Router 策略
 
-Status: claimed
+Status: in-review
 
 ## Parent
 
@@ -17,10 +17,23 @@ Status: claimed
 
 ## Acceptance criteria
 
-- [ ] Route B 全链路在评估集上可运行并产出指标
-- [ ] 五个维度的 A/B 对比表完成，含每类样本量
-- [ ] 路由策略结论明确（阈值或规则），回写 PRD；或「Route A 占优」结论成立并有数据支撑
-- [ ] Router 接口接入第二种策略后，上游调用方零改动（验证接口设计）
+- [x] Route B 全链路在评估集上可运行并产出指标（30 页全部产出非空 IR；明细 `reports/route-b/scripts/data/ab_summary.json`）
+- [x] 五个维度的 A/B 对比表完成，含每类样本量（`eval/reports/route-b-ocr-vs-vlm-summary.md`；印刷维滑真实样本=0，用合成印刷样本补 Route B，方法已documented）
+- [x] 路由策略结论明确（规则）且回写 PRD；默认恒走 Route A（数据支撑），清印刷高置信才走 Route B
+- [x] Router 接口接入第二种策略后，上游调用方零改动（RouteBRouter/parse_document 验证）
+
+## Deliverables（随分支提交）
+
+- 实现：`graph2note/ocr.py`（tesseract 封装，never-raise）、`graph2note/route_b.py`（`route_b_chain` / `RouteBRouter` / `AutoRouter` / `classify_route_features`）、`eval/gateway.py`（新增 routeb purpose 与 `transcribe_text`/`ROUTE_B_*`）
+- 运行器：`scripts/run_route_b_ab.py`（A 复用缓存零视觉；B 走缓存，可用于快）、`scripts/synth_print_ab.py`（合成印刷样本复现）
+- 对比报告：`eval/reports/route-b-ocr-vs-vlm-summary.md`（总体 + 五维表 + 印刷维合成补充 + 策略结论）
+- 离线测试：`tests/test_route_b.py`、`tests/test_ocr.py`（importorskip 守护）、`tests/test_gateway.py`/`tests/test_session_isolation.py`（routeb purpose）
+- 证据：`reports/route-b/scripts/data/ab_summary.json`、`synth_print_summary.json`（synth 图片已 gitignore）
+
+## 实测结论（live，文本调用 35≤35）
+
+Route A 在 30 页评估集全面占优：EditRate 0.768 vs 0.865，24/30 页 A 更优，五维逐项均优。清中文印刷（合成 SYN-P1）Route B 达 0.114，证明其窄适用区间。
+
 
 ## Blocked by
 

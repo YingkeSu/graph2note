@@ -30,11 +30,12 @@ CHAT_COMPLETIONS = GATEWAY_BASE + "/chat/completions"
 # parse / eval / verify 各自持有独立 session id，避免评估批次、产品解析、交叉验证并发争用同一会话
 # —— 同用 graph2note-spike-01 时，一方批量会令共享会话退化、返回极短「全黑页」/空 IR（issue 12 风控）。
 # 覆盖优先级：GRAPH2NOTE_SESSION_<PURPOSE> > GRAPH2NOTE_OPENCODE_SESSION / OPENCODE_SESSION > 用途默认。
-PURPOSES = ("parse", "eval", "verify")
+PURPOSES = ("parse", "eval", "verify", "routeb")
 DEFAULT_PURPOSE_SESSIONS = {
     "parse":  "graph2note-parse-01",
     "eval":   "graph2note-eval-01",
     "verify": "graph2note-verify-01",
+    "routeb": "graph2note-routeb-01",   # issue 08：Route B（OCR->文本 LLM 结构化），独立会话避免与 parse/eval 争用
 }
 # 历史统一覆盖（兼容旧 env）：GRAPH2NOTE_OPENCODE_SESSION（产品级）、OPENCODE_SESSION（通用）。
 GRAPH2NOTE_OPENCODE_SESSION = "GRAPH2NOTE_OPENCODE_SESSION"
@@ -604,4 +605,86 @@ def transcribe_image(
                               max_tokens=max_tokens, prompt_text=pt, timeout=timeout)
     if meta["status"] != "ok":
         raise GatewayError(meta["error"] or meta["status"])
+    return content, meta
+
+
+# ================= Route B：文本 LLM（非视觉）调用 =================
+
+# Route B 结构化 prompt（OCR 文本 -> Markdown 中间表示）。复用 issue 12 的两阶段经验：
+# 文本 LLM 先把 OCR 噪声整理成 Markdown，再由确定性 markdown-parser 转 IR。文本端
+# 选稳定直出的 glm-5.3-flash（issue 12 已证 deepseek-v4-flash 推理吃满预算返空，故不用）。
+ROUTE_B_SYSTEM = (
+    "你是文档数字化引擎。下面文本来自 OCR（可能含噪声、错字、乱序）。\n"
+    "请把它整理成结构清晰的 Markdown 正文：恢复标题层级（# ATX）、段落、列表（- / 1.）、\n"
+    "行内与独立公式用 LaTeX（$…$ / $$…$$）。\n"
+    "重要：绝对不要拒绝、不要只输出一句「说明无法整理」、不要输出任何解释/前言/代码块。\n"
+    "即使 OCR 有噪声，也把你能辨识的内容逐字照实转写出来、保留可辨识的结构；只有完全\n"
+    "无法辨认的碎片才跳过，严禁凭空编造或凭空发挥。只输出最终 Markdown 正文。"
+)
+ROUTE_B_USER_TEMPLATE = "把下面 OCR 文本整理为结构化 Markdown 正文（噪声也照常转写，不要拒绝），直接输出结果："
+ROUTE_B_TEXT_MODEL = "glm-5.3-flash"  # 稳定直出文本模型（chat/completions，非视觉）
+
+
+def transcribe_text(
+    text: str,
+    model: str = ROUTE_B_TEXT_MODEL,
+    *,
+    api_key: str | None = None,
+    session: str | None = None,
+    purpose: str = "routeb",
+    main_text: str | None = None,
+    max_tokens: int = 10000,
+    timeout: float | None = None,
+) -> tuple[str, dict]:
+    """文本-only chat/completions（无图片）—— Route B 的 OCR 文本结构化调用。
+
+    覆盖 ``purpose`` 默认 routeb（独立 session，见 GRAPH2NOTE_SESSION_ROUTEB）。
+    ``main_text`` 覆盖传给用户的消息正文（默认 ROUTE_B_USER_TEMPLATE）。
+    返回 (content, meta)；网络/超时/响应异常以 meta.status 标记，不抛业务异常。
+    """
+    key = api_key or load_api_key()
+    sess = session or resolve_session_for(purpose, model)
+    timeout = timeout if timeout is not None else call_timeout()
+    payload = {
+        "model": model,
+        "max_tokens": max_tokens,
+        "messages": [
+            {"role": "system", "content": ROUTE_B_SYSTEM},
+            {"role": "user", "content": (main_text or ROUTE_B_USER_TEMPLATE) + "\n\n" + text},
+        ],
+    }
+    start = time.monotonic()
+    try:
+        body = post_gateway(payload, api_key=key, session=sess, timeout=timeout, user_agent=USER_AGENT)
+    except GatewayTimeout as exc:
+        return "", _meta_fail("timeout", str(exc), model=model, session=sess,
+                              max_tokens=max_tokens, latency=time.monotonic() - start, prep={})
+    except GatewayError as exc:
+        return "", _meta_fail("error", str(exc), model=model, session=sess,
+                              max_tokens=max_tokens, latency=time.monotonic() - start, prep={})
+    latency = time.monotonic() - start
+    try:
+        choice = body["choices"][0]
+        content = choice["message"].get("content", "") or ""
+    except (KeyError, IndexError, TypeError):
+        return "", _meta_fail("error", f"响应结构异常: {body}", model=model, session=sess,
+                              max_tokens=max_tokens, latency=latency, prep={})
+    usage = body.get("usage", {}) or {}
+    rt = reasoning_tokens_of(usage)
+    meta = {
+        "status": "ok",
+        "error": None,
+        "model": model,
+        "session": sess,
+        "max_tokens": max_tokens,
+        "latency_seconds": round(latency, 2),
+        "prompt_tokens": usage.get("prompt_tokens"),
+        "completion_tokens": usage.get("completion_tokens"),
+        "total_tokens": usage.get("total_tokens"),
+        "reasoning_tokens": rt,
+        "finish_reason": choice.get("finish_reason"),
+        "cost": body.get("cost", "0"),
+        "prep": {},
+        "warnings": warnings_for(rt, max_tokens),
+    }
     return content, meta
