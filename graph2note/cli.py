@@ -29,7 +29,11 @@ def build_parser() -> argparse.ArgumentParser:
         "--assets-dir",
         type=Path,
         default=None,
-        help="drop stub diagram/flow assets here (drawing lands in issue 05)",
+        help=(
+            "base directory holding the generated assets/ folder (diagram/flow "
+            "blocks render deterministic PNGs here; degrades to a crop of the "
+            "original image when no structured semantics are present)"
+        ),
     )
     return p
 

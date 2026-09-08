@@ -93,14 +93,15 @@ class Edge(BaseModel):
 class _DiagramMixin(BaseModel):
     """Structured nodes/edges semantics shared by diagram and flow.
 
-    This slice exposes only the attachment interface: the renderer emits an
-    image reference and hands the semantics to an AttachmentWriter.  The
-    actual drawing is implemented in issue 05.
+    ``source`` is an optional, backward-compatible reference to the original
+    manuscript image, used only on the degrade path (when nodes/edges are
+    missing the renderer crops and embeds the source instead).
     """
 
     nodes: list[Node] = Field(default_factory=list)
     edges: list[Edge] = Field(default_factory=list)
     caption: str = ""
+    source: Optional[str] = None
 
 
 class DiagramBlock(_DiagramMixin):

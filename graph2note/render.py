@@ -138,6 +138,7 @@ def _render_diagram(block: Block, index: int, writer: AttachmentWriter, doc_id: 
         edges=block.edges,
         caption=block.caption,
         orientation=getattr(block, "orientation", None),
+        source=getattr(block, "source", None),
     )
     path = writer.write_diagram(doc_id, index, semantics)
     caption = escape_text(block.caption)
