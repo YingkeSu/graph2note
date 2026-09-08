@@ -1,0 +1,23 @@
+{
+  "document_type": "note",
+  "blocks": [
+    { "type": "heading", "level": 1, "text": "状态空间模型笔记" },
+    { "type": "paragraph", "text": "本页记录状态空间模型的核心方程与推导要点。" },
+    { "type": "formula", "latex": "\\dot{x}=Ax+Bu", "inline": false },
+    { "type": "list", "ordered": false, "items": [
+      { "text": "CNN 建模卷积" },
+      { "text": "Transformer 建模长程依赖" },
+      { "text": "Mamba 线性时序复杂度" }
+    ]},
+    { "type": "paragraph", "text": "被删除线明确划掉的内容不应出现在输出中。" },
+    { "type": "formula", "latex": "y=Cx+Du", "inline": true },
+    { "type": "diagram", "caption": "解析流程图", "nodes": [
+      { "id": "a", "label": "输入层" },
+      { "id": "b", "label": "解析层" },
+      { "id": "c", "label": "格式化输出" }
+    ], "edges": [
+      { "from": "a", "to": "b", "label": "预处理" },
+      { "from": "b", "to": "c", "label": "IR" }
+    ]}
+  ]
+}

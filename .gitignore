@@ -8,6 +8,7 @@
 __pycache__/
 *.pyc
 .venv/
+*.egg-info/
 
 # 评估缓存（可复现的 LLM 调用结果，不入库）
 eval/cache/
