@@ -1,6 +1,6 @@
 # Web App：上传 → 三栏校对编辑 → 复制/导出
 
-Status: ready-for-agent
+Status: in-review
 
 ## Parent
 
@@ -29,3 +29,11 @@ Status: ready-for-agent
 
 - 03-parse-pipeline-cli（解析链路）
 - 05-diagram-render-attachments（流程图嵌入）
+
+## Handoff
+
+`.scratch/manuscript-compiler-mvp/handoffs/06-webapp-three-pane.md`（2026-09-08）。
+
+## Comments
+
+- 2026-09-08 graph2note-2：实现完成，Status → in-review。后端 `graph2note/webapp.py`（FastAPI，`create_app` 工厂可注入离线 router；DocumentStore 为持久化接缝，07 out-of-scope，会话态即可）+ 前端 `graph2note/webstatic/`（三栏：预处理原图 | 可编辑 MD | 客户端 marked+KaTeX 预览，预览失败仅降级预览栏；复制/重新解析/下载/防抖齐全；模板选择器 P1 占位）。测试 `tests/test_webapp.py` TestClient 全离线（注入 golden router），覆盖上传 413/415/400、失败与超时、zip 导出（被编辑 md+资产+export-notes）、409。修复问题 03 遗留**资产路径不一致**（FileAssetWriter 根语义 vs 管线传已含 `assets/` 目录 → `assets/assets/` 双层嵌套）：管线改传 out-dir 为根，`assets/<name>` 磁盘正确解析，Web 附件服务/zip 与 CLI 一致。img01 golden 用修复后网关（520a0a6）重录仍空，保留空 golden 与干净降级（记于 issue 03）。全套 142 passed / 2 skipped 离线。

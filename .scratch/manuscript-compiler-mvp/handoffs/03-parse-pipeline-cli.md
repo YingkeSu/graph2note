@@ -56,8 +56,11 @@ worker 5 完成 `merge main e0bd5dc` 后，本 worker 建议按 §订阅更新�
 - `01-requirements-arch.jpg`（架构白板大图，以图表为主）：glm-5.3-flash 当前**稳定返回空正文**
   （`finish_reason=length`，reasoning 吃掉 max_tokens，95–274s）——正是上节延迟诊断的根因。已录制为
   `tests/golden/real-img01-empty.golden.json`（空），对应测试 `test_real_image_01_empty_reply_degrades_cleanly`：
-  **断言路由器对空回复干净降级、不崩溃、不 live**。**该图产出完整结构 Markdown 依赖网关速度修复/01 选型结论**，
-  属已知待办（对齐 worker 5 合并后重录）。
+  **断言路由器对空回复干净降级、不崩溃、不 live**。**该图产出完整结构 Markdown 依赖更强的模型能力**，
+  属已知待办（待模型能力升级/01 选型正式结论后重录）。
+- 2026-09-08 网关速度修复（520a0a6）合并后用「修复后网关 + 已对齐参数（直出 session + 1024px/q85 降采样 + `reasoning_tokens` 监测）」
+  重录 img01：**仍返回空正文**（165.7s, `finish_reason=length`, completion_tokens=5000 全被推理消耗, 网关未回传 reasoning_tokens）。
+  结论：img01 空正文属模型能力限制而非网关速度；保留空 golden 与干净降级断言。
 
 ## 4. 使用方法
 
@@ -75,6 +78,7 @@ python3 -m graph2note.cli examples/note.ir.json -o out.md   # 旧 IR->MD 入口�
 ## 5. 已知待办 / 风险
 
 - 网关速度修复合并（worker 5 `dev/gateway-speed-fix` → main）后，重录 01 空回复 golden 为有效 IR；
+  （2026-09-08 已重录：仍空，属模型能力而非速度，保留空 golden，见 §3）
   核对 reasoning_tokens 字段网关是否回传（当前 None）。
 - 预处理器对「深色纸/弱对比/手写体」的定标基于合成图；真实手写扫描需随 issue 01 数据集做更广验证。
 - `missing_attachments` 断言已用于 02 全链（附件引用均有文件）。06 Web UI 打包可直接复用。

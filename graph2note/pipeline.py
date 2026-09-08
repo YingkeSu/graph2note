@@ -102,10 +102,18 @@ def parse_document(
         )
 
     # --- render (deterministic) ----------------------------------------------
-    assets_dir = str(out_dir / "assets")
+    # FileAssetWriter treats its dir as the *root* that hosts an ``assets/``
+    # subfolder (matching its ``assets/<doc>-<kind>-<index>.png`` path contract).
+    # Passing the out dir as root places files at ``out_dir/assets/<name>`` so
+    # the Markdown's relative ``assets/...`` references resolve on disk.
+    assets_root = str(out_dir)
     with timer.stage("render"):
-        writer = FileAssetWriter(assets_dir, doc_id=pid)
+        writer = FileAssetWriter(assets_root, doc_id=pid)
         md = render_markdown(route.document, doc_id=pid, attachment_writer=writer)
+
+    # leaf directory that actually holds the attachment files
+    # (kept for callers that want the exact folder; refs in the Markdown use
+    # ``assets/<name>`` relative to the out dir/root).
 
     md_path = out_dir / f"{pid}.md"
     md_path.write_text(md, encoding="utf-8")
@@ -146,7 +154,7 @@ def parse_document(
         markdown_path=str(md_path),
         preprocessed_path=preprocessed_path,
         preprocessed_raw_path=preprocessed_raw_path,
-        assets_dir=assets_dir,
+        assets_dir=assets_root,
         route=route,
         timing_json=timing_json,
         timing_path=str(timing_path),

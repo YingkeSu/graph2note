@@ -14,6 +14,8 @@ dev = ["pytest>=8.0"]
 # imaging/raster deps for the parse pipeline (preprocess, downscaled VLM input)
 vision = ["Pillow>=9", "numpy>=1.24"]
 pdf = ["pymupdf>=1.24"]  # scanned-PDF page splitting (issue 09 ingest)
+# local single-user Web app (issue 06): FastAPI + uvicorn + multipart uploads
+web = ["fastapi>=0.110", "uvicorn>=0.29", "python-multipart>=0.0.9"]
 
 [project.scripts]
 graph2note = "graph2note.cli:main"
@@ -24,6 +26,10 @@ packages = [
     "graph2note.diagrams",
     "graph2note.ingest",
 ]
+
+[tool.setuptools.package-data]
+graph2note = ["webstatic/*"]
+
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
