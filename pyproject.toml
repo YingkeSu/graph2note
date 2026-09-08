@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "graph2note"
+version = "0.1.0"
+description = "Manuscript Compiler — Document IR schema + deterministic Markdown renderer"
+requires-python = ">=3.12"
+dependencies = ["pydantic>=2.0"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+graph2note = "graph2note.cli:main"
+
+[tool.setuptools]
+packages = ["graph2note"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
