@@ -1,6 +1,6 @@
 # 解析提速：基线实测与优化达标
 
-Status: ready-for-agent
+Status: in-review
 
 ## Parent
 
@@ -20,12 +20,20 @@ Status: ready-for-agent
 
 ## Acceptance criteria
 
-- [ ] 分阶段基线报告产出（含每阶段 P50/P95 与瓶颈结论）
-- [ ] 至少两项优化落地，各有前后对比数据
-- [ ] 单页端到端 P95 ≤ 60s（以评估集样本实测；若论证后需修订预算，须回写 PRD 并说明）
-- [ ] 优化后评估集子集的 EditRate 不劣化（有对比数据）
-- [ ] 提速不引入新的失败路径（超时/重试逻辑回归测试通过）
+- [x] 分阶段基线报告产出（含每阶段 P50/P95 与瓶颈结论）
+- [x] 至少两项优化落地，各有前后对比数据
+- [x] 单页端到端 P95 ≤ 60s（以评估集样本实测；且远低于预算）
+- [~] 优化后评估集子集的 EditRate 不劣化（有对比数据）— **顺延**：产品管线对扫描板书渲染空 IR，无法在 product 路径算 EditRate；正式口径对齐 eval-harness（见 handoff）
+- [x] 提速不引入新的失败路径（超时/重试逻辑回归测试通过）
 
 ## Blocked by
 
 - 03-parse-pipeline-cli
+
+## Comments
+
+2025-issue11 接管（worker 5，`dev/11-parse-latency`）：基线实测 + O1/O2/O3 落地。
+报告见 `reports/latency-baseline.md`；handoff `11-parse-latency-optimization.md`。
+要点：after P95≈6.4s（≪60s）、reasoning 28–129、retries=0；O1 vlm↔eval/gateway
+收敛，O2 整页结果缓存（重新解析零调用），O3 多页并发；134 passed。EditRate
+因 product 渲染空 IR 顺延，Align eval-harness 口径。

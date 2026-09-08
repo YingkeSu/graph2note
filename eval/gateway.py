@@ -50,7 +50,59 @@ class GatewayError(RuntimeError):
     """网关调用失败（网络、认证、HTTP 错误、响应异常）。"""
 
 
-# ================= 基础工具 =================
+class GatewayTimeout(GatewayError):
+    """网关调用超时（客户端硬超时，R4）。"""
+
+
+# ================= 可复用传输层（eval/gateway 与 graph2note/vlm 共用，消除双维护） =================
+
+def reasoning_tokens_of(usage: dict) -> int | None:
+    """从 usage 里提取 reasoning_tokens（opencode 放在 completion_tokens_details 下）。"""
+    if not usage:
+        return None
+    return (usage.get("completion_tokens_details") or {}).get("reasoning_tokens")
+
+
+def post_gateway(
+    payload: dict,
+    *,
+    api_key: str | None = None,
+    session: str,
+    timeout: float,
+    user_agent: str = USER_AGENT,
+) -> dict:
+    """POST 一个 chat/completions payload，返回解析后的 body。
+
+    网络/HTTP 错误抛 :class:`GatewayError`；超时抛 :class:`GatewayTimeout`。
+    这是 eval/gateway 与 graph2note/vlm 收敛后的单一上传/认证/会话实现。
+    """
+    key = api_key or load_api_key()
+    req = urllib.request.Request(
+        CHAT_COMPLETIONS,
+        data=json.dumps(payload).encode("utf-8"),
+        headers={
+            "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+            "x-opencode-session": session,
+            "User-Agent": user_agent,
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise GatewayError(f"gateway HTTP {exc.code}: {detail[:300]}") from exc
+    except socket.timeout as exc:
+        raise GatewayTimeout(f"gateway timeout after {timeout}s") from exc
+    except urllib.error.URLError as exc:
+        if "timed out" in str(exc.reason).lower():
+            raise GatewayTimeout(f"gateway timeout: {exc.reason}") from exc
+        raise GatewayError(f"gateway connection error: {exc.reason}") from exc
+    except (ConnectionError, OSError) as exc:
+        raise GatewayError(f"gateway connection error: {exc}") from exc
+
 
 def load_api_key() -> str:
     key = os.environ.get("OPENCODE_API_KEY", "").strip()
@@ -283,42 +335,18 @@ def _raw_call(image_path, model, *, api_key, session, max_tokens, prompt_text, t
             ]},
         ],
     }
-    req = urllib.request.Request(
-        CHAT_COMPLETIONS,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json",
-            "x-opencode-session": session,
-            "User-Agent": USER_AGENT,
-        },
-        method="POST",
-    )
 
     start = time.monotonic()
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            body = json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:  # pragma: no cover - 错误路径
+        body = post_gateway(payload, api_key=key, session=session, timeout=timeout, user_agent=USER_AGENT)
+    except GatewayTimeout as exc:
         latency = time.monotonic() - start
-        return "", _meta_fail("error", f"HTTP {exc.code}: {exc.read().decode('utf-8', 'replace')[:300]}",
-                              model=model, session=session, max_tokens=max_tokens, latency=latency,
-                              prep=prep, cost=None)
-    except urllib.error.URLError as exc:
-        latency = time.monotonic() - start
-        return "", _meta_fail("timeout" if "timed out" in str(exc.reason) else "error",
-                              f"urlopen: {exc.reason}", model=model, session=session,
+        return "", _meta_fail("timeout", str(exc), model=model, session=session,
                               max_tokens=max_tokens, latency=latency, prep=prep, cost=None)
-    except socket.timeout:
+    except GatewayError as exc:
         latency = time.monotonic() - start
-        return "", _meta_fail("timeout", "socket timeout",
-                              model=model, session=session, max_tokens=max_tokens,
-                              latency=latency, prep=prep, cost=None)
-    except Exception as exc:  # pragma: no cover - 网络路径
-        latency = time.monotonic() - start
-        return "", _meta_fail("error", f"{type(exc).__name__}: {exc}",
-                              model=model, session=session, max_tokens=max_tokens,
-                              latency=latency, prep=prep, cost=None)
+        return "", _meta_fail("error", str(exc), model=model, session=session,
+                              max_tokens=max_tokens, latency=latency, prep=prep, cost=None)
     latency = time.monotonic() - start
 
     try:
@@ -330,7 +358,7 @@ def _raw_call(image_path, model, *, api_key, session, max_tokens, prompt_text, t
 
     content = msg.get("content", "") or ""
     usage = body.get("usage", {}) or {}
-    reasoning_tokens = (usage.get("completion_tokens_details") or {}).get("reasoning_tokens")
+    reasoning_tokens = reasoning_tokens_of(usage)
     meta = {
         "status": "ok",
         "error": None,

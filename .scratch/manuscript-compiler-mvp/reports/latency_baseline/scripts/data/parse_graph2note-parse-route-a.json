@@ -1,0 +1,129 @@
+{
+  "session": "graph2note-parse-route-a",
+  "model": "glm-5.3-flash",
+  "n": 5,
+  "e2e_p50": 5.674,
+  "e2e_p95": 5.705,
+  "rows": [
+    {
+      "id": "A02",
+      "category": "formula",
+      "e2e_seconds": 5.674,
+      "preprocess_seconds": 0.3473,
+      "llm_seconds": 5.3251,
+      "render_seconds": 0.0,
+      "timing_total": 5.6724,
+      "llm_retries": 0,
+      "llm_sum_latency": 5.29,
+      "max_reasoning_tokens": 103,
+      "attempts": [
+        {
+          "attempt": 0,
+          "status": "ok",
+          "cached": false,
+          "latency_seconds": 5.29,
+          "reasoning_tokens": 103,
+          "completion_tokens": 114,
+          "prompt_tokens": 1366,
+          "finish_reason": "stop"
+        }
+      ]
+    },
+    {
+      "id": "A09",
+      "category": "strikethrough",
+      "e2e_seconds": 4.129,
+      "preprocess_seconds": 0.4196,
+      "llm_seconds": 3.7072,
+      "render_seconds": 0.0,
+      "timing_total": 4.1268,
+      "llm_retries": 0,
+      "llm_sum_latency": 3.69,
+      "max_reasoning_tokens": 31,
+      "attempts": [
+        {
+          "attempt": 0,
+          "status": "ok",
+          "cached": false,
+          "latency_seconds": 3.69,
+          "reasoning_tokens": 31,
+          "completion_tokens": 42,
+          "prompt_tokens": 1366,
+          "finish_reason": "stop"
+        }
+      ]
+    },
+    {
+      "id": "A10",
+      "category": "mixed",
+      "e2e_seconds": 4.104,
+      "preprocess_seconds": 0.3633,
+      "llm_seconds": 3.7386,
+      "render_seconds": 0.0,
+      "timing_total": 4.1019,
+      "llm_retries": 0,
+      "llm_sum_latency": 3.72,
+      "max_reasoning_tokens": 50,
+      "attempts": [
+        {
+          "attempt": 0,
+          "status": "ok",
+          "cached": false,
+          "latency_seconds": 3.72,
+          "reasoning_tokens": 50,
+          "completion_tokens": 61,
+          "prompt_tokens": 1366,
+          "finish_reason": "stop"
+        }
+      ]
+    },
+    {
+      "id": "A13",
+      "category": "flowchart",
+      "e2e_seconds": 5.705,
+      "preprocess_seconds": 0.4412,
+      "llm_seconds": 5.2614,
+      "render_seconds": 0.0,
+      "timing_total": 5.7026,
+      "llm_retries": 0,
+      "llm_sum_latency": 5.25,
+      "max_reasoning_tokens": 122,
+      "attempts": [
+        {
+          "attempt": 0,
+          "status": "ok",
+          "cached": false,
+          "latency_seconds": 5.25,
+          "reasoning_tokens": 122,
+          "completion_tokens": 133,
+          "prompt_tokens": 1366,
+          "finish_reason": "stop"
+        }
+      ]
+    },
+    {
+      "id": "A15",
+      "category": "handwriting",
+      "e2e_seconds": 10.416,
+      "preprocess_seconds": 0.2954,
+      "llm_seconds": 10.1191,
+      "render_seconds": 0.0,
+      "timing_total": 10.4145,
+      "llm_retries": 0,
+      "llm_sum_latency": 10.1,
+      "max_reasoning_tokens": 61,
+      "attempts": [
+        {
+          "attempt": 0,
+          "status": "ok",
+          "cached": false,
+          "latency_seconds": 10.1,
+          "reasoning_tokens": 61,
+          "completion_tokens": 72,
+          "prompt_tokens": 1403,
+          "finish_reason": "stop"
+        }
+      ]
+    }
+  ]
+}

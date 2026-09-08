@@ -1,0 +1,36 @@
+{
+  "subset": "after-validated-session",
+  "rows": [
+    {
+      "id": "A02",
+      "gold_chars": 3313,
+      "pred_chars": 0,
+      "edit_rate": 1.0
+    },
+    {
+      "id": "A09",
+      "gold_chars": 741,
+      "pred_chars": 0,
+      "edit_rate": 1.0
+    },
+    {
+      "id": "A10",
+      "gold_chars": 2047,
+      "pred_chars": 0,
+      "edit_rate": 1.0
+    },
+    {
+      "id": "A13",
+      "gold_chars": 1506,
+      "pred_chars": 0,
+      "edit_rate": 1.0
+    },
+    {
+      "id": "A15",
+      "gold_chars": 568,
+      "pred_chars": 0,
+      "edit_rate": 1.0
+    }
+  ],
+  "mean_edit_rate": 1.0
+}

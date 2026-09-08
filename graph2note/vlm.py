@@ -27,12 +27,33 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+# O1（issue 11）：收敛到 eval/gateway 的单一网关策略实现（上传/认证/会话/超时/reasoning 提取），
+# 消除 eval/harness 与产品管线两套网关的双维护。
+from eval.gateway import (  # type: ignore
+    GatewayError as _GatewayError,
+    GatewayTimeout as _GatewayTimeout,
+    post_gateway,
+    reasoning_tokens_of,
+    resolve_sessions as _resolve_sessions,
+    warnings_for as _warnings_for,
+)
+
 GATEWAY_BASE = "https://opencode.ai/zen/go/v1"
 CHAT_COMPLETIONS = GATEWAY_BASE + "/chat/completions"
-# Stable, reused session id -> known-good routing & prompt cache (R1).  Kept
-# identical across retries so the gateway reuses warm routing.
-STABLE_SESSION = "graph2note-parse-route-a"
+# O1：收敛到诊断报告已验证的「直出模式」session（glm 无 reasoning、~13–24s），
+# 可用 env GRAPH2NOTE_OPENCODE_SESSION / OPENCODE_SESSION 覆盖，旧 graph2note-parse-route-a 可经 env 还原。
+STABLE_SESSION = "graph2note-spike-01"
+VALIDATED_SESSION = STABLE_SESSION
 USER_AGENT = "graph2note-parse/0.1"
+
+
+def resolve_session(model: str) -> str:
+    """返回本产品管线的会话 id：GRAPH2NOTE_OPENCODE_SESSION > OPENCODE_SESSION > 每模型已验证默认。"""
+    for env in ("GRAPH2NOTE_OPENCODE_SESSION", "OPENCODE_SESSION"):
+        v = os.environ.get(env, "").strip()
+        if v:
+            return v
+    return _resolve_sessions(model)[0]
 
 # Latency strategy (aligned to the 2026-09-08 diagnosis, main e0bd5dc):
 #  * R2: first call is *direct-output* (strong "no reasoning" instruction) with
@@ -248,7 +269,7 @@ def call_ir(
     model: str,
     *,
     api_key: str | None = None,
-    session: str = STABLE_SESSION,
+    session: str | None = None,
     max_tokens: int = DEFAULT_MAX_TOKENS,
     timeout: int = DEFAULT_TIMEOUT,
     cache: VlmCache | None = None,
@@ -259,8 +280,11 @@ def call_ir(
     ``content`` is the raw model reply text (still to be parsed into IR).
     If ``cache`` is given, a hit returns the recorded reply (offline).
     ``recover`` selects the tight retry prompt (R4 strategy switch).
+    Session/timeout/reasoning extraction come from the shared eval.gateway
+    policy (O1, issue 11): no dual-maintenance gateway.
     """
     key = api_key or load_api_key()
+    sess = session if session is not None else resolve_session(model)
 
     if cache is not None:
         cached = cache.get(image_path, model)
@@ -292,28 +316,14 @@ def call_ir(
             },
         ],
     }
-    req = urllib.request.Request(
-        CHAT_COMPLETIONS,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json",
-            "x-opencode-session": session,
-            "User-Agent": USER_AGENT,
-        },
-        method="POST",
-    )
     start = time.monotonic()
     try:
-        with urllib.request.urlopen(req, timeout=timeout) as resp:
-            body = json.loads(resp.read().decode("utf-8"))
-    except urllib.error.HTTPError as exc:
-        detail = exc.read().decode("utf-8", errors="replace")
-        raise GatewayError(f"gateway HTTP {exc.code}: {detail}") from exc
-    except Exception as exc:
-        raise GatewayError(f"gateway call failed: {exc}") from exc
-    finally:
-        latency = time.monotonic() - start
+        body = post_gateway(payload, api_key=key, session=sess, timeout=timeout, user_agent=USER_AGENT)
+    except _GatewayTimeout as exc:
+        raise GatewayError(f"gateway timeout after {timeout}s: {exc}") from exc
+    except _GatewayError as exc:
+        raise GatewayError(str(exc)) from exc
+    latency = time.monotonic() - start
 
     try:
         choice = body["choices"][0]
@@ -322,6 +332,7 @@ def call_ir(
         raise GatewayError(f"gateway response shape unexpected: {body}") from exc
 
     usage = body.get("usage", {}) or {}
+    reasoning_tokens = reasoning_tokens_of(usage)
     meta = {
         "model": model,
         "status": "ok",
@@ -331,8 +342,10 @@ def call_ir(
         "prompt_tokens": usage.get("prompt_tokens"),
         "completion_tokens": usage.get("completion_tokens"),
         "total_tokens": usage.get("total_tokens"),
-        "reasoning_tokens": usage.get("reasoning_tokens"),
+        "reasoning_tokens": reasoning_tokens,
         "finish_reason": choice.get("finish_reason"),
+        "session": sess,
+        "warnings": _warnings_for(reasoning_tokens, max_tokens),
         "cached": False,
     }
     if cache is not None:

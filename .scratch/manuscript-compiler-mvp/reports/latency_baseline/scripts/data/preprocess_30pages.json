@@ -1,0 +1,190 @@
+{
+  "n": 30,
+  "stage": "preprocess",
+  "p50": 0.3437,
+  "p95": 0.4077,
+  "max": 0.4191,
+  "total": 10.067,
+  "rows": [
+    {
+      "id": "A18",
+      "category": "flowchart",
+      "seconds": 0.2085,
+      "image_bytes": 122640
+    },
+    {
+      "id": "A17",
+      "category": "handwriting",
+      "seconds": 0.2115,
+      "image_bytes": 205261
+    },
+    {
+      "id": "B04",
+      "category": "formula",
+      "seconds": 0.2617,
+      "image_bytes": 102990
+    },
+    {
+      "id": "B05",
+      "category": "handwriting",
+      "seconds": 0.2692,
+      "image_bytes": 164544
+    },
+    {
+      "id": "C19",
+      "category": "formula",
+      "seconds": 0.2723,
+      "image_bytes": 170171
+    },
+    {
+      "id": "C52",
+      "category": "mixed",
+      "seconds": 0.2763,
+      "image_bytes": 348170
+    },
+    {
+      "id": "B10",
+      "category": "handwriting",
+      "seconds": 0.2824,
+      "image_bytes": 243511
+    },
+    {
+      "id": "C34",
+      "category": "mixed",
+      "seconds": 0.2862,
+      "image_bytes": 285385
+    },
+    {
+      "id": "A15",
+      "category": "handwriting",
+      "seconds": 0.2895,
+      "image_bytes": 246554
+    },
+    {
+      "id": "A10",
+      "category": "mixed",
+      "seconds": 0.3387,
+      "image_bytes": 292534
+    },
+    {
+      "id": "C08",
+      "category": "handwriting",
+      "seconds": 0.3409,
+      "image_bytes": 280160
+    },
+    {
+      "id": "D35",
+      "category": "flowchart",
+      "seconds": 0.3413,
+      "image_bytes": 127233
+    },
+    {
+      "id": "B17",
+      "category": "handwriting",
+      "seconds": 0.3414,
+      "image_bytes": 300658
+    },
+    {
+      "id": "C23",
+      "category": "handwriting",
+      "seconds": 0.3422,
+      "image_bytes": 115278
+    },
+    {
+      "id": "D07",
+      "category": "strikethrough",
+      "seconds": 0.3426,
+      "image_bytes": 304101
+    },
+    {
+      "id": "B11",
+      "category": "strikethrough",
+      "seconds": 0.3448,
+      "image_bytes": 285016
+    },
+    {
+      "id": "C13",
+      "category": "flowchart",
+      "seconds": 0.3453,
+      "image_bytes": 243773
+    },
+    {
+      "id": "D22",
+      "category": "formula",
+      "seconds": 0.3456,
+      "image_bytes": 273384
+    },
+    {
+      "id": "C41",
+      "category": "strikethrough",
+      "seconds": 0.3464,
+      "image_bytes": 349419
+    },
+    {
+      "id": "C40",
+      "category": "mixed",
+      "seconds": 0.3467,
+      "image_bytes": 265823
+    },
+    {
+      "id": "C28",
+      "category": "handwriting",
+      "seconds": 0.3475,
+      "image_bytes": 286553
+    },
+    {
+      "id": "D27",
+      "category": "handwriting",
+      "seconds": 0.3523,
+      "image_bytes": 324616
+    },
+    {
+      "id": "A02",
+      "category": "formula",
+      "seconds": 0.3827,
+      "image_bytes": 333207
+    },
+    {
+      "id": "A13",
+      "category": "flowchart",
+      "seconds": 0.4028,
+      "image_bytes": 249004
+    },
+    {
+      "id": "B13",
+      "category": "handwriting",
+      "seconds": 0.4031,
+      "image_bytes": 242582
+    },
+    {
+      "id": "A09",
+      "category": "strikethrough",
+      "seconds": 0.4039,
+      "image_bytes": 276011
+    },
+    {
+      "id": "C09",
+      "category": "strikethrough",
+      "seconds": 0.4051,
+      "image_bytes": 293712
+    },
+    {
+      "id": "C47",
+      "category": "flowchart",
+      "seconds": 0.4077,
+      "image_bytes": 328233
+    },
+    {
+      "id": "C50",
+      "category": "flowchart",
+      "seconds": 0.4093,
+      "image_bytes": 302364
+    },
+    {
+      "id": "C05",
+      "category": "strikethrough",
+      "seconds": 0.4191,
+      "image_bytes": 324941
+    }
+  ]
+}

@@ -13,8 +13,11 @@ reaches the renderer (rejected inside the router's validation/retry loop).
 
 from __future__ import annotations
 
+import concurrent.futures
+import hashlib
 import json
 import os
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -71,14 +74,47 @@ def parse_document(
     timer: StageTimer | None = None,
     preprocess: bool = True,
     save_preprocess_stages: bool = True,
+    result_cache: "ParseCache | None" = None,
 ) -> ParseResult:
-    """Run the full parse chain and write artifacts under ``out_dir``."""
+    """Run the full parse chain and write artifacts under ``out_dir``.
+
+    O2 (issue 11): when ``result_cache`` is given and holds this image+model+config,
+    re-parsing returns immediately (zero LLM calls) and ``timing_json['cached']``.
+    """
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     pid = doc_id or default_doc_id(image_path)
 
     router = router or make_router(model, cache=cache)
     timer = timer or StageTimer()
+
+    # O2: result-cache fast path (同文档重新解析零调用).
+    if result_cache is not None:
+        hit = result_cache.get(image_path, model, preprocess)
+        if hit is not None:
+            tj = dict(hit.get("timing", {}))
+            tj["cached"] = True              # 缓存命中标记
+            _write_parse_result_files(out_dir, pid, hit.get("markdown", ""), tj)
+            return ParseResult(
+                markdown=hit.get("markdown", ""),
+                markdown_path=str(out_dir / f"{pid}.md"),
+                preprocessed_path=image_path,
+                preprocessed_raw_path=image_path,
+                assets_dir=str(out_dir / "assets"),
+                route=RouteResult(
+                    document=DocumentIR(blocks=[]),
+                    degraded_block_indices=[],
+                    retries=0,
+                    strategy="route_a",
+                    raw_content=hit.get("markdown", ""),
+                    attempts=[],
+                    warnings=[],
+                ),
+                timing_json=tj,
+                timing_path=str(out_dir / "timing.json"),
+                ir=DocumentIR(blocks=[]),
+            )
+
 
     # --- preprocess (independent fixed stage) -------------------------------
     pre_dir = out_dir / "preprocessed"
@@ -141,6 +177,14 @@ def parse_document(
     # keep the file on disk in sync
     with open(timing_path, "w", encoding="utf-8") as fh:
         json.dump(timing_json, fh, ensure_ascii=False, indent=2)
+
+    # O2: persist full parse result for zero-call reparse.
+    timing_json["cached"] = False
+    if result_cache is not None:
+        result_cache.put(image_path, model, preprocess, {
+            "markdown": md,
+            "timing": timing_json,
+        })
     return ParseResult(
         markdown=md,
         markdown_path=str(md_path),
@@ -159,4 +203,127 @@ __all__ = [
     "make_router",
     "default_doc_id",
     "ParseResult",
+]
+
+# ================= O2：整页解析结果缓存（同文档重新解析零调用） =================
+
+def _config_fingerprint(*, model: str, preprocess: bool) -> str:
+    """提示/配置指纹：prompt、会话、降采样或预处理开关变化时旧结果缓存失效。"""
+    try:
+        from .vlm import SYSTEM_PROMPT, USER_PROMPT
+
+        raw = SYSTEM_PROMPT + USER_PROMPT
+    except Exception:
+        raw = ""
+    raw = raw + f"|model={model}|preprocess={int(preprocess)}"
+    return hashlib.md5(raw.encode("utf-8")).hexdigest()[:16]
+
+
+class ParseCache:
+    """整页解析结果缓存：key = image 字节 + model + 配置指纹。
+
+    O2：命中时重新解析无需任何 LLM 调用（重新解析零调用），返回上一次的
+    markdown 与计时 JSON。
+    """
+
+    def __init__(self, cache_dir: str) -> None:
+        self.cache_dir = Path(cache_dir)
+
+    @staticmethod
+    def _sha1(source: str | bytes) -> str:
+        if isinstance(source, bytes):
+            return hashlib.sha1(source).hexdigest()[:16]
+        with open(source, "rb") as fh:
+            return hashlib.sha1(fh.read()).hexdigest()[:16]
+
+    def path_for(self, image_path: str, model: str, preprocess: bool) -> Path:
+        fp = _config_fingerprint(model=model, preprocess=preprocess)
+        digest = self._sha1(image_path)
+        return self.cache_dir / f"{model.replace('/', '_')}__{digest}__{fp}.json"
+
+    def get(self, image_path: str, model: str, preprocess: bool) -> dict | None:
+        p = self.path_for(image_path, model, preprocess)
+        if not p.exists():
+            return None
+        try:
+            return json.loads(p.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            return None
+
+    def put(self, image_path: str, model: str, preprocess: bool, record: dict) -> None:
+        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.path_for(image_path, model, preprocess).write_text(
+            json.dumps(record, ensure_ascii=False), encoding="utf-8"
+        )
+
+
+def _write_parse_result_files(out_dir: Path, pid: str, markdown: str, timing: dict) -> None:
+    """Re-write the .md + timing.json for a result-cache hit."""
+    out_dir.mkdir(parents=True, exist_ok=True)
+    (out_dir / f"{pid}.md").write_text(markdown, encoding="utf-8")
+    (out_dir / "timing.json").write_text(json.dumps(timing, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+# ================= O3：多页并发解析（预处理+LLM 并行，吞吐） =================
+
+def parse_many(
+    image_paths,
+    out_dir: str,
+    *,
+    model: str,
+    workers: int = 2,
+    cache=None,
+    result_cache: "ParseCache | None" = None,
+    preprocess: bool = True,
+    doc_ids=None,
+) -> tuple[dict, dict]:
+    """并发解析多页。
+
+    O3（issue 11）：多页/多文档并行 2-4 worker 摊薄 LLM 等待，吞吐提升。每页写到
+    独立子目录 ``out_dir/<doc_id>/`` 避免资源碰撞。返回 (pid -> ParseResult, summary)。
+    ``summary`` 含顺序合计 latency 与并行 wall_seconds 供前后对比。
+    """
+    ids = list(doc_ids) if doc_ids is not None else [default_doc_id(p) for p in image_paths]
+    out_root = Path(out_dir)
+    out_root.mkdir(parents=True, exist_ok=True)
+
+    def _one(path, pid):
+        return parse_document(
+            path,
+            str(out_root / pid),
+            model=model,
+            cache=cache,
+            result_cache=result_cache,
+            preprocess=preprocess,
+        )
+
+    t0 = time.monotonic()
+    results: dict = {}
+    seq_total = 0.0
+    with concurrent.futures.ThreadPoolExecutor(max_workers=max(1, workers)) as ex:
+        futures = {ex.submit(_one, p, pid): pid for p, pid in zip(image_paths, ids)}
+        for fut in concurrent.futures.as_completed(futures):
+            pid = futures[fut]
+            results[pid] = fut.result()
+            seq_total += float(results[pid].timing_json.get("total_seconds", 0.0))
+    wall = time.monotonic() - t0
+
+    summary = {
+        "pages": len(image_paths),
+        "workers": max(1, workers),
+        "sequential_sum_seconds": round(seq_total, 3),
+        "parallel_wall_seconds": round(wall, 3),
+        "implied_speedup": round(seq_total / wall, 2) if wall > 0 else None,
+    }
+    return results, summary
+
+
+__all__ = [
+    "parse_document",
+    "parse_many",
+    "make_router",
+    "default_doc_id",
+    "ParseResult",
+    "ParseCache",
+    "_config_fingerprint",
 ]
