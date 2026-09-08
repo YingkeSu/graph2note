@@ -95,6 +95,15 @@ class DocumentStore(ABC):
         """Persist (autosave) edited markdown; return updated record or None."""
 
     @abstractmethod
+    def set_topics(self, document_id: str, topics: list[str]) -> dict | None:
+        """Persist the document's topic tags (notes-organizer classification).
+
+        Returns the updated record or None if unknown. Does not touch
+        ``updated_at`` (classification is metadata, not a content edit, so it
+        must not re-order the library list).
+        """
+
+    @abstractmethod
     def delete_document(self, document_id: str) -> bool:
         """Remove a document entirely; True if it existed."""
 
@@ -184,6 +193,14 @@ class SessionDocumentStore(DocumentStore):
             return None
         rec["current_markdown"] = markdown
         rec["updated_at"] = _now()
+        self._docs[document_id] = rec
+        return rec
+
+    def set_topics(self, document_id: str, topics: list[str]) -> dict | None:
+        rec = self._docs.get(document_id)
+        if rec is None:
+            return None
+        rec["topics"] = list(topics)
         self._docs[document_id] = rec
         return rec
 
@@ -342,6 +359,18 @@ class FileDocumentStore(SessionDocumentStore):
             (base / "record.json").write_text(
                 json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
         return self.get_document(document_id)
+
+    def set_topics(self, document_id: str, topics: list[str]) -> dict | None:
+        rp = self._doc_dir(document_id) / "record.json"
+        if not rp.is_file():
+            return None
+        rec = self._read_record(document_id)
+        if rec is None:
+            return None
+        rec["topics"] = list(topics)
+        rp.write_text(json.dumps(rec, ensure_ascii=False, indent=2),
+                      encoding="utf-8")
+        return rec
 
     def delete_document(self, document_id: str) -> bool:
         rec = self._read_record(document_id)

@@ -1,6 +1,6 @@
 # 分类归纳引擎 + MOC 索引笔记
 
-Status: claimed
+Status: in-review
 
 ## Parent
 
@@ -17,12 +17,12 @@ Status: claimed
 
 ## Acceptance criteria
 
-- [ ] 分类方案有 schema 校验，非法方案被拒绝且不进入导出
-- [ ] MOC 生成覆盖全部类别与全部文档（每篇笔记至少被一个 MOC 收录，链接可达）
-- [ ] 一级分类数量受上限约束（>8 时合并或报错，测试覆盖）
-- [ ] 人工调整分类方案后可重跑导出并生效
-- [ ] golden fixtures 覆盖：空文档集、单主题、多主题、类别命名的中英文输出
-- [ ] 全部测试离线运行，CI 无 live 调用
+- [x] 分类方案有 schema 校验，非法方案被拒绝且不进入导出 — `test_validate_allows_good_scheme`/`test_validate_rejects_invalid`/`test_empty_docset_is_valid`
+- [x] MOC 生成覆盖全部类别与全部文档（每篇笔记至少被一个 MOC 收录，链接可达）— `test_moc_covers_all_docs_and_categories`（链接经 exporter 校验无死链）
+- [x] 一级分类数量受上限约束（>8 时合并或报错，测试覆盖）— `test_exactly_max_topics_ok`（N=8 通过）+ `validate_rejects_invalid` 中 9 类别用例（N>8 报错）
+- [x] 人工调整分类方案后可重跑导出并生效 — `test_persist_topics_and_human_adjust`（调整后 doc 进入新 MOC）
+- [x] golden fixtures 覆盖：空文档集、单主题、多主题、类别命名的中英文输出 — `tests/golden/classify-empty|single|multi|cn|en.json` → `test_golden_scheme_export_offline`/`test_golden_empty_export`
+- [x] 全部测试离线运行，CI 无 live 调用 — LLM planner 注入；无网络
 
 ## Blocked by
 

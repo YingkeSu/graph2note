@@ -1,0 +1,6 @@
+{
+  "topics": ["数学"],
+  "assignments": {"数学": ["d1"]},
+  "summaries": {"d1": "方程与代数基础"},
+  "version": 1
+}
