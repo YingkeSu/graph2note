@@ -30,9 +30,9 @@ def test_default_purpose_sessions_are_distinct():
     assert g.resolve_session_for("eval") == "graph2note-eval-01"
     assert g.resolve_session_for("verify") == "graph2note-verify-01"
     assert g.resolve_session_for("routeb") == "graph2note-routeb-01"
-    # parse/eval/verify/routeb 各自独立，互不相同
+    # parse/eval/verify/routeb/diagram 各自独立，互不相同
     parsed = {g.resolve_session_for(p) for p in g.PURPOSES}
-    assert len(parsed) == 4
+    assert len(parsed) == 5
 
 
 def test_resolve_session_for_case_insensitive():

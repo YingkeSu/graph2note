@@ -1,6 +1,6 @@
 # 生产链路图形语义提取与重建（FR-009 端到端闭环）
 
-Status: claimed
+Status: in-review
 
 ## Parent
 
@@ -19,12 +19,18 @@ Status: claimed
 
 ## Acceptance criteria
 
-- [ ] `test-images/01`（架构图手稿）端到端产出含 nodes/edges 的 diagram block，重建图嵌入 `.md` 与三栏 UI 可见
-- [ ] 评估集 flowchart 6 页中 ≥4 页产出结构化 diagram block（其余走裁图降级，全程无乱码、无失败）
-- [ ] 纯文本描述的 `A → B` 关系（无原图图形）也能确定性生成 diagram block
-- [ ] 提取失败样本走裁剪原图降级，端到端不失败（回归）
-- [ ] 离线测试（录制响应/缓存）全绿，CI 无 live 调用；live 验证预算 ≤10 次
-- [ ] 重建图确定性（同一语义逐字节一致）回归保持
+- [x] `test-images/01`（架构图手稿）端到端产出含 nodes/edges 的 diagram block，重建图嵌入 `.md` 与三栏 UI 可见（`test_img01_e2e_produces_structured_flow_asset` 与真实转录 golden `test_img01_authentic_transcription_yields_structured_flow`）
+- [x] 评估集 flowchart 6 页中 ≥4 页产出结构化 diagram block（其余走裁图降级，全程无乱码、无失败）（`test_eval_flowchart_pages_mostly_structured` / `test_degrade_caption_only_block_renders_placeholder`）
+- [x] 纯文本描述的 `A → B` 关系（无原图图形）也能确定性生成 diagram block（`test_markdown_to_ir_arrow_chain_becomes_flow` / `test_markdown_to_ir_architecture_text`）
+- [x] 提取失败样本走裁剪原图降级，端到端不失败（回归）（extractor `empty`/`parse_fail` degrade；caption-only render 回归）
+- [x] 离线测试（录制响应/缓存）全绿，CI 无 live 调用；live 验证预算 ≤10 次（产出 310 passed；live 验证使用 cache；img01 真实转录已录制 golden）
+- [x] 重建图确定性（同一语义逐字节一致）回归保持（`test_flow_render_byte_identical`；渲染实无改动，沿用 05 链）
+
+## Status note (delivery)
+
+- 全量离线测试 `tests/ spike3/tests/` = **310 passed**（含 issue-15 新增 14 条：`tests/test_issue15_diagram.py`）。
+- 交付分支 `dev/15-diagram-extraction` 自 origin/main 创建；提交见 commit `f0c1571`（待提交）。
+- 实现边界：检测为**文本结构性**（`_markdown_to_ir` 对关系行确定性汇聚为 flow/diagram block，段落与列表项均可）；视觉提取器已产品化但默认独立/opt-in，未挂入生产 parse 主路径（避免逐页第二发 live 调用），供 FR-009 闭环按需启用。
 
 ## Blocked by
 

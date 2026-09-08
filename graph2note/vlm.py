@@ -483,6 +483,24 @@ def _markdown_to_ir(markdown: str) -> dict:
         # 其余为段落（保留原文本，行内 $…$ 公式随段回读）
         blocks.append({"type": "paragraph", "text": line})
         i += 1
+    # issue 15：流程/架构关系行（段落或列表项里的 `A → B`）确定性汇聚为
+    # flow/diagram block 追加到文末（保留既有文字块；仅 diagram 页触发）。
+    # 结构化可解析 -> flow nodes/edges；否则 caption 只保留原文字不丢失。
+    from .diagrams import infer as _infer
+
+    if _infer.detect_diagram_markdown(markdown):
+        lines_raw = markdown.split("\n")
+        k = 0
+        while k < len(lines_raw):
+            rs = k
+            while k < len(lines_raw) and _infer.is_relation_line(lines_raw[k]):
+                k += 1
+            if k > rs:
+                fb = _infer.arrow_flow_block(lines_raw, rs)
+                if fb is not None:
+                    blocks.append(fb)
+            else:
+                k += 1
     if not blocks:
         blocks.append({"type": "paragraph", "text": markdown.strip()})
     return {"document_type": "note", "blocks": blocks}
