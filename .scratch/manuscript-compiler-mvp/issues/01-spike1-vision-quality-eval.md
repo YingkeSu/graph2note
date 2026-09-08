@@ -1,6 +1,6 @@
 # Spike 1：评估集搭建 + 视觉模型直转质量对比（EditRate）
 
-Status: claimed
+Status: in-review
 
 > 2026-09-08 调度备注：harness 构建与现有样本冒烟已派 agent（graph2note-3）；评估集供图与 gold 人工校对为 HITL，已汇总给维护者，不阻塞交付。
 
@@ -33,3 +33,9 @@ None - can start immediately（图片扩充与 gold 校对需维护者参与）
 ## Comments
 
 - 2026-09-08 dispatcher：claimed by graph2note-3（分支 dev/01-spike1-harness）。交付范围 = harness + 2 张现有图冒烟报告；评估集扩充与 gold 校对待维护者。
+- 2026-09-08 worker 交付：harness 与冒烟已交付；评估集扩充与 gold 人工校对待维护者（HITL）。
+
+- 交付物：`eval/`（harness + fixtures）、`eval/reports/report-{glm-5.3-flash,deepseek-v4-flash-vision-exp}.md`（真实冒烟报告）、`tests/`（pytest 全绿、离线）。
+- 详见交接文档 `../handoffs/01-spike1-vision-quality-eval.md`。
+- 当前 gold 为 AI 草拟、未经人工校对，EditRate（~92%–148%）不具选型意义；待维护者补齐评估集（≥30 张，六类目）并人工校对 gold 后用本 harness 重跑。
+

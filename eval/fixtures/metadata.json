@@ -1,0 +1,31 @@
+{
+  "category_definitions": {
+    "handwriting": "手写笔记",
+    "print": "印刷扫描",
+    "formula": "数学公式",
+    "mixed": "中英混排",
+    "flowchart": "流程图/架构图",
+    "strikethrough": "涂改/删除线"
+  },
+  "samples": [
+    {
+      "id": "01-requirements-arch",
+      "category": "flowchart",
+      "image": "test-images/01-requirements-arch.jpg",
+      "gold": "eval/fixtures/gold/01-requirements-arch.gold.md",
+      "gold_proofed": false,
+      "language": "zh",
+      "notes": "Agent 编排架构/输入层→解析层→格式化输出与 LLM/OCR 路由；AI 草拟，未经人工校对（HITL 待维护者）"
+    },
+    {
+      "id": "02-digitize-pipeline",
+      "category": "flowchart",
+      "image": "test-images/02-digitize-pipeline.jpg",
+      "gold": "eval/fixtures/gold/02-digitize-pipeline.gold.md",
+      "gold_proofed": false,
+      "language": "zh",
+      "notes": "数字化管线：输入→LLM/OCR 解析→Markdown/CSS 模板→编译 PDF；AI 草拟，未经人工校对（HITL 待维护者）"
+    }
+  ],
+  "strikethrough_category_note": "当前无真实涂改样本，该类目留空；harness 已支持 deletion_note 记录字段。"
+}
