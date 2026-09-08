@@ -1,0 +1,7 @@
+{
+  "image": "S02.png",
+  "model": "glm-5.3-flash",
+  "raw": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"开始\"},{\"id\":\"n2\",\"label\":\"处理\"},{\"id\":\"n3\",\"label\":\"结束\"}],\"edges\":[]}",
+  "ok": true,
+  "http": 200
+}

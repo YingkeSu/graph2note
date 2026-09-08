@@ -1,0 +1,7 @@
+{
+  "image": "no_flow.png",
+  "model": "glm-5.3-flash",
+  "raw": "{\"error\":\"no_flow_extractable\"}",
+  "ok": true,
+  "http": 200
+}

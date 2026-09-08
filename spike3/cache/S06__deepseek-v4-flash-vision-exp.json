@@ -1,0 +1,7 @@
+{
+  "image": "S06.png",
+  "model": "deepseek-v4-flash-vision-exp",
+  "raw": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"读取配置\"},{\"id\":\"n2\",\"label\":\"构建模型\"},{\"id\":\"n3\",\"label\":\"训练\"}],\"edges\":[{\"from\":\"n1\",\"to\":\"n2\",\"label\":\"参数\"},{\"from\":\"n2\",\"to\":\"n3\",\"label\":\"数据\"}]}",
+  "ok": true,
+  "http": 200
+}

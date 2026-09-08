@@ -1,0 +1,7 @@
+{
+  "image": "S10.png",
+  "model": "deepseek-v4-flash-vision-exp",
+  "raw": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"输出\"},{\"id\":\"n2\",\"label\":\"解析\"},{\"id\":\"n3\",\"label\":\"输入\"},{\"id\":\"n4\",\"label\":\"生成|完成\"},{\"id\":\"n5\",\"label\":\"校验\"}],\"edges\":[{\"from\":\"n3\",\"to\":\"n2\",\"label\":\"\"},{\"from\":\"n3\",\"to\":\"n5\",\"label\":\"\"},{\"from\":\"n5\",\"to\":\"n4\",\"label\":\"修正\"},{\"from\":\"n2\",\"to\":\"n4\",\"label\":\"合法\"},{\"from\":\"n4\",\"to\":\"n1\",\"label\":\"\"}]}",
+  "ok": true,
+  "http": 200
+}

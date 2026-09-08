@@ -1,0 +1,7 @@
+{
+  "image": "S07.png",
+  "model": "deepseek-v4-flash-vision-exp",
+  "raw": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"检查权限\"},{\"id\":\"n2\",\"label\":\"允许\"},{\"id\":\"n3\",\"label\":\"记录日志\"},{\"id\":\"n4\",\"label\":\"拒绝\"}],\"edges\":[{\"from\":\"n1\",\"to\":\"n2\",\"label\":\"是\"},{\"from\":\"n1\",\"to\":\"n4\",\"label\":\"否\"},{\"from\":\"n2\",\"to\":\"n3\",\"label\":\"\"},{\"from\":\"n4\",\"to\":\"n3\",\"label\":\"\"}]}",
+  "ok": true,
+  "http": 200
+}

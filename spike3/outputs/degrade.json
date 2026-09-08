@@ -1,0 +1,62 @@
+[
+  {
+    "sample": "S01",
+    "crop": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/plots/degrade/S01_crop.png",
+    "size": 31327
+  },
+  {
+    "sample": "S02",
+    "crop": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/plots/degrade/S02_crop.png",
+    "size": 35891
+  },
+  {
+    "sample": "S03",
+    "crop": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/plots/degrade/S03_crop.png",
+    "size": 93290
+  },
+  {
+    "sample": "S04",
+    "crop": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/plots/degrade/S04_crop.png",
+    "size": 59515
+  },
+  {
+    "sample": "S05",
+    "crop": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/plots/degrade/S05_crop.png",
+    "size": 62830
+  },
+  {
+    "sample": "S06",
+    "crop": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/plots/degrade/S06_crop.png",
+    "size": 61122
+  },
+  {
+    "sample": "S07",
+    "crop": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/plots/degrade/S07_crop.png",
+    "size": 73504
+  },
+  {
+    "sample": "S08",
+    "crop": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/plots/degrade/S08_crop.png",
+    "size": 61628
+  },
+  {
+    "sample": "S09",
+    "crop": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/plots/degrade/S09_crop.png",
+    "size": 55343
+  },
+  {
+    "sample": "S10",
+    "crop": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/plots/degrade/S10_crop.png",
+    "size": 78691
+  },
+  {
+    "sample": "R01",
+    "crop": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/plots/degrade/R01_crop.png",
+    "size": 466564
+  },
+  {
+    "sample": "R02",
+    "crop": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/plots/degrade/R02_crop.png",
+    "size": 483170
+  }
+]

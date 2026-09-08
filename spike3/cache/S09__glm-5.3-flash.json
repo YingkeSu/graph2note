@@ -1,0 +1,7 @@
+{
+  "image": "S09.png",
+  "model": "glm-5.3-flash",
+  "raw": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"启动\"},{\"id\":\"n2\",\"label\":\"轮询\"},{\"id\":\"n3\",\"label\":\"事件\"}],\"edges\":[{\"from\":\"n1\",\"to\":\"n2\",\"label\":\"\"},{\"from\":\"n2\",\"to\":\"n3\",\"label\":\"处理\"}]}",
+  "ok": true,
+  "http": 200
+}

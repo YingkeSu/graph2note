@@ -1,0 +1,62 @@
+{
+  "S01": {
+    "image": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/samples/S01.png",
+    "ground_truth": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/ground_truth/S01.json",
+    "real": false
+  },
+  "S02": {
+    "image": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/samples/S02.png",
+    "ground_truth": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/ground_truth/S02.json",
+    "real": false
+  },
+  "S03": {
+    "image": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/samples/S03.png",
+    "ground_truth": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/ground_truth/S03.json",
+    "real": false
+  },
+  "S04": {
+    "image": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/samples/S04.png",
+    "ground_truth": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/ground_truth/S04.json",
+    "real": false
+  },
+  "S05": {
+    "image": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/samples/S05.png",
+    "ground_truth": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/ground_truth/S05.json",
+    "real": false
+  },
+  "S06": {
+    "image": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/samples/S06.png",
+    "ground_truth": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/ground_truth/S06.json",
+    "real": false
+  },
+  "S07": {
+    "image": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/samples/S07.png",
+    "ground_truth": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/ground_truth/S07.json",
+    "real": false
+  },
+  "S08": {
+    "image": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/samples/S08.png",
+    "ground_truth": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/ground_truth/S08.json",
+    "real": false
+  },
+  "S09": {
+    "image": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/samples/S09.png",
+    "ground_truth": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/ground_truth/S09.json",
+    "real": false
+  },
+  "S10": {
+    "image": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/samples/S10.png",
+    "ground_truth": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/ground_truth/S10.json",
+    "real": false
+  },
+  "R01": {
+    "image": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/samples/R01.png",
+    "ground_truth": null,
+    "real": true
+  },
+  "R02": {
+    "image": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/spike3/samples/R02.png",
+    "ground_truth": null,
+    "real": true
+  }
+}

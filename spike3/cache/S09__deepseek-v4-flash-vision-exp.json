@@ -1,0 +1,7 @@
+{
+  "image": "S09.png",
+  "model": "deepseek-v4-flash-vision-exp",
+  "raw": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"轮询\"},{\"id\":\"n2\",\"label\":\"启动\"},{\"id\":\"n3\",\"label\":\"事件\"}],\"edges\":[{\"from\":\"n2\",\"to\":\"n1\",\"label\":\"\"},{\"from\":\"n1\",\"to\":\"n3\",\"label\":\"处理\"}]}",
+  "ok": true,
+  "http": 200
+}

@@ -1,0 +1,7 @@
+{
+  "image": "parse_fail.png",
+  "model": "glm-5.3-flash",
+  "raw": "这不是JSON。",
+  "ok": true,
+  "http": 200
+}

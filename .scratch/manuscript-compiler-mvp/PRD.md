@@ -143,7 +143,7 @@ Phase: Concept / MVP Definition
 **开放问题**（不阻塞 MVP 开发，实现期决策）：
 
 - 视觉模型选型：候选 `glm-5.3-flash` 与 `deepseek-v4-flash-vision-exp`（均已实测可用），Spike 1 以 EditRate 定量对比；均不达标则换/加供应商
-- 绘图工具链选型（matplotlib / graphviz / 同类；Spike 3 决定）
+- 绘图工具链选型（**已由 Spike 3 决定，2026-09-08：graphviz/dot 为主，matplotlib 为依赖无关回退**）：对 10 张合成+2 张真实流程图语义，matplotlib 手写分层布局与 graphviz dot 均满足确定性（同一语义两次渲染逐字节一致，FR-020）；graphviz 布局零节点重叠（含回流/环）、连线交叉为 0，而手写分层布局在环上引入少量重叠（约 0.3 节点对/图）；两方案中文标签均无乱码（macOS graphviz 经 fontconfig 命中 Arial Unicode MS）。graphviz 唯一代价是需系统安装 `dot` 二进制，故 issue 05 建议 graphviz 可用则用、否则回退到 spike3 自带的 matplotlib 分层渲染器（接口一致 `render(diagram,out_path)`）。详见 handoff 04 与 spike3/report.md。
 - 手稿语言范围（中文为主 / 中英混排 / 含少量其他语言）
 
 **目标用户**：学生（课堂笔记、公式整理、复习资料）、科研人员（草稿、白板归档、文献数字化）、内容创作者（手稿转文章）。

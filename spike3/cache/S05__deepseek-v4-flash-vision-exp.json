@@ -1,0 +1,7 @@
+{
+  "image": "S05.png",
+  "model": "deepseek-v4-flash-vision-exp",
+  "raw": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"迭代\"},{\"id\":\"n2\",\"label\":\"初始化\"},{\"id\":\"n3\",\"label\":\"收敛？\"}],\"edges\":[{\"from\":\"n1\",\"to\":\"n3\",\"label\":\"\"},{\"from\":\"n3\",\"to\":\"n2\",\"label\":\"否\"},{\"from\":\"n2\",\"to\":\"n1\",\"label\":\"\"}]}",
+  "ok": true,
+  "http": 200
+}
