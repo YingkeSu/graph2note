@@ -1,6 +1,6 @@
 # 增量导出闭环：幂等、不覆盖用户修改
 
-Status: in-review
+Status: merged
 
 ## Parent
 
