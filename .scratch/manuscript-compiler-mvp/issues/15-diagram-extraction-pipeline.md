@@ -29,7 +29,7 @@ Status: in-review
 ## Status note (delivery)
 
 - 全量离线测试 `tests/ spike3/tests/` = **310 passed**（含 issue-15 新增 14 条：`tests/test_issue15_diagram.py`）。
-- 交付分支 `dev/15-diagram-extraction` 自 origin/main 创建；提交见 commit `f0c1571`（待提交）。
+- 交付分支 `dev/15-diagram-extraction` 自 origin/main 创建；提交 `09a6d92`（工作树干净，未 push）。
 - 实现边界：检测为**文本结构性**（`_markdown_to_ir` 对关系行确定性汇聚为 flow/diagram block，段落与列表项均可）；视觉提取器已产品化但默认独立/opt-in，未挂入生产 parse 主路径（避免逐页第二发 live 调用），供 FR-009 闭环按需启用。
 
 ## Blocked by
