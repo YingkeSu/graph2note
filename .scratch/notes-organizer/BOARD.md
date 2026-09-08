@@ -6,5 +6,5 @@
 | issue | track | agent | worktree | branch | status | updated |
 |---|---|---|---|---|---|---|
 | 01 vault 导出器（溯源） | A | graph2note-2（跨 feature 接力） | ~/.ao/data/worktrees/graph2note/graph2note-2 | dev/no01-vault-exporter | merged（168+2 离线；幂等+死链校验+双路去重） | 2026-09-08 |
-| 02 分类归纳 + MOC | A | graph2note-2（拟接力） | — | — | ready-for-agent（01✅ 合并后即派） | 2026-09-08 |
+| 02 分类归纳 + MOC | A | graph2note-2（接力） | ~/.ao/data/worktrees/graph2note/graph2note-2 | dev/no02-classification-moc | claimed | 2026-09-08 |
 | 03 增量导出闭环 | — | — | — | — | ready-for-agent（阻塞于本 feature 01、02） | 2026-09-08 |
