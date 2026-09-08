@@ -14,7 +14,7 @@
 | 06 Web App 三栏 | — | — | — | — | ready-for-agent（阻塞于 03,05✅；03 完成后即启动） | 2026-09-08 |
 | 07 本机文档库 | — | — | — | — | ready-for-agent（阻塞于 06；Wave 3） | 2026-09-08 |
 | 08 Spike2 / Route B | — | — | — | — | ready-for-agent（P1 时机，MVP 主链路稳定后；阻塞于 01） | 2026-09-08 |
-| 09 PDF 拆页+去重+缺页预警 | — | — | — | — | ready-for-agent（P1 增补；阻塞于 03；首批样本：test-images/ 4 个扫描 PDF） | 2026-09-08 |
+| 09 PDF 拆页+去重+缺页预警 | B | graph2note-4（接力） | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/09-pdf-split-dedup | claimed（提前启动：纯函数核心与 03 无耦合，集成以薄适配层） | 2026-09-08 |
 | 10 交叉验证引擎 | — | — | — | — | ready-for-agent（P1 增补；阻塞于 03） | 2026-09-08 |
 | 11 解析提速 | — | — | — | — | ready-for-agent（P1 增补；阻塞于 03；先基线后优化） | 2026-09-08 |
 
