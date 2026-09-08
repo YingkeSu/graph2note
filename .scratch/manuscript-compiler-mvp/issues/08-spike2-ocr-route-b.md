@@ -1,6 +1,6 @@
 # Spike 2 / Route B：OCR+LLM 路径对比与 Router 策略
 
-Status: in-review
+Status: merged
 
 ## Parent
 
