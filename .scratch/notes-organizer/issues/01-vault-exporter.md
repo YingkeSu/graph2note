@@ -1,6 +1,6 @@
 # Obsidian Vault 导出器（含溯源）
 
-Status: ready-for-agent
+Status: claimed
 
 ## Parent
 
