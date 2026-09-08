@@ -18,10 +18,36 @@ Base：`https://opencode.ai/zen/go/v1`，三个 API 面：
 ## 2. 认证（实测确认）
 
 - Header：`Authorization: Bearer $OPENCODE_API_KEY`
-- **必须**携带 `x-opencode-session: <稳定会话ID>`（如 `graph2note-spike-01`）。缺失会报错：
+- **必须**携带 `x-opencode-session: <稳定会话ID>`（如 `graph2note-parse-01`）。缺失会报错：
   `MissingSessionID: Request is missing x-opencode-session and cannot be routed efficiently.`
   同一会话/同图重试时保持同一 session ID，有利于路由与 prompt 缓存。
 - 客户端应设置自己的 User-Agent 标识。
+
+### 2.1 会话隔离使用规范（issue 12 风控）
+
+**现象（并发争用）**：历史默认 parse 与 eval 共用同一已验证会话 `graph2note-spike-01`。当
+评估批次（worker）× 产品解析 × 交叉验证并发跑时，共享会话退化，VLM 对真实扫描页返回极短
+完成（「本页全黑/空白」文案、空 IR），即使 prompt 正确。这是**服务层按会话路由/缓存的争用**，
+而非提示词问题——任意 prompt 在退化会话下都拿不到正文（见 issue 12 风控登记）。
+
+**隔离策略**：每个**用途**持有独立、已直出验证的稳定 session id，互不争用；env 可覆盖：
+
+| 用途 | 默认 session | 覆盖 env | 消费者 |
+|---|---|---|---|
+| parse（产品解析） | `graph2note-parse-01` | `GRAPH2NOTE_SESSION_PARSE` | vlm.resolve_session / RouteARouter |
+| eval（评估 harness） | `graph2note-eval-01` | `GRAPH2NOTE_SESSION_EVAL` | eval/gateway.resolve_sessions |
+| verify（交叉验证） | `graph2note-verify-01-<model>` | `GRAPH2NOTE_SESSION_VERIFY` | detect/verify engine |
+
+- 解析优先级（`eval.gateway.resolve_session_for(purpose, model)`，vlm 委托 parse 用途）：
+  `GRAPH2NOTE_SESSION_<PURPOSE>` > 历史 `GRAPH2NOTE_OPENCODE_SESSION` / `OPENCODE_SESSION` > 用途默认。
+- 历史还原：`GRAPH2NOTE_SESSION_PARSE=graph2note-parse-route-a`（旧产品默认）或
+  `GRAPH2NOTE_SESSION_*=graph2note-spike-01` 可经 env 还原旧会话（不改变默认）。
+- **每个 session 首次使用前应做直出验证**（`eval.gateway.validate_session_direct(purpose)`）：发一次极小
+  探针调用（2×2 图 + 64 token），检查 content 非空且 `reasoning_tokens <= 800`（阈值
+  `RUNWAY_REASONING_TOKENS`）；非直出（推理路由烧预算）应换会话或升预算。结果进程级缓存。
+- 生产首调：设 `GRAPH2NOTE_VALIDATE_SESSIONS=1` 时于首次解析触发直出验证（默认关，避免每进程多花
+  一次调用）；验证脚本 `scripts/validate_sessions.py` 可对三个用途各验一次（预算 3 次）。
+
 
 ## 3. 视觉能力（对本项目关键）
 

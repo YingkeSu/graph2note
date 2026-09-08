@@ -32,28 +32,31 @@ from pathlib import Path
 from eval.gateway import (  # type: ignore
     GatewayError as _GatewayError,
     GatewayTimeout as _GatewayTimeout,
+    maybe_validate_direct as _maybe_validate_direct,
     post_gateway,
     reasoning_tokens_of,
-    resolve_sessions as _resolve_sessions,
+    resolve_session_for as _resolve_session_for,
     warnings_for as _warnings_for,
 )
 
 GATEWAY_BASE = "https://opencode.ai/zen/go/v1"
 CHAT_COMPLETIONS = GATEWAY_BASE + "/chat/completions"
-# O1：收敛到诊断报告已验证的「直出模式」session（glm 无 reasoning、~13–24s），
-# 可用 env GRAPH2NOTE_OPENCODE_SESSION / OPENCODE_SESSION 覆盖，旧 graph2note-parse-route-a 可经 env 还原。
-STABLE_SESSION = "graph2note-spike-01"
+# session 按用途隔离：parse 用独立已验证直出 session，避免与 eval/verify 并发争用同一会话
+# （issue 12 风控；见 docs/llm/opencode-go.md §会话隔离）。可由 GRAPH2NOTE_SESSION_PARSE 覆盖；
+# 历史 GRAPH2NOTE_OPENCODE_SESSION / OPENCODE_SESSION（含 spike-01、parse-route-a）经 env 还原。
+STABLE_SESSION = "graph2note-parse-01"
 VALIDATED_SESSION = STABLE_SESSION
 USER_AGENT = "graph2note-parse/0.1"
 
 
 def resolve_session(model: str) -> str:
-    """返回本产品管线的会话 id：GRAPH2NOTE_OPENCODE_SESSION > OPENCODE_SESSION > 每模型已验证默认。"""
-    for env in ("GRAPH2NOTE_OPENCODE_SESSION", "OPENCODE_SESSION"):
-        v = os.environ.get(env, "").strip()
-        if v:
-            return v
-    return _resolve_sessions(model)[0]
+    """返回本产品管线（parse 用途）的会话 id：GRAPH2NOTE_SESSION_PARSE >
+    GRAPH2NOTE_OPENCODE_SESSION / OPENCODE_SESSION > 默认 graph2note-parse-01。
+    GRAPH2NOTE_VALIDATE_SESSIONS=1 时对首个解析的 session 做一次直出验证（进程级缓存）。"""
+    sess = _resolve_session_for("parse", model)
+    _maybe_validate_direct("parse", model)
+    return sess
+
 
 # Latency strategy (aligned to the 2026-09-08 diagnosis, main e0bd5dc):
 #  * R2: first call is *direct-output* (strong "no reasoning" instruction) with
