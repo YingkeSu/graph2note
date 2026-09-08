@@ -32,6 +32,8 @@ None - can start immediately（图片扩充与 gold 校对需维护者参与）
 
 ## Comments
 
+- 2026-09-08 dispatcher 验收（可自动化部分）：30 页评估集 + 双模型全量报告 + 数据质量复查（1 例并发污染已清除重跑）已合入。**初步选型 glm-3.5-flash**（EditRate 0.77 vs 0.84、30/30 vs 23/30、无截断、延迟减半）——注意 gold 由 glm 草拟存在自评偏置，且字符级 diff 计入标记差异。**最终选型待维护者**：1) gold 人工抽检；2) 补印刷类样本（六类缺一）；3) 确认选型。印刷类缺失与 gold 未校对为剩余 AC。
+
 - 2026-09-08 dispatcher：claimed by graph2note-3（分支 dev/01-spike1-harness）。交付范围 = harness + 2 张现有图冒烟报告；评估集扩充与 gold 校对待维护者。
 - 2026-09-08 worker 交付：harness 与冒烟已交付；评估集扩充与 gold 人工校对待维护者（HITL）。
 
