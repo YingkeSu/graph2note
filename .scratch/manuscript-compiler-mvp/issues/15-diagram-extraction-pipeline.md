@@ -1,6 +1,6 @@
 # 生产链路图形语义提取与重建（FR-009 端到端闭环）
 
-Status: in-review
+Status: merged
 
 ## Parent
 
