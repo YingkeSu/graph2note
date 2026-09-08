@@ -1,0 +1,32 @@
+{
+  "tag": "c2-glm-w1024",
+  "ts_utc": "2026-09-08T08:52:59+00:00",
+  "model": "glm-5.3-flash",
+  "session": "graph2note-diag-glm",
+  "image": "01-arch__w1024_q85.jpg",
+  "style": "main",
+  "max_tokens": 10000,
+  "stream": true,
+  "http": 200,
+  "error": null,
+  "aborted": true,
+  "timeline_s": {
+    "t_first_delta": 13.404,
+    "t_first_reasoning": 13.404,
+    "t_first_content": null,
+    "t_last_chunk": 152.231,
+    "total": 152.232
+  },
+  "phase_s": {
+    "prefill_to_first_delta": 13.404,
+    "reasoning": null,
+    "content_gen": null
+  },
+  "chars": {
+    "reasoning": 17018,
+    "content": 0
+  },
+  "chunk_count": 4663,
+  "finish_reason": null,
+  "usage": null
+}

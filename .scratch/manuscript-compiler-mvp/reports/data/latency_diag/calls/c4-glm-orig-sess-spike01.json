@@ -1,0 +1,40 @@
+{
+  "tag": "c4-glm-orig-sess-spike01",
+  "ts_utc": "2026-09-08T09:03:04+00:00",
+  "model": "glm-5.3-flash",
+  "session": "graph2note-spike-01",
+  "image": "01-requirements-arch.jpg",
+  "style": "main",
+  "max_tokens": 10000,
+  "stream": true,
+  "http": 200,
+  "error": null,
+  "aborted": false,
+  "timeline_s": {
+    "t_first_delta": 10.338,
+    "t_first_reasoning": null,
+    "t_first_content": 10.679,
+    "t_last_chunk": 18.393,
+    "total": 18.395
+  },
+  "phase_s": {
+    "prefill_to_first_delta": 10.338,
+    "reasoning": null,
+    "content_gen": 7.714
+  },
+  "chars": {
+    "reasoning": 0,
+    "content": 787
+  },
+  "chunk_count": 75,
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 2875,
+    "completion_tokens": 239,
+    "total_tokens": 3114,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": null
+    }
+  }
+}
