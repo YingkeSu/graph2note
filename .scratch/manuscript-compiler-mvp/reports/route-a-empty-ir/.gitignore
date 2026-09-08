@@ -1,0 +1,2 @@
+# 派生临时产物（实时解析出的 preprocessed/渲染/中间文件），不进版本库
+scripts/data/parse_scratch/
