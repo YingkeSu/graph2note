@@ -1,6 +1,6 @@
 # 识别交叉验证引擎：双模型 diff + 重复块检测
 
-Status: ready-for-agent
+Status: claimed
 
 ## Parent
 

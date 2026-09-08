@@ -15,8 +15,8 @@
 | 07 本机文档库 | — | — | — | — | ready-for-agent（阻塞于 06；Wave 3） | 2026-09-08 |
 | 08 Spike2 / Route B | — | — | — | — | ready-for-agent（P1 时机，MVP 主链路稳定后；阻塞于 01） | 2026-09-08 |
 | 09 PDF 拆页+去重+缺页预警 | B | graph2note-4（接力） | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/09-pdf-split-dedup | merged（ingest 包 9 模块+可调阈值、recluster 拆分、93 测试绿；真实扫描无内容重复） | 2026-09-08 |
-| 10 交叉验证引擎 | B | graph2note-4（拟） | ~/.ao/data/worktrees/graph2note/graph2note-4 | — | ready-for-agent（03✅+网关修复✅已并入；即将派工） | 2026-09-08 |
-| 11 解析提速 | 5 | graph2note-5 | ~/.ao/data/worktrees/graph2note/graph2note-5 | — | ready-for-agent（03✅；网关修复即先行落地；基线用 03 计时埋点） | 2026-09-08 |
+| 10 交叉验证引擎 | B | graph2note-4（接力） | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/10-cross-validation | claimed | 2026-09-08 |
+| 11 解析提速 | 5 | graph2note-5 | ~/.ao/data/worktrees/graph2note/graph2note-5 | dev/11-parse-latency | claimed（网关修复 R1-R4 已并入为其先行落地项） | 2026-09-08 |
 
 > 侧任务（非 issue）：graph2note-5 延迟诊断已完成并合并（e0bd5dc，reports/latency-diagnosis.md：根因=新 session 路由推理变体思考狂暴+10k 空转）。同 worker 续派网关修复（R1 稳定 session/R2 首调直出/R3 1024 降采样/R4 硬超时），分支 dev/gateway-speed-fix——issue 11 先行落地，03 与全量评估消费。2026-09-08。
 

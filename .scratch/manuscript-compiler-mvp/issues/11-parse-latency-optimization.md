@@ -1,6 +1,6 @@
 # 解析提速：基线实测与优化达标
 
-Status: ready-for-agent
+Status: claimed
 
 ## Parent
 
