@@ -18,7 +18,7 @@
 | 10 交叉验证引擎 | — | — | — | — | ready-for-agent（P1 增补；阻塞于 03） | 2026-09-08 |
 | 11 解析提速 | — | — | — | — | ready-for-agent（P1 增补；阻塞于 03；先基线后优化） | 2026-09-08 |
 
-> 侧任务（非 issue）：graph2note-5「latency diagnose」分支 dev/diag-eval-latency —— 排查评估/解析单次调用 19–65s 偏慢问题，报告将喂 issue 11 基线。2026-09-08 派。
+> 侧任务（非 issue）：graph2note-5 延迟诊断已完成并合并（e0bd5dc，reports/latency-diagnosis.md：根因=新 session 路由推理变体思考狂暴+10k 空转）。同 worker 续派网关修复（R1 稳定 session/R2 首调直出/R3 1024 降采样/R4 硬超时），分支 dev/gateway-speed-fix——issue 11 先行落地，03 与全量评估消费。2026-09-08。
 
 ## HITL 汇总（已向维护者提出，见调度会话）
 
