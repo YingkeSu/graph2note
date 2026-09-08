@@ -1,6 +1,6 @@
 # 扫描 PDF 拆页 + 页级去重 + 缺页预警
 
-Status: ready-for-agent
+Status: claimed
 
 ## Parent
 
@@ -27,3 +27,7 @@ Status: ready-for-agent
 ## Blocked by
 
 - 03-parse-pipeline-cli
+
+## Comments
+
+- 2026-09-08 dispatcher：claimed by graph2note-4（Track B，分支 dev/09-pdf-split-dedup）。**提前启动决策**：Blocked by 03 为集成依赖，但本 issue 的核心（PDF 拆页、pHash 近重复、缺页线索检测）是与解析管线无关的纯函数工作；与 03（graph2note-2 并行进行中）的集成以薄适配层对接，边界：不改动解析管线文件。维护者要求维持 3-4 worker 并行，特此记录。
