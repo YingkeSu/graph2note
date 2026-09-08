@@ -98,6 +98,19 @@ class DocumentStore(ABC):
     def delete_document(self, document_id: str) -> bool:
         """Remove a document entirely; True if it existed."""
 
+    # --- ingest/store bridge (issue 13) ---------------------------------------
+    @abstractmethod
+    def document_hashes(self) -> dict:
+        """``{document_id: pg_hash}`` for every record (near-dup matching)."""
+
+    @abstractmethod
+    def version_hashes(self, document_id: str) -> list:
+        """Candidate-version metadata (hashes + content) for one record."""
+
+    @abstractmethod
+    def remove_versions(self, document_id: str, version_ids: list) -> bool:
+        """Drop candidate versions (used when splitting a false merge)."""
+
 
 # ---------------------------------------------------------------------------
 # In-memory session store (same seam, non-durable)
@@ -146,10 +159,10 @@ class SessionDocumentStore(DocumentStore):
     def save_document(self, *, document_id, title, source_job_id, model,
                       markdown, ir_json, original_path, original_ext,
                       preprocessed_path, preprocessed_raw_path, assets_dir,
-                      timing_json) -> dict:
+                      timing_json, pg_hash="") -> dict:
         now = _now()
-        version_id = f"v{int(time.time() * 1000)}"
         rec = self._docs.get(document_id)
+        version_id = f"v{int(time.time() * 1000)}-{len(rec.get('versions')) if rec else 0}"
         if rec is None:
             rec = {
                 "document_id": document_id,
@@ -164,6 +177,8 @@ class SessionDocumentStore(DocumentStore):
             }
         rec["updated_at"] = now
         rec["current_markdown"] = markdown
+        rec["current_hash"] = pg_hash  # issue 13: perceptual hash of the page
+        rec["latest_version"] = version_id
         rec["versions"].append({
             "version_id": version_id,
             "created_at": now,
@@ -174,7 +189,13 @@ class SessionDocumentStore(DocumentStore):
             "preprocessed_raw_path": preprocessed_raw_path,
             "assets_dir": assets_dir,
             "timing_json": timing_json,
+            "pg_hash": pg_hash,
+            "original_path": original_path,
+            "original_ext": original_ext,
+            "current": True,  # refreshed below to be exact
         })
+        for i, v in enumerate(rec["versions"]):
+            v["current"] = (v["version_id"] == rec["latest_version"])
         self._docs[document_id] = rec
         return rec
 
@@ -193,6 +214,40 @@ class SessionDocumentStore(DocumentStore):
             return False
         if rec.get("source_job_id"):
             self.remove(rec["source_job_id"])
+        return True
+
+    # --- ingest/store bridge (issue 13) ---------------------------------------
+    def document_hashes(self) -> dict:
+        return {d: (r.get("current_hash") or "") for d, r in self._docs.items()}
+
+    def version_hashes(self, document_id: str) -> list:
+        rec = self._docs.get(document_id)
+        if rec is None:
+            return []
+        return [
+            {"version_id": v["version_id"],
+             "pg_hash": v.get("pg_hash") or "",
+             "markdown": v.get("markdown") or "",
+             "ir_json": v.get("ir_json") or "",
+             "model": v.get("model") or "",
+             "original_path": v.get("original_path"),
+             "original_ext": v.get("original_ext") or rec.get("original_ext") or ".jpg",
+             "created_at": v.get("created_at") or ""}
+            for v in rec.get("versions", [])
+        ]
+
+    def remove_versions(self, document_id: str, version_ids: list) -> bool:
+        rec = self._docs.get(document_id)
+        if rec is None:
+            return False
+        drop = set(version_ids)
+        keep = [v for v in rec.get("versions", []) if v["version_id"] not in drop]
+        rec["versions"] = keep
+        rec["latest_version"] = keep[-1]["version_id"] if keep else None
+        rec["current_hash"] = keep[-1].get("pg_hash") if keep else ""
+        for v in keep:
+            v["current"] = v["version_id"] == rec["latest_version"]
+        self._docs[document_id] = rec
         return True
 
 
@@ -248,11 +303,27 @@ class FileDocumentStore(SessionDocumentStore):
         base = self._doc_dir(document_id)
         rec["document_id"] = document_id
         rec["original_path"] = str(self._find_original(base))
-        vdir = base / "versions" / rec.get("latest_version", "")
-        rec["current_markdown_path"] = str(base / "markdown.md")
         latest = rec.get("versions") or []
-        if latest:
-            lv = latest[-1]
+        rec["hash"] = rec.get("current_hash") or (
+            latest[-1].get("pg_hash") if latest else "")
+        lv = latest[-1] if latest else None
+        # enrich each candidate version with its source-page path + hash
+        versions = []
+        for v in latest:
+            vid = v["version_id"]
+            vdir = base / "versions" / vid
+            versions.append({
+                "version_id": vid,
+                "created_at": v.get("created_at"),
+                "model": v.get("model"),
+                "pg_hash": v.get("pg_hash") or "",
+                "page_path": str(_first(vdir, "page.*") or vdir / "markdown.md"),
+                "current": vid == lv["version_id"],
+            })
+        rec["versions"] = versions
+        rec["latest_version_id"] = lv["version_id"] if lv else None
+        if lv:
+            vdir = base / "versions" / lv["version_id"]
             rec["latest"] = {
                 "version_id": lv["version_id"],
                 "created_at": lv["created_at"],
@@ -268,8 +339,10 @@ class FileDocumentStore(SessionDocumentStore):
         mp = base / "markdown.md"
         rec["current_markdown"] = mp.read_text(encoding="utf-8") if mp.is_file() else (
             (vdir / "markdown.md").read_text(encoding="utf-8")
-            if (vdir / "markdown.md").is_file() else ""
+            if lv and (vdir / "markdown.md").is_file() else ""
         )
+        vdir2 = base / "versions" / (rec.get("latest_version") or "")
+        rec["current_markdown_path"] = str(base / "markdown.md")
         return rec
 
     def _find_original(self, base: Path) -> Path | None:
@@ -279,18 +352,19 @@ class FileDocumentStore(SessionDocumentStore):
     def save_document(self, *, document_id, title, source_job_id, model,
                       markdown, ir_json, original_path, original_ext,
                       preprocessed_path, preprocessed_raw_path, assets_dir,
-                      timing_json) -> dict:
+                      timing_json, pg_hash="") -> dict:
         document_id = _safe(document_id)
         base = self._doc_dir(document_id)
         base.mkdir(parents=True, exist_ok=True)
         now = _now()
-        version_id = f"v{int(time.time() * 1000)}"
+        rec0 = self._read_record(document_id)
+        version_id = f"v{int(time.time() * 1000)}-{len(rec0.get('versions')) if rec0 else 0}"
         vdir = base / "versions" / version_id
         (vdir / "assets").mkdir(parents=True, exist_ok=True)
 
         # copy attachments from the parse assets leaf into this version
-        astleaf = Path(assets_dir) / "assets"
-        if astleaf.is_dir():
+        astleaf = Path(assets_dir) / "assets" if assets_dir else None
+        if astleaf and astleaf.is_dir():
             _copy_dir_files(astleaf, vdir / "assets")
 
         (vdir / "markdown.md").write_text(markdown, encoding="utf-8")
@@ -301,6 +375,8 @@ class FileDocumentStore(SessionDocumentStore):
         )
         _copy_if_exists(preprocessed_path, vdir / "preprocessed.png")
         _copy_if_exists(preprocessed_raw_path, vdir / "preprocessed_raw.png")
+        # source page of THIS candidate version is retained inside the version dir
+        _copy_if_exists(str(original_path), vdir / f"page{original_ext}")
 
         # record.json
         rec = self._read_record(document_id) or {
@@ -315,20 +391,21 @@ class FileDocumentStore(SessionDocumentStore):
         rec["source_job_id"] = source_job_id
         rec["original_ext"] = original_ext
         rec["latest_version"] = version_id
+        rec["current_hash"] = pg_hash
         versions = rec.setdefault("versions", [])
         versions.append({
             "version_id": version_id,
             "created_at": now,
             "model": model,
+            "pg_hash": pg_hash,
         })
         rec["versions"] = versions
         (base / "record.json").write_text(
             json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
 
-        # keep original copy + live markdown
+        # keep original copy (== effective/latest source) + live markdown
         _copy_if_exists(str(original_path), base / f"original{original_ext}")
         (base / "markdown.md").write_text(markdown, encoding="utf-8")
-        # remove the just-created version dir copy leaving only tracked assets
         return self.get_document(document_id) or rec
 
     def save_edits(self, document_id: str, markdown: str) -> dict | None:
@@ -352,6 +429,61 @@ class FileDocumentStore(SessionDocumentStore):
             self.remove(rec["source_job_id"])
         return existed
 
+    # --- ingest/store bridge (issue 13, disk-backed) --------------------------
+    def document_hashes(self) -> dict:
+        docs = self.root / "documents"
+        if not docs.is_dir():
+            return {}
+        out = {}
+        for p in docs.iterdir():
+            r = self._read_record(p.name)
+            if r:
+                out[r["document_id"]] = r.get("current_hash") or ""
+        return out
+
+    def version_hashes(self, document_id: str) -> list:
+        rec = self._read_record(document_id)
+        if rec is None:
+            return []
+        base = self._doc_dir(document_id)
+        out = []
+        for v in rec.get("versions", []):
+            vdir = base / "versions" / v["version_id"]
+            md = (vdir / "markdown.md").read_text(encoding="utf-8") if (vdir / "markdown.md").is_file() else ""
+            ir = (vdir / "ir.json").read_text(encoding="utf-8") if (vdir / "ir.json").is_file() else "{}"
+            page = _first(vdir, "page.*")
+            out.append({
+                "version_id": v["version_id"],
+                "pg_hash": v.get("pg_hash") or "",
+                "markdown": md,
+                "ir_json": ir,
+                "model": v.get("model") or "",
+                "original_path": str(page) if page else None,
+                "original_ext": _page_ext(page) or rec.get("original_ext") or ".jpg",
+                "created_at": v.get("created_at") or "",
+            })
+        return out
+
+    def remove_versions(self, document_id: str, version_ids: list) -> bool:
+        rec = self._read_record(document_id)
+        if rec is None:
+            return False
+        base = self._doc_dir(document_id)
+        drop = set(version_ids)
+        keep = [v for v in rec.get("versions", []) if v["version_id"] not in drop]
+        for vid in drop:
+            shutil.rmtree(base / "versions" / vid, ignore_errors=True)
+        rec["versions"] = keep
+        if keep:
+            rec["latest_version"] = keep[-1]["version_id"]
+            rec["current_hash"] = keep[-1].get("pg_hash") or ""
+        else:
+            rec["latest_version"] = None
+            rec["current_hash"] = ""
+        (base / "record.json").write_text(
+            json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+        return True
+
 
 def _copy_if_exists(src: str | None, dst: Path) -> None:
     if src and Path(src).is_file():
@@ -359,6 +491,17 @@ def _copy_if_exists(src: str | None, dst: Path) -> None:
             shutil.copy2(src, dst)
         except OSError:
             pass
+
+
+def _first(dirpath: Path, pattern: str) -> Path | None:
+    if not dirpath.is_dir():
+        return None
+    m = list(dirpath.glob(pattern))
+    return m[0] if m else None
+
+
+def _page_ext(page: Path | None) -> str | None:
+    return page.suffix if page is not None else None
 
 
 def _copy_dir_files(src: Path, dst: Path) -> None:

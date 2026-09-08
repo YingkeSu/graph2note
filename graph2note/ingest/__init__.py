@@ -14,6 +14,8 @@ from .missing import detect_missing, SequencePageNumberExtractor
 from .adapter import ParseInput, report_to_parse_inputs
 from .pdf import split_pdf, available as pdf_available, \
     content_fraction, is_low_information
+from .store_bridge import hash_page_image, near_duplicate, resolve_merge, \
+    ingest_single_page, ingest_report_to_store, split_document_versions
 
 __all__ = [
     "ingest_pdfs",
@@ -40,4 +42,10 @@ __all__ = [
     "pdf_available",
     "content_fraction",
     "is_low_information",
+    "hash_page_image",
+    "near_duplicate",
+    "resolve_merge",
+    "ingest_single_page",
+    "ingest_report_to_store",
+    "split_document_versions",
 ]

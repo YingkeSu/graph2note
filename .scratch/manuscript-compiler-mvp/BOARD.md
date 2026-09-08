@@ -15,7 +15,7 @@
 | 07 本机文档库 | A | graph2note-2（接力） | ~/.ao/data/worktrees/graph2note/graph2note-2 | dev/07-local-document-library | merged（6ee8cad；153+2 离线；MVP 主链 02–07 收官） | 2026-09-08 |
 | 08 Spike2 / Route B | — | — | — | — | ready-for-agent（P1 时机，MVP 主链路稳定后；阻塞于 01） | 2026-09-08 |
 | 12 Route A 空IR修复（新立） | 5 | graph2note-5 | ~/.ao/data/worktrees/graph2note/graph2note-5 | dev/12-route-a-empty-ir | claimed（关键线索已转入：max_tokens 3500 被推理耗尽） | 2026-09-08 |
-| 13 Ingest↔Store 去重集成（新立） | B | graph2note-4 | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/13-ingest-store-dedup | claimed（09+07 集成缺口，PRD US-31） | 2026-09-08 |
+| 13 Ingest↔Store 去重集成（新立） | B | graph2note-4 | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/13-ingest-store-dedup | in-review（pHash 并入同文档候选版本，误并可拆分，见 issue 13） | 2026-09-08 |
 | 09 PDF 拆页+去重+缺页预警 | B | graph2note-4（接力） | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/09-pdf-split-dedup | merged（ingest 包 9 模块+可调阈值、recluster 拆分、93 测试绿；真实扫描无内容重复） | 2026-09-08 |
 | 10 交叉验证引擎 | B | graph2note-4 | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/10-cross-validation | in-review（verify 包 9 模块+router 缝实现+CLI；162 测试绿；实测 2 评估图×双模型分歧率数据记 out/10） | 2026-09-08 |
 | 11 解析提速 | 5 | graph2note-5 | ~/.ao/data/worktrees/graph2note/graph2note-5 | dev/11-parse-latency | merged（3f57669；P95 6.4s 达标；O1 网关收敛/O2 结果缓存/O3 并发；AC4 EditRate 顺延至 12 修复后联动补验） | 2026-09-08 |
