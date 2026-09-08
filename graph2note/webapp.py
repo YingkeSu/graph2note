@@ -4,10 +4,11 @@ FastAPI backend wrapping ``pipeline.parse_document`` (issue 03) and the
 attachment/assets organization (issue 05).  Personal/local-only: single user,
 no auth, bind-free (serve on 127.0.0.1).
 
-Scope guard: issue 07 (durable document library) is intentionally NOT built
-here.  This module keeps all state in a per-process in-memory
-``SessionDocumentStore`` and exposes a narrow offline-tested HTTP API; issue 07
-will swap in a durable store via the ``DocumentStore`` persistence seam.
+Scope guard: issue 07 (durable document library) IS built here — uploads commit
+into a file-system-backed ``FileDocumentStore`` (data stays local; no database).
+The ``DocumentStore`` ABC is the persistence seam: ``SessionDocumentStore``
+(in-memory) and ``FileDocumentStore`` (durable, re-scanable on reload) both
+implement it.
 
 Parse runs in a background worker so the upload endpoint returns immediately;
 a watchdog drives the job to a clear ``timeout`` failure instead of hanging the
@@ -27,7 +28,6 @@ import threading
 import time
 import uuid
 import zipfile
-from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -36,6 +36,12 @@ from fastapi.responses import FileResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from .attachments import missing_attachments
+from .ir import dumps_ir
+from .store import (
+    DocumentStore,
+    FileDocumentStore,
+    SessionDocumentStore,
+)
 from . import pipeline
 
 DEFAULT_MODEL = os.environ.get("GRAPH2NOTE_MODEL", "glm-5.3-flash")
@@ -44,63 +50,6 @@ ALLOWED_EXT = {".jpg", ".jpeg", ".png"}
 # Server-side single page budget (FR-025 target P95 <= 60s; allow slack for
 # the gateway + a retry).  On expiry the job fails with a clear "timeout".
 JOB_TIMEOUT = int(os.environ.get("GRAPH2NOTE_JOB_TIMEOUT", "180"))
-
-
-# ---------------------------------------------------------------------------
-# Persistence seam (issue 07 will provide a durable implementation)
-# ---------------------------------------------------------------------------
-
-
-class DocumentStore(ABC):
-    @abstractmethod
-    def job_out_dir(self, job_id: str) -> Path:
-        """Directory where this job's parse artifacts are written."""
-
-    @abstractmethod
-    def save_original(self, job_id: str, data: bytes, ext: str) -> Path:
-        """Persist the uploaded original; return its path."""
-
-    @abstractmethod
-    def get_original(self, job_id: str) -> Path | None:
-        """Path to the stored original, or None."""
-
-    @abstractmethod
-    def remove(self, job_id: str) -> None:
-        """Remove all artifacts for a job (issue 07 delete path)."""
-
-
-class SessionDocumentStore(DocumentStore):
-    """Per-process in-memory/session store (MVP; not durable across restarts).
-
-    Writes parse artifacts under ``storage_dir/<job_id>/`` so a later issue-07
-    durable store can simply own/scan the same layout.
-    """
-
-    def __init__(self, storage_dir: str | Path):
-        self.root = Path(storage_dir)
-        self.root.mkdir(parents=True, exist_ok=True)
-
-    def job_out_dir(self, job_id: str) -> Path:
-        d = self.root / job_id
-        d.mkdir(parents=True, exist_ok=True)
-        return d
-
-    def save_original(self, job_id: str, data: bytes, ext: str) -> Path:
-        out = self.job_out_dir(job_id)
-        p = out / f"original{ext}"
-        p.write_bytes(data)
-        return p
-
-    def get_original(self, job_id: str) -> Path | None:
-        matches = list(self.job_out_dir(job_id).glob("original.*"))
-        return matches[0] if matches else None
-
-    def remove(self, job_id: str) -> None:
-        d = self.root / job_id
-        if d.exists():
-            import shutil
-
-            shutil.rmtree(d, ignore_errors=True)
 
 
 # ---------------------------------------------------------------------------
@@ -118,6 +67,8 @@ class Job:
     error_kind: str | None = None   # invalid|failed|timeout
     markdown: str | None = None
     doc_id: str | None = None
+    document_id: str | None = None
+    title: str | None = None
     warnings: list[str] = field(default_factory=list)
     degraded: list[int] = field(default_factory=list)
     timing: dict | None = None
@@ -137,6 +88,8 @@ class Job:
                 "error_kind": self.error_kind,
                 "markdown": self.markdown,
                 "doc_id": self.doc_id,
+                "document_id": self.document_id,
+                "title": self.title,
                 "warnings": list(self.warnings),
                 "degraded": list(self.degraded),
                 "timing": self.timing,
@@ -220,6 +173,28 @@ class JobRunner:
             job.degraded = list(result.route.degraded_block_indices)
             job.timing = result.timing_json
 
+        # Commit into the durable document library (issue 07). A fresh upload
+        # gets its own document_id (stable across that upload's reparses);
+        # re-parse of the SAME document keeps that id -> new immutable version,
+        # never a duplicate record. Failures never reach this point.
+        document_id = job.document_id or _safe_filename(job.doc_id or "doc")
+        store.save_document(
+            document_id=document_id,
+            title=job.title or job.doc_id or document_id,
+            source_job_id=job.job_id,
+            model=app.state.model,
+            markdown=result.markdown,
+            ir_json=dumps_ir(result.ir),
+            original_path=str(original),
+            original_ext=job.original_ext,
+            preprocessed_path=result.preprocessed_path,
+            preprocessed_raw_path=result.preprocessed_raw_path,
+            assets_dir=result.assets_dir,
+            timing_json=result.timing_json,
+        )
+        with job.lock:
+            job.document_id = document_id
+
 
 # ---------------------------------------------------------------------------
 # App factory
@@ -241,7 +216,7 @@ def create_app(
     VLM gateway is used.  ``document_store`` is the issue-07 persistence seam.
     """
     storage_dir = storage_dir or os.environ.get("GRAPH2NOTE_STORAGE", "./.g2n-storage")
-    store = document_store or SessionDocumentStore(storage_dir)
+    store = document_store or FileDocumentStore(storage_dir)
 
     app = FastAPI(title="graph2note", docs_url=None, redoc_url=None)
     app.state.store = store
@@ -272,16 +247,21 @@ def create_app(
         ext = _validate_upload(file.filename or "")
 
         job_id = uuid.uuid4().hex[:12]
+        title = (Path(file.filename).stem or job_id)[:60]
+        document_id = "doc-" + uuid.uuid4().hex[:10]
         original = store.save_original(job_id, data, ext)
         if not _looks_like_image(original):
             store.remove(job_id)
             raise HTTPException(status_code=415, detail="文件不是有效的 JPG/JPEG/PNG 图片。")
 
-        job = Job(job_id=job_id, model=model, original_ext=ext)
+        # one stable document_id per upload (reparse reuses it, never a dup doc)
+        job = Job(job_id=job_id, model=model, original_ext=ext,
+                  title=title, document_id=document_id)
         with app.state.jobs_lock:
             app.state.jobs[job_id] = job
         app.state.runner.trigger(job)
-        return {"job_id": job_id, "status": job.status, "model": model}
+        return {"job_id": job_id, "status": job.status, "model": model,
+                "document_id": document_id}
 
     @app.get("/api/jobs/{job_id}")
     def job_status(job_id: str):
@@ -376,6 +356,110 @@ def create_app(
             headers={"Content-Disposition": f"attachment; filename={_safe_filename(doc_id)}.zip"},
         )
 
+    # ---- document library (issue 07) -----------------------------------------
+
+    def _get_document(document_id: str) -> dict:
+        rec = store.get_document(document_id)
+        if rec is None:
+            raise HTTPException(status_code=404, detail="文档不存在或已被删除。")
+        return rec
+
+    @app.get("/api/documents")
+    def documents_list():
+        return store.list_documents()
+
+    @app.get("/api/documents/{document_id}")
+    def document_get(document_id: str):
+        return _get_document(document_id)
+
+    @app.post("/api/documents/{document_id}/markdown")
+    def document_save_markdown(document_id: str, body: dict | None = None):
+        rec = store.save_edits(document_id, (body or {}).get("markdown", ""))
+        if rec is None:
+            raise HTTPException(status_code=404, detail="文档不存在或已被删除。")
+        return {"ok": True, "updated_at": rec.get("updated_at")}
+
+    @app.delete("/api/documents/{document_id}")
+    def document_delete(document_id: str):
+        existed = store.delete_document(document_id)
+        if not existed:
+            raise HTTPException(status_code=404, detail="文档不存在或已被删除。")
+        return {"deleted": True, "document_id": document_id}
+
+    @app.post("/api/documents/{document_id}/reparse")
+    def document_reparse(document_id: str):
+        rec = _get_document(document_id)
+        op = rec.get("original_path")
+        if not op or not Path(op).is_file():
+            raise HTTPException(status_code=404, detail="原图已丢失，无法重新解析。")
+        ext = rec.get("original_ext") or Path(op).suffix or ".jpg"
+        job_id = uuid.uuid4().hex[:12]
+        store.save_original(job_id, Path(op).read_bytes(), ext)
+        job = Job(job_id=job_id, model=model, original_ext=ext,
+                  title=rec.get("title") or document_id, document_id=document_id)
+        with app.state.jobs_lock:
+            app.state.jobs[job_id] = job
+        app.state.runner.trigger(job)
+        return {"job_id": job_id, "document_id": document_id, "status": job.status}
+
+    @app.get("/api/documents/{document_id}/original")
+    def document_original(document_id: str):
+        rec = _get_document(document_id)
+        p = rec.get("original_path")
+        if not p or not Path(p).is_file():
+            raise HTTPException(status_code=404, detail="原图缺失。")
+        return FileResponse(p)
+
+    @app.get("/api/documents/{document_id}/preprocessed")
+    def document_preprocessed(document_id: str):
+        rec = _get_document(document_id)
+        latest = rec.get("latest")
+        p = latest and latest.get("preprocessed_path")
+        if not p or not Path(p).is_file():
+            raise HTTPException(status_code=404, detail="预处理图尚未就绪。")
+        return FileResponse(p, media_type="image/png")
+
+    @app.get("/api/documents/{document_id}/assets/{name}")
+    def document_asset(document_id: str, name: str):
+        rec = _get_document(document_id)
+        latest = rec.get("latest")
+        assets_root = latest and latest.get("assets_root")
+        if not assets_root:
+            raise HTTPException(status_code=404, detail="附件尚未就绪。")
+        safe = Path(name).name  # prevent path traversal (local app, but be safe)
+        target = Path(assets_root) / "assets" / safe
+        if not target.is_file():
+            raise HTTPException(status_code=404, detail=f"附件 {safe} 不存在。")
+        return FileResponse(target, media_type="image/png")
+
+    @app.post("/api/documents/{document_id}/export")
+    def document_export(document_id: str, body: dict | None = None):
+        rec = _get_document(document_id)
+        md = (body or {}).get("markdown") or rec.get("current_markdown")
+        doc_id = rec.get("title") or document_id
+        latest = rec.get("latest") or {}
+        assets_root = latest.get("assets_root")
+
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            zf.writestr(_safe_filename(doc_id) + ".md", md or "")
+            missing: list[str] = []
+            if assets_root:
+                leaf = Path(assets_root) / "assets"
+                if leaf.is_dir():
+                    for f in sorted(p for p in leaf.iterdir() if p.is_file()):
+                        zf.write(str(f), f"assets/{Path(f).name}")
+                    if md:
+                        missing = missing_attachments(md, assets_root)
+            zf.writestr("export-notes.json", json.dumps(
+                {"missing_attachments": missing}, ensure_ascii=False))
+        buf.seek(0)
+        return Response(
+            content=buf.getvalue(),
+            media_type="application/zip",
+            headers={"Content-Disposition": f"attachment; filename={_safe_filename(doc_id)}.zip"},
+        )
+
     # ---- static frontend ------------------------------------------------------
 
     static_dir = Path(__file__).parent / "webstatic"
@@ -422,6 +506,7 @@ __all__ = [
     "create_app",
     "DocumentStore",
     "SessionDocumentStore",
+    "FileDocumentStore",
     "Job",
     "JobRunner",
     "DEFAULT_MODEL",
