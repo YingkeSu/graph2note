@@ -297,3 +297,32 @@ def test_prepare_image_disabled(tmp_path):
     out, prep = g.prepare_image(__file__, enabled=False)
     assert out == __file__
     assert "skipped" in prep
+
+# ---------------- 会话健康巡检（proxy：纯 session_health 聚合） ----------------
+
+def test_session_health_all_ok():
+    rows = [
+        {"purpose": "parse", "direct": True},
+        {"purpose": "eval", "direct": True},
+        {"purpose": "verify", "direct": True},
+    ]
+    ok, bad = g.session_health(rows)
+    assert ok is True
+    assert bad == []
+
+
+def test_session_health_any_degraded():
+    rows = [
+        {"purpose": "parse", "direct": True},
+        {"purpose": "eval", "direct": False},
+        {"purpose": "verify", "direct": True},
+    ]
+    ok, bad = g.session_health(rows)
+    assert ok is False
+    assert bad == ["eval"]
+
+
+def test_session_health_empty_records():
+    ok, bad = g.session_health([])
+    assert ok is True
+    assert bad == []
