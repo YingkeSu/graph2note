@@ -1,0 +1,29 @@
+{
+  "document_type": "note",
+  "version": 1,
+  "blocks": [
+    { "type": "heading", "level": 1, "text": "状态空间模型笔记" },
+    { "type": "paragraph", "text": "这是一段中英混排文字：Deep Learning 与 深度学习。" },
+    { "type": "formula", "latex": "\\dot{x}=Ax+Bu", "inline": false },
+    { "type": "list", "ordered": false, "items": [
+      { "text": "CNN" },
+      { "text": "Transformer" },
+      { "text": "序列建模", "items": [
+        { "text": "RNN" },
+        { "text": "State Space" }
+      ]}
+    ]},
+    { "type": "formula", "latex": "e = mc^2", "inline": true },
+    {
+      "type": "diagram",
+      "caption": "解析流程图",
+      "nodes": [
+        { "id": "a", "label": "方案A" },
+        { "id": "b", "label": "方案B" }
+      ],
+      "edges": [
+        { "from": "a", "to": "b", "label": "实验" }
+      ]
+    }
+  ]
+}
