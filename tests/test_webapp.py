@@ -89,6 +89,16 @@ def test_upload_valid_png_runs_chain(tmp_path, monkeypatch):
     assert client.get(f"/api/jobs/{job_id}/preprocessed").status_code == 200
     # original preserved
     assert client.get(f"/api/jobs/{job_id}/original").status_code == 200
+    # every image reference in the .md resolves via the job asset endpoint
+    # (webapp job workspace keeps .md refs and assets/ under one root — issue 15b)
+    import re
+    refs = re.findall(r"\[([^\]]*)\]\(([^)\s]+)\)", doc["markdown"])
+    img_refs = [r[1] for r in refs if r[1].startswith("assets/")]
+    assert img_refs, "expected at least one asset reference in job markdown"
+    for name in img_refs:
+        assert client.get(
+            f"/api/jobs/{job_id}/assets/{name[len('assets/'):]}"
+        ).status_code == 200
 
 
 def test_upload_rejects_non_image_extension(tmp_path, monkeypatch):

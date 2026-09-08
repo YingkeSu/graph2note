@@ -59,19 +59,90 @@ def test_parse_subcommand_offline_via_cache(tmp_path):
 
 def test_parse_subcommand_with_output_path(tmp_path):
     img = _make_image(tmp_path)
-    from graph2note.vlm import VlmCache
-
-    cache = VlmCache(str(tmp_path / "cache"))
-    cache.put(str(img), "glm-5.3-flash", _valid_reply(), {"model": "glm-5.3-flash"})
+    cache = _seed(img, tmp_path / "cache")
     outmd = tmp_path / "custom.md"
 
     res = _run_cli(
         "parse", str(img), "--model", "glm-5.3-flash",
-        "--cache-dir", str(tmp_path / "cache"),
+        "--cache-dir", str(cache.cache_dir),
         "--no-preprocess", "-o", str(outmd),
     )
     assert res.returncode == 0, res.stderr
     assert outmd.read_text(encoding="utf-8").startswith("# 状态空间模型笔记")
+    # image is same dir as outmd: assets colocated with the .md, refs resolve
+    _assert_attachments_complete(outmd)
+
+
+def _seed(img_path, cache_dir, model="glm-5.3-flash"):
+    from graph2note.vlm import VlmCache
+
+    cache = VlmCache(str(cache_dir))
+    cache.put(str(img_path), model, _valid_reply(), {"model": model})
+    return cache
+
+
+def _assert_attachments_complete(md_path):
+    """Every image reference inside md resolves to an existing file under the
+    same directory's assets/ (FR-009/issue 15 attachment completeness)."""
+    import re
+
+    md = md_path.read_text(encoding="utf-8")
+    refs = re.findall(r"!\[\(([^)\s]+)\)|!\[[^\]]*\]\(([^)\s]+)\)", md)
+    targets = [t for pair in refs for t in pair if t]
+    assert targets, "md should reference at least one image asset"
+    for t in targets:
+        resolved = md_path.parent / t
+        assert resolved.exists(), f"broken asset ref {t!r} at {md_path}"
+
+
+def test_parse_output_path_colocates_assets(tmp_path):
+    """-o given without --out-dir: assets/ colocate with the .md even when the
+    image lives in a different directory (fixes broken relative asset refs)."""
+    pytest = __import__("pytest")
+    pytest.importorskip("PIL")
+    img_dir = tmp_path / "images"
+    img_dir.mkdir()
+    img = _make_image(img_dir)
+    cache = _seed(img, tmp_path / "cache")
+
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+    outmd = out_dir / "custom.md"
+    res = _run_cli(
+        "parse", str(img), "--model", "glm-5.3-flash",
+        "--cache-dir", str(cache.cache_dir), "--no-preprocess",
+        "-o", str(outmd),
+    )
+    assert res.returncode == 0, res.stderr
+    assert (out_dir / "assets").is_dir()
+    # image dir must NOT have gained a stray assets/ (root cause check)
+    assert not (img_dir / "assets").exists()
+    _assert_attachments_complete(outmd)
+
+
+def test_parse_explicit_out_dir_keeps_assets_there(tmp_path):
+    """--out-dir given explicitly: assets stay in out-dir (status quo), and .md
+    references resolve relative to out-dir (coexists with -o or default md)."""
+    pytest = __import__("pytest")
+    pytest.importorskip("PIL")
+    img_dir = tmp_path / "images"
+    img_dir.mkdir()
+    img = _make_image(img_dir)
+    cache = _seed(img, tmp_path / "cache")
+
+    out_dir = tmp_path / "out"
+    out_dir.mkdir()
+    outmd = out_dir / "note.md"
+    res = _run_cli(
+        "parse", str(img), "--model", "glm-5.3-flash",
+        "--cache-dir", str(cache.cache_dir), "--no-preprocess",
+        "--out-dir", str(out_dir), "-o", str(outmd),
+    )
+    assert res.returncode == 0, res.stderr
+    assert (out_dir / "assets").is_dir()
+    assert not (img_dir / "assets").exists()
+    _assert_attachments_complete(outmd)
+
 
 
 def test_parse_subcommand_missing_image(tmp_path):
