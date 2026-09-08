@@ -1,0 +1,25 @@
+{
+  "method": "PIL 渲染合成印刷样本（Hiragino Sans GB），Route A 无样本/无视觉调用故 N/A；Route B 跑 OCR+文本LLM",
+  "n": 2,
+  "samples": [
+    {
+      "id": "SYN-P1",
+      "mean_conf": 93.2,
+      "ocr_chars": 163,
+      "route_b_edit_rate": 0.1141,
+      "blocks": 7,
+      "warnings": []
+    },
+    {
+      "id": "SYN-P2",
+      "mean_conf": 84.26,
+      "ocr_chars": 157,
+      "route_b_edit_rate": 0.7643,
+      "blocks": 10,
+      "warnings": [
+        "text LLM returned empty/refusal on attempt 0 (raw_len=276)",
+        "fell back to raw OCR text as markdown (text LLM empty/error)"
+      ]
+    }
+  ]
+}

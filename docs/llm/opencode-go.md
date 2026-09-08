@@ -37,6 +37,7 @@ Base：`https://opencode.ai/zen/go/v1`，三个 API 面：
 | parse（产品解析） | `graph2note-parse-01` | `GRAPH2NOTE_SESSION_PARSE` | vlm.resolve_session / RouteARouter |
 | eval（评估 harness） | `graph2note-eval-01` | `GRAPH2NOTE_SESSION_EVAL` | eval/gateway.resolve_sessions |
 | verify（交叉验证） | `graph2note-verify-01-<model>` | `GRAPH2NOTE_SESSION_VERIFY` | detect/verify engine |
+| routeb（Route B 文本结构化） | `graph2note-routeb-01` | `GRAPH2NOTE_SESSION_ROUTEB` | OCR->文本 LLM（eval.gateway.transcribe_text） |
 
 - 解析优先级（`eval.gateway.resolve_session_for(purpose, model)`，vlm 委托 parse 用途）：
   `GRAPH2NOTE_SESSION_<PURPOSE>` > 历史 `GRAPH2NOTE_OPENCODE_SESSION` / `OPENCODE_SESSION` > 用途默认。

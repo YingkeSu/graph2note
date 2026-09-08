@@ -43,4 +43,14 @@ def test_three_purposes_fully_isolated():
         "parse": "graph2note-parse-01",
         "eval": "graph2note-eval-01",
         "verify": "graph2note-verify-01",
+        "routeb": "graph2note-routeb-01",  # issue 08 Route B 独立会话
     }
+
+
+def test_routeb_purpose_resolution(monkeypatch):
+    # Route B 走独立 purpose：默认、env 覆盖、与 parse 互不相同
+    assert g.resolve_session_for("routeb") == "graph2note-routeb-01"
+    assert g.resolve_session_for("routeb") != g.resolve_session_for("parse")
+    monkeypatch.setenv("GRAPH2NOTE_SESSION_ROUTEB", "my-routeb-sess")
+    assert g.resolve_session_for("routeb") == "my-routeb-sess"
+    assert g.resolve_session_for("parse") == "graph2note-parse-01"
