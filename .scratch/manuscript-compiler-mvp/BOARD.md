@@ -14,7 +14,8 @@
 | 06 Web App 三栏 | A | graph2note-2（接力） | ~/.ao/data/worktrees/graph2note/graph2note-2 | dev/06-webapp-three-pane | merged（ddf3dba；142+2 离线测试；浏览器手工路径见 handoff 06 §3） | 2026-09-08 |
 | 07 本机文档库 | A | graph2note-2（接力） | ~/.ao/data/worktrees/graph2note/graph2note-2 | dev/07-local-document-library | merged（6ee8cad；153+2 离线；MVP 主链 02–07 收官） | 2026-09-08 |
 | 08 Spike2 / Route B | — | — | — | — | ready-for-agent（P1 时机，MVP 主链路稳定后；阻塞于 01） | 2026-09-08 |
-| 12 Route A 空IR修复（新立） | 5 | graph2note-5 | ~/.ao/data/worktrees/graph2note/graph2note-5 | dev/12-route-a-empty-ir | claimed（关键线索已转入：max_tokens 3500 被推理耗尽） | 2026-09-08 |
+| 12 Route A 空IR修复（新立） | 5 | graph2note-5 | ~/.ao/data/worktrees/graph2note/graph2note-5 | dev/12-route-a-empty-ir | merged（2227dd3；两阶段解析：VLM→Markdown→确定性 IR；6/6 页非空；EditRate 绝对值优化随 01/11 跟进） | 2026-09-08 |
+| 侧任务：session 隔离 | 5 | graph2note-5 | 同上 | dev/gateway-session-isolation | claimed（parse/eval/verify 各自独立已验证直出 session；防并发争用） | 2026-09-08 |
 | 13 Ingest↔Store 去重集成（新立） | B | graph2note-4 | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/13-ingest-store-dedup | claimed（09+07 集成缺口，PRD US-31） | 2026-09-08 |
 | 09 PDF 拆页+去重+缺页预警 | B | graph2note-4（接力） | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/09-pdf-split-dedup | merged（ingest 包 9 模块+可调阈值、recluster 拆分、93 测试绿；真实扫描无内容重复） | 2026-09-08 |
 | 10 交叉验证引擎 | B | graph2note-4 | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/10-cross-validation | in-review（verify 包 9 模块+router 缝实现+CLI；162 测试绿；实测 2 评估图×双模型分歧率数据记 out/10） | 2026-09-08 |
