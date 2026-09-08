@@ -195,7 +195,9 @@ def collect_refs(markdown: str) -> list[str]:
 
 
 def _safe_name(s: str) -> str:
-    return re.sub(r"[^A-Za-z0-9._-]", "_", s)
+    """Sanitize a name for use as a filename, keeping Unicode word chars."""
+    s = re.sub(r"[^\w.]+?", "_", str(s), flags=re.UNICODE).strip("_")
+    return s or "untitled"
 
 
 @dataclass
@@ -204,9 +206,11 @@ class Vault:
 
     root: Path
     notes_dir: Path
-    documentation: list[str]           # rendered note files (relative)
+    moc_dir: Path
+    documentation: list[str]           # rendered note + moc files (relative)
     attachments: list[str]             # copied attachments (relative)
     sources: list[str]                 # copied original images (relative)
+    moc_files: list[str]               # generated MOC index notes (relative)
     manifest_path: Path
 
     @property
@@ -219,15 +223,21 @@ def export_vault(
     out_dir: str | Path,
     *,
     exported_at: Optional[str] = None,
+    scheme=None,  # ClassificationScheme | None -> also emit per-topic MOCs
     messages: Optional[list[str]] = None,
 ) -> Vault:
     """Write a complete vault into ``out_dir`` and validate every link.
 
-    Raises :class:`VaultExportError` if any note has a dead reference.
+    When ``scheme`` (a validated :class:`ClassificationScheme`) is given, a MOC
+    index note is also written per topic under ``mocs/`` and included in link
+    validation.  Raises :class:`VaultExportError` if any note has a dead link.
     """
+    from .moc import build_mocs
+
     entries = list(entries)
     root = Path(out_dir)
     notes_dir = root / "notes"
+    moc_dir = root / "mocs"
     notes_dir.mkdir(parents=True, exist_ok=True)
 
     # deterministic exported_at: explicit arg, else newest record timestamp
@@ -261,11 +271,22 @@ def export_vault(
         (d / "note.md").write_text(note, encoding="utf-8")
         doc_files.append(f"notes/{e.safe_id}/note.md")
 
+    # MOC index notes (issue 02) — deterministic, validated by link check
+    moc_files: list[str] = []
+    if scheme is not None:
+        moc_dir.mkdir(parents=True, exist_ok=True)
+        for topic, content in build_mocs(scheme, entries).items():
+            rel = f"mocs/{_safe_name(topic)}.md"
+            (moc_dir / f"{_safe_name(topic)}.md").write_text(content, encoding="utf-8")
+            moc_files.append(rel)
+
+    documentation = doc_files + moc_files
     # manifest (deterministic)
     manifest = {
         "exported_at": exported_at,
         "documents": [e.document_id for e in entries],
         "note_files": doc_files,
+        "moc_files": moc_files,
         "attachment_files": attach_files,
         "source_files": source_files,
     }
@@ -273,15 +294,17 @@ def export_vault(
     mpath.write_text(json.dumps(manifest, ensure_ascii=False, indent=2) + "\n",
                      encoding="utf-8")
 
-    vault = Vault(root=root, notes_dir=notes_dir, documentation=doc_files,
-                  attachments=attach_files, sources=source_files,
+    vault = Vault(root=root, notes_dir=notes_dir, moc_dir=moc_dir,
+                  documentation=documentation, attachments=attach_files,
+                  sources=source_files, moc_files=moc_files,
                   manifest_path=mpath)
 
     _validate_all_links(vault, exported_at)
     if messages is not None:
+        mocs_note = f" + {len(moc_files)} MOC" if moc_files else ""
         messages.append(
-            f"Exported {len(doc_files)} note(s), {len(source_files)} source "
-            f"image(s), {len(attach_files)} attachment(s) to {root}"
+            f"Exported {len(doc_files)} note(s){mocs_note}, {len(source_files)} "
+            f"source image(s), {len(attach_files)} attachment(s) to {root}"
         )
     return vault
 

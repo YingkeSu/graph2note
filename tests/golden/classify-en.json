@@ -1,0 +1,6 @@
+{
+  "topics": ["Algebra"],
+  "assignments": {"Algebra": ["d1"]},
+  "summaries": {"d1": "equations and algebra"},
+  "version": 1
+}

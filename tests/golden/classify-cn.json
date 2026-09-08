@@ -1,0 +1,6 @@
+{
+  "topics": ["中文"],
+  "assignments": {"中文": ["d1"]},
+  "summaries": {"d1": "中文内容"},
+  "version": 1
+}
