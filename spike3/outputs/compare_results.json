@@ -1,0 +1,204 @@
+{
+  "diagrams": [
+    {
+      "tag": "S01",
+      "edges": 1,
+      "nodes": 2,
+      "mpl": {
+        "overlap": 0,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.00502,
+        "size_kb": 14.0
+      },
+      "gv": {
+        "overlap": 0,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.13309,
+        "size_kb": 10.3
+      }
+    },
+    {
+      "tag": "S02",
+      "edges": 2,
+      "nodes": 3,
+      "mpl": {
+        "overlap": 0,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.00551,
+        "size_kb": 12.5
+      },
+      "gv": {
+        "overlap": 0,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.11478,
+        "size_kb": 11.2
+      }
+    },
+    {
+      "tag": "S03",
+      "edges": 2,
+      "nodes": 3,
+      "mpl": {
+        "overlap": 0,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.00843,
+        "size_kb": 21.2
+      },
+      "gv": {
+        "overlap": 0,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.08515,
+        "size_kb": 19.6
+      }
+    },
+    {
+      "tag": "S04",
+      "edges": 4,
+      "nodes": 4,
+      "mpl": {
+        "overlap": 0,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.00917,
+        "size_kb": 18.6
+      },
+      "gv": {
+        "overlap": 0,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.0607,
+        "size_kb": 18.2
+      }
+    },
+    {
+      "tag": "S05",
+      "edges": 3,
+      "nodes": 3,
+      "mpl": {
+        "overlap": 2,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.00353,
+        "size_kb": 15.2
+      },
+      "gv": {
+        "overlap": 0,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.06674,
+        "size_kb": 18.6
+      }
+    },
+    {
+      "tag": "S06",
+      "edges": 2,
+      "nodes": 3,
+      "mpl": {
+        "overlap": 0,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.0069,
+        "size_kb": 18.8
+      },
+      "gv": {
+        "overlap": 0,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.10727,
+        "size_kb": 18.1
+      }
+    },
+    {
+      "tag": "S07",
+      "edges": 4,
+      "nodes": 4,
+      "mpl": {
+        "overlap": 0,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.0099,
+        "size_kb": 21.4
+      },
+      "gv": {
+        "overlap": 0,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.08557,
+        "size_kb": 23.9
+      }
+    },
+    {
+      "tag": "S08",
+      "edges": 5,
+      "nodes": 5,
+      "mpl": {
+        "overlap": 0,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.01003,
+        "size_kb": 21.2
+      },
+      "gv": {
+        "overlap": 0,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.05547,
+        "size_kb": 18.6
+      }
+    },
+    {
+      "tag": "S09",
+      "edges": 3,
+      "nodes": 3,
+      "mpl": {
+        "overlap": 1,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.00609,
+        "size_kb": 14.1
+      },
+      "gv": {
+        "overlap": 0,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.11499,
+        "size_kb": 14.9
+      }
+    },
+    {
+      "tag": "S10",
+      "edges": 6,
+      "nodes": 6,
+      "mpl": {
+        "overlap": 0,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.01204,
+        "size_kb": 27.4
+      },
+      "gv": {
+        "overlap": 0,
+        "crossings": 0,
+        "reproducible": true,
+        "cjk_ink": 0.06984,
+        "size_kb": 32.6
+      }
+    }
+  ],
+  "summary_mpl": {
+    "avg_crossings": 0.0,
+    "avg_overlap": 0.3,
+    "all_reproducible": true
+  },
+  "summary_gv": {
+    "avg_crossings": 0.0,
+    "avg_overlap": 0.0,
+    "all_reproducible": true
+  }
+}

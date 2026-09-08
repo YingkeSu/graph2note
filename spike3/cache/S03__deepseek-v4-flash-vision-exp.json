@@ -1,0 +1,7 @@
+{
+  "image": "S03.png",
+  "model": "deepseek-v4-flash-vision-exp",
+  "raw": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"接收请求\"},{\"id\":\"n2\",\"label\":\"正常返回\"},{\"id\":\"n3\",\"label\":\"错误返回\"}],\"edges\":[{\"from\":\"n1\",\"to\":\"n2\",\"label\":\"成功\"},{\"from\":\"n1\",\"to\":\"n3\",\"label\":\"失败\"}]}",
+  "ok": true,
+  "http": 200
+}

@@ -1,0 +1,7 @@
+{
+  "image": "malformed.png",
+  "model": "glm-5.3-flash",
+  "raw": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"A\"}],\"edges\":[{\"from\":\"nZ\",\"to\":\"n1\",\"label\":\"\"}]}",
+  "ok": true,
+  "http": 200
+}

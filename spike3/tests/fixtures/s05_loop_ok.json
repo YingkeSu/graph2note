@@ -1,0 +1,7 @@
+{
+  "image": "s05_loop_ok.png",
+  "model": "glm-5.3-flash",
+  "raw": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"初始化\"},{\"id\":\"n2\",\"label\":\"迭代\"},{\"id\":\"n3\",\"label\":\"收敛？\"}],\"edges\":[{\"from\":\"n1\",\"to\":\"n2\",\"label\":\"\"},{\"from\":\"n2\",\"to\":\"n3\",\"label\":\"\"},{\"from\":\"n3\",\"to\":\"n1\",\"label\":\"否\"}]}",
+  "ok": true,
+  "http": 200
+}

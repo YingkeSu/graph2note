@@ -1,0 +1,7 @@
+{
+  "image": "S08.png",
+  "model": "deepseek-v4-flash-vision-exp",
+  "raw": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"任务A\"},{\"id\":\"n2\",\"label\":\"开始\"},{\"id\":\"n3\",\"label\":\"汇总\"},{\"id\":\"n4\",\"label\":\"结束\"},{\"id\":\"n5\",\"label\":\"任务B\"}],\"edges\":[{\"from\":\"n2\",\"to\":\"n1\",\"label\":\"\"},{\"from\":\"n2\",\"to\":\"n5\",\"label\":\"\"},{\"from\":\"n1\",\"to\":\"n3\",\"label\":\"\"},{\"from\":\"n5\",\"to\":\"n3\",\"label\":\"\"}]}",
+  "ok": true,
+  "http": 200
+}

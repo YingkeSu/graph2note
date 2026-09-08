@@ -1,0 +1,7 @@
+{
+  "image": "s03_branch_ok.png",
+  "model": "glm-5.3-flash",
+  "raw": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"接收请求\"},{\"id\":\"n2\",\"label\":\"正常返回\"},{\"id\":\"n3\",\"label\":\"错误返回\"}],\"edges\":[{\"from\":\"n2\",\"to\":\"n1\",\"label\":\"成功\"},{\"from\":\"n2\",\"to\":\"n3\",\"label\":\"失败\"}]}",
+  "ok": true,
+  "http": 200
+}

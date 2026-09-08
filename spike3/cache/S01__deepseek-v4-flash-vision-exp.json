@@ -1,0 +1,7 @@
+{
+  "image": "S01.png",
+  "model": "deepseek-v4-flash-vision-exp",
+  "raw": "{\"nodes\":[{\"id\":\"n1\",\"label\":\"输入数据\"},{\"id\":\"n2\",\"label\":\"输出结果\"}],\"edges\":[{\"from\":\"n1\",\"to\":\"n2\",\"label\":\"\"}]}",
+  "ok": true,
+  "http": 200
+}
