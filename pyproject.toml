@@ -7,7 +7,7 @@ name = "graph2note"
 version = "0.1.0"
 description = "Manuscript Compiler — Document IR schema + deterministic Markdown renderer"
 requires-python = ">=3.12"
-dependencies = ["pydantic>=2.0"]
+dependencies = ["pydantic>=2.0", "Pillow>=10.0"]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0"]

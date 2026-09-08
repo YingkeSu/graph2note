@@ -112,3 +112,30 @@
 - 图像变体：`reports/data/latency_diag/images/`
 - 密钥仅从环境变量读取，脚本/证据不落任何 key。
 - 分支 `dev/diag-eval-latency`，本报告未改共享代码。
+---
+
+## 8. 修复落地（`dev/gateway-speed-fix`）
+
+按本报告根因将 R1/R2/R4/R3 落地到 `eval/gateway.py`（新策略化调用）与 `eval/harness.py`（接入）。共享代码未改其他 worker 工作区。
+
+### 落地改动
+- **R1（P0）session 固定 + reasoning 监控**：每模型固定已验证直出 session（`glm-5.3-flash`/`deepseek-v4-flash-vision-exp` → `graph2note-spike-01`），可用 `OPENCODE_SESSION` 覆盖、`OPENCODE_SESSIONS` 注入备选（自动去重、主在前）。每次调用记录 `reasoning_tokens` 进 meta，超阈值（`RUNWAY_REASONING_TOKENS=800`）打 `reasoning_high` 告警，吃满预算打 `reasoning_runaway_capped`；连续超阈值支持切备选 session。
+- **R2（P0）首调直出**：新增 `DIRECT_USER_TEMPLATE`（显式「只输出正文、不要思考」），策略首调默认 `FIRST_CALL_MAX_TOKENS=3500`（`OPENCODE_FIRST_MAX_TOKENS` 可调）。空内容/length 截断时**换 session（若有备选）并升预算到 10000**，不再同参重试、不再 10k 空转后才回退。
+- **R4（P1）客户端硬超时**：默认 `CALL_TIMEOUT_SECONDS=120`；超时/网络错误标记 `status=timeout/error`，**不**隐性双倍调用。空内容不背锅 reasoning 具体原因，标 `status=empty`。
+- **R3（P1）送前降采样**：最长边超 1024 自动降采样 JPEG q85（Pillow，LANCZOS）；`OPENCODE_DOWNSCALE=0` 关闭；PIL 缺失优雅回退原图。prep（原始/缩放尺寸、字节）进 meta。
+- 每调用 meta：`latency_seconds / reasoning_tokens / prompt_tokens / completion_tokens / finish_reason / retried / warnings / prep`，供 issue 11 基线；缓存键加入 prompt+预算+降采样指纹（`img + model + prompt 指纹`），prompt 变更自动失效旧缓存（符合预期）。
+- 依赖：`pyproject.toml` 增加 `Pillow>=10.0`（测试集本就硬依赖 PIL）。
+
+### 实时验证（≤4 次预算，实际 2 次 glm；证据 `reports/data/latency_diag/validate/`）
+- **v1-glm-directed** `graph2note-spike-01` + 直出 prompt + 首调 3500 + 1024 降采样：**13.1s**，`reasoning_tokens=null`（无思考）、`finish=stop`、250 completion tokens、内容 557 字符、输入 982 prompt tokens（原始 ~2875 → **~3× 减少**）。
+- **v2-glm-repeated** 同配置复验：**24.19s**（服务器抖动，与既有 g6 40.2s 抖动一致），0 思考、`finish=stop`、内容 495 字符、`retried=false`。
+- 结论：**思考狂暴（300–407s 空 body）已消除**；固定 session + 直出 prompt 下 glm 稳定「无 reasoning + finish=stop + 有正文」，1024 降采样使输入 token 减少 ~3×。残留延迟来自网关侧抖动（R5 实测样本不足，未归因到本客户端）。
+
+### 测试
+- 新增 `tests/test_gateway.py`（13 项离线，mock transport，不触网）：session 解析/env 覆盖与去重、`warnings_for` 阈值、`cache_namespace` 指纹、策略状态机（首调成功不重试 / 空内容换 session+升预算 / 超时不重试 / 全空标 empty / 单次调用错误抛 GatewayError）、降采样（超限缩放、小图不动、关闭直通）。
+- 全量离线 `pytest tests/` 通过（无网络）。
+
+### 风险与未验证项
+- reasoning-free glm 用「直出 prompt + 新 session」是否成立仍未独立验证（本验证复用已验证 spike-01）；安全兜底仍是 session 固定 + 升预算切换。
+- 1024 降采样质量回落以评估集 EditRate 回测为门槛（**勿直接上 768**，质量损失未验证）。
+- session 在各 worker 间共享（spike-01），建议后续 reconcile 路由归属，避免多 worker 并发写同一会话缓存。
