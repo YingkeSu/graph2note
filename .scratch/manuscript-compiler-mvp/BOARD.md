@@ -1,7 +1,7 @@
 # BOARD：manuscript-compiler-mvp
 
 > 由调度 agent 维护；依赖关系以各 issue 的 Blocked by 为准，本表只是快照。
-> Updated: 2026-09-08（P1 增补：新增 09–11 去重/交叉验证/提速，均阻塞于 03；Wave 2 中期：02/04/05 已合并；01 全量评估进行中；03/06 待解锁）
+> Updated: 2026-09-08（全部在册 issue 完成度：16 个中 15 merged；唯 01 等 HITL——gold 人校+印刷样本+最终选型确认）
 > Worktree 位置：AO 管理的 worktree（`~/.ao/data/worktrees/graph2note/<session>`），分支按协议命名 `dev/<NN>-<slug>`；主检出目录不建 `.worktrees/`。
 
 | issue | track | agent | worktree | branch | status | updated |
@@ -13,7 +13,7 @@
 | 05 Diagram 渲染+附件 | B | graph2note-4（接力） | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/05-diagram-render-attachments | merged（9593366；验收：69 测试绿+2 干净 skip+AC 证据+审查） | 2026-09-08 |
 | 06 Web App 三栏 | A | graph2note-2（接力） | ~/.ao/data/worktrees/graph2note/graph2note-2 | dev/06-webapp-three-pane | merged（ddf3dba；142+2 离线测试；浏览器手工路径见 handoff 06 §3） | 2026-09-08 |
 | 07 本机文档库 | A | graph2note-2（接力） | ~/.ao/data/worktrees/graph2note/graph2note-2 | dev/07-local-document-library | merged（6ee8cad；153+2 离线；MVP 主链 02–07 收官） | 2026-09-08 |
-| 08 Spike2 / Route B | 5 | graph2note-5 | ~/.ao/data/worktrees/graph2note/graph2note-5 | dev/08-spike2-route-b | claimed（评估集与基线已就绪，Route A 复用缓存零额外视觉调用） | 2026-09-08 |
+| 08 Spike2 / Route B | 5 | graph2note-5 | ~/.ao/data/worktrees/graph2note/graph2note-5 | dev/08-spike2-route-b | merged（b46561f；Route A 全面占优，清印刷窄域切 B；AutoRouter 落地待维护者决策） | 2026-09-08 |
 | 12 Route A 空IR修复（新立） | 5 | graph2note-5 | ~/.ao/data/worktrees/graph2note/graph2note-5 | dev/12-route-a-empty-ir | merged（2227dd3；两阶段解析：VLM→Markdown→确定性 IR；6/6 页非空；EditRate 绝对值优化随 01/11 跟进） | 2026-09-08 |
 | 14 网关会话隔离（worker 立项） | 5 | graph2note-5 | ~/.ao/data/worktrees/graph2note/graph2note-5 | dev/gateway-session-isolation | merged（57187b3；三用途独立已验证 session + 64-token 探针；docs/llm §2.1 规范） | 2026-09-08 |
 | 13 Ingest↔Store 去重集成（新立） | B | graph2note-4 | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/13-ingest-store-dedup | merged（0043ed8；pHash 同页并入候选版本+可拆分+web 提示） | 2026-09-08 |
