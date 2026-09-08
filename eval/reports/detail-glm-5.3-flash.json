@@ -1,0 +1,58 @@
+{
+  "model": "glm-5.3-flash",
+  "samples": [
+    {
+      "id": "01-requirements-arch",
+      "model": "glm-5.3-flash",
+      "category": "flowchart",
+      "gold_proofed": false,
+      "meta": {
+        "model": "glm-5.3-flash",
+        "status": "ok",
+        "cost": "0",
+        "latency_seconds": 40.7,
+        "prompt_tokens": 2875,
+        "completion_tokens": 246,
+        "total_tokens": 3121,
+        "finish_reason": "stop",
+        "cached": false
+      },
+      "metrics": {
+        "edits": 455,
+        "insertions": 234,
+        "deletions": 0,
+        "substitutions": 221,
+        "edit_rate": 1.4772727272727273
+      },
+      "gold": "# Agent 编排架构（需求/架构图）\n\n> ⚠️ gold 为 AI 草拟，未经人工校对（HITL 待维护者）。\n\n## 输入层\n\n- 用户画像与需求输入\n- 手稿 / 文档图片\n- 任务描述\n\n## 解析层\n\n- 智能解析（Recognition Router）\n- 链路：图片 → 解析 → 中间表示（IR）\n\n## 格式化输出层\n\n- Markdown 直出\n- 模板渲染（CSS / PDF）\n\n## 路由策略\n\n- 视觉 LLM 优先（Route A）\n- OCR 路径预留（Route B）\n- 按文档类型路由\n\nflow: 输入层 → 解析层（Routing: LLM/OCR） → 格式化输出层\n",
+      "prediction": "# 需求\n\n层级通信：\n\n- MacBook —常用的终端— Windows Laptop\n- ↓ 通信层\n- Mac mini / Linux Tencent 执行 / 其它服务器\n- ↓ 需求\n-jidu（不清晰）\n- ↓ ↓\n- 任务拆分 —— 模型/harness 路由\n- ↓ ↓\n- 状态队列 / 任务图 ————→ 节点图\n\n# 通信质：\n\n- Mac ←→ Mac：Screen sharing\n- Windows → Mac：RDP / TS，支持 Apple VNC 协议\n  - 抗：Tiger VNC 不敢？\n- Win/Mac → Linux：sshximo 震憾美朱！\n\n瓶颈图：critical path 优化 ☆\n\n问：已有多种 harness，（直接固定一种？回原？）\n或：选改一种！cost-benefit trade off\n\n1. Lang Graph\n2. Codex力 Session Manage\n3. Agent Orchestrator\n\nQuestions：① 缺大而全 agent 是否可能（不清晰）\n\nPrograms / C10 / Project1 / Project2 / fabs / P1 …（根目录 / 子代码层？）"
+    },
+    {
+      "id": "02-digitize-pipeline",
+      "model": "glm-5.3-flash",
+      "category": "flowchart",
+      "gold_proofed": false,
+      "meta": {
+        "model": "glm-5.3-flash",
+        "status": "ok",
+        "cost": "0",
+        "latency_seconds": 19.25,
+        "prompt_tokens": 2886,
+        "completion_tokens": 167,
+        "total_tokens": 3053,
+        "finish_reason": "stop",
+        "cached": true,
+        "retried": true
+      },
+      "metrics": {
+        "edits": 221,
+        "insertions": 39,
+        "deletions": 11,
+        "substitutions": 171,
+        "edit_rate": 0.91701244813278
+      },
+      "gold": "# 数字化管线（Digitize Pipeline）\n\n> ⚠️ gold 为 AI 草拟，未经人工校对（HITL 待维护者）。\n\n## 流程\n\n1. 输入：手稿图片 / 扫描件\n2. 解析：LLM / OCR 识别（Recognition Router）\n3. 中间表示：Document IR\n4. 渲染：Markdown / CSS 模板\n5. 编译：HTML → PDF\n\nflow: 输入 → 解析(LLM/OCR) → Markdown/CSS 模板 → 编译 PDF\n",
+      "prediction": "# 需求\n\n笔记/手稿 电子化\n\n- 输入 → 解析 → 格式化 → 输出\n1. 输入：手稿、笔记、论文拆解\n2. 解析：预制模板 LLM\n3. 输出格式：\n   - a. HTML / CSS\n   - b. Markdown → MVP\n   - c. PDF\n\n用例：\n\n- 输入层：\n  - 输入：手稿、笔记等；（预制模板）\n  - 形式：图片等 → 接受文档\n\n- 解析层：LLM 直译？ OCR？路由！\n\n- 格式化输出：CSS / Markdown +（可选预设模板）\n\n  → 编译 → PDF\n\n# 设计\n\n（右页空白）"
+    }
+  ]
+}

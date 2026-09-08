@@ -1,0 +1,57 @@
+{
+  "model": "deepseek-v4-flash-vision-exp",
+  "samples": [
+    {
+      "id": "01-requirements-arch",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "flowchart",
+      "gold_proofed": false,
+      "meta": {
+        "model": "deepseek-v4-flash-vision-exp",
+        "status": "ok",
+        "cost": "0",
+        "latency_seconds": 64.46,
+        "prompt_tokens": 623,
+        "completion_tokens": 4909,
+        "total_tokens": 5532,
+        "finish_reason": "stop",
+        "cached": false
+      },
+      "metrics": {
+        "edits": 454,
+        "insertions": 233,
+        "deletions": 0,
+        "substitutions": 221,
+        "edit_rate": 1.474025974025974
+      },
+      "gold": "# Agent 编排架构（需求/架构图）\n\n> ⚠️ gold 为 AI 草拟，未经人工校对（HITL 待维护者）。\n\n## 输入层\n\n- 用户画像与需求输入\n- 手稿 / 文档图片\n- 任务描述\n\n## 解析层\n\n- 智能解析（Recognition Router）\n- 链路：图片 → 解析 → 中间表示（IR）\n\n## 格式化输出层\n\n- Markdown 直出\n- 模板渲染（CSS / PDF）\n\n## 路由策略\n\n- 视觉 LLM 优先（Route A）\n- OCR 路径预留（Route B）\n- 按文档类型路由\n\nflow: 输入层 → 解析层（Routing: LLM/OCR） → 格式化输出层\n",
+      "prediction": "# 需求:\n\n最末\n\n## 架构\n\n| Macbook | 常用终端 | Windows laptop |\n|---------|---------|----------------|\n| Mac mini | iOS | 其他服务器 |\n\n↓ 网络层\n\n↓ 需求\n\n↓ 云上\n\n### 云上流程\n\n- 任务拆分 → 模型/harness路由 → 状态服务 → 节点图\n\n---\n\n## 通信架构\n\n- Mac ↔ Mac: Screen sharing\n- Windows ↔ Mac: Royal TS，支持 Apple VNC 协议\n- Win/Mac ↔ Linux: ssh 远程登录\n\n### 要点\n\n- critical path 优化 ★\n\n### 问题\n\n已有多种 harness 如何统一？统一一种调度？\n\n### 答\n\n主次一种? cost-benefit trade off\n\n1. LangGraph\n2. Codex Session Manage\n3. Agent Orchestrator\n\n---\n\nQuestions:\n\n1. 大多数人用 gsap 里交互的 2.\n2. 项目 / 03 / project 1 / project 2\n3. 操作库"
+    },
+    {
+      "id": "02-digitize-pipeline",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "flowchart",
+      "gold_proofed": false,
+      "meta": {
+        "model": "deepseek-v4-flash-vision-exp",
+        "status": "ok",
+        "cost": "0",
+        "latency_seconds": 54.07,
+        "prompt_tokens": 623,
+        "completion_tokens": 5547,
+        "total_tokens": 6170,
+        "finish_reason": "stop",
+        "cached": false
+      },
+      "metrics": {
+        "edits": 224,
+        "insertions": 27,
+        "deletions": 8,
+        "substitutions": 189,
+        "edit_rate": 0.9294605809128631
+      },
+      "gold": "# 数字化管线（Digitize Pipeline）\n\n> ⚠️ gold 为 AI 草拟，未经人工校对（HITL 待维护者）。\n\n## 流程\n\n1. 输入：手稿图片 / 扫描件\n2. 解析：LLM / OCR 识别（Recognition Router）\n3. 中间表示：Document IR\n4. 渲染：Markdown / CSS 模板\n5. 编译：HTML → PDF\n\nflow: 输入 → 解析(LLM/OCR) → Markdown/CSS 模板 → 编译 PDF\n",
+      "prediction": "# 笔记/手稿电子化\n\n输入 -> 解析 -> 结构化 -> 存储\n\n① 输入：手稿、笔记、论文、折页\n② 解析：预设 模板 降噪\n③ 结构化：\n- a. HTML/CSS\n- b. markdown -> MD\n- c. pdf\n\n### 调库\n\n调库 -> 输出：稿、笔记等（预设模板）\n输出格式：图形 / 文字\n画面 -> LLM直接? -> OCR? 路由\n路由 -> 输出\n输出 -> 格式化输出：CSS / Markdown中（可设置模板）\n格式化输出 -> 转向\n转向 -> 编码 -> PDF\n\n离 分析"
+    }
+  ]
+}
