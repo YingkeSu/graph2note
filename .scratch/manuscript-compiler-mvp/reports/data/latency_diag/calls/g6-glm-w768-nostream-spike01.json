@@ -1,0 +1,40 @@
+{
+  "tag": "g6-glm-w768-nostream-spike01",
+  "ts_utc": "2026-09-08T09:05:51+00:00",
+  "model": "glm-5.3-flash",
+  "session": "graph2note-spike-01",
+  "image": "01-arch__w768_q80.jpg",
+  "style": "main",
+  "max_tokens": 10000,
+  "stream": false,
+  "http": 200,
+  "error": null,
+  "aborted": false,
+  "timeline_s": {
+    "t_first_delta": 40.202,
+    "t_first_reasoning": null,
+    "t_first_content": 40.202,
+    "t_last_chunk": 40.202,
+    "total": 40.202
+  },
+  "phase_s": {
+    "prefill_to_first_delta": 40.202,
+    "reasoning": null,
+    "content_gen": 0.0
+  },
+  "chars": {
+    "reasoning": 0,
+    "content": 593
+  },
+  "chunk_count": 98,
+  "finish_reason": null,
+  "usage": {
+    "prompt_tokens": 632,
+    "completion_tokens": 184,
+    "total_tokens": 816,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": null
+    }
+  }
+}

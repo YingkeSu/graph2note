@@ -1,0 +1,42 @@
+{
+  "tag": "c3-glm-orig-nostream",
+  "ts_utc": "2026-09-08T08:55:54+00:00",
+  "model": "glm-5.3-flash",
+  "session": "graph2note-diag-glm-ns",
+  "image": "01-requirements-arch.jpg",
+  "style": "main",
+  "max_tokens": 10000,
+  "stream": false,
+  "http": 200,
+  "error": null,
+  "aborted": false,
+  "timeline_s": {
+    "t_first_delta": 407.377,
+    "t_first_reasoning": 407.377,
+    "t_first_content": null,
+    "t_last_chunk": 407.395,
+    "total": 407.395
+  },
+  "phase_s": {
+    "prefill_to_first_delta": 407.377,
+    "reasoning": null,
+    "content_gen": null
+  },
+  "chars": {
+    "reasoning": 32686,
+    "content": 0
+  },
+  "chunk_count": 9391,
+  "finish_reason": "length",
+  "usage": {
+    "prompt_tokens": 2875,
+    "completion_tokens": 10000,
+    "total_tokens": 12875,
+    "prompt_tokens_details": {
+      "cached_tokens": 0
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 9530
+    }
+  }
+}

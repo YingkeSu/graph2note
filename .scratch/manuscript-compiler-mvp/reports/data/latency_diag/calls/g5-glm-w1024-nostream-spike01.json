@@ -1,0 +1,40 @@
+{
+  "tag": "g5-glm-w1024-nostream-spike01",
+  "ts_utc": "2026-09-08T09:05:32+00:00",
+  "model": "glm-5.3-flash",
+  "session": "graph2note-spike-01",
+  "image": "01-arch__w1024_q85.jpg",
+  "style": "main",
+  "max_tokens": 10000,
+  "stream": false,
+  "http": 200,
+  "error": null,
+  "aborted": false,
+  "timeline_s": {
+    "t_first_delta": 7.619,
+    "t_first_reasoning": null,
+    "t_first_content": 7.619,
+    "t_last_chunk": 7.62,
+    "total": 7.62
+  },
+  "phase_s": {
+    "prefill_to_first_delta": 7.619,
+    "reasoning": null,
+    "content_gen": 0.0
+  },
+  "chars": {
+    "reasoning": 0,
+    "content": 853
+  },
+  "chunk_count": 101,
+  "finish_reason": "stop",
+  "usage": {
+    "prompt_tokens": 961,
+    "completion_tokens": 280,
+    "total_tokens": 1241,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": null
+    }
+  }
+}

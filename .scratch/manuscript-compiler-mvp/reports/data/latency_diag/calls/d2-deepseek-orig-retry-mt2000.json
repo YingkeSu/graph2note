@@ -1,0 +1,43 @@
+{
+  "tag": "d2-deepseek-orig-retry-mt2000",
+  "ts_utc": "2026-09-08T09:04:46+00:00",
+  "model": "deepseek-v4-flash-vision-exp",
+  "session": "graph2note-spike-01",
+  "image": "01-requirements-arch.jpg",
+  "style": "retry",
+  "max_tokens": 2000,
+  "stream": false,
+  "http": 200,
+  "error": null,
+  "aborted": false,
+  "timeline_s": {
+    "t_first_delta": 26.261,
+    "t_first_reasoning": 26.262,
+    "t_first_content": null,
+    "t_last_chunk": 26.266,
+    "total": 26.266
+  },
+  "phase_s": {
+    "prefill_to_first_delta": 26.261,
+    "reasoning": null,
+    "content_gen": null
+  },
+  "chars": {
+    "reasoning": 7520,
+    "content": 0
+  },
+  "chunk_count": 719,
+  "finish_reason": "length",
+  "usage": {
+    "prompt_tokens": 638,
+    "completion_tokens": 2000,
+    "total_tokens": 2638,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "cache_write_tokens": null
+    },
+    "completion_tokens_details": {
+      "reasoning_tokens": 2000
+    }
+  }
+}
