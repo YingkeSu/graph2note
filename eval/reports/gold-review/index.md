@@ -5,10 +5,9 @@
 ## 使用说明
 
 1. **建议抽检顺序**：涂改类 6 页优先（语义化删除判断最依赖人眼），其次公式 4 页，再其余。
-2. 每页对照右上/页图缩略图（点开可看原图 `eval/fixtures/data/<id>.jpg`）核对下方两段全文。
+2. 每页对照缩略图（原图 `eval/fixtures/data/<id>.jpg`）核对下方两段全文。
 3. 差异要点为系统根据编辑度量粗判 + 类目提示，具体以人眼为准。
-4. **修改方式**：若 gold 需改，直接在 `gold/<id>.gold.md` 副本上修改；
-   勾选「需修改」并把改好的副本放回 `eval/fixtures/gold/<id>.gold.md`、置 `gold_proofed=true`（或交给工单处理）。
+4. 若 gold 需改，直接在 `gold/<id>.gold.md` 副本上修改并同步回 `eval/fixtures/gold/<id>.gold.md`、置 `gold_proofed=true`。
 5. 已核对且无误的页勾选「gold 无需修改」。
 
 | 优先 | 类目 | 页数 |
@@ -17,18 +16,17 @@
 | ★★ | 数学公式 | 4 |
 | ☆ | 中英混排 | 4 |
 | ☆ | 流程图/架构图 | 6 |
-| ★★★ | 涂改/删除线 | 6 |
+| ★★★（优先） | 涂改/删除线 | 6 |
 
 ---
 
 ## 01. A09｜涂改/删除线
 
-![页图缩略](./thumbnails/A09.jpg)（原图：`eval/fixtures/data/A09.jpg`，点击放大）
+![页图缩略](./thumbnails/A09.jpg)（原图：`eval/fixtures/data/A09.jpg`）
 
 - 类目：涂改/删除线 | gold 字符 740 / glm 预测 919 | 编辑 780(ins 207/del 29/sub 544) | EditRate 1.0526 | 网关延迟 49.85s
 - 已知差异要点：glm 预测比 gold 长 179 字符（可能多抄或补了细节）；替换占比高（544/780）——多为措辞/LaTeX 记号/分段差异
-  - 语义化删除类：gold 按逐字忠实口径保留了被划线/涂改段并打 `<<划掉>>/<<涂改>>` 标记；glm 预测按语义化删除口径不输出明确划掉的内容。因此该页差异会偏大，请重点核对删除线归属。
-- 复核副本：`gold/A09.gold.md`
+  - 语义化删除类：gold 按逐字忠实口径保留了被划线/涂改段并打 <<划掉>>/<<涂改>> 标记；glm 预测按语义化删除口径不输出明确划掉的内容，故该页差异偏大，请重点核对删除线归属。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/A09.gold.md` 副本上改后同步回 fixtures）
@@ -153,12 +151,11 @@ $00-03$: $10.10?, 15,17$
 
 ## 02. B11｜涂改/删除线
 
-![页图缩略](./thumbnails/B11.jpg)（原图：`eval/fixtures/data/B11.jpg`，点击放大）
+![页图缩略](./thumbnails/B11.jpg)（原图：`eval/fixtures/data/B11.jpg`）
 
 - 类目：涂改/删除线 | gold 字符 1553 / glm 预测 1173 | 编辑 1399(ins 5/del 386/sub 1008) | EditRate 0.9003 | 网关延迟 29.04s
 - 已知差异要点：glm 预测比 gold 短 380 字符（可能漏抄/截断，或按语义化删除删除了删除段）；替换占比高（1008/1399）——多为措辞/LaTeX 记号/分段差异
-  - 语义化删除类：gold 按逐字忠实口径保留了被划线/涂改段并打 `<<划掉>>/<<涂改>>` 标记；glm 预测按语义化删除口径不输出明确划掉的内容。因此该页差异会偏大，请重点核对删除线归属。
-- 复核副本：`gold/B11.gold.md`
+  - 语义化删除类：gold 按逐字忠实口径保留了被划线/涂改段并打 <<划掉>>/<<涂改>> 标记；glm 预测按语义化删除口径不输出明确划掉的内容，故该页差异偏大，请重点核对删除线归属。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/B11.gold.md` 副本上改后同步回 fixtures）
@@ -237,12 +234,11 @@ $\frac{1.5 F_0}{\text{初拉}}$ 调整中心比　　　　　　　　1.5 倍
 
 ## 03. C05｜涂改/删除线
 
-![页图缩略](./thumbnails/C05.jpg)（原图：`eval/fixtures/data/C05.jpg`，点击放大）
+![页图缩略](./thumbnails/C05.jpg)（原图：`eval/fixtures/data/C05.jpg`）
 
 - 类目：涂改/删除线 | gold 字符 1788 / glm 预测 2064 | 编辑 1331(ins 457/del 182/sub 692) | EditRate 0.7440 | 网关延迟 68.08s
 - 已知差异要点：glm 预测比 gold 长 276 字符（可能多抄或补了细节）；替换占比高（692/1331）——多为措辞/LaTeX 记号/分段差异
-  - 语义化删除类：gold 按逐字忠实口径保留了被划线/涂改段并打 `<<划掉>>/<<涂改>>` 标记；glm 预测按语义化删除口径不输出明确划掉的内容。因此该页差异会偏大，请重点核对删除线归属。
-- 复核副本：`gold/C05.gold.md`
+  - 语义化删除类：gold 按逐字忠实口径保留了被划线/涂改段并打 <<划掉>>/<<涂改>> 标记；glm 预测按语义化删除口径不输出明确划掉的内容，故该页差异偏大，请重点核对删除线归属。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/C05.gold.md` 副本上改后同步回 fixtures）
@@ -429,12 +425,11 @@ $$dH/dt = r_1[-a + c_2(1 - e^{-dy/V})]$$
 
 ## 04. C09｜涂改/删除线
 
-![页图缩略](./thumbnails/C09.jpg)（原图：`eval/fixtures/data/C09.jpg`，点击放大）
+![页图缩略](./thumbnails/C09.jpg)（原图：`eval/fixtures/data/C09.jpg`）
 
 - 类目：涂改/删除线 | gold 字符 983 / glm 预测 1001 | 编辑 626(ins 90/del 73/sub 463) | EditRate 0.6362 | 网关延迟 17.16s
 - 已知差异要点：glm 预测比 gold 长 18 字符（可能多抄或补了细节）；替换占比高（463/626）——多为措辞/LaTeX 记号/分段差异
-  - 语义化删除类：gold 按逐字忠实口径保留了被划线/涂改段并打 `<<划掉>>/<<涂改>>` 标记；glm 预测按语义化删除口径不输出明确划掉的内容。因此该页差异会偏大，请重点核对删除线归属。
-- 复核副本：`gold/C09.gold.md`
+  - 语义化删除类：gold 按逐字忠实口径保留了被划线/涂改段并打 <<划掉>>/<<涂改>> 标记；glm 预测按语义化删除口径不输出明确划掉的内容，故该页差异偏大，请重点核对删除线归属。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/C09.gold.md` 副本上改后同步回 fixtures）
@@ -565,12 +560,11 @@ $$=E_0\frac{d^n r(t)}{dt^n}+E_1\frac{d^{n-1}r(t)}{dt^{n-1}}+\cdots+E_{n-1}\frac{
 
 ## 05. C41｜涂改/删除线
 
-![页图缩略](./thumbnails/C41.jpg)（原图：`eval/fixtures/data/C41.jpg`，点击放大）
+![页图缩略](./thumbnails/C41.jpg)（原图：`eval/fixtures/data/C41.jpg`）
 
 - 类目：涂改/删除线 | gold 字符 1915 / glm 预测 2535 | 编辑 1535(ins 751/del 132/sub 652) | EditRate 0.8011 | 网关延迟 101.28s
 - 已知差异要点：glm 预测比 gold 长 620 字符（可能多抄或补了细节）；插入占比高（751/1535）——glm 出现了 gold 没有的内容；替换占比高（652/1535）——多为措辞/LaTeX 记号/分段差异
-  - 语义化删除类：gold 按逐字忠实口径保留了被划线/涂改段并打 `<<划掉>>/<<涂改>>` 标记；glm 预测按语义化删除口径不输出明确划掉的内容。因此该页差异会偏大，请重点核对删除线归属。
-- 复核副本：`gold/C41.gold.md`
+  - 语义化删除类：gold 按逐字忠实口径保留了被划线/涂改段并打 <<划掉>>/<<涂改>> 标记；glm 预测按语义化删除口径不输出明确划掉的内容，故该页差异偏大，请重点核对删除线归属。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/C41.gold.md` 副本上改后同步回 fixtures）
@@ -756,12 +750,11 @@ $\xi_k$ 在 $x_k,x_{k-1},s$ 之间
 
 ## 06. D07｜涂改/删除线
 
-![页图缩略](./thumbnails/D07.jpg)（原图：`eval/fixtures/data/D07.jpg`，点击放大）
+![页图缩略](./thumbnails/D07.jpg)（原图：`eval/fixtures/data/D07.jpg`）
 
 - 类目：涂改/删除线 | gold 字符 2421 / glm 预测 1950 | 编辑 1263(ins 123/del 595/sub 545) | EditRate 0.5215 | 网关延迟 29.09s
 - 已知差异要点：glm 预测比 gold 短 471 字符（可能漏抄/截断，或按语义化删除删除了删除段）；删除占比高（595/1263）——glm 未输出 gold 中内容（涂改类多为删除线，其余类请核漏抄）；替换占比高（545/1263）——多为措辞/LaTeX 记号/分段差异
-  - 语义化删除类：gold 按逐字忠实口径保留了被划线/涂改段并打 `<<划掉>>/<<涂改>>` 标记；glm 预测按语义化删除口径不输出明确划掉的内容。因此该页差异会偏大，请重点核对删除线归属。
-- 复核副本：`gold/D07.gold.md`
+  - 语义化删除类：gold 按逐字忠实口径保留了被划线/涂改段并打 <<划掉>>/<<涂改>> 标记；glm 预测按语义化删除口径不输出明确划掉的内容，故该页差异偏大，请重点核对删除线归属。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/D07.gold.md` 副本上改后同步回 fixtures）
@@ -956,12 +949,11 @@ $|x(t) - x_e(t)| \leq \xi$
 
 ## 07. A02｜数学公式
 
-![页图缩略](./thumbnails/A02.jpg)（原图：`eval/fixtures/data/A02.jpg`，点击放大）
+![页图缩略](./thumbnails/A02.jpg)（原图：`eval/fixtures/data/A02.jpg`）
 
 - 类目：数学公式 | gold 字符 3312 / glm 预测 1786 | 编辑 2509(ins 28/del 1555/sub 926) | EditRate 0.7573 | 网关延迟 25.07s
 - 已知差异要点：glm 预测比 gold 短 1526 字符（可能漏抄/截断，或按语义化删除删除了删除段）；删除占比高（1555/2509）——glm 未输出 gold 中内容（涂改类多为删除线，其余类请核漏抄）
-  - 数学公式类：差异多来自 LaTeX 写法（$…$ 与 $$…$$、`rac`/`\sum`/下标排版）与空行/分段，请核对公式内容与推导步骤是否一致。
-- 复核副本：`gold/A02.gold.md`
+  - 数学公式类：差异多来自 LaTeX 写法（$…$ 与 $$…$$、\frac/\sum/下标排版）与空行/分段，请核对公式内容与推导步骤。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/A02.gold.md` 副本上改后同步回 fixtures）
@@ -1113,12 +1105,11 @@ $$f(t)=\frac{1}{2\pi}\int_{-\infty}^{+\infty}F(\omega)e^{i\omega t}\,d\omega$$
 
 ## 08. B04｜数学公式
 
-![页图缩略](./thumbnails/B04.jpg)（原图：`eval/fixtures/data/B04.jpg`，点击放大）
+![页图缩略](./thumbnails/B04.jpg)（原图：`eval/fixtures/data/B04.jpg`）
 
 - 类目：数学公式 | gold 字符 751 / glm 预测 1139 | 编辑 916(ins 392/del 5/sub 519) | EditRate 1.2181 | 网关延迟 9.09s
 - 已知差异要点：glm 预测比 gold 长 388 字符（可能多抄或补了细节）；插入占比高（392/916）——glm 出现了 gold 没有的内容；替换占比高（519/916）——多为措辞/LaTeX 记号/分段差异
-  - 数学公式类：差异多来自 LaTeX 写法（$…$ 与 $$…$$、`rac`/`\sum`/下标排版）与空行/分段，请核对公式内容与推导步骤是否一致。
-- 复核副本：`gold/B04.gold.md`
+  - 数学公式类：差异多来自 LaTeX 写法（$…$ 与 $$…$$、\frac/\sum/下标排版）与空行/分段，请核对公式内容与推导步骤。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/B04.gold.md` 副本上改后同步回 fixtures）
@@ -1189,12 +1180,11 @@ $(sI-A)^{-1}=\dfrac{\text{adj}(sI-A)}{\det(sI-A)}$
 
 ## 09. C19｜数学公式
 
-![页图缩略](./thumbnails/C19.jpg)（原图：`eval/fixtures/data/C19.jpg`，点击放大）
+![页图缩略](./thumbnails/C19.jpg)（原图：`eval/fixtures/data/C19.jpg`）
 
 - 类目：数学公式 | gold 字符 1314 / glm 预测 1261 | 编辑 583(ins 103/del 157/sub 323) | EditRate 0.4433 | 网关延迟 26.39s
 - 已知差异要点：glm 预测比 gold 短 53 字符（可能漏抄/截断，或按语义化删除删除了删除段）；替换占比高（323/583）——多为措辞/LaTeX 记号/分段差异
-  - 数学公式类：差异多来自 LaTeX 写法（$…$ 与 $$…$$、`rac`/`\sum`/下标排版）与空行/分段，请核对公式内容与推导步骤是否一致。
-- 复核副本：`gold/C19.gold.md`
+  - 数学公式类：差异多来自 LaTeX 写法（$…$ 与 $$…$$、\frac/\sum/下标排版）与空行/分段，请核对公式内容与推导步骤。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/C19.gold.md` 副本上改后同步回 fixtures）
@@ -1295,12 +1285,11 @@ $$\therefore H_c(j\omega) = \begin{cases} H_d(e^{j\omega T}) & |\omega| < \omega
 
 ## 10. D22｜数学公式
 
-![页图缩略](./thumbnails/D22.jpg)（原图：`eval/fixtures/data/D22.jpg`，点击放大）
+![页图缩略](./thumbnails/D22.jpg)（原图：`eval/fixtures/data/D22.jpg`）
 
 - 类目：数学公式 | gold 字符 1818 / glm 预测 1484 | 编辑 616(ins 46/del 381/sub 189) | EditRate 0.3386 | 网关延迟 16.78s
 - 已知差异要点：glm 预测比 gold 短 334 字符（可能漏抄/截断，或按语义化删除删除了删除段）；删除占比高（381/616）——glm 未输出 gold 中内容（涂改类多为删除线，其余类请核漏抄）
-  - 数学公式类：差异多来自 LaTeX 写法（$…$ 与 $$…$$、`rac`/`\sum`/下标排版）与空行/分段，请核对公式内容与推导步骤是否一致。
-- 复核副本：`gold/D22.gold.md`
+  - 数学公式类：差异多来自 LaTeX 写法（$…$ 与 $$…$$、\frac/\sum/下标排版）与空行/分段，请核对公式内容与推导步骤。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/D22.gold.md` 副本上改后同步回 fixtures）
@@ -1495,12 +1484,11 @@ $S''(x_0) = S''(x_n)$
 
 ## 11. A10｜中英混排
 
-![页图缩略](./thumbnails/A10.jpg)（原图：`eval/fixtures/data/A10.jpg`，点击放大）
+![页图缩略](./thumbnails/A10.jpg)（原图：`eval/fixtures/data/A10.jpg`）
 
 - 类目：中英混排 | gold 字符 2046 / glm 预测 974 | 编辑 1739(ins 13/del 1086/sub 640) | EditRate 0.8495 | 网关延迟 57.96s
 - 已知差异要点：glm 预测比 gold 短 1072 字符（可能漏抄/截断，或按语义化删除删除了删除段）；删除占比高（1086/1739）——glm 未输出 gold 中内容（涂改类多为删除线，其余类请核漏抄）
-  - 中英混排类：核对中英文词与全角/半角、标点是否与图一致。
-- 复核副本：`gold/A10.gold.md`
+  - 中英混排类：核对中英文与全角/半角、标点是否与图一致。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/A10.gold.md` 副本上改后同步回 fixtures）
@@ -1728,12 +1716,11 @@ cos(λ+ρv)/?cosλ
 
 ## 12. A13｜流程图/架构图
 
-![页图缩略](./thumbnails/A13.jpg)（原图：`eval/fixtures/data/A13.jpg`，点击放大）
+![页图缩略](./thumbnails/A13.jpg)（原图：`eval/fixtures/data/A13.jpg`）
 
 - 类目：流程图/架构图 | gold 字符 1505 / glm 预测 600 | 编辑 1209(ins 10/del 916/sub 283) | EditRate 0.8028 | 网关延迟 37.85s
 - 已知差异要点：glm 预测比 gold 短 905 字符（可能漏抄/截断，或按语义化删除删除了删除段）；删除占比高（916/1209）——glm 未输出 gold 中内容（涂改类多为删除线，其余类请核漏抄）
-  - 流程图/架构图类：gold 与 glm 对节点文字、箭头方向的 Markdown 描述方式可能不同，请以原图核对节点与连线是否完备、方向是否正确。
-- 复核副本：`gold/A13.gold.md`
+  - 流程图/架构图类：两模型对节点文字、箭头方向的 Markdown 描述方式可能不同，请以原图核对节点/连线/方向是否完备。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/A13.gold.md` 副本上改后同步回 fixtures）
@@ -1839,12 +1826,11 @@ $$i_{13}^{H}=\frac{\omega_1^H}{\omega_3^H}=\frac{n_1^H}{n_3^H}=\frac{\omega_1-\o
 
 ## 13. A15｜手写笔记
 
-![页图缩略](./thumbnails/A15.jpg)（原图：`eval/fixtures/data/A15.jpg`，点击放大）
+![页图缩略](./thumbnails/A15.jpg)（原图：`eval/fixtures/data/A15.jpg`）
 
 - 类目：手写笔记 | gold 字符 567 / glm 预测 550 | 编辑 504(ins 30/del 48/sub 426) | EditRate 0.8873 | 网关延迟 27.1s
 - 已知差异要点：glm 预测比 gold 短 17 字符（可能漏抄/截断，或按语义化删除删除了删除段）；替换占比高（426/504）——多为措辞/LaTeX 记号/分段差异
   - 手写类：核对字形易混字、数字/单位、行内缩写是否与图一致。
-- 复核副本：`gold/A15.gold.md`
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/A15.gold.md` 副本上改后同步回 fixtures）
@@ -1930,12 +1916,11 @@ $$[v_{max}]=\frac{(d\varphi/dt)^2}{(e^2-S')^2+e^3}$$
 
 ## 14. A17｜手写笔记
 
-![页图缩略](./thumbnails/A17.jpg)（原图：`eval/fixtures/data/A17.jpg`，点击放大）
+![页图缩略](./thumbnails/A17.jpg)（原图：`eval/fixtures/data/A17.jpg`）
 
 - 类目：手写笔记 | gold 字符 2727 / glm 预测 2581 | 编辑 1597(ins 306/del 453/sub 838) | EditRate 0.5854 | 网关延迟 35.81s
 - 已知差异要点：glm 预测比 gold 短 146 字符（可能漏抄/截断，或按语义化删除删除了删除段）；替换占比高（838/1597）——多为措辞/LaTeX 记号/分段差异
   - 手写类：核对字形易混字、数字/单位、行内缩写是否与图一致。
-- 复核副本：`gold/A17.gold.md`
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/A17.gold.md` 副本上改后同步回 fixtures）
@@ -2084,12 +2069,11 @@ $\tilde{b} = [r, x_1, \dots, x_n]$, $\dot{\alpha} = \dot{x}_0$ → $\dot{p} = 0$
 
 ## 15. A18｜流程图/架构图
 
-![页图缩略](./thumbnails/A18.jpg)（原图：`eval/fixtures/data/A18.jpg`，点击放大）
+![页图缩略](./thumbnails/A18.jpg)（原图：`eval/fixtures/data/A18.jpg`）
 
 - 类目：流程图/架构图 | gold 字符 1199 / glm 预测 939 | 编辑 548(ins 55/del 316/sub 177) | EditRate 0.4567 | 网关延迟 9.29s
 - 已知差异要点：glm 预测比 gold 短 260 字符（可能漏抄/截断，或按语义化删除删除了删除段）；删除占比高（316/548）——glm 未输出 gold 中内容（涂改类多为删除线，其余类请核漏抄）
-  - 流程图/架构图类：gold 与 glm 对节点文字、箭头方向的 Markdown 描述方式可能不同，请以原图核对节点与连线是否完备、方向是否正确。
-- 复核副本：`gold/A18.gold.md`
+  - 流程图/架构图类：两模型对节点文字、箭头方向的 Markdown 描述方式可能不同，请以原图核对节点/连线/方向是否完备。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/A18.gold.md` 副本上改后同步回 fixtures）
@@ -2206,12 +2190,11 @@ $$\dot{x} = (A - BK)x + Br$$
 
 ## 16. B05｜手写笔记
 
-![页图缩略](./thumbnails/B05.jpg)（原图：`eval/fixtures/data/B05.jpg`，点击放大）
+![页图缩略](./thumbnails/B05.jpg)（原图：`eval/fixtures/data/B05.jpg`）
 
 - 类目：手写笔记 | gold 字符 1868 / glm 预测 1828 | 编辑 1455(ins 291/del 332/sub 832) | EditRate 0.7785 | 网关延迟 45.58s
 - 已知差异要点：glm 预测比 gold 短 40 字符（可能漏抄/截断，或按语义化删除删除了删除段）；替换占比高（832/1455）——多为措辞/LaTeX 记号/分段差异
   - 手写类：核对字形易混字、数字/单位、行内缩写是否与图一致。
-- 复核副本：`gold/B05.gold.md`
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/B05.gold.md` 副本上改后同步回 fixtures）
@@ -2358,12 +2341,11 @@ $H: \theta_2$ 无法表述，$[I: \theta]$ 面
 
 ## 17. B10｜手写笔记
 
-![页图缩略](./thumbnails/B10.jpg)（原图：`eval/fixtures/data/B10.jpg`，点击放大）
+![页图缩略](./thumbnails/B10.jpg)（原图：`eval/fixtures/data/B10.jpg`）
 
 - 类目：手写笔记 | gold 字符 1196 / glm 预测 902 | 编辑 939(ins 7/del 302/sub 630) | EditRate 0.7845 | 网关延迟 68.15s
 - 已知差异要点：glm 预测比 gold 短 294 字符（可能漏抄/截断，或按语义化删除删除了删除段）；替换占比高（630/939）——多为措辞/LaTeX 记号/分段差异
   - 手写类：核对字形易混字、数字/单位、行内缩写是否与图一致。
-- 复核副本：`gold/B10.gold.md`
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/B10.gold.md` 副本上改后同步回 fixtures）
@@ -2480,12 +2462,11 @@ $F_{r1} = -F_{r2}$；$F_{a1} = -F_{a2}$
 
 ## 18. B13｜手写笔记
 
-![页图缩略](./thumbnails/B13.jpg)（原图：`eval/fixtures/data/B13.jpg`，点击放大）
+![页图缩略](./thumbnails/B13.jpg)（原图：`eval/fixtures/data/B13.jpg`）
 
 - 类目：手写笔记 | gold 字符 906 / glm 预测 1051 | 编辑 797(ins 167/del 23/sub 607) | EditRate 0.8787 | 网关延迟 51.99s
 - 已知差异要点：glm 预测比 gold 长 145 字符（可能多抄或补了细节）；替换占比高（607/797）——多为措辞/LaTeX 记号/分段差异
   - 手写类：核对字形易混字、数字/单位、行内缩写是否与图一致。
-- 复核副本：`gold/B13.gold.md`
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/B13.gold.md` 副本上改后同步回 fixtures）
@@ -2632,12 +2613,11 @@ $$f_s = \frac{f'_{[?]}}{f_{s}[?]}$$
 
 ## 19. B17｜手写笔记
 
-![页图缩略](./thumbnails/B17.jpg)（原图：`eval/fixtures/data/B17.jpg`，点击放大）
+![页图缩略](./thumbnails/B17.jpg)（原图：`eval/fixtures/data/B17.jpg`）
 
 - 类目：手写笔记 | gold 字符 1719 / glm 预测 1641 | 编辑 1556(ins 31/del 110/sub 1415) | EditRate 0.9047 | 网关延迟 113.95s
 - 已知差异要点：glm 预测比 gold 短 78 字符（可能漏抄/截断，或按语义化删除删除了删除段）；替换占比高（1415/1556）——多为措辞/LaTeX 记号/分段差异
   - 手写类：核对字形易混字、数字/单位、行内缩写是否与图一致。
-- 复核副本：`gold/B17.gold.md`
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/B17.gold.md` 副本上改后同步回 fixtures）
@@ -2767,12 +2747,11 @@ $$\text{当 } x=x_0,\ y=y_0,\ \cdots,\ \frac{\mathrm{d}^{\,k}y}{\mathrm{d}x^{\,k
 
 ## 20. C08｜手写笔记
 
-![页图缩略](./thumbnails/C08.jpg)（原图：`eval/fixtures/data/C08.jpg`，点击放大）
+![页图缩略](./thumbnails/C08.jpg)（原图：`eval/fixtures/data/C08.jpg`）
 
 - 类目：手写笔记 | gold 字符 816 / glm 预测 1001 | 编辑 423(ins 222/del 38/sub 163) | EditRate 0.5177 | 网关延迟 13.12s
 - 已知差异要点：glm 预测比 gold 长 185 字符（可能多抄或补了细节）；插入占比高（222/423）——glm 出现了 gold 没有的内容
   - 手写类：核对字形易混字、数字/单位、行内缩写是否与图一致。
-- 复核副本：`gold/C08.gold.md`
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/C08.gold.md` 副本上改后同步回 fixtures）
@@ -2893,12 +2872,11 @@ $$\text{当 } x=x_0,\ y=y_0,\ \cdots,\ \frac{\mathrm{d}^{\,k}y}{\mathrm{d}x^{\,k
 
 ## 21. C13｜流程图/架构图
 
-![页图缩略](./thumbnails/C13.jpg)（原图：`eval/fixtures/data/C13.jpg`，点击放大）
+![页图缩略](./thumbnails/C13.jpg)（原图：`eval/fixtures/data/C13.jpg`）
 
 - 类目：流程图/架构图 | gold 字符 1250 / glm 预测 2316 | 编辑 1617(ins 1103/del 38/sub 476) | EditRate 1.2926 | 网关延迟 79.89s
 - 已知差异要点：glm 预测比 gold 长 1066 字符（可能多抄或补了细节）；插入占比高（1103/1617）——glm 出现了 gold 没有的内容
-  - 流程图/架构图类：gold 与 glm 对节点文字、箭头方向的 Markdown 描述方式可能不同，请以原图核对节点与连线是否完备、方向是否正确。
-- 复核副本：`gold/C13.gold.md`
+  - 流程图/架构图类：两模型对节点文字、箭头方向的 Markdown 描述方式可能不同，请以原图核对节点/连线/方向是否完备。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/C13.gold.md` 副本上改后同步回 fixtures）
@@ -3073,12 +3051,11 @@ $$\mathcal{F}\{R_{11}(\tau)\} = |\mathcal{F}\{f_1(\omega)\}|^2$$
 
 ## 22. C23｜手写笔记
 
-![页图缩略](./thumbnails/C23.jpg)（原图：`eval/fixtures/data/C23.jpg`，点击放大）
+![页图缩略](./thumbnails/C23.jpg)（原图：`eval/fixtures/data/C23.jpg`）
 
 - 类目：手写笔记 | gold 字符 302 / glm 预测 166 | 编辑 258(ins 17/del 154/sub 87) | EditRate 0.8515 | 网关延迟 9.09s
 - 已知差异要点：glm 预测比 gold 短 136 字符（可能漏抄/截断，或按语义化删除删除了删除段）；删除占比高（154/258）——glm 未输出 gold 中内容（涂改类多为删除线，其余类请核漏抄）
   - 手写类：核对字形易混字、数字/单位、行内缩写是否与图一致。
-- 复核副本：`gold/C23.gold.md`
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/C23.gold.md` 副本上改后同步回 fixtures）
@@ -3120,12 +3097,11 @@ $S_0$、$S_8$、$S_F$：符号位
 
 ## 23. C28｜手写笔记
 
-![页图缩略](./thumbnails/C28.jpg)（原图：`eval/fixtures/data/C28.jpg`，点击放大）
+![页图缩略](./thumbnails/C28.jpg)（原图：`eval/fixtures/data/C28.jpg`）
 
 - 类目：手写笔记 | gold 字符 1207 / glm 预测 1169 | 编辑 897(ins 102/del 141/sub 654) | EditRate 0.7425 | 网关延迟 52.48s
 - 已知差异要点：glm 预测比 gold 短 38 字符（可能漏抄/截断，或按语义化删除删除了删除段）；替换占比高（654/897）——多为措辞/LaTeX 记号/分段差异
   - 手写类：核对字形易混字、数字/单位、行内缩写是否与图一致。
-- 复核副本：`gold/C28.gold.md`
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/C28.gold.md` 副本上改后同步回 fixtures）
@@ -3247,12 +3223,11 @@ Def. 有干扰有记忆信道：……
 
 ## 24. C34｜中英混排
 
-![页图缩略](./thumbnails/C34.jpg)（原图：`eval/fixtures/data/C34.jpg`，点击放大）
+![页图缩略](./thumbnails/C34.jpg)（原图：`eval/fixtures/data/C34.jpg`）
 
 - 类目：中英混排 | gold 字符 1803 / glm 预测 2717 | 编辑 2085(ins 933/del 20/sub 1132) | EditRate 1.1558 | 网关延迟 57.97s
 - 已知差异要点：glm 预测比 gold 长 914 字符（可能多抄或补了细节）；插入占比高（933/2085）——glm 出现了 gold 没有的内容；替换占比高（1132/2085）——多为措辞/LaTeX 记号/分段差异
-  - 中英混排类：核对中英文词与全角/半角、标点是否与图一致。
-- 复核副本：`gold/C34.gold.md`
+  - 中英混排类：核对中英文与全角/半角、标点是否与图一致。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/C34.gold.md` 副本上改后同步回 fixtures）
@@ -3458,12 +3433,11 @@ $f$ 的条件数
 
 ## 25. C40｜中英混排
 
-![页图缩略](./thumbnails/C40.jpg)（原图：`eval/fixtures/data/C40.jpg`，点击放大）
+![页图缩略](./thumbnails/C40.jpg)（原图：`eval/fixtures/data/C40.jpg`）
 
 - 类目：中英混排 | gold 字符 2435 / glm 预测 2156 | 编辑 1170(ins 244/del 524/sub 402) | EditRate 0.4803 | 网关延迟 27.22s
 - 已知差异要点：glm 预测比 gold 短 279 字符（可能漏抄/截断，或按语义化删除删除了删除段）；删除占比高（524/1170）——glm 未输出 gold 中内容（涂改类多为删除线，其余类请核漏抄）
-  - 中英混排类：核对中英文词与全角/半角、标点是否与图一致。
-- 复核副本：`gold/C40.gold.md`
+  - 中英混排类：核对中英文与全角/半角、标点是否与图一致。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/C40.gold.md` 副本上改后同步回 fixtures）
@@ -3655,12 +3629,11 @@ $x_i^{(k+1)}=(1-\omega)\dfrac{a_{i1}}{a_{ii}}x_1^{(k)}\cdots$（类似项）$-(\
 
 ## 26. C47｜流程图/架构图
 
-![页图缩略](./thumbnails/C47.jpg)（原图：`eval/fixtures/data/C47.jpg`，点击放大）
+![页图缩略](./thumbnails/C47.jpg)（原图：`eval/fixtures/data/C47.jpg`）
 
 - 类目：流程图/架构图 | gold 字符 1121 / glm 预测 1036 | 编辑 548(ins 129/del 215/sub 204) | EditRate 0.4884 | 网关延迟 17.94s
 - 已知差异要点：glm 预测比 gold 短 85 字符（可能漏抄/截断，或按语义化删除删除了删除段）
-  - 流程图/架构图类：gold 与 glm 对节点文字、箭头方向的 Markdown 描述方式可能不同，请以原图核对节点与连线是否完备、方向是否正确。
-- 复核副本：`gold/C47.gold.md`
+  - 流程图/架构图类：两模型对节点文字、箭头方向的 Markdown 描述方式可能不同，请以原图核对节点/连线/方向是否完备。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/C47.gold.md` 副本上改后同步回 fixtures）
@@ -3831,12 +3804,11 @@ $\mathcal{L}[f(t)] = \dfrac{1}{s^2}$
 
 ## 27. C50｜流程图/架构图
 
-![页图缩略](./thumbnails/C50.jpg)（原图：`eval/fixtures/data/C50.jpg`，点击放大）
+![页图缩略](./thumbnails/C50.jpg)（原图：`eval/fixtures/data/C50.jpg`）
 
 - 类目：流程图/架构图 | gold 字符 1159 / glm 预测 1796 | 编辑 1238(ins 784/del 148/sub 306) | EditRate 1.0672 | 网关延迟 35.93s
 - 已知差异要点：glm 预测比 gold 长 637 字符（可能多抄或补了细节）；插入占比高（784/1238）——glm 出现了 gold 没有的内容
-  - 流程图/架构图类：gold 与 glm 对节点文字、箭头方向的 Markdown 描述方式可能不同，请以原图核对节点与连线是否完备、方向是否正确。
-- 复核副本：`gold/C50.gold.md`
+  - 流程图/架构图类：两模型对节点文字、箭头方向的 Markdown 描述方式可能不同，请以原图核对节点/连线/方向是否完备。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/C50.gold.md` 副本上改后同步回 fixtures）
@@ -4030,12 +4002,11 @@ $$\Rightarrow \sum\frac{1}{d - p_i} = \sum\frac{1}{d - z_j}$$
 
 ## 28. C52｜中英混排
 
-![页图缩略](./thumbnails/C52.jpg)（原图：`eval/fixtures/data/C52.jpg`，点击放大）
+![页图缩略](./thumbnails/C52.jpg)（原图：`eval/fixtures/data/C52.jpg`）
 
 - 类目：中英混排 | gold 字符 2035 / glm 预测 2068 | 编辑 1612(ins 297/del 265/sub 1050) | EditRate 0.7917 | 网关延迟 43.85s
 - 已知差异要点：glm 预测比 gold 长 33 字符（可能多抄或补了细节）；替换占比高（1050/1612）——多为措辞/LaTeX 记号/分段差异
-  - 中英混排类：核对中英文词与全角/半角、标点是否与图一致。
-- 复核副本：`gold/C52.gold.md`
+  - 中英混排类：核对中英文与全角/半角、标点是否与图一致。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/C52.gold.md` 副本上改后同步回 fixtures）
@@ -4253,12 +4224,11 @@ $M(\omega)$ 在 $W_b$ 以上 Tut 主句（远分线）、抗高频干扰能力�
 
 ## 29. D27｜手写笔记
 
-![页图缩略](./thumbnails/D27.jpg)（原图：`eval/fixtures/data/D27.jpg`，点击放大）
+![页图缩略](./thumbnails/D27.jpg)（原图：`eval/fixtures/data/D27.jpg`）
 
 - 类目：手写笔记 | gold 字符 1751 / glm 预测 1821 | 编辑 1362(ins 317/del 248/sub 797) | EditRate 0.7774 | 网关延迟 43.78s
 - 已知差异要点：glm 预测比 gold 长 70 字符（可能多抄或补了细节）；替换占比高（797/1362）——多为措辞/LaTeX 记号/分段差异
   - 手写类：核对字形易混字、数字/单位、行内缩写是否与图一致。
-- 复核副本：`gold/D27.gold.md`
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/D27.gold.md` 副本上改后同步回 fixtures）
@@ -4450,12 +4420,11 @@ $$H(X) + H(Y) \ge H(XY)$$
 
 ## 30. D35｜流程图/架构图
 
-![页图缩略](./thumbnails/D35.jpg)（原图：`eval/fixtures/data/D35.jpg`，点击放大）
+![页图缩略](./thumbnails/D35.jpg)（原图：`eval/fixtures/data/D35.jpg`）
 
 - 类目：流程图/架构图 | gold 字符 309 / glm 预测 204 | 编辑 170(ins 25/del 131/sub 14) | EditRate 0.5484 | 网关延迟 5.48s
 - 已知差异要点：glm 预测比 gold 短 105 字符（可能漏抄/截断，或按语义化删除删除了删除段）；删除占比高（131/170）——glm 未输出 gold 中内容（涂改类多为删除线，其余类请核漏抄）
-  - 流程图/架构图类：gold 与 glm 对节点文字、箭头方向的 Markdown 描述方式可能不同，请以原图核对节点与连线是否完备、方向是否正确。
-- 复核副本：`gold/D35.gold.md`
+  - 流程图/架构图类：两模型对节点文字、箭头方向的 Markdown 描述方式可能不同，请以原图核对节点/连线/方向是否完备。
 
 - [ ] gold 无需修改
 - [ ] gold 需修改（在 `gold/D35.gold.md` 副本上改后同步回 fixtures）
