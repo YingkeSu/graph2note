@@ -2,56 +2,3441 @@
   "model": "deepseek-v4-flash-vision-exp",
   "samples": [
     {
-      "id": "01-requirements-arch",
+      "id": "A15",
       "model": "deepseek-v4-flash-vision-exp",
-      "category": "flowchart",
+      "category": "handwriting",
       "gold_proofed": false,
       "meta": {
-        "model": "deepseek-v4-flash-vision-exp",
         "status": "ok",
-        "cost": "0",
-        "latency_seconds": 64.46,
-        "prompt_tokens": 623,
-        "completion_tokens": 4909,
-        "total_tokens": 5532,
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 57.12,
+        "prompt_tokens": 634,
+        "completion_tokens": 3127,
+        "total_tokens": 3761,
+        "reasoning_tokens": 3010,
         "finish_reason": "stop",
-        "cached": false
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 246554
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 108779,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [
+          "reasoning_high"
+        ],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 57.37,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 246554
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 108779,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 57.12,
+            "prompt_tokens": 634,
+            "completion_tokens": 3127,
+            "total_tokens": 3761,
+            "reasoning_tokens": 3010,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 246554
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 108779,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high"
+            ],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": true
       },
       "metrics": {
-        "edits": 454,
-        "insertions": 233,
-        "deletions": 0,
-        "substitutions": 221,
-        "edit_rate": 1.474025974025974
+        "edits": 516,
+        "insertions": 0,
+        "deletions": 415,
+        "substitutions": 101,
+        "edit_rate": 0.9084507042253521
       },
-      "gold": "# Agent 编排架构（需求/架构图）\n\n> ⚠️ gold 为 AI 草拟，未经人工校对（HITL 待维护者）。\n\n## 输入层\n\n- 用户画像与需求输入\n- 手稿 / 文档图片\n- 任务描述\n\n## 解析层\n\n- 智能解析（Recognition Router）\n- 链路：图片 → 解析 → 中间表示（IR）\n\n## 格式化输出层\n\n- Markdown 直出\n- 模板渲染（CSS / PDF）\n\n## 路由策略\n\n- 视觉 LLM 优先（Route A）\n- OCR 路径预留（Route B）\n- 按文档类型路由\n\nflow: 输入层 → 解析层（Routing: LLM/OCR） → 格式化输出层\n",
-      "prediction": "# 需求:\n\n最末\n\n## 架构\n\n| Macbook | 常用终端 | Windows laptop |\n|---------|---------|----------------|\n| Mac mini | iOS | 其他服务器 |\n\n↓ 网络层\n\n↓ 需求\n\n↓ 云上\n\n### 云上流程\n\n- 任务拆分 → 模型/harness路由 → 状态服务 → 节点图\n\n---\n\n## 通信架构\n\n- Mac ↔ Mac: Screen sharing\n- Windows ↔ Mac: Royal TS，支持 Apple VNC 协议\n- Win/Mac ↔ Linux: ssh 远程登录\n\n### 要点\n\n- critical path 优化 ★\n\n### 问题\n\n已有多种 harness 如何统一？统一一种调度？\n\n### 答\n\n主次一种? cost-benefit trade off\n\n1. LangGraph\n2. Codex Session Manage\n3. Agent Orchestrator\n\n---\n\nQuestions:\n\n1. 大多数人用 gsap 里交互的 2.\n2. 项目 / 03 / project 1 / project 2\n3. 操作库"
+      "gold": "凸轮机构\n\n1.分类：\n① 盘形/移动/圆柱 [?]凸轮\n② 尖顶/滚子/平底\n③ 沟槽/摩擦/弹性/等宽/力锁合\n④ 直动/摆动\n对心/偏距\n\n2.基本参数：\n·基圆／二类圆半径 r_{b} 由从动件\n① 结构要求\n② 经力情况要求\n基圆半径压力角:\n$$\\tan\\alpha=…\\frac{(l_{B}+s)}{…}=\\frac{(l_{B}+s)}{\\ldots}$$ <<划掉>>\n$$\\sin((\\alpha+\\varphi)+(-s)^{2})+e^{2}$$\nr_{b}=(0.1–2)r_{T}\n\n实验:\n3.基圆半径倾向于基圆半径[?]压力角小?\n凸轮机构运动时\n从动件运动角\n在-区机构运动角\n②-回程机构运动角\n对-区机构运动角\n或-区机构运动角\n从动件行程 h\n\n3.从动件运动规律：\n常用运动规律：\n- 等速、等加速/等减速[?]运动：多段 <<划掉>>\n- 三角形、一次动态、缓冲等性 <<涂改>>\n运动：柔性冲击 适用于中\n低速传动\n- 多项式运动、简单谐波(简谐)运动 最大有限度累积性\n适用中速轻载\n- 正弦加速度(简谐梯 <<涂改>>)曲线 <<涂改>> 装lash <<划掉>> 元过程中：高速轻载\n分段函数：高速重载\n正弦加速度：高速中载\n\n4.改善：\n滚子机构在中高速下随杆 <<涂改>> 上\n",
+      "prediction": "# 1.3 体系结构\n\n- 1.1 实现\n  - 体系结构\n  - 基本概念\n- 2. 基本概念\n  - ① 基本概念\n  - ② 阿姆达尔\n  - ③ 性能\n  - 1. 体系结构\n  - 2. 基本概念\n  - 3. 体系结构\n- 3. 体系结构\n  - 体系结构\n- 4. 体系结构\n  - 体系结构"
     },
     {
-      "id": "02-digitize-pipeline",
+      "id": "A17",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "handwriting",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 28.01,
+        "prompt_tokens": 634,
+        "completion_tokens": 1776,
+        "total_tokens": 2410,
+        "reasoning_tokens": 1591,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 205261
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 107892,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [
+          "reasoning_high"
+        ],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 47.95,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 205261
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 107892,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 28.01,
+            "prompt_tokens": 634,
+            "completion_tokens": 1776,
+            "total_tokens": 2410,
+            "reasoning_tokens": 1591,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 205261
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 107892,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high"
+            ],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": false
+      },
+      "metrics": {
+        "edits": 2377,
+        "insertions": 10,
+        "deletions": 2141,
+        "substitutions": 226,
+        "edit_rate": 0.8713343108504399
+      },
+      "gold": "# Lecture 3: Algebraic <<划掉:方法记号>>方法\n\n**Synthesis: 设计 a 机构 to perform 功能**\n\n- **Analysis**: perform 运动学 / 动力学 / 解析分析\n- **Synthesis**: Quadrature/type/Quantitative/Dimensional\n\n**Transmission Angle**（附小图：连接 $a$ 处夹角 $\\gamma$，向量 $u$）\n\n$\\mu_{min} \\geq 40°$: Could force transmission\n\n**Quick Return**: The 不独立机制（附圈 b²·a⁵草绘图）\n\n**Grashof**: $S+L \\leq P+Q$，最短构件，运动学\n\n# Lecture 6, 双叶：Denavit-Hartenberg\n\n**DH 参数：**\n\n- $a_i$：第 i 根 common axis 垂直 to 第 i 与 第 i+1\n- $\\alpha_i$：距离, between $x_{i-1}$, $x_i$\n- $b_i$：distance of 交点 $x_{i-1}$ and $x_i$, 在 $x_{i+1}$（注：[?]）\n- $\\alpha_i$：angle of $z_i$ and $z_{i+1}$（注：[?]）\n- $\\theta_i$：angle of $x_i$ and $x_{i+1}$\n- 单连杆回转 R pair: $\\alpha_{i-1},\\ a_i,\\ \\theta_i$（注：[?]）\n- $\\alpha_i$：单连杆 BP pair: $t_{i-1}$, $b_i$\n\n---\n\n$\\left[A_i\\right]_2 = \\begin{bmatrix} \\cos\\alpha_1 & -\\cos\\alpha_1\\sin\\beta_1 & \\sin\\alpha_1\\sin\\beta_1 \\\\ \\sin\\alpha_1 & \\cos\\alpha_1\\cos\\beta_1 & -\\sin\\alpha_1\\cos\\alpha_1 \\\\ 0 & \\sin\\beta_1 & \\cos\\alpha_1 \\end{bmatrix}$\n\n$\\left[A_{i-1}\\right]_3 = \\begin{bmatrix} \\alpha_1 \\cos\\alpha_1 & \\alpha_1 \\\\ \\alpha_1 \\sin\\alpha_1 & b_1 \\sin\\alpha_1 \\\\ b_1 & b_1' \\cos\\alpha_1 \\end{bmatrix}$\n\n（附注：$\\left[A_i\\right]_1 = \\left[A_{i-1}\\right]\\_?$）\n\n$a_2 = a_1 + c_2$\n$e_2 = a_1 + b_2$\n\n$\\alpha_1 + \\alpha_2 + \\alpha_3 = \\cdots + \\alpha_n + \\alpha_2 - \\alpha_1 = \\cos\\alpha_1\\ 椭圆$\n\n与 $A_{i0}$：$\\tilde{A}_{i4} = \\begin{bmatrix} \\cos\\alpha_1 & -\\sin\\alpha_1 & 0 & \\text{余} \\alpha_1 \\\\ \\cos\\alpha_1 \\sin\\beta_1 & \\cos\\alpha_1 \\cos\\beta_1 & -\\sin\\beta_1 & -b_1 \\sin\\alpha_1 \\\\ \\sin\\alpha_1 \\sin\\beta_1 & \\sin\\alpha_1 \\cos\\beta_1 & \\cos\\beta_1 & b_1 \\cos\\alpha_1 \\\\ 0 & 0 & 1 \\end{bmatrix}$\n\n记作：$H = A_{i1}A_{i2}A_{i2}$\n\n$T_{\\frac{\\alpha_1}{2}, \\frac{\\pi}{2}}^{\\alpha_1 \\dots} = \\begin{bmatrix} b_1 & \\alpha_1; \\\\ b_2 & \\frac{\\pi}{2} \\\\ \\vdots & \\vdots \\\\ b_{33} & \\end{bmatrix}$\n\n**Velocity:**\n\n$\\underline{e}_2 = \\underline{0}_1$, $\\underline{0}_2 = \\underline{0}_1$（注：[?]）：$e_{i-1} = Q_i \\underline{0}_i \\cdots \\omega_{i-1}$, $\\underline{0}_i$\n\n$\\underline{0}_2 = \\begin{bmatrix} 0 \\\\ 1 \\end{bmatrix}_{\\underline{0}_1 \\dots}^{?}$\n\n- $\\tau_1 = \\alpha_1 + Q_1 \\alpha_1 + \\cdots + Q_n \\alpha_n + \\alpha_n \\omega_n$（注：[?]）, $\\underline{0}_n \\omega_n$\n- $\\tau_2 = \\alpha_1 \\alpha_1 + \\alpha_2 \\alpha_2 + \\alpha_3 \\alpha_3 \\cdots \\alpha_n \\alpha_n$\n- Torque = $\\alpha_1 \\cdot \\tau_i$（注：[?]）$\\alpha_2 \\cdot \\tau_2 \\cdots \\alpha_n \\cdot \\tau_n$\n\n$\\dot{\\theta}_i \\geq e_{i+1}$（注：[?]）, $\\dot{\\theta}_{i+1} = e_i \\cdot \\dot{e}$, $\\dot{\\theta}_i = \\dot{\\theta}_0, \\cdots, \\dot{\\theta}_n$\n\n$\\underline{\\dot{x}} = \\underline{e}$（注：[?]）$K\\dot{r}_1 \\cdots \\tau_n \\dot{r}_{11}$, $u = h\\dot{\\theta}$（注：[?]）, $p_{1} = \\underline{0}$, $t_{1}\\dot{0}$\n\n---\n\n（页顶倒置小注：$\\ell_{\\text{回}} \\ell_{\\text{回}}$，<<涂改>>[?]）\n",
+      "prediction": "# Lecture 5\n- Synthesis: Design mechanism to perform kinematic\n- Analysis: Perform forward kinematics\n- Synthesis: Quantitative internal\n- Transmission: Angular force transmission\n\n$$\n\\theta_{ik}(i) \\cdot \\theta_{ij}(j) = \\theta_{il}(l)\n$$\n\n- Note: Colored force transmission\n- Gear train: ...\n- \\(\\psi = \\theta \\cdot ...\\) or ...\n\n# Lecture 6\n- \\(\\theta_{jk} = ...\\)\n- Denavit-Hartenberg\n- DH Table\n- Kinematic and static equations\n- \\(x_i\\): distance between \\(x_{i-1}\\) and \\(x_i\\) ... \\(z_i\\)\n- \\(a_i\\): distance ...\n- \\(d_i\\): ...\n- \\(b_i\\): ...\n- \\(H_i\\): ...\n- \\(P_i\\): ...\n\nAlgebraic\nAngle"
+    },
+    {
+      "id": "B05",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "handwriting",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 91.92,
+        "prompt_tokens": 634,
+        "completion_tokens": 6508,
+        "total_tokens": 7142,
+        "reasoning_tokens": 6256,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 164544
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 83072,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [
+          "reasoning_high"
+        ],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 34.77,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 164544
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 83072,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 91.92,
+            "prompt_tokens": 634,
+            "completion_tokens": 6508,
+            "total_tokens": 7142,
+            "reasoning_tokens": 6256,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 164544
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 83072,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high"
+            ],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": true
+      },
+      "metrics": {
+        "edits": 1637,
+        "insertions": 1,
+        "deletions": 1347,
+        "substitutions": 289,
+        "edit_rate": 0.8758694489031568
+      },
+      "gold": "# 手稿转写（左半页，倒置部分）\n\n- [?] [?]ᵀ [?] 、u 、uv …（另有 [?] ₂₈⁻[?] 等，字迹潦草，含义为矩阵 [u v] 相关记号 [?]）\n\n- **Rot(1,θ)₂：**\n  $$\\begin{bmatrix} \\cos\\theta & -\\sin\\theta \\\\ \\sin\\theta & \\cos\\theta \\end{bmatrix}$$\n  （旁边记：cos θ ≈ 1（θ=0/小的 [?]），\"i 段 [θ]/[?]±θ\" [?]）\n\n- **Not Δ(1,θ)₂：** [?] 无 cosθ 项，θ、[?] 箭头指向 (y指向 xv 方向的图示：斜向箭头，标注 x、y、z)\n\n- **But (2.89)₂：** [u v] 关于 co(θ)（此处记 cosθ ≈ 1，cosθ^⁻[?]） <<划掉>> [?]，得 [?] 的转置结果 [?] ，θ = [?] 中间的记号 [?] <<涂改>>\n\n- **On(技巧，θ)：** On(u,v)：Post [u v] = Rᵀ [u v]\n  $$A^{-1} = A^{ST}R^{-1} + A^T O^{T}$$（记号不确切，[?]）\n  $$\\begin{bmatrix} -u^{ST} \\\\ v \\end{bmatrix} \\sim \\begin{bmatrix} -A^{ST}R^{ST} \\\\ \\;\\; A^{T}\\,O^{T} \\end{bmatrix}\\begin{bmatrix} [\\?]^{ST} \\\\ v \\end{bmatrix} \\cup$$\n  $$A^{-1} = \\begin{bmatrix} -R^{ST}[?]^{ST1} \\\\ I^{S} \\end{bmatrix} \\begin{bmatrix} 0 \\\\ 1 \\end{bmatrix} \\cup$$ （此行记号难以确读 [?]）\n\n- **Aᵗ ≡ Oᵛ'A₁：**\n\n- **(R₂)p：** Rot(R̄,r̄,p̄)\n\n- **R̄⁽ᵂ⁾[?] = Rot(R̄, b̄, θ̄)** [?]\n  **R̄ᵤ[?] = Rot(1, b̄, θ̄)**\n\n- x | φ ↗ φ̄ φ̂（三角/角度示意图：x 轴，φ、φ + θ、φ̄ 等箭头）\n\n---\n\n# 手稿转写（右半页）\n\n- **Symmetric：** Aᵀ = A，即 **Aᵗᵘ ≡** [?]\n\n- **Skew-Symmetric：** Aᵗ = −A\n- **Orthogonal：** Aᵗ·A = I（记号 [A]¹）\n\n- **Triangular Matrix：** [ triangular ]：\n  $$\\begin{bmatrix} \\cdots \\\\ 0 \\end{bmatrix}$$\n  Diagonal Matrix：diag( diag. − … ) [?]\n\n- **Scalar：** α = αI（[?] αI）\n- **Idempotent：** A = A²，即 A·A = A·A\n- **TQ(A)₁ ≡ Q̄Q̄ᵀ：**（Q 部分记号 [?]）\n  Vectors [?]：\n  $$\\begin{bmatrix} \\alpha_{22}-\\alpha_{33} \\\\ \\alpha_{22}-\\alpha_{33} \\\\ \\alpha_{21}-\\alpha_{33} \\end{bmatrix}$$（下标数字重复潦草，[?]）\n\n- **Projection：** p̄ = vv̄ᵀ n，n = n /‖n‖\n- **Reflection：** R̄ = I − 2nnᵀ\n  **ν = eeᵀᵛ** [?]，ν′ = (I − eeᵀ)ν [?]\n\n- **M：** 3/4·(n−1) + ⌊eᶠ[?]⌋，t₀ ≈ ½⁻[?] n — to pt+noᵗ\n- **N₁：** J links\n  - n ‡ （关节 [?]）：N·po ints（<<涂改>> 划改处 [?]）\n  - N：n ᵈᵉᵍʳᵉᵉˢ �schaft s [?] ← ν ᵈᵒᶦᶰᵗˢ ‰ [?]\n\n- **M′：** nolify [?]（“弹 [?]”），其中 [?] ₁₂ ≡ 3ᶠ[?]\n\n- H：O 之 点，[?] ₄ — L：₃[?]（底部小字，[?]）\n\n*(若干记号因潦草无法确读，以 [?] 标注。)*\n",
+      "prediction": "- Symmetric\n- Skew-Symmetric\n- Orthogonal\n- $A: A^T$\n- $A: A^{-1}$\n- $A: a_{ij}$\n- Diagonal Matrix\n- Diagonalizable\n- idempotent\n- $A^2 = A$\n- Inertia: $I = A^T A$\n- Isotropic\n- Projection\n- Reflection\n- $R = I - 2nn^T$\n- $P = I - nn^T$\n- $M = U^T A V$\n- $U = I - 2nn^T$\n- $V = I - 2nn^T$\n- $U^T = U$\n- $q e^T$\n\n向量/变换示意图（图中文字：1, 2, 3）\n\nDecomposition\nDilation\nrotation\nInvariants: Inner product, angle, orientation\nM1 = U^T\nM2 = V^T\nM = U^T A V\n\n$A^T = A^{-1}$\n$A^T = A$\n$$A = \\begin{bmatrix} 1 & 0 \\\\ 0 & -1 \\end{bmatrix}$$"
+    },
+    {
+      "id": "B10",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "handwriting",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 57.42,
+        "prompt_tokens": 634,
+        "completion_tokens": 7936,
+        "total_tokens": 8570,
+        "reasoning_tokens": 7800,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 243511
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 108735,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [
+          "reasoning_high"
+        ],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 35.19,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 243511
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 108735,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 57.42,
+            "prompt_tokens": 634,
+            "completion_tokens": 7936,
+            "total_tokens": 8570,
+            "reasoning_tokens": 7800,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 243511
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 108735,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high"
+            ],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": true
+      },
+      "metrics": {
+        "edits": 1137,
+        "insertions": 0,
+        "deletions": 1026,
+        "substitutions": 111,
+        "edit_rate": 0.949874686716792
+      },
+      "gold": "# 混合[?]轮〔齿〕根弯曲计算　（划线：<<划掉>>）　　螺旋条件[?] <<划掉>>\n\n## 受力分析：\n1. **直齿圆锥齿轮：**（<<涂改>>）\n   - 圆周力：$F_t = 2T_1 / d_{m1}$ <<涂改>>\n   - 从动轮与主动轮方向相反\n   - 主动轮与圆周[?]方向相同\n   - 径向力：$F_r = F_t \\tan\\alpha \\cos\\delta_1$[?]\n   - 指向各自轮心<<划掉>>\n   - 外[?]齿轮指向[?]齿轮轮心 [?]\n   - 内齿轮[?]：背离[?]齿轮轮心 [?]\n   - 法向力：$F_n = F_t/\\cos\\alpha_n$ [?]\n   - 轴向力：$F_a = F_t \\tan\\alpha \\sin\\delta_1$[?]\n2. **斜齿圆锥[?]齿轮**：[?]\n   - 法向力：$F_n = F_t/\\cos\\alpha_n$ [?] <<划掉>>\n   - 圆周力：$F_t = 2T_1/d_1$ [?]\n   - 径向力：$F_r = F_t \\tan\\alpha / \\cos\\beta$ [?]\n   - 轴向力：$F_a = F_t \\tan\\beta$ [?] <<划掉>>\n   - 径向力[?]：指向[?]轴线[?] [?]\n3. **直齿圆锥[锥]齿轮：**[?]\n   - 圆周力：$F_t = 2T_1/d_1$ [?]\n   - 径向力：$F_r = F_t \\tan\\alpha \\cos\\delta_1$ [?]\n   - [?]指向齿轮轮心 [?]\n   - 轴向：[?] $F_{ar1} = F_{an2} \\cos\\delta_1$ [?]\n   - 啮合向关系[?]：$F_{r2} = -F_{a1}$ ； $F_{a2} = -F_{r1}$ [?]\n   - 方向：[?] $\\cos\\,$?\\; $\\sin\\delta_1$ [?]\n\n4. **蜗轮蜗杆：**[?]\n\n---\n\n**左栏（原稿另一侧）：**\n\n机械零件设计规定 —— 设计准则<<划掉>>\n\n- 1. 机械零件的基本（的几）[?] 类型<<划掉>>\n  - 失效：强度[?]（失效）/（失效）[?]\n  - 失效形式：∨ [?]\n    - 1）[?] [?]（机械性能 能）[?]\n- 2. 设计准则：\n  - ① 强度[?]性能，抗[?]断裂 [?]\n  - 失效：[?] 转荷 / 度[?] 胶合 [?]\n  - 应力：静[?] σ / 循环[?] [?]\n  - 应力比：$r = \\sigma_{min}/\\sigma_{max}$ [?]\n  - 疲劳[?] 数（应力循环）[?] /（疲劳极限）[?]\n  - [?]作用（寿命）[?] <u>同</u>循[?]环 [?]\n",
+      "prediction": "# 手稿数字化引擎 编号: 一页手稿\n\n类星体\n\n标题: 链上存证\n采样: 波次(1):\n及时侦测:\n分页: 1\n编号: A-01\n识别: 手写/印刷\n\n1. 盲校 手写校验\n2. 交叉比对\n3. 混淆集 置信度\n4. 回滚 校验\n5. 签名 时间戳\n6. 存储 地址\n7. 审计 日志\n8. 导出 接口\n9. 备份 策略\n10. 恢复 演练"
+    },
+    {
+      "id": "B13",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "handwriting",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 101.4,
+        "prompt_tokens": 634,
+        "completion_tokens": 5402,
+        "total_tokens": 6036,
+        "reasoning_tokens": 5179,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 242582
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 107077,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [
+          "reasoning_high"
+        ],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 59.82,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 242582
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 107077,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 101.4,
+            "prompt_tokens": 634,
+            "completion_tokens": 5402,
+            "total_tokens": 6036,
+            "reasoning_tokens": 5179,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 242582
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 107077,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high"
+            ],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": true
+      },
+      "metrics": {
+        "edits": 784,
+        "insertions": 1,
+        "deletions": 551,
+        "substitutions": 232,
+        "edit_rate": 0.86438809261301
+      },
+      "gold": "> **说明**：本页为上下颠倒书写的两栏手稿，以下按原稿页面从上到下转写，数学式均以 LaTeX 表示，无法辨认处以 [?] 占位。\n\n---\n\n## 左栏\n\n① 主曲面向载荷：\n\n$$f_0 = F - F_1'$$\n$$= 2.5 \\times [?] \\ \\text{kN}$$\n$$f_0 = F_1 + F_1' \\times \\text{kN}$$\n\n- $F_1$：预紧力\n- $P'$@[?]：[?]力\n- $F_1'$：被联件受力\n- $[?]$：螺[?]力\n\n$$[?]_0 < [?]$$\n\n$$\\delta_T：尺寸数$$\n\n$$\\varepsilon_T：尺寸数$$\n\n- $\\sigma_P：拉应力[?]极限$\n- $\\sigma \\le 2.5\\ [\\sigma]，被联件的厚度$\n- $a_1：被联件数$\n- $f：[?]$\n- $[?]$\n\n- 铰制孔用螺栓钢材按强度设计：\n\n- $K_{al}：螺栓抗拉剪切系数$\n- $S_a：安全系数$\n\n- ①受力合理：透镜面[?]称，相对载荷对称\n- ②螺纹体间距适当：间隙适当，扳手空间 (b₀)\n- ③垫片数量适当：符合要求\n- ④凸度差螺栓器而出：表\n- ⑤同一圆周 4.6.8\n- ⑥减少件的弯曲应力，凸台/沉头座\n\n## 右栏\n\n2. 受力分析/计算\n\n假设：螺栓圆周，受弯矩为相同的弹性\n\n① 高频螺栓：受扭矩\n\n- 螺栓受扭矩 $T：F' \\times [?] / z$\n\n$$f_{smax} = T_{max} / [?]^2$$\n\n- 对回转轴矩\n\n$$f_m' = M_{max} / [?]^2$$\n\n$$\\sigma_{Fmax} = \\frac{[?]}{[?]} + f' \\le [\\sigma]$$\n\n$$\\sigma_{Fmin} = \\frac{[?]}{[?]} - f' \\ge 0$$\n\n- 曲面向 $F_0：F' = \\frac{[?]}{[?]}$\n- 轴向力 $F：F' \\times \\frac{k_1\\text{kN}}{K\\text{fkN}}$\n\n$$f_S = [?]$$\n",
+      "prediction": "# ⑤ 半衰期\n\n- c₀: 初浓度\n- c_t: 时刻浓度\n- t: 消耗时间\n\n$$ t_{1/2} = \\frac{0.693}{k} $$\n\n- k: 速率常数\n- V 表示反应速率，k 表示速率常数\n\n1. 一级反应：速率方程 \\( v = kc \\)\n2. 二级反应：速率方程 \\( v = kc^2 \\)\n3. 零级反应：速率方程 \\( v = kc^0 = k \\)\n\n# ⑥ 平衡常数\n\n对反应：\\( aA + bB \\rightleftharpoons cC + dD \\)\n\n$$ K = \\frac{[C]^c [D]^d}{[A]^a [B]^b} $$\n\n- K: 平衡常数\n- Q: 浓度商\n\n- Q = K，反应达平衡状态\n- Q < K，反应正向进行\n- Q > K，反应逆向进行"
+    },
+    {
+      "id": "B17",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "handwriting",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 70.65,
+        "prompt_tokens": 634,
+        "completion_tokens": 3531,
+        "total_tokens": 4165,
+        "reasoning_tokens": 3283,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 300658
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 133399,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [
+          "reasoning_high"
+        ],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 57.27,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 300658
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 133399,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 70.65,
+            "prompt_tokens": 634,
+            "completion_tokens": 3531,
+            "total_tokens": 4165,
+            "reasoning_tokens": 3283,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 300658
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 133399,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high"
+            ],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": true
+      },
+      "metrics": {
+        "edits": 1593,
+        "insertions": 0,
+        "deletions": 1240,
+        "substitutions": 353,
+        "edit_rate": 0.9261627906976744
+      },
+      "gold": "**工科院微春分社**\n\n一、\n1. 定态：\n    其中c₀ᵢ, c₁, ..., cₙ₋₁均为给定常数，\n    方程 定阶：未知数数最高阶函数数\n    常分成列举和联号多题作重其将物荷的初问是 <<（此行文字倒置，疑为：微分方程把许多事件共同构成的问题）>>\n    n阶方程一般形式：\n        F(x, y, y′, ..., y⁽ⁿ⁾) = 0 [?]记 2.<<划掉>>，称 为n阶线性方程。\n        其 中 假 y⁽ⁿ⁾ <<涂改>> 上 的 n 元 [?]性方程\n        若 [?] 对 n 阶显含未知数导数均称线性微分方程，而行 函数 $^{(1)}$y 为 <<涂改>> 上是 n 阶线[?]微分[?]。设 y = y(x), x∈I 一 区域上是连续函数。则在其 上 它 可 表 示 为 一 个 恒 等 式 <<涂改>>\n    1.线性微分方程\n        n阶线性方程一般形式为\n        [?] y⁽ⁿ⁾ + [?] [?] x) = f(x) 且 a₀(x)≠0\n            曲线 Γ = {(x, y) | y = y(x), x∈I}, 一 条 [?]曲线 <>\n        若 f(x) ≡ 0 称其 为 n 次 [?] <<划掉>> 线性奇 (方程)\n    2.非线性微分方程\n        在 D 内每一点 (x, y) 以 其 某 向 量 y′, y″ 为 <<涂改>> [?]\n    通 [?]\n        单 值 连 续，和 亮 关 平 面 上 的 都 连 接\n        这 样 在 + [?] 能 定 一 [?][?] 加\n    总 理 或者 [?]：\n    设[?] y′′⁽ⁿ⁾ 在 上 有 n 阶 连 续 [?]，且 满 足\n        F(x, y, y′, y″, ..., y⁽ⁿ⁾) = 0 ， x∈I\n    则 称 y = y(x) 为 定 在 上 的 一 个 显 式 解\n    若 有 [?] x = φ(t) 在 区 间 的 [?] 函 数 是 y = y(x) 则 [?]\n    称 显 式 (隐式) = 0 则 F(x) 的 对 显 式 [?]\n        解，答： x被(解) 例 y = y(x) 不 含 任 何 [?] [?]\n    [?] 为 为 y(x) 的 [?] 解。\n    函 数 [?] 若 y(x) 的 解 式 = y = y(x, c₁, ..., cₙ) 含 有 n 个 [?]\n    [?][?] 数 y(x), c₁(?)₂ ..., cₙ)，并 称 为 为 y(x) 的 [?](形式) [?]。\n    通 解。\n    但 c₁ …，cₙ 独立， Jacobi 行列式 [?]\n        J = ∂φ/∂(y, c₁, ..., cₙ) <<涂改>> [?]\n        ≠ 0 记 φ₁, φ₂, ..., φₙ [?]\n    若 由 函 数 φᵢ(x, c₁, ..., cₙ) 所 确 定 的 [?]\n    函 数 式： y = φᵢ(x, c₁, ..., cₙ) 所 消 去 [?] (x, c₁, ..., cₙ)\n    [?] 的 [?] 函数 [?]。\n        一般地， [?] 和 函 数 [?][?] 为 0\n    定 解 条 件： 为 确 定 通 解 中 常 数 所 需 给 定 (过 定)\n    (定 解 条 件) 来 由 或 条 件 [?] \n    对 某 些 式 假 定 通 过 带 消 c₁ …，cₙ 阶 数 相 同\n    [?] 见 [?] 定 连 解 中 需 加 [?] [?] 条 件：\n    当 y(x₀) = y₀, ..., [?] ⋯, [?] (x₀) = y₀⁽ⁿ⁻¹⁾ ┐\n    ...\n\n---\n\n**注：** 原页为倒置手稿且分辨率较低，多处文字辨认困难，已用 [?] 标注；个别行（尤其开头几行倒置内容）按可辨片段尽力转写，可能存在行序或字词误差。\n",
+      "prediction": "# 几何体 幻灯\n\n设 \\(K\\) 是 \\(R^3\\) 中的一个单纯复形。\\(K\\) 包含在其 … 的 … 中。\n\n（链复形）\n\\[\n\\cdots \\xrightarrow{\\partial_{n+1}} C_n \\xrightarrow{\\partial_n} C_{n-1} \\xrightarrow{\\partial_{n-1}} \\cdots\n\\]\n其中 \\(C_n\\) 是 \\(K\\) 的 \\(n\\) 维链群。\n\\[\nC_n = \\mathbb{Z}\\{\\sigma\\}\n\\]\n\n定义 \\(n\\) 维闭链群 \\(Z_n\\) 与 \\(n\\) 维边缘链群 \\(B_n\\)：\n\\[\nZ_n = \\ker \\partial_n\n\\]\n\\[\nB_n = \\operatorname{im} \\partial_{n+1}\n\\]\n由于 \\(\\partial^2 = 0\\)，有 \\(B_n \\subseteq Z_n\\)，故可定义 \\(n\\) 维同调群：\n\\[\nH_n = \\frac{Z_n}{B_n}\n\\]\n\n若 ⋯，则 ⋯。\n此时 ⋯。\n任意 ⋯ 存在 ⋯。"
+    },
+    {
+      "id": "C08",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "handwriting",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 113.36,
+        "prompt_tokens": 634,
+        "completion_tokens": 8321,
+        "total_tokens": 8955,
+        "reasoning_tokens": 7751,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 280160
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 126163,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [
+          "reasoning_high"
+        ],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 87.08,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 280160
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 126163,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 113.36,
+            "prompt_tokens": 634,
+            "completion_tokens": 8321,
+            "total_tokens": 8955,
+            "reasoning_tokens": 7751,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 280160
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 126163,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high"
+            ],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": true
+      },
+      "metrics": {
+        "edits": 671,
+        "insertions": 168,
+        "deletions": 41,
+        "substitutions": 462,
+        "edit_rate": 0.8212974296205631
+      },
+      "gold": "# 信号与系统（页眉右上：信号与系统）\n\n## 一.信号与系统概论\n\n1) 引言：\n\n1. 定义： M 信号/系统\n   信号分析：信号运算\n\n2). 信号的描述与分类\n\n1. 描述：\n   - 公式法：闭式公式（Close Form）地\n     因变量：信息 ← 时间空间\n   - 图形法：图像 非解析信号\n   - 表格法：离散点、\n\n2. 分类： 具备 + 排它\n   - 确定性信号 /随机信号/伪随机信号\n   - 连续信号/离散信号 ⇌ 对时间连续/离散\n   - 模拟信号：连续＋幅值连续\n   - 数字信号：离散＋幅值离散\n   - 周期信号/非周期信号　周期：T 元统修 [?]\n\n## 1.信号的运算\n\n① 四则运算\n② .倍.乘运算\n③. 微.积分运算　f'(t)： lim(h→0) [f(t+h)-f(t)]/h ； ∫₋∞ᵗ f(τ)dτ\n- 微分行算不改变周期性：转化不改变\n- 积分周期性不改变周期性\n④ 反褶运算：f(t) ⟶ f(-t)\n⑤ 时移运算：f(t) ⟶ f(t+t₀)\n   ⑴相对性　左移/右移 [?]\n⑥ 压缩扩展：f(t) ⟶ f(at)\n   不改变周期性质　T ⟶ T/a [?]\n   a>1 ：至 f(at) 是 f(t) 在时间轴上压缩 a 倍\n   0<a<1. 扩展 1/a 倍\n\n变换方法：\n变量不变法\n\n3. 能量信号： 对信号 f(t)\n   W = lim_{T→∞} ∫_{-T/2}^{T/2} f²(t)dt  为能量\n   P = lim_{T→∞} (1/T) ∫_{-T/2}^{T/2} f²(t)dt  为功率\n   0≤W<∞ ：能量信号　0<P<∞：功率信号\n\n4. 分析处思路与方法\n   ① 用基 [?] 一般性信号子为基本信号\n     号的极限\n   ② .基于基本信号的分析时结果及一般信号\n     其关系. 得出结果.\n",
+      "prediction": "# 信号与系统\n\n## 一、信号与系统概述\n\n### 1. 引言：\n\n#### 1. 定义：\n- √ 信号/系统\n  - 信号分析：信号是信息载体\n  - 系统：信号变换\n\n#### 2. 信号的描述与分类\n\n##### 1. 描述：\n- ① 表达式：闭式表达式（Close form）\\(f(t)\\)\n- 两要素：信息 ⇔ 时间函数\n- 图形法：图像、非解析信号\n- 表格法：离散点\n\n##### 2. 分类：\n- 确定性信号 / 随机信号 / 伪随机信号\n- 连续信号 / 离散信号 => 对时间连续/离散\n- 模拟信号：连续 + 幅值连续\n- 数字信号：离散 + 幅值离散\n- 周期信号 / 非周期信号\n  - 周期：无始无终\n  - 变换方法：变量不变法\n\n##### 3. 能量信号：\n- 对信号 \\(f(t)\\)\n- \\(W = \\lim_{T \\to \\infty} \\int_{-T/2}^{T/2} |f(t)|^2 dt\\) 为能量\n- \\(P = \\lim_{T \\to \\infty} \\frac{1}{T} \\int_{-T/2}^{T/2} |f(t)|^2 dt\\) 为功率\n- \\(0 < W < \\infty\\)：能量信号；\\(0 < P < \\infty\\)：功率信号\n\n##### 4. 分析的思路与方法：\n- ① 用简单/一般信号表示为基本信号（的组合）\n- ② 基于基本信号的分析结果及一般信号与其关系，得出结果\n\n### 1. 信号的运算\n- ① 四则运算\n- ② 奇偶运算\n- ③ 微分积分运算：\n  - \\(f'(t) = \\frac{df(t)}{dt}\\)\n  - \\(f^{(-1)}(t) = \\int_{-\\infty}^{t} f(\\tau) d\\tau\\)\n  - 注：微分运算不改变周期性，积分运算改变周期性\n- ④ 反转运算：\\(f(t) \\to f(-t)\\)\n- ⑤ 时移运算：\\(f(t) \\to f(t-t_0)\\)\n  - 左移/右移\n- ⑥ 压缩与扩展：\\(f(t) \\to f(at)\\)\n  - 不改变其周期性 \\(T \\to T/a\\)\n  - \\(a > 1\\)：压缩；\\(0 < a < 1\\)：扩展"
+    },
+    {
+      "id": "C23",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "handwriting",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 3500,
+        "latency_seconds": 67.22,
+        "prompt_tokens": 634,
+        "completion_tokens": 1695,
+        "total_tokens": 2329,
+        "reasoning_tokens": 1617,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 115278
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 49023,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [
+          "reasoning_high"
+        ],
+        "attempt": 0,
+        "attempt_kind": "first_direct",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 67.22,
+            "prompt_tokens": 634,
+            "completion_tokens": 1695,
+            "total_tokens": 2329,
+            "reasoning_tokens": 1617,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 115278
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 49023,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          }
+        ],
+        "retried": false,
+        "cached": true
+      },
+      "metrics": {
+        "edits": 249,
+        "insertions": 4,
+        "deletions": 196,
+        "substitutions": 49,
+        "edit_rate": 0.8217821782178217
+      },
+      "gold": "符号：\nS₀, S_b, S_p: 符号位\n对 4位 A,B; 符号位进位 C_f ; 结果进位 C\n\n溢位判断：\n①. C⊕C_f\n②. 符号位检测 S₀̅=S_b̅ S_p̅t S₀ S_b S_p̅\n\n（注： conduc下划线部分为划线标注的公式 “S₀ S_b S_p t…” 原始写法为：S₀̄?S_b̄?S_p̄ t S₀ S_b S_p̄，其中部分字符的划线情况如下：第①行的 “C⊕C_f” 下方有下划线；“②. 符号位检测” 后接公式中 “S_b” 与 “S_p” 上有横线（非删除线，属取反符号）。）\n\n补充订正：经复查，公式中的上横线应为取反符号，非涂改，故不标注 <<划掉>>。\n",
+      "prediction": "# 补码\n\n$S_0, S_1; S_p$，符号位\n\n对4位A,B；符号位进位$C_f$，结果进位$C$\n\n## 进位判断：\n\n1. $C \\oplus C_f$\n2. 符号位检测 设$S_{f1}$ 与 $S_{f2}$"
+    },
+    {
+      "id": "C28",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "handwriting",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 92.12,
+        "prompt_tokens": 634,
+        "completion_tokens": 6744,
+        "total_tokens": 7378,
+        "reasoning_tokens": 6334,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 286553
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 124921,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [
+          "reasoning_high"
+        ],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 80.71,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 286553
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 124921,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 92.12,
+            "prompt_tokens": 634,
+            "completion_tokens": 6744,
+            "total_tokens": 7378,
+            "reasoning_tokens": 6334,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 286553
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 124921,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high"
+            ],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": true
+      },
+      "metrics": {
+        "edits": 827,
+        "insertions": 19,
+        "deletions": 572,
+        "substitutions": 236,
+        "edit_rate": 0.6846026490066225
+      },
+      "gold": "变长编码方法：\n1. 香农编码\n  对 S 的一排列：<逐出> P₁ P₂ ⋯ Pₙ <<划掉>>\n  取 l₁ = ⌈-log P(Sᵢ)⌉? 记 aᵢ = -log P(Sᵢ) |(?)\n  全 ? = <首>? P(Sᵢ)，将其转为二进 <制>? 数\n  取小数点，左后 i 位作 <备>? i 消息的码 <?> 组\n\n2. 霍夫曼编码\n  编码方法：<即把> Huffman\n  将 <<划掉>> 下 <<划掉>> 最小 P 合并，缩 <短> 成信源 S ′；<<划掉>>\n  重复 <<划掉>> 直到 S ′ 仅 <<划掉>> 不多 <<划掉>> 于 2 个符号\n\n  Thm. Huffman 即时且唯一可译\n  Thm. Huffman 是 <<划掉>> 最好的\n  <归纳> 摘归纳证\n  最小，设为 s₁ 合并，<先>? <要?> 为已合并 <炼>? 体\n\n3. Fano 编码  <概率匹配码>\n  ① Sᵢ 按 Pᵢ 降序排列\n  ② 分成 概率 全 相同 两组，赋 0/1\n  ③ 对 组内 重复 操作\n  即 时，唯一可译\n\n离散信值\n1. 离散 无 <记忆>? 信道 数学模型\nDef. 离散 信值 <源>? 输入空间 A = {a₁, ⋯, aₙ}，\n  Xiß: 对 S P₁S₁, ⋯, Pₙ 输出空间 B = {b₁, ⋯, b₃?}\n  概率 [?] 记 输 入 序列 X = X₁, ⋯, Xₙ, 如果 极 <?> 值\n  x‾i = ? x₁, ⋯, xₙ? 其中 Xₗ ∈ A, k, n ∈ N，输出序 <?> 列\n  Y = {Y₁, ⋯, Yₙ}，取值 <随机>? 序列, ⋯ 为 <随机>，共 <?> 部\n  信 值 矩阵：P(Y|X) : P(y₁?), ⋯, yₙ | x₁, ⋯, xₘ (?)\n  <信道> 概率 模型：{X, P(y₁?), ⋯, yₙ | x₁, ⋯, xₘ}\n\nDef. 离散 信值 无 <记忆>? 信道\n  P(y | x) 凑?：P(y₁?ₗ | xₙₗ?)\n  · 称其为 离散 无 记忆 信道 DMC\n  数学模型 {X, P(y₁?), ⋯, Y}\n\nDef. ∀ n, m ∈ N, ∀? ∈ B，若 DMC 满足\n  P(yₘ?ₙ? | xₙ₁?) = P(yₘₙ? | xₘₙ?)\n  称此信道 平稳 <?> / 恒 <?> 重\n\nDef. 无噪 信道：Yₙ 与 yₙ ← 一 对 应\n  ∀ l ∈ N, N，yₙ = f(xₙ)\n  且 P(yₙ | xₙ) = { 1, yₙ = f(xₙ)\n                    0, yₙ ≠ f(xₙ) }\n\nDef. 有干扰 无记忆 信道：\n  P(yₙ | xₙ) : = 节<?> P(yₙ₁? | xₙ)\n\nDef. 有干扰 有记忆 信道：⌈⌉\n",
+      "prediction": "# 变长编码方法\n\n1. 香农编码\n   - 将信源符号按概率降序排列\n   - …\n\n2. 霍夫曼编码\n   - 将 n 个最小概率，缩减成新集合，重复直至概率为 1\n   - Thm. Huffman 即时且唯一可译\n   - Thm. Huffman 是紧致码\n   - 最小码字集合优先回报为合法前缀码\n\n3. Fano编码\n   - ① 将信源符号按概率降序排列\n   - ② 分成概率相同两组，赋 0/1\n   - ③ 对组内重复操作，直到唯一可译\n\n# 离散信道\n\n1. 离散无记忆信道数学模型\n   - Def. 设离散信道输入 A={a1,…,ar}, 输出 B={b1,…,bs}\n   - 转移概率：P(y|x) = P(y_j|x_i)\n   - 输入序列 x = x1, x2, …, xn 输出序列 y = y1, …, yn\n   - 信道：P(y|x) = P(y1|x1) P(y2|x2) … P(yn|xn)\n\n2. 信道模型\n   - 信道模型：(X, P(Y|X), Y)\n   - 若 (X, P(Y|X), Y) 为离散无记忆信道 DMC\n   - 数学模型 (X, P(Y|X), Y)\n   - 性质：P(y|x) 与时间无关，即 P(y|x) = P(y|x)\n   - Def. 无噪信道：噪声与输入无关\n   - Def. 有噪无记忆信道：P(y|x) = P(y1|x1) P(y2|x2) … P(yn|xn)\n   - Def. 有噪有记忆信道：…"
+    },
+    {
+      "id": "D27",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "handwriting",
+      "gold_proofed": false,
+      "meta": {
+        "status": "timeout",
+        "error": "socket timeout",
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 120.46,
+        "prompt_tokens": null,
+        "completion_tokens": null,
+        "total_tokens": null,
+        "reasoning_tokens": null,
+        "finish_reason": null,
+        "cost": null,
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 324616
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 149388,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 80.61,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 324616
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 149388,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "timeout",
+            "error": "socket timeout",
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 120.46,
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null,
+            "reasoning_tokens": null,
+            "finish_reason": null,
+            "cost": null,
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 324616
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 149388,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": false
+      },
+      "metrics": {
+        "edits": 1752,
+        "insertions": 0,
+        "deletions": 1752,
+        "substitutions": 0,
+        "edit_rate": 1.0
+      },
+      "gold": "T*h*m*. R(D)是关于 D 的凸函数\n\nR(λD)+(1-λ)D_1 ≤ λR(D_1)+(1-λ)R(D_2) [?]\n\nT*h*m*. R(D) 在 p∈[0,D_max) 严格 递减\n\n# 3. 保真度信源编码定理和率失真定理\n\n[?]：取 [?] [?] D, Y; 加码与译[?]码均为 n 长序列；\n\n称 [?]Y 长为 n, 码字数目为 M 的分组码\n\ndn(x^n, y^n) := max max[?] d_n(x_i, y_i)\n\n信源编码：\n\n分支1 [?]\n当发端 n 长[?]串，[?]别 (M, n) 一个[?] [?] s.t.\n\nd_n(x^n, y^n) := d_n(x^n, y^n) 时，[?]\n\n⇒ d_n(Y) ≤ E{d_n(X̄, Y)}\n\n⇒ d_n(Y) ≤ [?] d_n(X̄,Y)\n\n⇒ d_n(Y) ≤ 码率 [?] R̄ [若 d≤D, 拒[?]绝 D 的话]\n\n具有最min [?] 十[?] 码字数目的[?]许[?]序数[?]为 M(n,D)\n\n对给定 边缘 序列 分布 [?] [?]，[?] 条件失真[?]度\n\nd_(Y|X̄) := E{d_n(Ȳ)}\n\n:= ∑[?] 离[?]散(P(X̂,γ)){即[?]} d_n(X̄,Y)\n\n对 分组 码 共(M,n), R ≥ log M\n\n# Thm. (信源编码[?]第一定理)\n\n对 依[?]赖 n 长无记[?]忆序列 [?]，给定 d_n(X^n, Y^n),\n\n给定[?]信[?]等[?]字[?] 码 R(D), 则 [?]∀ε>0, ∀δ>0 当[?]对[?]lat[?] [?]码[?]率[?]用，\n\n∃ (保[?]真[?]度 限[?]值[?]) D[?] 的 代[?]码[?] (M,n) 当[?]延误[?]均[?]码[?],\n\nR̄ ≤ R(D)+ε\n\n码字数目 M 满足为 M ≥ 2^{n[R(D)+ε]}\n\n# Thm (rate 失[?]真[?]定理).\n\n对依[?]赖 n 长无记[?]忆[?]，[?] d_n(X^n, Y^n), R(D),\n\n则所有满[?]足保真度 准则 D 的信源 编[?]码 的[?]上有[?]\n\n率[?] 速率[?] 平均码长[?] 大于[?] R(D). 即\n\nlog[?] M(n,D) ≥ R(D)\n\n---\n\n# 连续信源\n\n连续 [?] [?]定义:\n\n取[?]值，时间[?] 连续\n\n# 二. 数[?]学 模型\n\n① [ ∫[?] [p_x]^[?] = [y]^[?] ∫_{-∞}^{∞} p(x)dx = ? ] 离[?]散[?]连续信源\n\n② 一 维连续信源 概率模型\n\nF(x) := P{X<x} = ∫_{-∞}^{x} p(u)du\n\n[?]: [ √[?]x = ∫[?] e^{-i(2π[?]/a)ux} + e^{+i(2π[?]/a)ux} ]\n\n[?] h(x)[?] = ∫ h_1(x)^{a,b(x)} p(x)dx\n\n# 3. 连续信源 [?]熵[?]\n\nH(X) := -(X, ∫_Ω^{?} 1/2)\n\n= -∫_a^b p(x) log p(x)dx - ∫[?] p(x) log[?] dx\n\nH(X)                                    H(X)\n\n⇒ H(X) =^{lim}_{?} -∫_{-∞}^{∞} p(x) log p(x) dx\n\nT*h*m*. 对 概率密度[?] [?]受[?]限 事件[?]，\n\n均匀[?]分布[?]具有最大[?]熵 [?]出[?]熵[?] [?]熵[?] (高斯[?]分布[?])\n\n对 D 中闭环有限[?] [?] [?]高斯分布[?]\n\n# 4.\n\n① 联合 [?]熵 H(X,Y) := ∬ p(x,y) log p(x,y) dx dy\n\n条件熵: H(Y|X) := -∬ p(x,y) log p(Y|X) dx dy\n\n互信息: I(X;Y) := H(X)-H(X|Y)\n\n= H(Y)+H(Y|X)-H(X) [?]\n\nH(X)+H(Y) ≤ H(X,Y) [?]\n",
+      "prediction": ""
+    },
+    {
+      "id": "A10",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "mixed",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 3500,
+        "latency_seconds": 16.79,
+        "prompt_tokens": 634,
+        "completion_tokens": 672,
+        "total_tokens": 1306,
+        "reasoning_tokens": 19,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 292534
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 128546,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [],
+        "attempt": 0,
+        "attempt_kind": "first_direct",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 16.79,
+            "prompt_tokens": 634,
+            "completion_tokens": 672,
+            "total_tokens": 1306,
+            "reasoning_tokens": 19,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 292534
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 128546,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          }
+        ],
+        "retried": false,
+        "cached": false
+      },
+      "metrics": {
+        "edits": 1849,
+        "insertions": 0,
+        "deletions": 874,
+        "substitutions": 975,
+        "edit_rate": 0.9032730825598436
+      },
+      "gold": "# 连接\n\n/ 螺纹：\n\n- 静连接：可拆/不可拆\n- 动连接：键、销\n\n螺纹条件：√\n\n## 2. 螺纹的主要参数：\n\n大径 d、D：外牙牙顶，内牙牙顶？内牙 11D：外牙牙底，内牙牙底。 M8\n\n中径 d₂、D₂：牙厚=沟槽宽 处直径\n\n螺距 P：中径牙线上相邻两牙对应轴向 线数 n：螺纹？线数\n\n导程 S = nP　　导角？倒{导程选 大 越好（延（快）切去？）\n\n垂直于轴柱？圆柱面上的 剖开为（回柱？）形：\n\ntan ψ = S/(πd₂)：升？ 越小 → 自锁；\n\n∴行走？牙？α d，ψ₁ ≤ [?]　←虚纹一般？　① 受剪 连接 12 警少<<划掉>>\n\n　　S_1~　　　　∴ d ≥ S/(tan ψ) 轴向 F\n\n　　导程选大 越好（延（快）切去？）　　d ≥ d₁ S/(π[(?)])\n\n　　结果连轴力： 外，f₂ — 间连接\n\n　　grep<<涂改>>： <～>　　连接 螺钉 拉力 F’\n\n　　∴ psi?意义; t?k m; 修？柄之组数？　　‘／profiles?∴项数 f’? <<划掉>>\n\n　　『螺纹牙？带<<涂改>>： f_1? tan² φ_v? 1/2? × tan ψ　单向、S≤1.5~2°　∧ 段量 条%S_1<<涂改>>　　K：间影响 1.三<<涂改>>\n\n　　f_L/l ≈ 1/2? · f_1? tan² φ_v · 1/2? × tan ψ <<涂改>>　　#?\n\n　　夹？ O?=? 双头？？ ③ 受剪 连接：\n\n　　ψ_h? <<涂改>> S_<<涂改>>\n\n　　∴ P[?]/max ≤ [σ]\n\n　　F₂ = 2f₁? min? [σ] <<涂改>>\n\n　　凸缘+跨连接误差 ③（压）质量？←『 ⓪ 非眨?[?]? 螺纹 用 P10\n\n　　f_v = f_b/cos φ　　f_w = ?<<涂改>> ≈ 0\n\n　　效率 R = S? / (π d₂ tan ψ)\n\n　　tan ψ? = 2π? tan? d₂·tan(ψ+φ_v) <<涂改>>\n\n　　螺含齿。<f<<涂改>> cf_?<<涂改>>\n\n　　结 rate? ≤ 1<<涂改>> tan? <<涂改>> 1 ≤ [?]　◇ do? × H/[?]max? <<涂改>>　　△ p ≈ 1.3 d tan? <<涂改>>\n\n　　la? <<涂改>> d_2? = [?]/(cos? tan φ_v)? <<涂改>>\n\n　　tan? <<涂改>> S/tan? <<涂改>>\n\n## 3. 受力分析：\n\n1. 矩形螺纹 变形 [F、Q]\n\n　升：F = 驱动力； fa₂ 组力\n\n　F₁ = F·tan(ψ + φ_v)； 牙？为 1/4? ·　tan[?]M\n\n　拧松：F′ = (S/(πd₂))·tan(ψ - φ_v)\n\n2. 三角（普通）螺纹：\n\n　牙型角：三角形；锯齿；矩　　tan φ_v = f/cos(α/2)　　ρ₁?5mm　M24/ M20×1.5\n\n　粗牙/细牙　　ψ₃?mm <<涂改>>\n\n　牙型半角 ？～　　　连接 螺栓；受轴向 1.三？ 票柱>>\n\n　tan φ_v = f/(cos β/2)：减小\n\n　∴ d_s? = F/[(?)] 轴向 F\n\n　戏剧冲突？：F a? · 2.三[?]　螺纹<<涂改>>\n\n　R(S≤1.5~2°)? <<涂改>>\n\n　tan ψ = S/(πd₂)：减小 → 自锁　　① 受剪 连接：\n\n　回柱 变系？ ③ 质量参数？\n\n　R_(ε?1) ≤ [?]\n\n　U_ε/(?) <<涂改>> S<(?) <<涂改>>　d < V_∞ ≥ v<<涂改>> 0.58<<涂改>>\n\n　f₂/l ≈ 1.38√? <<涂改>>\n\n---\n\n（页边/竖排补充文字）：\n\n- [?] 三声 1/42<<涂改>> ?<<涂改>>\n- 导程 选 大 越好（延（快）切去？）S_1~\n- 戏剧冲突。F a? · 2.三[?] [?]\n- f₂ ≤ F/[(?)] 轴向 F\n- [?]：螺纹 牙？ 覆盖<<涂改>>\n\n（右上角倒写）：\n\n- [?] ψ_1?\n- tan ψ = S/(πd₂·tan)\n- a′_{F? <<划掉>> cos? tan φ_v}? <<涂改>>\n\n（右上小字）：\n\n- R：S·[?]·[?]·[?]<<涂改>>\n- F₁ = F·tan-(ψ - φ_v)\n- 自锁：ψ ≤ φ_v\n\n（底部倒写）：\n\n- la?· tan?·tan-(ψ-φ_v)\n- tan ψ ≤ φ_v\n- a?_[?]<<涂改>> cos? tan φ_v? <<涂改>> d_2?·[?] <<划掉>> = 1\n- tan? <<涂改>> (1?/(1.3 tan?))? = √?·[?]\n\n（页边箭头符号、框图若干，无法还原，记为）\n\n[图形：手绘箭头与方框示意，内容无法辨认为文字]\n",
+      "prediction": "# 政绩\n\n## ① 党内法律: 党内法规\n\n### 选拔任用\n\n- **依据**: 党章、党内法规\n- **程序**: 动议、民主推荐、考察、讨论决定、任职\n\n## ② 依照国家法律: 宪法、法律\n\n- **依法选举**\n- **依法任免**\n\n---\n\n### 发展党员\n\n- **申请**\n- **入党**\n- **入党积极分子** → **发展对象** → **预备党员** → **正式党员**\n\n- **时间**:\n  - 申请到入党: 1 年以上\n  - 预备期为 1 年\n- **政治审查**:\n  - 未经政治审查或政治审查不合格的，不能发展入党\n\n---\n\n### 考核方式\n\n- **平时考核、年度考核、专项考核、任期考核**\n- **考核结果**: 优秀、称职、基本称职、不称职\n\n---\n\n### 党政领导干部选拔任用\n\n- **任职条件**:\n  - 具有履行职责所需要的马克思主义理论水平\n  - 具有共产主义远大理想和中国特色社会主义坚定信念\n  - **五年以上党龄** (省级以上) 或 三年以上党龄 (地市、县级)\n  - 一般应当具有**大学专科以上文化程度**，其中地市级以上领导干部一般应当具有大学本科以上文化程度\n  - 提任县处级领导职务的，应当具有**五年以上工龄** 和 **两年以上基层工作经历**\n  - 应当经过党校、行政学院、干部学院或者干部教育培训部门组织的**五年内累计三个月以上**的培训\n  - 具有正常履行职责的身体条件\n\n- **任职年限**:\n  - 提任县处级以上领导职务，一般应当具有**两年以上基层工作经历**\n  - 提任县处级以上领导职务，由下级正职提任上级副职的，应当具有**下级正职三年以上任职经历**\n  - 提任副职的，应当具有**五年以上工龄**\n\n- **选拔任用程序**:\n  1. **动议** (党委、党组)\n  2. **民主推荐**\n  3. **考察** (考察预告、个别谈话、征求意见、实地考察、综合分析)\n  4. **讨论决定**\n  5. **任职** (公示期：地级以上不少于 5 个工作日)\n\n- **公示期**: 不少于 5 个工作日\n- **试用期**: 一年\n- **任期**: 五年 (任期届满应转任、交流或卸职)\n\n---\n\n### 操作规则\n\n- 提拔担任厅局级以下领导职务：\n  - 一般应当具有大学本科以上文化程度\n  - 应当经过党校、行政学院、干部学院或干部教育培训部门培训，**五年内累计三个月以上**的培训\n  - 应当具有**两年以上基层工作经历**\n  - 提任县处级以上领导职务，应当具有五年以上工龄\n\n- 破格提拔：特别优秀或者工作特殊需要的干部，可以突破任职资格规定或者越级提拔担任领导职务。"
+    },
+    {
+      "id": "C34",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "mixed",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 98.53,
+        "prompt_tokens": 634,
+        "completion_tokens": 10000,
+        "total_tokens": 10634,
+        "reasoning_tokens": 9672,
+        "finish_reason": "length",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 285385
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 132552,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [
+          "reasoning_high"
+        ],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 78.77,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 285385
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 132552,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 98.53,
+            "prompt_tokens": 634,
+            "completion_tokens": 10000,
+            "total_tokens": 10634,
+            "reasoning_tokens": 9672,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 285385
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 132552,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high"
+            ],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": true
+      },
+      "metrics": {
+        "edits": 1562,
+        "insertions": 5,
+        "deletions": 1214,
+        "substitutions": 343,
+        "edit_rate": 0.8658536585365854
+      },
+      "gold": "# 工科计算方法\n\n（左页眉：误差）\n\n## 1. 数字\n\nλ = (0.α₁ α₂ ⋯ αₙ αₙ₊₁ ⋯ αₘ β) \\| x = 0.α₁α₂⋯αₙ βᶜ ， c: 阶码，β: 数手 [?]（数基？）\n\n- 0 ≤ αᵢ ≤ 9, i ≥ 1 [?]； 1 ≤ α₁ ≤ 9 [?]\n- ⟹ M < m < M [?]\n\n对于长为 ℓ 位的计算机， m ≤ c ≤ M [?]\n机器数系 F(β, t, m, M)\n\n- |x| > (1-β)βᵐ ：上溢\n- |x| < βᵐ⁻¹ ：下溢 x ∈ [βᵐ⁻¹, (1-βᵗ)βᴹ]\n- G = ℝ [?]，(-βᵗ)βᴹ ⊂ F(β, t, m, M) [?]\n- ⓪. 计入 [?]\n- ①. 截断 [?]\n\n（右侧：）ε_f(a+b) = ε_f(a)ε_f(b) [?]（应为 ε_f(a) + ε_f(b) 之类，按原文）\n\nε_f(ab) = ε_f(a) + ε_f(b) [?]\n\nε_f(a/b) = ε_f(a) + ε_f(b) [?]\n\n## 范数\n\n### 1. 向量范数\n\n设 x⃗ ∈ ℝⁿ, 若 ||x|| 满足：\n\n- ①. 正定性：||x|| > 0, ||x|| = 0 当且仅当 x… [?]\n- ②. ||αx|| = |α| ||x||, α ∈ ℝ 齐次性 [?]\n- ③. ||x+y|| ≤ ||x|| + ||y|| ∀x, y ∈ ℝⁿ\n\n三角不等式\n\n则解释 [?] ||x|| 为 x 的范数\n\n## 2. 误差与有效数字\n\n模型误差、观测误差、截断误差、舍入误差 [?]\n被逼近：计算方法 Sₕ + R(β) ⇒ 截断 [?]\n\n精确 [?] [?] [?] [?] [?]（下方一行小字，部分可读）[?] [?] [?] [?] [?] [?]（若依 [?]）[?] 向下指向 [?] δ(A)/A = -1/2 [?]（模糊组合行）\n\n绝对误差 e = x - a  ε₂ sup |e|\n绝对误差限 ε\n相对误差 eᵣ: 满足 [?] e/a = ε/a\n相对误差限 ε: e/a [?]（≤ ε/|a|）\n有效数字 ∪ [?]（取）[?] a 添加数 [?]\n\na* = 0.a₁ a₂ ⋯ aₙ x 10ᵐ\n|x - a| ≤ 0.5 x 10ᵐ⁻ⁿ [?]，称 a 为 n 位有效数 [?]\n\nπ* = 0.31415 x 10¹ 4 位\n0.31416 x 10¹ 3 位 [?] [?]（涂改）\n\n放大因子 |f'(a)| 对于 f(x)\n\n|e_f(u)| ≈ |f'(a)/f(a)| |e_f(a)|\n\n与时 [?] 条件数 [?]\n\nζ(a+b) ≤ ζ(a) + ζ(b)\nζ(ab) ≤ |a|ζ(b) + |b|ζ(a)\nζ(a/b) ≤ |a|ζ(b) + |b|ζ(a) / b² [?]（原文写法 |a|ζ(b)+|b|ζ(a)/b²）\n\n## 2. 常用范数\n\nx = (x₁, ⋯, xₙ)ᵀ ∈ ℝⁿ\n\n- ₁范数：||x||₁ = Σᵢ |xᵢ|\n- ₂范数：||x||₂ = √(Σᵢ xᵢ²) [?]\n- ∞范数：||x||∞ = max₁≤i≤n |xᵢ|\n- p范数：||x||_p = (Σ|xᵢ|ᵖ)^(1/p)\n\n(Σₖ₌₁ⁿ aₖbₖ)² ≤ (Σₖ₌₁ⁿ aₖ²)(Σₖ₌₁ⁿ bₖ²) [?]（写成 aₖ² 格式）\n(Σₖ₌₁ⁿ aₖbₖ) ≤ (Σₖ₌₁ⁿ aₖᵖ)^(1/p)(Σₖ₌₁ⁿ bₖᵍ)^(1/ᵍ)，p + q …: [?]（1/p + 1/q = 1）\n\n## 3. 范数的等价性\n\nDef: 若 ∃ C > 0, s.t. ∀x ∈ ℝⁿ, ||x||_A ≤ C||x||_B, 称 ||·||_A 比 ||·||_B 强\n\nDef: 若 ||·||_A 比 ||·||_B 强且 ||·||_B 比 ||·||_A 强，称 ||·||_A 与 ||·||_B 等价 [?] [?]（推论）\n\nThm: ℝⁿ 的一切范数等价 [?]\n\n## 4. 矩阵范数：ℝⁿˣⁿ\n\n- ①. ∨ [?]（对勾）\n- ②. ∨\n- ③. ∨\n- ④. ||AB|| ≤ ||A|| ||B|| 相容性—便于分析 [?]\n",
+      "prediction": "# 误差 计算机方法\n\n## 误差\n\n### 1. 数表\n\n$$x = \\pm (0.a_1 a_2 \\cdots a_n)_{\\beta} = \\pm a_1 \\beta^{-1} \\cdots a_n \\beta^{-n}$$\n\n对字长为 $t$ 的计算机，$m < c \\le M$\n机器数系 $F(\\beta, t, m, M)$\n$|x| < \\beta^{M+1}$ 上溢\n$|x| \\ge \\beta^m$ 下溢\n$G = \\beta^m, (\\beta^m + \\beta^{m+1}), \\dots, \\beta^M$\n② 进 ③ 舍入\n\n### 2. 误差与有效数字\n\n模型误差，观测误差，截断误差，舍入误差\n截断：计算方法 $S_{n+1} \\to S$\n绝对误差 $e = x - x^*$\n绝对误差限 $\\varepsilon$\n相对误差 $E_r = \\frac{e}{x} = \\frac{x - x^*}{x}$\n相对误差限 $\\varepsilon_r = \\frac{\\varepsilon}{|x|}$\n\n有效数字：\n$$x = \\pm 0.a_1 a_2 \\cdots a_n \\times 10^m$$\n$$|x - x^*| < 0.5 \\times 10^{m-n}$$\n$n$ 位有效数字\n例：$\\pi = 3.1416$，4位；$3.141"
+    },
+    {
+      "id": "C40",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "mixed",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 95.19,
+        "prompt_tokens": 634,
+        "completion_tokens": 10000,
+        "total_tokens": 10634,
+        "reasoning_tokens": 9290,
+        "finish_reason": "length",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 265823
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 125456,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [
+          "reasoning_high"
+        ],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 70.44,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 265823
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 125456,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 95.19,
+            "prompt_tokens": 634,
+            "completion_tokens": 10000,
+            "total_tokens": 10634,
+            "reasoning_tokens": 9290,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 265823
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 125456,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high"
+            ],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": true
+      },
+      "metrics": {
+        "edits": 1560,
+        "insertions": 114,
+        "deletions": 1179,
+        "substitutions": 267,
+        "edit_rate": 0.6403940886699507
+      },
+      "gold": "# 迭代法\n\n## 1. 一般形式：\n\n对方程组 $Ax=b$，令 $A = N - P$（$N \\neq 0$，$P \\neq 0$）$= \\Rightarrow Nx = Px + b$，$x = N^{-1}Px + N^{-1}b$\n\n若记 $G = N^{-1}P$，$d = N^{-1}b$\n\n$\\Rightarrow X = Gx + d$\n\n令 $x^{(k+1)} = Gx^{(k)} + d$\n\n上式收敛 $\\Leftrightarrow \\rho(G) < 1$\n\nDef. 称 $\\rho(G) = \\max_i |\\lambda_i|$（$\\lambda_i$ 为 $G$ 的特征值 $\\lambda_1, \\cdots, \\lambda_n$）为 $G$（迭代法 $x^{(k+1)} = Gx^{(k)} + d$）的 $G$ 的谱半径\n\nThm. $\\rho(G) \\leq \\|G\\|$\n\nThm. 若 $\\|G\\| < 1$，则有：\n\n① $x^*$（即方程组 $Ax=b$ 的解）唯一存在\n② $\\|x^{(k)} - x^*\\| \\leq \\frac{\\|G\\|^k}{1-\\|G\\|} \\cdot \\|x^{(1)} - x^{(0)}\\|$\n\n## 2. Jacobi 迭代法 —— 对角法\n\n将 $A$ 分解为 $D + L + U$ —— 见上\n\n令 $S = D$，$T = S - A = -(L+U)$\n\n$Dx^{(k+1)} = -(L+U)x^{(k)} + b = Gx^{(k)} + d$\n\n$G = I - D^{-1}A$，$d = D^{-1}b$\n\n$\\Rightarrow x_i^{(k+1)} = \\frac{1}{a_{ii}}\\left(b_i - \\sum_{j=1}^{i-1} a_{ij}x_j^{(k)} - \\sum_{j=i+1}^{n} a_{ij}x_j^{(k)}\\right)$\n\n（其中 $g_{ij}$：$-\\frac{a_{ij}}{a_{ii}}$（$i \\neq j$），$d_i$：$\\frac{b_i}{a_{ii}}$）\n\n**收敛性：**\n\n必要：$0 \\rho(G) < 1$\n充分：$\\|G\\| < 1$\n\nThm. 若 $A$ 主对角线严格占优，则 Jacobi 迭代必收敛\n\n---\n\n# 右 [?]\n\n## Gauss-Seidel 迭代法（逐迭代）\n—— Jacobi 迭代的优化（破坏性 < 改值 <<划掉>>）\n\n$S = D + L$，$T = S - A = -U$\n\n$[D+L]x^{(k+1)} = -Ux^{(k)} + b \\Leftrightarrow x^{(k+1)} = Gx^{(k)} + d$\n\n$G = (D+L)^{-1}U$，$d = (D+L)^{-1}b$\n\n$$x_i^{(k+1)} = \\frac{1}{a_{ii}}\\left(b_i - \\sum_{j=1}^{i-1} a_{ij}x_j^{(k+1)} - \\sum_{j=i+1}^{n} a_{ij}x_j^{(k)}\\right)$$\n\n（各自新（[?]））\n\n## SOR 迭代法（超松弛迭代法 / 逐次超松弛迭代法）\n\n$x_i^{(k+1)} = x_i^{(k)} + \\omega \\Delta x_i \\Rightarrow x_i^{(k+1)} = x_i^{(k)} + \\omega \\Delta x_i'$\n\n松弛因子\n\n$A = \\left(-\\frac{1}{\\omega}D\\right) + L + \\left(1-\\frac{1}{\\omega}\\right)D + U$\n\n$N = \\left(\\frac{1}{\\omega}D\\right) + L$，$P = \\left[\\left(1-\\frac{1}{\\omega}\\right)D + U\\right]$\n\n$\\Rightarrow x^{(k+1)} = -\\left(\\frac{1}{\\omega}D + L\\right)^{-1}\\left[\\left(1-\\frac{1}{\\omega}\\right)D + U\\right]x^{(k)} + \\left(\\frac{1}{\\omega}D + L\\right)^{-1}b$\n\n**或可写作**\n\n$S = \\frac{1}{\\omega}D + L$，$T = -\\left[\\left(1-\\frac{1}{\\omega}\\right)D + U\\right]$\n\n$\\left[D + \\omega L\\right]x^{(k+1)} = -\\left[\\omega-1\\right]D x^{(k)} - \\omega U x^{(k)} + \\omega b$\n\n$x_i^{(k+1)} = \\left(1-\\omega\\right) x_i^{(k)} + \\frac{\\omega}{a_{ii}}\\left(b_i - \\sum_{j=1}^{i-1} a_{ij}x_j^{(k+1)}\\right) - \\left(\\omega-1\\right)x_i^{(k)} - \\frac{\\omega}{a_{ii}}\\sum_{j=i+1}^{n} a_{ij}x_j^{(k)}$（$+\\omega b_i$）\n\n$G = \\left(\\frac{1}{\\omega}D + L\\right)^{-1}\\left[\\left(1-\\frac{1}{\\omega}\\right)D + U\\right]$（$+\\omega b_i$）\n\n**收敛处理：**\n\n若 $A$ 正定之，$0 < \\omega < 2$ 则 SOR 收敛\n与主次数\n",
+      "prediction": "# 迭代法\n\n## 1. 一般形式：\n对方程组 \\(Ax=b\\)，令 \\(A=N-P\\)\n\n\\(\\Rightarrow x = P^{-1}Nx + P^{-1}b\\)\n\n记 \\(G = N^{-1}P\\)， \\(d = N^{-1}b\\)\n\n\\(\\Rightarrow x = Gx + d\\)\n\n令 \\(x^{(k+1)} = Gx^{(k)} + d\\)\n\n上式收敛 \\(\\iff \\rho(G) < 1\\)\n\nDef. 解 \\(Ax=b\\) 的特征值是 \\(\\lambda_1, \\dots, \\lambda_m\\)  \n称 \\(\\rho(G) = \\max|\\lambda_i|\\) 为 \\(G\\) 的谱半径  \nThm. \\(\\rho(G) \\le ||G||\\)  \nThm. 若 \\(||G|| < 1\\)，则有：  \n① \\(x^*\\) 为方程组唯一解，唯一存在  \n② \\(||x^{(k)} - x^*|| \\le \\frac{||G||}{1-||G||} ||x^{(1)} - x^{(0)}||\\)\n\n## 2. Jacobi迭代法\n使A分解为 \\(D+L+U\\)\n\n令 \\(S = D\\)， \\(T = -(L+U)\\)\n\n\\(Dx^{(k+1)} = -(L+U)x^{(k)} + b \\Rightarrow x^{(k+1)} = Gx^{(k)} + d\\)\n\n\\(G = I - D^{-1}A\\)， \\(d = D^{-1}b\\)\n\n分量形式：\n\n\\(x_i^{(k+1)} = \\frac{1}{a_{ii}} (b_i - \\sum_{j \\ne i} a_{ij} x_j^{(k)})\\) 或 \\(x_i^{(k+1)} = \\frac{1}{a_{ii}} (b_i - \\sum_{j=1}^{i-1} a_{ij} x_j^{(k)} - \\sum_{j=i+1}^{n} a_{ij} x_j^{(k)})\\)\n\n收敛性：\n- 必要：\\(\\rho(G) < 1\\)\n- 充分：\\(\\rho(G) < 1\\) 或 \\(||G|| < 1\\)\n\nThm. 若A主对角线严格占优，则Jacobi法收敛。\n\n## Gauss-Seidel迭代法（块迭代）\n- Jacobi迭代收敛慢，收敛性差\n\n\\(S = D+L\\)， \\(T = -U\\)\n\n\\((D+L)x^{(k+1)} = -U x^{(k)} + b \\Rightarrow x^{(k+1)} = Gx^{(k)} + d\\)\n\n\\(G = -(D+L)^{-1}U\\)， \\(d = (D+L)^{-1}b\\)\n\n分量形式：\n\n\\(x_i^{(k+1)} = \\frac{1}{a_{ii}} (b_i - \\sum_{j=1}^{i-1} a_{ij} x_j^{(k+1)} - \\sum_{j=i+1}^{n} a_{ij} x_j^{(k)})\\)\n\n## SOR迭代法（逐次超松弛迭代）\n\n\\(x_i^{(k+1)} = (1-\\omega)x_i^{(k)} + \\omega x_i^{G-S}\\)\n\n\\(A = \\frac{1}{\\omega}D + L + U\\) (松弛因子)\n\n\\(N = \\frac{"
+    },
+    {
+      "id": "C52",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "mixed",
+      "gold_proofed": false,
+      "meta": {
+        "status": "timeout",
+        "error": "socket timeout",
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 120.84,
+        "prompt_tokens": null,
+        "completion_tokens": null,
+        "total_tokens": null,
+        "reasoning_tokens": null,
+        "finish_reason": null,
+        "cost": null,
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 348170
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 157952,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 78.96,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 348170
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 157952,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "timeout",
+            "error": "socket timeout",
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 120.84,
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null,
+            "reasoning_tokens": null,
+            "finish_reason": null,
+            "cost": null,
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 348170
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 157952,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": false
+      },
+      "metrics": {
+        "edits": 2036,
+        "insertions": 0,
+        "deletions": 2036,
+        "substitutions": 0,
+        "edit_rate": 1.0
+      },
+      "gold": "# 频率稳定判据\n\n## 1. 幅角原理\n\n设 F(S) : 端( S→L )/ 端( S→K )\n\n若对 S 面内任一闭合路径 Γ<sub>S</sub>，F<sub>S</sub> 不连 <<划掉>><<涂改>> F(S)\n\n变、极点，且 Γ<sub>S</sub> 包围 Z 个零点，Z<sub>i</sub> 个 极点\n\n则有：\n\n- Δ∠F(S) = ΣΔ∠(S-Z<sub>i</sub>) - Σ<sub>i</sub>Δ∠S<<划掉>>-Z<sub>i</sub><<end>> V<sub>i</sub> ?\n\n其中：即当 S 逆时针移动一周时\n\n- F(S) 逆 时 针 移 动 Δ∠ 包圈数 R！\n\nR = P - Z ；其中 P：包围极点 数；Z：包 围 零 点(数)-(s)？<<划掉>>\n\n形象： 0 →(上)>> 图形\n\n逆动 ： 形\n\n注：正穿越：函数曲线由上向下穿过 (-∞, 1)\n\n负 穿越曲线由上向下穿过 (-∞, -1)\n\nn = M - M<sub>n</sub> <<划掉>><<涂改>>\n\n半次：起始于 (-∞, -1)\n\n## 2. 奈奎斯特稳定判据\n\n令 F(S) = H G(S) H(S)\n\nG(S) : <sup>default(?)</sup> / <sub>M(S)N(S)</sub><sub>----<<划掉>><<涂改>></sub>\n\n⇒ F(S) : <sup>M(S)N(S)+M<sub>N</sub>N<sub>M</sub>(?)</sup> / <sub>N(S)N<sub>共</sub></sub>\n--------       → 消动特性(?)\n→ 闭环特征\n\n令 Γ<sub>S</sub> 为右半平面 无穷大半圆\n\n则 系统稳定 ⇔ Z = P - R = 0\n\n对真实物理系统，G(S)H(S) 有 n > m\n\n奈奎斯特(?)弧 上所有点，映射至同一点。\n\n权变量 F(jw) = 1 + G(jw)H(jw)\n\n⇒ R = G(jw)H(jw) 包围 (-1+j0) 的 围数\n     ⇔ Nyquist 曲线\n\n> Thm.（Nyquist 稳定判据）：\n> 当 w : -∞ → +∞ 时，开环幅相曲线绕\n> (-1 + j0) 点 逆 (?)顺时针 (?) 逆时针 旋转 P 圈. 其中 P 是 开环\n> 右半平面的极点 数.\n> 注意：Nyquist 曲线内的 对称性.\n\n- Tips：若为 环路<sup>0</sup>/(积分)与 . 取一个 右(?)平面 无穷大(?) <<\n  半圆>>； 0 转为左 半平面\n- 对 V 个 积分 开环，N . 曲线 从 w = 0<sup>+</sup> 开始，\n  该曲线 逆时针 画圆 画 满量 V 个 半径 穿 大 半圆\n\n## 3. 对数频率稳定判据\n\n- 正段：L(w) > 0 的(?)范围内，相频(相角) 会 自 下 向 上\n  覆 ( 处 无 线 ) <<涂改>>\n- 负段：L(w).Maximum(?)>0 范围内，相频 会 自上向下\n\n## 4. 稳定裕度\n\n1. Def<sub>1</sub>：相角稳定裕度\n\nγ = ∠G(jw<sub>c</sub>)H(jw<sub>c</sub>) + Π\n\n当 | G(jw) H(j(w)) | = 1，/ L(jw) = 0 时，\n\n相频声 γ(w) = -Π + γ + 相 角\n\n- γ > 0 : 稳定\n\n2. Def<sub>2</sub>. 模裕(幅)当(值)负变(?)\n\na = 1 / | G(jw<sub>g</sub>)H(j(xw)) | <<划掉>>\n     | g <<划掉>> = 1 / | G(jw<sub>g</sub>)H(jw<sub>g</sub>) |\n\nh > 1 : 稳定\n\nh > 1 : 相 角 稳定\n\n又称裕为 增益 裕度 （ 开环 增益 可 放\n大 的 最大 倍数 ）\n\n## 5. 闭环频率特性\n\n- 闭环 ( 幅) φ(jw) ： G(jw) / (1 + G(jw))\n- 闭环 ( 相) φ(jw) : <!M(jw), e<sup>-jθ</sup>>\n- M(w) = e = j 1→ 对 应 正 弦 位置 无 静 态 效 差 距 ( 数 )？\n\nM<sub>n</sub> ~ φ / 2(?) 帽 ( 卡 零 ) 度 <<划掉>>  当 ζ < 乏 ( ?) 时\n\n[?] >> 3dB\n\n- w<sub>b</sub>: M(w<sub>b</sub>) = 0.707 M(0)\n- M(w) 在 w<sub>b</sub> 处 一 ( ? ) 闭环 Finds 度 近 半 <<划掉>> . 振 荡 频 率 <<划掉>>\n  抗 ( ? ) 直 上 <<划掉>> .\n",
+      "prediction": ""
+    },
+    {
+      "id": "A02",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "formula",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 3500,
+        "latency_seconds": 45.64,
+        "prompt_tokens": 634,
+        "completion_tokens": 2952,
+        "total_tokens": 3586,
+        "reasoning_tokens": 2795,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 333207
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 150230,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [
+          "reasoning_high"
+        ],
+        "attempt": 0,
+        "attempt_kind": "first_direct",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 45.64,
+            "prompt_tokens": 634,
+            "completion_tokens": 2952,
+            "total_tokens": 3586,
+            "reasoning_tokens": 2795,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 333207
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 150230,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          }
+        ],
+        "retried": false,
+        "cached": true
+      },
+      "metrics": {
+        "edits": 3154,
+        "insertions": 0,
+        "deletions": 3041,
+        "substitutions": 113,
+        "edit_rate": 0.9520072441895563
+      },
+      "gold": "# 第四章 Fourier 变换及其应用\n\n## 一、Fourier 积分定理：二、周限性：\n\n- 在 $t\\in(-\\infty,+\\infty)$ 上，在 $(-\\infty,+\\infty)$ 上有绝对可积… <<\n- 则 $f(t) = \\int_0^{+\\infty}[a(\\mu)\\cos\\mu t + b(\\mu)\\sin\\mu t]\\,d\\mu$ （记号从 $\\int_{-\\infty}^{+\\infty} e^{i\\mu t}\\,d\\mu \\cdot F(\\mu)$ 化为 $(0,+\\infty)$）的富有之数，且嫌疑为 $(0,+\\infty)$ / [/般移动量]\n\n**实（左上栏）**\n\n**变差**：$f(t) = \\int_{-\\infty}^{+\\infty} e^{i\\mu t}\\,d\\mu \\int_{-\\infty}^{+\\infty} f(\\tau)e^{-i\\mu\\tau}\\,d\\tau$ 的 Fourier 逆变换。/\"=\n\n（第一条线）\n\n- **Def.** 若在 $(-\\infty,+\\infty)$ 挍绝对可积。则存//\n  - $CF(t) = \\int_{-\\infty}^{+\\infty} f(t)e^{-i\\mu t}\\,d\\mu$ （其记号>>乘）（ $F(\\mu)$）其 $F(\\mu)$ 由第一多接\n  - $\\Rightarrow F(\\mu) = \\int_{-\\infty}^{+\\infty} f(t)e^{i\\mu t}\\,dt$ 记 $M$（此处 $|f(t)|\\,dt$ 收 [?]）\n  - $CF$ （或）[?] ↑（此处所：“ $\\mathfrak{F}[意思]$” — $f(t)$ 的 Fourier 逆象换）\n\n$$F^{-1}[F(\\mu)] = f(t)：\\text{若}\\int_0^{+\\infty}F(\\mu)e^{i\\mu t}\\,d\\mu \\text{ 之方 函 数则约}$$\n\n**Fourier 逆象换：**\n\n$$\\Leftrightarrow f(t) = \\mathfrak{F}^{-1}[F(\\mu)]$$\n\n（当）$\\Leftrightarrow \\mathfrak{F}[CF(t)]$ (记)\n\n**Thm：**\n\n①.戒内性：$\\mathfrak{F}[CF(t)\\alpha F(t)] = 0$ $F(t)F(t)+CF(t)$ (记)\n\n②.素数性：$f'(t)，0；$ 则 $\\mathfrak{F}[F'(t)] = \\mu \\div \\mathfrak{F}[F(t)]$\n\n**证：** 分部积分\n\n$$\\Rightarrow \\int f'(t)e^{i\\mu t}\\,dt \\div f(t)e^{-i\\mu t}\\Big|_{-\\infty}^{+\\infty} - \\int C f(t)\\cdots e^{i\\mu t}\\,dt\\ ハ$$\n\n⇒ 则 $\\mathfrak{F}[F'(t)] = \\mu\\mathfrak{F}[F(t)]$ ($\\because$ $CF(t)e^{-i\\mu t}|_{-\\infty}^{+\\infty} = 0$ 时 [?] 归)\n\n③.极限场看 $\\mathfrak{F}[F(t)] = \\mu$ 收 [?] 3$\\mathfrak{F}[F(t)]$ (记)\n\n**证：** 有原函数\n\n$$\\Rightarrow \\int_{-\\infty}^{+\\infty} F'(t)e^{i\\mu t}\\,d\\mu \\leftrightarrow (\\mu)\\mathfrak{F}[CF(t)]^{Re}\\{F(t)\\}(\\text{记})$$\n\n（有原象）： $\\mathfrak{F}[F(t)]$ ← $\\mathfrak{F}[F(t)]$，[?] $\\mathfrak{F}$ →\n\n其中被积较 $\\left|\\frac{sh}{y}\\right| = \\int_{-\\infty}^{+\\infty} F(t)e^{-i\\mu t}\\,d\\mu$ (或 $J$ 条件)(记)\n\n其中 $|F(\\tau)|\\dots = \\int_0^{+\\infty} |f(t-t)|\\,d\\mu \\,dt$ (题条件:记)\n\n$$\\text{被}\\mathfrak{F}[CF(t)]\\mathfrak{F}[\\alpha]-\\mu\\mathfrak{F}[F(t)]$$（记）\n\n## 二、$\\delta$ 函数及其应用\n\n**Laplace 变换及其应用**\n\n——规范在 $[0,+\\infty)$ 上，要能函数指数衰减\n\n- **Def.** 若 $\\mathfrak{M}[t]$，则 $|f(t)|Me^{st}$，$\\forall t > 0$，称 $f(t)$ 指 [?] 播了函数，（此点约 [?] 播 [?]，称//  森 [?] [?]）\n- 2. **Def.** 振大轴 $(s) = \\int_0^{+\\infty} f(t)e^{-st}\\,dt$，$\\text{Re}\\,s > s_0$。称 $f(t)$ 由 Laplace 变换。\n\n- 3. **Def.** 说 [?] 函数）定义为 $\\{F(s)\\}\\{|(s)| [?](s)\\}$ [?]，多权分 [?] 定义：记 $\\Large^{\\mathfrak{F}}_{L^{-1}}\\{f(t)\\} = F(s))$，则 [?] <b>\n  称 $F(s)$ 为 $f(t)$ 的 Laplace 象原函数。\n\n$F(s)$ 函 [?] 一至条 [?]，$F$，$F(s)$ [?] $\\Leftrightarrow t$ 天 [?]。\n\n**Thm：**\n\n- $\\mathfrak{L}[e^{\\alpha t}F(t)] = F(s-\\alpha)$、$\\text{Re}\\,s$/$\\text{Re}(s-\\alpha)$\n- $\\mathfrak{L}[t^n f(t)] = (-1)^n \\frac{d^n}{ds^n}F(s)$，$\\text{Re}\\,s$.\n- $\\mathfrak{L}[t e^{\\lambda t}F(t)] = \\frac{d}{ds}\\widehat{F(t)}$、$\\text{Re}\\,(s-\\alpha)$ [?]\n- 线性：$\\mathfrak{L}\\alpha F_1 + \\beta\\mathfrak{L} = \\alpha\\mathfrak{L}[F_1] + 8\\beta\\mathfrak{L}[?]$\n- 象函数：$\\mathfrak{L}[f'(t)] = s\\mathfrak{L}[f(t)] - f(+0)$\n  - $\\mathfrak{L}[f''] = s^2\\mathfrak{L}[f(t)] - s f(+0^{+1}) - \\mathfrak{F}[f'(0^{+1})]$\n- 象象： $\\mathfrak{L}[f(t)] - \\mathfrak{L}[F(t)]$\n  - $\\mathfrak{L}\\mathfrak{F}[f(t)] = (+\\mu)\\mathfrak{F}[f(t)]$\n- 象数：$\\mathfrak{L}[f(t)] = \\mathfrak{L}[F(t)]$，$x [?]$\n  - 其中 $F(\\tau)(t) = \\int_0^t f(t-\\tau)g(\\tau)\\,d\\tau$ ( 积 材: 记)\n\n④.性质（可扩性）：$\\mathfrak{F}[CF(t)F(t)] = C\\mathfrak{F}[F(t)]$ (记)\n\n①.伸缩：$\\mathfrak{F}[CF(\\mu t)] = \\frac{1}{|\\mu|}\\mathfrak{F}[F(t)]$ (记)（可 $F(\\mu)$ 为：）\n",
+      "prediction": "# 光谱仪基础理论\n\n## 1. 光谱仪性能指标\n- 光谱分辨率：\\(\\Delta\\lambda\\)\n- 光谱范围：\\(\\lambda_{\\min} \\sim \\lambda_{\\max}\\)\n- 波长精度：\\(\\Delta\\lambda\\)\n- 重复性：\\(\\frac{\\Delta\\lambda}{\\lambda}\\)\n- 信噪比：\\(S/N\\)\n- 动态范围：\\(D\\)\n- 杂散光：\\(S\\)\n- 测量速度：\\(V\\)\n- 辐射定标精度：\\(P\\)\n\n## 2. 光谱仪\n- 分光元件：棱镜、光栅、滤光片\n- 光谱仪类型：单色仪、多色仪"
+    },
+    {
+      "id": "B04",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "formula",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 71.15,
+        "prompt_tokens": 634,
+        "completion_tokens": 6895,
+        "total_tokens": 7529,
+        "reasoning_tokens": 6550,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 102990
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 50063,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [
+          "reasoning_high"
+        ],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 71.35,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 102990
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 50063,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 71.15,
+            "prompt_tokens": 634,
+            "completion_tokens": 6895,
+            "total_tokens": 7529,
+            "reasoning_tokens": 6550,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 102990
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 50063,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high"
+            ],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": true
+      },
+      "metrics": {
+        "edits": 709,
+        "insertions": 114,
+        "deletions": 15,
+        "substitutions": 580,
+        "edit_rate": 0.9428191489361702
+      },
+      "gold": "For Ẋ = AXtBu\nX(t) = Φ(t, t₀)X(t₀)  where Φ(t, t₀) State transition matrix\n\nFor diagonal form:\nΦ(t+t₀) = e^(At) = [ e^(λ₁t) ... e^(λ_k t) ] <划掉>\n\nProperties: Φ(t₀, t₀) = I  Φ(t₀, t₀) = AΦ(t)\n          Φ⁻¹(t) = Φ(-t)\n          Φ(t₁ - t)Φ(t - t₀) = Φ(t₁ - t₀)\n\nBased on matrix eigencomposition.\nΦ(t) =Ve^(Λt)V⁻¹     where   A = VΛV⁻¹\n                        <—> Eigenvalue\n                             Eigenvector matrix\nV = [v₁ ... v₁] [ Λ₁ ]<划掉>\n      v₁₁ v₁₂ v₁₃  Λ = Λᵢ\nBased on Inverse Laplace transform.\nΦ(t) = L⁻¹[(sI - A)⁻¹]\n(sI - A)⁻¹ = [ d|sI - A| / -c|  0 | ] / det(sI - A)\n\nHomogeneous (u=0):\nX(t) = Φ(t, t₀)X(t₀) = e^(At) X(t₀)\nNow homog <划掉>~\nX(t): e^(At) X(0) + ∫₀ᵗ e^(A(t-τ)) Bu(τ) dτ <划掉>\nor X(t+t₀) = Φ(t)X(0) + ∫₀ᵗ Φ(t-τ)Bu(τ) dτ<划掉>\n",
+      "prediction": "# Homogeneous (u=0):\n$\\dot{x}(t)=A(t)x(t)$\n\nwhere $\\Phi(t,t_0)$ state transition matrix\n\n$x(t)=\\Phi(t,t_0)x(t_0)$\n\n# Non-homogeneous:\n$\\dot{x}(t)=A(t)x(t)+B(t)u(t)$\n\nor\n$x(t)=\\Phi(t,t_0)x(t_0)+\\int_{t_0}^{t}\\Phi(t,\\tau)B(\\tau)u(\\tau)d\\tau$\n\n# For diagonal form:\n$$\n\\Phi(t)=\\begin{bmatrix}\ne^{\\lambda_1 t} & \\cdots & 0 \\\\\n\\vdots & \\ddots & \\vdots \\\\\n0 & \\cdots & e^{\\lambda_n t}\n\\end{bmatrix}\n$$\n\n# Properties:\n- $\\Phi(t,t)=I$\n- $\\Phi(t,s)\\Phi(s,t_0)=\\Phi(t,t_0)$\n- $\\dot{\\Phi}(t,t_0)=A(t)\\Phi(t,t_0)$\n- $\\Phi(t,t_0)=e^{A(t-t_0)}$\n\n# Based on matrix exponential\n- $e^{At}$\n- $A=V\\Lambda V^{-1}$\n- $\\Lambda$ : eigenvalue matrix\n- $V=[v_1 \\cdots v_n]$ eigenvector matrix\n- $e^{At}=V e^{\\Lambda t} V^{-1}$\n\n# Based on inverse Laplace transform\n$$\n\\Phi(t)=\\mathcal{L}^{-1}\\{ (sI-A)^{-1} \\}\n$$\n$$\n(sI-A)^{-1}=\\frac{\\mathrm{adj}(sI-A)}{\\mathrm{det}(sI-A)}\n$$"
+    },
+    {
+      "id": "C19",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "formula",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 83.82,
+        "prompt_tokens": 634,
+        "completion_tokens": 4368,
+        "total_tokens": 5002,
+        "reasoning_tokens": 4014,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 170171
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 76419,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [
+          "reasoning_high"
+        ],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 46.41,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 170171
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 76419,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 83.82,
+            "prompt_tokens": 634,
+            "completion_tokens": 4368,
+            "total_tokens": 5002,
+            "reasoning_tokens": 4014,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 170171
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 76419,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high"
+            ],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": true
+      },
+      "metrics": {
+        "edits": 772,
+        "insertions": 41,
+        "deletions": 560,
+        "substitutions": 171,
+        "edit_rate": 0.5870722433460076
+      },
+      "gold": "# 利用离散率[?]实现对模拟信号的滤波\n\n## 1. 技术方案：\n\n- 流程图（第一行）：\n  - $x_A(t)$ → A/D → $x_d[n]$ → 滤波 $H_d(e^{j\\omega})$ → $y_d[n]$ → D/A → $y_A(t)$\n- 流程图（第二行）：\n  - $x_c(t)$ →（$T$，标注 $x_P(t)$）→ 采样 → $x_d[n]$ → $[H_d(e^{j\\omega})]$ → $y_d[n]$ → 方框 → $y_c(t)$ →（$T$，[?]）→ $y_c(t)$\n  - …… → $y_c(t)$\n\n$x_d(n) : x_c(nT)$\n\n$y_d\\,(n) : y_c\\,(nT)$\n\n$x_P(t) = \\sum x_c(nT)\\,\\delta(t - nT)$\n\n$\\Rightarrow x_P(j\\omega) = \\sum x_c(nT)\\,e^{-j\\omega nT}$\n\n$x_d(e^{j\\omega}) = \\sum x_d(n)\\,e^{-j\\omega n}$\n\n$= \\sum x_c(nT)\\,e^{-j\\omega n}$\n\n$\\stackrel{\\dot\\omega = \\omega T}{=}\\ x_P(j\\,\\dot\\omega/T)$\n\n又：$\\displaystyle x_P(j\\omega) = \\frac{1}{T} \\sum x_c\\big(j(\\omega - k\\omega_s)\\big)$，其中 $\\omega_s$，$\\omega_s = \\frac{2\\pi}{T}$\n\n$\\Rightarrow x_d(e^{j\\omega}) = \\frac{1}{T} \\sum x_c\\big(j(\\omega - k\\omega_s)/T\\big)$\n\n$y_c\\,(j\\omega) = x_c(j\\omega)\\,H_c(j\\omega)$\n\n$y_d\\,{\\color{red}\\blacksquare}\\,e^{j\\omega} = x_d\\,(e^{j\\omega})\\,H_d(e^{j\\omega})$\n\n$= \\frac{1}{T} \\sum x_c\\big(j(\\omega - k\\omega_s/T)\\big)\\,H_d(e^{j\\omega}?)$ （该处 [?]）\n\n$\\Rightarrow\\ y_P(j\\omega) = \\frac{1}{T} \\sum_{k=-\\infty}^{\\infty} x_c\\big(j(\\omega - \\frac{k2\\pi}{T})\\big)\\,H_d(e^{j\\omega}?)$\n\n$\\Rightarrow\\ u_c(j\\omega) = x_c(j\\omega)\\,H_d(e^{j\\omega}T)$\n\n$\\therefore\\ H_c(j\\omega) = \\begin{cases} H_d(e^{j\\omega T}) & |w| \\le \\omega_s/2 \\\\ 0 & |w| > \\omega_s/2 \\end{cases}$\n",
+      "prediction": "# 利用离散傅里叶实现对模拟信号的滤波\n\n## 1. 按谱关系\n\n- 流程：x(t) → A/D转换 → x_d(n) → DFT → X(k) → 频域处理 → Y(k) → IDFT → y_d(n) → D/A转换 → y(t)\n\n$$\nx_d(n) = x_c(nT)\n$$\n\n$$\ny_d(n) = y_c(nT)\n$$\n\n$$\nx_p(t) = \\sum x(n)\\delta(t-nT)\n$$\n\n$$\n=> X_p(j\\omega) = \\sum x(n) e^{-j\\omega nT}\n$$\n\n$$\nX_d(e^{j\\Omega}) = \\sum x(n) e^{-j\\Omega n}\n$$\n\n$$\n= \\sum x(n) e^{-j\\Omega n}\n$$\n\n$$\n\\Omega = \\omega T\n$$\n\n又：$$X_d(e^{j\\omega T}) = X_d(j\\omega T)$$\n\n$$\n=> X_p(j\\omega) = X_d(e^{j\\omega T})\n$$\n\n$$\nY_d(e^{j\\omega T}) = X_d(e^{j\\omega T}) H_d(e^{j\\omega T})\n$$\n\n$$\n=> Y_p(j\\omega) = X_p(j\\omega) H_d(e^{j\\omega T})\n$$\n\n$$\n=> y_d(n) = y_c(nT)\n$$\n\n$$\nY_d(e^{j\\omega T}) = X_d(e^{j\\omega T}) H_d(e^{j\\omega T})\n$$\n\n$$\n=> H(e^{j\\omega T}) = \\begin{cases} H_d(e^{j\\omega T}), & |\\omega| < \\omega_s/2 \\\\ 0, & |\\omega| > \\omega_s/2 \\end{cases}\n$$"
+    },
+    {
+      "id": "D22",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "formula",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 107.56,
+        "prompt_tokens": 634,
+        "completion_tokens": 9517,
+        "total_tokens": 10151,
+        "reasoning_tokens": 8674,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 273384
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 123313,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [
+          "reasoning_high"
+        ],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 56.73,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 273384
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 123313,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 107.56,
+            "prompt_tokens": 634,
+            "completion_tokens": 9517,
+            "total_tokens": 10151,
+            "reasoning_tokens": 8674,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 273384
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 123313,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high"
+            ],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": true
+      },
+      "metrics": {
+        "edits": 1046,
+        "insertions": 85,
+        "deletions": 463,
+        "substitutions": 498,
+        "edit_rate": 0.5750412314458494
+      },
+      "gold": "# 分段插值\n\n## 1. 预备\n\n半散多项式： <<划掉>>\n\n设 $x_0^k < \\begin{matrix} x_1^k \\\\ 0 \\\\ x_2^k \\end{matrix} < 0$，<<划掉>>\n\n则 $x_0^k$ 为 $k$ 次半散多项式！<<划掉>>\n\n李安定理（定理？）：$\\lambda_0^2 < \\frac{k}{2} \\cdot \\frac{x_2^k}{x_2^k}$ <<划掉>>\n\n## Ⅰ. 函数线性无关；\n\n①. 函数组线性无关：\n\n对数组组 $\\{x, \\varphi_1, \\varphi_2\\}$，\n\n$\\exists\\, x \\in [a, b],\\ \\varphi(x)$\n\n$a_1 = a_2 = \\cdots = a_n$ <<划掉：a_1=a_2=...=a_n>>\n\n$\\Leftrightarrow \\sum a_i x_i = 0$：$\\varphi_i \\neq 0$ 当且仅当 $a_1 = a_2 = \\cdots = 0$ <<划掉>>\n\n## ②. 函数组线性无关；\n\n对 $\\{'x^{(k)}\\}_{j \\geq 0, 1, \\cdots}$\n\n其中任意函数组在 $[a,b]$ 上线性无关 $n$ 次样条插值  <<划掉>>\n\n## 2. 范数\n\n1. $|f|_1 = \\int_a^b |f|\\,dx$ 绝对可积 —— $L_1$\n\n$|f|_2 = \\left(\\int_a^b f^2\\,dx\\right)^{\\frac{1}{2}}$ 平方可积 —— $L_2$\n\n$|f|_{L^p} = \\left(\\int_a^b |f|^p\\,dx\\right)^{\\frac{1}{p}}$ —— $L_p$\n\n$|f|_{H^1} = \\left(\\frac{1}{b-a} \\int_a^b |f(x)|^2\\,dx\\right)^{\\frac{1}{2}}$ —— $H_1$（[?]）\n\n$|f|_{L^\\infty} = \\max_{a \\leq x \\leq b} |f(x)|$ —— $L_\\infty$\n\n---\n\n# 样条插值：\n\n对区间 $[a,b]$ 上的一个分划 $\\pi: a = x_0 < x_1 < \\cdots < x_n = b$。\n\n若 $S(x)$ 满足条件：\n\n(1) $S(x)$ 在每个子区间 $[x_i, x_{i+1}]\\ (i = 0, 1, \\cdots, n-1)$ 上，是次数属于 $k$ 的多项式；\n\n(2) $S(x)$ 在 $[a, b]$ 上有 $k-1$ 阶连续导数；\n\n则称 $S(x)$ 为关于 $[a,b]$ 上对应于分划 $\\pi$ 的 $k$ 次样条函数/样条函数，简称 $k$ 次样条。\n\n称 $\\{x_0, x_1, \\cdots, x_n\\}$ 为样条结。<<[?]>>\n\n$x_1, \\cdots, x_{n-1}$ 内结点，$x_0, x_n$ 边界结点。\n\n## 样条空间是：\n\n$\\{1, x, \\cdots, x^k, (x-x_1)_+^k, \\cdots, (x-x_{n-1})_+^k\\}$ <<划掉：>\n\n$S_k(x) \\stackrel{?}{=} \\sum_{i=0}^{n-1} a_i x_i^k + \\sum_{j=?}^{n-1} b_j (x - x_j)_+^k$ <<划掉>>，此[?]为[?]阶[?]\n\n# 三次样条插值：\n\n$S(x)$ 共 $4n$ 个待定函数（参数？）\n\n$S(x) \\in 0.1, 2$ 阶导数，$3n+3$ 个条件（方程）\n\n$n+1$ 对插值条件 + 二（边）边界条件\n\n## 第一类边界条件：<<划掉：第一类边界条件>> 自然样条 自然[?]样[?]\n\n$S'(x_0) = y_0'$，$S'(x_n) = y_n'$\n\n若 $y_0' = y_n' = 0$，称为自然样条\n\n## 第二类：\n\n$S'(x_0) = y_0'$，$S'(x_n) = y_n' <<划掉>>$\n\n## 第三类：被插值函数是周期函数\n\n$S(x_0) = S(x_n)$，$S(x_0)' \\in S(x_n)$ <<划掉：>>$S(x_0)' = S(x_n)$\n\n$S''(x_0) = S''(x_n)$\n",
+      "prediction": "# 分段插值\n### 1.1 多项式插值\n记 \\(f(x)\\) 在 \\(x_0, x_1, \\dots, x_n\\) 处的值\n在 \\(x_i\\) 处为 \\(k\\) 次插值多项式\n基函数取 \\(\\dots\\)\n函数线性无关\n**① 函数组线性无关**\n对函数组 \\(\\{ \\varphi_0, \\varphi_1, \\dots, \\varphi_n \\}\\)\n\\(\\forall x \\in [a,b], \\varphi_i(x)\\)\n\\(a_0 \\varphi_0(x) + a_1 \\varphi_1(x) + \\dots + a_n \\varphi_n(x) = 0\\) 当且仅当 \\(a_0 = a_1 = \\dots = a_n = 0\\)\n其中 \\(x_0, x_1, \\dots, x_n\\)\n**② 函数组线性无关**\n对 \\(\\{ \\varphi_0(x), \\varphi_1(x), \\dots, \\varphi_n(x) \\}\\)\n其中任意两个函数在 \\([a,b]\\) 上线性无关\n### 2. 范数\n\\(||f||_1 = \\int_a^b |f(x)| dx\\) 绝对可积\n\\(||f||_2 = \\left( \\int_a^b |f(x)|^2 dx \\right)^{1/2}\\) \\(L_2\\)\n\\(||f||_p = \\left( \\int_a^b |f(x)|^p dx \\right)^{1/p}\\) \\(L_p\\)\n\\(||f||_\\infty = \\max_{x \\in [a,b]} |f(x)|\\) \\(L_\\infty\\)\n\n# 样条插值\n对区间 \\([a,b]\\) 上的一个分割 \\(\\Delta: a = x_0 < x_1 < \\dots < x_n = b\\)\n若 \\(S(x)\\) 满足条件：\n1.  \\(S(x)\\) 在每一个小区间 \\([x_i, x_{i+1}], i = 0, 1, \\dots, n-1\\) 上\n是次数不高于 \\(k\\) 的多项式\n2.  \\(S(x)\\) 在 \\([a,b]\\) 上有 \\(k-1\\) 阶连续导数\n则称 \\(S(x)\\) 是定义在 \\([a,b]\\) 上对应于分割 \\(\\Delta\\) 的 \\(k\\) 次样条函数，简称 \\(k\\) 次样条\n当 \\(k=3\\) 时，三次样条\n\\(x_0, x_1, \\dots, x_n\\) 为样条节点\n\\(x_1, \\dots, x_{n-1}\\) 内节点，\\(x_0, x_n\\) 边界节点\n样条空间基底：\n\\(\\{1, x, x^2, \\dots, x^k, (x-x_1)_+^k, \\dots, (x-x_{n-1})_+^k\\}\\)\n\\(S_k(\\Delta) = \\sum_{i=0}^k a_i x^i + \\sum_{j=1}^{n-1} b_j (x-x_j)_+^k\\)\n\\(S(x)\\) 在 0,1,2 阶连续，\\(3n-3\\) 个方程\n三次样条有 \\(4n\\) 个待定系数\n\\(n+1\\) 个插值条件加 2 个边界条件\n第一类边界条件：\\(S'(x_0) = y_0', S'(x_n) = y_n'\\)\n第二类边界条件：\\(S''(x_0) = y_0'', S''(x_n) = y_n''\\)\n第三类：周期样条，函数是周期函数\n\\(S'(x_0) = S'(x_n), S''(x_0) = S''(x_n)\\)"
+    },
+    {
+      "id": "A13",
       "model": "deepseek-v4-flash-vision-exp",
       "category": "flowchart",
       "gold_proofed": false,
       "meta": {
-        "model": "deepseek-v4-flash-vision-exp",
         "status": "ok",
-        "cost": "0",
-        "latency_seconds": 54.07,
-        "prompt_tokens": 623,
-        "completion_tokens": 5547,
-        "total_tokens": 6170,
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 104.41,
+        "prompt_tokens": 634,
+        "completion_tokens": 8724,
+        "total_tokens": 9358,
+        "reasoning_tokens": 8395,
         "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 249004
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 107531,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [
+          "reasoning_high"
+        ],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 33.61,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 249004
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 107531,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 104.41,
+            "prompt_tokens": 634,
+            "completion_tokens": 8724,
+            "total_tokens": 9358,
+            "reasoning_tokens": 8395,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 249004
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 107531,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high"
+            ],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": true
+      },
+      "metrics": {
+        "edits": 1326,
+        "insertions": 0,
+        "deletions": 983,
+        "substitutions": 343,
+        "edit_rate": 0.8804780876494024
+      },
+      "gold": "# 手稿转录\n\n> （原纸为横向倒置书写，已按旋转 180° 后方向转录）\n\n---\n\n## 第 1 栏（原文最右竖栏 → 实际最左栏）\n\n- 圆柱齿轮：\n- 齿越来越多[?]接触按标准值\n- 分度圆键/齿/顶柱/齿根圆柱/基圆推　齿廓：渐开线\n- 齿[?]数：模数 m，压力角 α；齿数 z；t=m/b²；d=mz\n- 分度圆直径：d=m/z　[?]\n- 传动比：单级传动比大\n- 传动效率低，发热量大，需[?]油润滑\n- 正确啮合条件：$m_{\\alpha_1}=m_{\\alpha_2}$；$m_{a_1}=m_{a_2}$；$\\alpha_{\\alpha_1}=\\alpha_{\\alpha_2}$ [?]\n\n## 第 2 栏（仅横排段落）\n\n- [?: 大字] ◇ 与[?] 的[?]\n- 特点：\n  - 几何为曲线状渐开线 <<划掉>>\n  - 齿条由此而来，混合\n  - 齿条：柯[?]如是[?]当\n  - 定轴齿轮：运动几何轴线相对机架固定不动\n  - 周转：一个或几个齿轮轴线位置相轮其中齿轮固定[?] 整体回转\n- 组成：1+太阳轮（中心轮）\n  - 1—3：太阳轮（中心轮）\n  - 2—：行星轮（锥齿[?]）\n  - F=2：差动轮系\n  - F=1：行星轮系\n  - 混合：数几个以上周转轮系\n\n## 第 3 栏\n\n- 函数子：模数 m，压力角 α；齿数 z；$t=m/z$；$d=mz$；d。 [?]\n- 分度圆直径：d=m/z；M [?]\n- 1.定轴轮系传动比 [?]：\n- 定轴轮系传动比计算：\n  - $i_{15}$：$\\omega_{\\text{主}}$ 与 $\\omega_{\\text{从}}$ 之比\n  - 定轴齿轮：$\\omega_{\\text{恰}}$（[?]）$\\dfrac{n_{\\text{主}}}{n_{\\text{从}}}$\n  - 当一 [?]：转数计算　$n$ 之比约[?] 为一$u_{\\text{切}}$；数值为[?]\n  - $\\implies \\dfrac{\\omega\\text{主}\\text{转}}{z_{\\text{从}}} = \\dfrac{72}{\\text{万}\\mathrm{E}_1}$；$n_3$ [?] …$\\dfrac{z_3}{z_4}\\cdot\\dfrac{z_4}{z_5}\\ (\\text{柱}[?])$\n-\n\n\n## 第 4 栏\n\n- 传动比大小（方向）\n- 2.行星轮系：\n  - ①行星架为枢：定轴 ω_H\n  - 传规/转化机构反转法 <<划掉>>\n  - （图：右侧标注 717、277；左侧标注 44←2←1 [?]）\n- ②反转法：平面定轴复合\n  - $\\omega_A^H = \\omega_A - \\omega_H$　一 内啮合 + [?]\n  - $\\omega_A^H - \\omega_B^H$（[?]）\n  - $i_{13}^H = \\dfrac{n_1 - n_H}{n_3 - n_H} = -\\dfrac{z_3}{z_1}$　2↔[?]　[?] [?]\n- 周转轮系转化机构计算：\n- $i_{13}^H = \\dfrac{\\omega_1^H}{\\omega_3^H} = \\dfrac{\\omega_1-\\omega_H}{\\omega_3-\\omega_H} = \\pm\\dfrac{z_{\\text{轮}}}{z_{\\text{小}}}$　[?]　[?] 反转法\n\n---\n\n*注：多处字迹潦草无法确认，以 [?] 占位；<<划掉>> 表示原文被涂改的内容。*\n",
+      "prediction": "- 课程名称：过程装备基础\n- 教师：陈老师\n- 班级：装备1501\n- 学号：15405121\n- 姓名：任俊杰\n\n# 四、过程装备\n\n## 能力目标\n掌握过程装备设计的基本知识。\n\n## 知识目标\n1. 掌握压力容器设计。\n2. 熟悉内压容器。\n3. 了解外压容器设计基本知识。\n\n## 素质目标\n培养学生分析问题和解决问题的能力。\n\n## 教学内容\n1. 压力容器设计\n    - 1.1 压力容器设计方法\n    - 1.2 压力容器应力分析\n    - 1.3 压力容器材料\n    - 1.4 压力容器设计\n2. 内压容器设计\n    - 2.1 内压圆筒设计：\\(D \\le 4m, p \\le 500MPa\\)\n    - 2.2 球形容器设计\n    - 2.3 设计参数确定\n3. 外压容器设计\n    - 3.1 外压容器设计\n    - 3.2 外压圆筒设计\n    - 3.3 封头设计\n\n## 图\n- 压力容器设计\n    - 内压容器设计\n        - 圆筒\n        - 球壳\n    - 外压容器设计\n        - 圆筒\n        - 封头\n- 图中其他文字：设计参数、强度计算、结构设计"
+    },
+    {
+      "id": "A18",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "flowchart",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 84.5,
+        "prompt_tokens": 634,
+        "completion_tokens": 7101,
+        "total_tokens": 7735,
+        "reasoning_tokens": 6520,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 122640
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 61666,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [
+          "reasoning_high"
+        ],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 70.09,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 122640
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 61666,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 84.5,
+            "prompt_tokens": 634,
+            "completion_tokens": 7101,
+            "total_tokens": 7735,
+            "reasoning_tokens": 6520,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 122640
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 61666,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high"
+            ],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": true
+      },
+      "metrics": {
+        "edits": 1125,
+        "insertions": 304,
+        "deletions": 33,
+        "substitutions": 788,
+        "edit_rate": 0.9375
+      },
+      "gold": "# State feedback control\n\n$\\dot{x} = Ax + Bu,\\quad y = Cx + Du$\n\n- for: closed loop dynamics\n- $u = -Kx + r\\bar{}$\n  - $K := [K_1, \\dots, K_n]$ gain matrix / vector\n  - $r\\bar{}$: feedback / reference signal\n- $\\dot{x} = (A - BK)x + Br\\bar{}$\n- $= \\dot{x} : (A - BK)x + Br\\bar{}$\n- $= \\ :\\ A_{0}x + Br\\bar{}$, $y = (I - C\\eta)(x + K\\tau)$ [?] <<划掉>>（此处有一行被涂改）<<涂改>>\n\nLet\n\n- $u := -Kx + K\\tau\\langle -K\\eta\\ :$ state feedback control\n  - $K\\tau\\ :$ feedforward control\n\nMatrix Pair $(A, B)$: completely state controllable\nonly if $\\quad \\text{rank}\\ G_c := [B, AB, \\dots, A^{n-1}B] = n$ (full rank)\n\nopen loop stability depends on eigenvalues of $A$\n\n---\n\n# Observer Design\n\n$\\dot{x} = Ax + Bu,\\quad y = Cx \\Rightarrow$ correction term\n\n- $\\hat{\\dot{x}} = A\\hat{x} + Bu + G(y - \\hat{y})$\n- $\\hat{y} = C\\hat{x}$\n  - $G$: observer gain\n- $\\varepsilon := x - \\hat{x}$\n- $\\hat{\\xi} := P(\\Delta(G))\\xi$ [?]\n\n$A + \\varepsilon(\\Delta(G))$ [?] $\\succ 0$ [?] only if all eigenvalues < 0\nonly if\n\nmatrix pair $(A, C)\\dots$ [?]\n$G_c := [C^{\\mathsf T},\\ (CA)^{\\mathsf T},\\ \\dots,\\ (CA^{n-1})^{\\mathsf T}].\\qquad$ (observation) [?]\n\n## Pole Placement Method\n\nfor $D \\succ 0$\n\n$\\dot{x} = (A + BGK)x + Br\\bar{}$ [?]\n",
+      "prediction": "# State Feedback\n\n\\[\n\\dot{x} = Ax + Bu\n\\]\n\n\\[\nu = -Kx\n\\]\n\n\\[\n\\dot{x} = (A - BK)x\n\\]\n\nclosed loop dynamics\n\n\\[\nK = \\begin{bmatrix} k_1 & k_2 \\end{bmatrix}\n\\]\n\n\\[\nu = -Kx + r\n\\]\n\n\\[\n\\dot{x} = (A - BK)x + Br\n\\]\n\nclosed loop gain \\(= (sI - (A - BK))^{-1}B\\)\n\ninput/output transfer function\n\nLet \\(u = -Kx + r\\)\n\n\\[\n\\dot{x} = Ax + B(-Kx + r) = (A - BK)x + Br\n\\]\n\n\\[\ny = Cx\n\\]\n\n\\[\n\\dot{x} = (A - BK)x + Br\n\\]\n\n\\[\ny = Cx\n\\]\n\ninput/output\n\n\\[\nK = \\begin{bmatrix} k_1 & k_2 \\end{bmatrix}\n\\]\n\n\\[\nB = \\begin{bmatrix} 0 \\\\ 1 \\end{bmatrix}, \\quad A = \\begin{bmatrix} 0 & 1 \\\\ 0 & 0 \\end{bmatrix}\n\\]\n\nTransfer Function \\(= \\frac{y}{r} = C(sI - (A-BK))^{-1}B\\)\n\n---\n\n# Observer Design\n\n\\[\n\\dot{\\hat{x}} = A\\hat{x} + Bu + L(y - C\\hat{x})\n\\]\n\n\\[\n\\dot{x} = Ax + Bu\n\\]\n\n\\[\ny = Cx\n\\]\n\nObserver Gain\n\n\\[\nL = \\begin{bmatrix} l_1 \\\\ l_2 \\end{bmatrix}\n\\]\n\n\\[\n\\dot{\\tilde{x}} = (A - LC)\\tilde{x}\n\\]\n\n\\[\n\\tilde{x} = x - \\hat{x}\n\\]\n\n\\[\ny = Cx\n\\]\n\n\\[\n\\dot{\\tilde{x}} = (A - LC)\\tilde{x}\n\\]\n\nwhen \\(t \\to \\infty\\), \\(\\tilde{x}(t) \\to 0\\)\n\n\\[\n\\tilde{x}(t) = e^{(A - LC)t} \\tilde{x}(0)\n\\]\n\n\\[\nA - LC\n\\]\n\neigenvalues \\(\\lambda_i\\)\n\n---\n\n# Matrix Pair\n\n\\[\n(A, B) \\quad \\text{controllability}\n\\]\n\nif \\(\\text{rank}\\left[ B \\quad AB \\quad \\dots \\quad A^{n-1}B \\right] = n\\) (full row rank)\n\nPole placement\n\n\\[\n(C, A) \\quad \\text{observability}\n\\]\n\n\\[\n\\text{rank}\\left( \\begin{bmatrix} C \\\\ CA \\\\ \\vdots \\\\ CA^{n-1} \\end{bmatrix} \\right) = n\n\\]\n\n(full column rank)\n\nPole Placement Method\n\nfor Observer Design"
+    },
+    {
+      "id": "C13",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "flowchart",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 27.32,
+        "prompt_tokens": 634,
+        "completion_tokens": 894,
+        "total_tokens": 1528,
+        "reasoning_tokens": 20,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 243773
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 114399,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 95.54,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 243773
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 114399,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 27.32,
+            "prompt_tokens": 634,
+            "completion_tokens": 894,
+            "total_tokens": 1528,
+            "reasoning_tokens": 20,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 243773
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 114399,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
         "cached": false
       },
       "metrics": {
-        "edits": 224,
-        "insertions": 27,
-        "deletions": 8,
-        "substitutions": 189,
-        "edit_rate": 0.9294605809128631
+        "edits": 1385,
+        "insertions": 665,
+        "deletions": 21,
+        "substitutions": 699,
+        "edit_rate": 1.1071143085531574
       },
-      "gold": "# 数字化管线（Digitize Pipeline）\n\n> ⚠️ gold 为 AI 草拟，未经人工校对（HITL 待维护者）。\n\n## 流程\n\n1. 输入：手稿图片 / 扫描件\n2. 解析：LLM / OCR 识别（Recognition Router）\n3. 中间表示：Document IR\n4. 渲染：Markdown / CSS 模板\n5. 编译：HTML → PDF\n\nflow: 输入 → 解析(LLM/OCR) → Markdown/CSS 模板 → 编译 PDF\n",
-      "prediction": "# 笔记/手稿电子化\n\n输入 -> 解析 -> 结构化 -> 存储\n\n① 输入：手稿、笔记、论文、折页\n② 解析：预设 模板 降噪\n③ 结构化：\n- a. HTML/CSS\n- b. markdown -> MD\n- c. pdf\n\n### 调库\n\n调库 -> 输出：稿、笔记等（预设模板）\n输出格式：图形 / 文字\n画面 -> LLM直接? -> OCR? 路由\n路由 -> 输出\n输出 -> 格式化输出：CSS / Markdown中（可设置模板）\n格式化输出 -> 转向\n转向 -> 编码 -> PDF\n\n离 分析"
+      "gold": "# 左栏\n\n## 系统的因果性\n\n1. 佩利–维纳准则：\n\n对 |H(ω)|，系统物理可实现的**必要条件**：\n∫_{-∞}^{∞} (g |ln|H(ω)||)/(1+ω²) dω < +∞\n且 ∫_{-∞}^{∞} |H(ω)|² dω < ∞\n\n⇒ ∫_{|ω|>σ} |H(ω)| 不能在某一有限数段为 0（可有零点[?]）。\n\n2. 希尔伯特变换 （重要）\n\n对 h(t)：h(t)U(t)\n\nH(ω)，即 H(ω) ⊗ [π δ(ω) + (j/π · 1/ω)]\n\n当且仅当 H(ω) 的：R(ω) + jX(ω)\n\n⇒ H(ω)，且 [π R(ω) + jX(ω) ⊗ ω 支]\n\n+ j[π X(ω) - R(ω) ⊗ (1/ω)]\n\n⇒ R(ω)，X(ω) ⊗ (1/πω) 正变换\nX(ω)，-(1/π) ∫_{-∞}^{∞} (R(ω))/(ω-ω̃[?]) dω\n\n⇒ R(ω)，X(ω) ⊗ (1/ω) 逆变换\nX(ω)，R(ω) ⊗ (-1/ω)\n\n即系统因果 ⇔ |H(ω)|实部部[?]满足希变换\n\nH(ω) —（通过 |H(ω)| 与 (1/ω) 因果希尔变换器）→ f̃(t) 正\nf̃(t) —（通过 |H(ω)| 与 (1/ω)）→ f(t) 逆\n\n<<以上流程图：H(ω) 经带 |H(ω)| 因子 (1/ω) 的系统得 f̃(t)，标记“正”；f̃(t) 经带 |H(ω)| 因子 (1/ω) 的系统得 f(t)，标记“逆”>>\n\n Troll变换等效于一个稳相器\n\n# 右栏\n\n## 相关函数\n\nf₁(t) 和 f₂(t)\n\n1. D.P. 对能量信号 f₁(t) 和 f₂(t)，有\nR₁₂(τ) = ∫_{-∞}^{∞} f₁(t+τ) f₂*(t) dτ = ∫_{-∞}^{∞} f₁(t+τ) [f₂*(t)] f₂*(t) dt\nR₂₁(τ) = ∫_{-∞}^{∞} f₂(t) f₁*(t-τ) dt = ∫_{-∞}^{∞} f₂(t-τ) f₂*(t) dt\nR₁₂(τ) = R₂₁*(-τ)\n\n当 f₁ = f₂ 时\nR(τ) = ∫_{-∞}^{∞} f(t+τ) f*(t) dτ\n= ∫_{-∞}^{∞} f(t) f* (t-τ) dτ\nR(-τ) - R*(τ)\n\nDef. 对于功[?]均限信号\nR_A[?](τ) = lim_{T→∞} (1/2T) ∫_{-T}^{T} f(t+τ) f*(t) dt\nR_A(τ) - R_A*(-τ)\nR_B[?](τ) = lim_{T→∞} (1/2T) ∫_{-T}^{T} f(t) f*(t-τ) dt\nR(τ) - R* (-τ)\n\n2. 相关与卷积\n注意到 f₁(t) ⊗ f₂*(-t) = R₁₂(t) 对能量信号\n\n3. 相关定理：\n𝔉{R₁₂(τ)} = F₁(ω) F₂*(ω)\n= 𝔉{f₁} 𝔉{f₂}\n𝔉{R(τ)} = |𝔉{f}(ω)|²\n",
+      "prediction": "# 系统的因果性\n\n## 1. 佩利-维纳准则\n\n对 \\(H(\\omega)\\)，系统物理可实现**必要条件**：\n\\[\n\\int_{-\\infty}^{\\infty} \\frac{|\\ln|H(\\omega)||}{1+\\omega^2} d\\omega < +\\infty\n\\]\n且\n\\[\n\\int_{-\\infty}^{\\infty} |H(\\omega)|^2 d\\omega < \\infty\n\\]\n\\(\\Rightarrow\\)（即，\\(|H(\\omega)|\\) 不能在某一有限频段上恒为零（可有限点））\n\n## 2. 希尔伯特变换（充要）\n\n对 \\(h(t) = h(t)u(t)\\)\n\\[\nH(\\omega) = \\frac{1}{2}H(\\omega) \\oplus \\frac{1}{j\\omega}\n\\]\n（两者 \\(H(\\omega) = R(\\omega) + jX(\\omega)\\)）\n\n\\(\\Rightarrow H(\\omega) = \\text{Re}\\{H(\\omega)\\} + j \\text{Im}\\{H(\\omega)\\}\\)\n\\(\\Rightarrow H(\\omega) = \\frac{1}{\\pi}\\int_{-\\infty}^{\\infty} \\frac{X(\\lambda)}{\\omega-\\lambda} d\\lambda\\)\n\n\\(X(\\omega) = -\\frac{1}{\\pi}\\int_{-\\infty}^{\\infty} \\frac{R(\\lambda)}{\\omega-\\lambda} d\\lambda\\)\n\n\\(\\Rightarrow R(\\omega) = X(\\omega) \\oplus \\frac{1}{\\pi\\omega}\\) 正变换\n\n\\(X(\\omega) = R(\\omega) \\oplus (-\\frac{1}{\\pi\\omega})\\) 逆变换\n\n即：\\(H(\\omega) \\xrightarrow{\\text{正变换}} X(\\omega) \\xrightarrow{\\text{逆变换}} R(\\omega)\\)\n\n即：系统因果 \\(\\iff\\) \\(H(\\omega)\\) 实虚部满足希尔伯特变换\n\n---\n## 相关函数 \\(R_{12}(\\tau)\\) 和 \\(R_{21}(\\tau)\\)\n\n### 1. DEF 对能量信号 \\(f_1(t)\\) 和 \\(f_2(t)\\)，有\n\n\\[\nR_{12}(\\tau) = \\int_{-\\infty}^{\\infty} f_1(t) f_2^*(t-\\tau) dt = \\int_{-\\infty}^{\\infty} f_1(t+\\tau) f_2^*(t) dt\n\\]\n\\[\nR_{21}(\\tau) = \\int_{-\\infty}^{\\infty} f_2(t) f_1^*(t-\\tau) dt = \\int_{-\\infty}^{\\infty} f_2(t+\\tau) f_1^*(t) dt\n\\]\n\\[\nR_{21}(\\tau) = R_{12}^*(-\\tau)\n\\]\n\n### 2. 对功率有限信号\n\n\\[\nR_{12}(\\tau) = \\lim_{T \\to \\infty} \\frac{1}{T} \\int_{-\\frac{T}{2}}^{\\frac{T}{2}} f_1(t) f_2^*(t-\\tau) dt\n\\]\n\\[\nR_{21}(\\tau) = \\lim_{T \\to \\infty} \\frac{1}{T} \\int_{-\\frac{T}{2}}^{\\frac{T}{2}} f_2(t) f_1^*(t-\\tau) dt\n\\]\n\\[\nR_{21}(\\tau) = R_{12}^*(-\\tau)\n\\]\n\n### 3. 相关卷积定理\n\n注意到 \\(f_1(t) \\oplus f_2^*(t) = R_{12}(t)\\)。对能量信号，有\n\\[\n\\mathscr{F}[R_{12}(\\tau)] = F_1(\\omega) F_2^*(\\omega)\n\\]\n\\[\n\\mathscr{F}[R_{21}(\\tau)] = F_2(\\omega) F_1^*(\\omega)\n\\]\n\\[\n\\mathscr{F}[R_{12}(\\tau)] = |F_1(\\omega)|^2\n\\]\n\n---\n### 页面底部标注\n\n- 相关运算\n- ① 正变换等于一个移相器\n- ② 相关卷积定理\n- ③ 相关定理"
+    },
+    {
+      "id": "C47",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "flowchart",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 3500,
+        "latency_seconds": 11.65,
+        "prompt_tokens": 634,
+        "completion_tokens": 807,
+        "total_tokens": 1441,
+        "reasoning_tokens": 80,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 328233
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 140190,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [],
+        "attempt": 0,
+        "attempt_kind": "first_direct",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 11.65,
+            "prompt_tokens": 634,
+            "completion_tokens": 807,
+            "total_tokens": 1441,
+            "reasoning_tokens": 80,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 328233
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 140190,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          }
+        ],
+        "retried": false,
+        "cached": false
+      },
+      "metrics": {
+        "edits": 1120,
+        "insertions": 279,
+        "deletions": 34,
+        "substitutions": 807,
+        "edit_rate": 0.9982174688057041
+      },
+      "gold": "# 绪论\n\n**自动控制**\n\n## 1. Def.\n\n- 系统：[?]，具有一定功能\n- 控制：自动利用控制装置操纵被控对象，使被控量按规定使变化\n- 被控对象：被控[?]被控量\n\n自动控制系统：在没有人直接参与[?]……\n\n结构图（文字描述）：\n\n- 输入/参考 → 控制器 → 执行机构 → 被控对象 → 输出（被控量）\n- 被控对象、测量元件 → 反馈 → 不断地回到控制器\n- 扰动 ←↓ 作用于（执行机构、被控对象）\n\n控制的基本方式：\n\n1. 开环控制：信号单向传递，输出受扰动影响\n2. 闭环控制\n3. 复合控制\n\n- 带干扰补偿的开环：\n    - 输入 → 控制器 → 执行机构 → 被控对象 → 输出\n    - 干扰测量 →（补偿通道）→ 执行机构（前馈补偿）\n- 按误差控制的闭环：见 last\n- 复合控制：按输入补偿 / 按扰动补偿\n\n输入 r(t)，输出 c(t)\n跟踪：c(t) = r(t)\n\nDef. 系统受到外作用后，被控量随时间变化的全过程称为动态过程（动态/过渡）性能：\n\n- 稳定 stability\n- 快速 swiftness\n- 准确 accuracy\n\n稳态误差 ess：lim(t→∞) e(t) ←t 为超[?]量[?]\n\n# 自动控制系统的数学模型\n\n## 1. Def.\n\n- 数学模型\n- 微分方程 / 传递函数 / 频率响应 / 信号流[?]图（<<划掉>>）\n- 差分方程\n- 建模方法：解析法 / 实验法\n\n## 二. 控制系统微分方程建立 [?]……\n\n## 3）非线性微分方程的线性化\n\n①. 线性系统：满足叠加[?]叠加原理的系统\n    - ⇒ 可加性：齐次性[?]齐次效性\n    - 若：x, y 为[?]程线性系统\n    - 可加：f(x₁+x₂) = f(x₁) + f(x₂)\n    - 齐次：f(ax) = a f(x)\n    - 若 f(x) = cos ωt · x；线性[?时变]（<<划掉>>）\n\n②. 平衡[?]位置附近[?]每一个小偏差变化\n    - y − f = k₀x\n\n③. Laplace 变换及反变换\n    - 若[?] f(t)，t ≥ 0，def.\n    - L[f(t)] = F(s) = ∫₀^∞ f(t) e^{-st} dt，s ∈ C（//[?]微分[?]算）\n\n常见变换：\n\n- a. 单位阶跃函数：f(t) = 1(t) = { 1, t≥0；0, t<0 }\n    - 则 L[f(t)] = 1/s\n- b. 单位斜坡：f(t) = t，t>0\n    - 则 L[f(t)] = 1/s²\n",
+      "prediction": "# 绪论\n\n## 1. Def\n\n- 系统： \\(S\\) ；具有一定功能\n- 控制：利用控制装置操纵被控对象\n- 被控对象：需被控制的（装置/对象）\n- 自动控制系统：在没有人直接参与下，...\n- 控制量： \\(u(t)\\)\n- 被控量： \\(c(t)\\)\n- （上面有一个小的控制框图：给定值 \\(\\rightarrow\\) 控制装置 \\(\\rightarrow\\) 执行机构 \\(\\rightarrow\\) 被控对象 \\(\\rightarrow\\) 被控量，存在反馈）\n\n- 稳态误差： \\(e_{ss} = \\lim_{t \\to \\infty} e(t)\\)\n- 超调量： \\(\\sigma\\%\\)\n- 自动控制系统的数学模型\n\n- 数学模型： ✓\n  - 微分方程 / 传递函数 / 频率响应 / 状态方程\n  - 建模方法：解析法 / 实验法\n\n## 2. 控制系统的微分方程建立： ✓\n\n- 线性系统：满足叠加原理的系统（线性定常/线性时变）\n  - 线性特性： \\(f(x_1+x_2) = f(x_1) + f(x_2)\\)\n  - 齐次性： \\(f(ax) = a f(x)\\)\n  - 时变性： \\(f(x,t) = \\dots\\) 或 \\(f(t)\\) 为常数\n\n- 2) 非线性微分方程的线性化\n- 3) 传递函数及变换： Laplace变换及反变换\n  - 定义： \\(F(s) = \\mathcal{L}[f(t)] = \\int_0^\\infty f(t) e^{-st} dt, \\quad s \\in \\mathbb{C}\\)\n  - 性质： \\(f(t) \\leftrightarrow F(s)\\)\n  - 常用变换：\n    - 单位脉冲函数： \\(\\delta(t) = 1\\) 或 \\(\\delta(t) = \\begin{cases} 0 & t \\neq 0 \\\\ \\infty & t = 0 \\end{cases}\\)\n    - 单位阶跃函数： \\(f(t) = 1(t)\\) 或 \\(f(t) = \\begin{cases} 0, & t<0 \\\\ 1, & t>0 \\end{cases}\\)\n    - 单位斜坡函数： \\(f(t) = t \\cdot 1(t)\\)\n- 4) 平衡位置、附加的小偏差化\n  - 与 \\(f(t)\\) 无关\n- 5) 非线性系统 -> 小偏差线性化\n\n## 3. 本征/性能指标\n\n- 稳定性 stability\n- 快速性 swiftness\n- 准确性 accuracy\n\n## 4. 控制方式\n\n- 开环控制：信号单向传递，输出不影响控制作用\n- 闭环控制\n- 复合控制\n\n- 按偏差进行控制\n- 抗干扰补偿的开环：...\n- 按给定值控制 + 按扰动补偿的闭环：见最上\n- 复合控制：按输入补偿 / 按扰动补偿\n\n- 对控制系统的性能要求：\n  - 稳定性、快速性、准确性\n\n- 输入 \\(r(t)\\) ，输出 \\(c(t)\\)\n- 图： \\(R(s) \\rightarrow \\text{控制器} \\rightarrow G(s) \\rightarrow \\text{被控对象} \\rightarrow C(s)\\) ，存在反馈"
+    },
+    {
+      "id": "C50",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "flowchart",
+      "gold_proofed": false,
+      "meta": {
+        "status": "timeout",
+        "error": "socket timeout",
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 120.48,
+        "prompt_tokens": null,
+        "completion_tokens": null,
+        "total_tokens": null,
+        "reasoning_tokens": null,
+        "finish_reason": null,
+        "cost": null,
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 302364
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 134181,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 100.97,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 302364
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 134181,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "timeout",
+            "error": "socket timeout",
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 120.48,
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null,
+            "reasoning_tokens": null,
+            "finish_reason": null,
+            "cost": null,
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 302364
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 134181,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": false
+      },
+      "metrics": {
+        "edits": 1160,
+        "insertions": 0,
+        "deletions": 1160,
+        "substitutions": 0,
+        "edit_rate": 1.0
+      },
+      "gold": "# 根轨迹法 Chapter 4\n\n## 稳态：误差计算\n\n*（右侧旁注：R(s) → ①[F][图] → E(s)，图示 R(s) 至 [比较器] 至 [G(s)]，E(s)，反馈箭头向下）*\n\n### 1. 误差定义：\n\n① e(t) = r(t) - c(t)\n\n② e(t) = Γ(t) - b(t)（反馈）\n\n### 二. 稳态误差：\n\nE_ss := lim (s→∞) e(t)\n\n### 3. 终值定理：\n\n当 lim (t→∞) e(t) 与 lim (s→0) SE(s) 存在时\n\nE_ss = lim (t→∞) e(t) = lim (s→0) sE(s)\n\n即自由产生 SE(s) 的极点 <<划掉>> 如果有 <<划掉>> 于右半 <<划掉>>\n\n<<划掉>> 部\n\n（必要保证）\n\n---\n\n## 根\n\n## 1. 根轨迹：概念与方程\n\nD(t)：系统开环增益 0 → +∞ 变化时，闭环特征根在复平面上的运动轨迹\n\nCH = k* Π (s + z_j) ...（暂略）\n\nK*：根轨迹增益\n\n根轨迹方程：G(s)H(s) = -1\n\n→ 模值方程，K* · (Π|s+z_j|)/(Π|s+p_i|) = 1 （必要）\n\n相角方程：Σ∠(s - z_j) - Σ∠(s - p_i) = (2k+1)π（必要条件）\n\nΣz_j：开环零点.  Σp_i：开环极点.\n\n---\n\n对开环传递函数<<涂改>><<划掉>> 开环函数\n\nG(s)H(s) = K* Π(s+z_j) / [Π(s^v) · Π(s+p_i)] = K* Π(s+z_j) / [s^v Π(s+p_i)]\n\nE_ss = lim (s→0) sE(s) = lim (s→0) [s / (1 + s^v Π...)] R(s)\n\n### 二决定因素：\n\n① 输入信号 R(s)\n\n② 是 <<划掉>> 开环增益 k\n\n③ 系统型号 v\n\nDef. 静态 位置 误差系数\n\nk_p := lim (s→0) G(s)H(s)\n\nk_p := { k_0, v=0; ∞, v≥1 }\n\nE_ss = 1/k_p   对 R(s) = 1/s 阶跃信号\n\n---\n\nDef. 静态 速度 误差系数\n\nk_v := lim (s→0) s·G(s)H(s)\n\nk_v := { 0, v=0; k, v=1; ∞, v≥2 }\n\nE_ss = 1/k_v := { ∞, v=0. 1/k, v=1. 0, v≥2 }   对 R(s) = 1/s²\n\n---\n\nDef. 静态 加速度 误差系数\n\nk_a := { 0, v=0,1; k, v=2; ∞ } := lim (s→0) s²·G(s)H(s)\n",
+      "prediction": ""
+    },
+    {
+      "id": "D35",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "flowchart",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 3500,
+        "latency_seconds": 27.21,
+        "prompt_tokens": 634,
+        "completion_tokens": 806,
+        "total_tokens": 1440,
+        "reasoning_tokens": 708,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 127233
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 58139,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [],
+        "attempt": 0,
+        "attempt_kind": "first_direct",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 27.21,
+            "prompt_tokens": 634,
+            "completion_tokens": 806,
+            "total_tokens": 1440,
+            "reasoning_tokens": 708,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 127233
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 58139,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          }
+        ],
+        "retried": false,
+        "cached": true
+      },
+      "metrics": {
+        "edits": 177,
+        "insertions": 1,
+        "deletions": 136,
+        "substitutions": 40,
+        "edit_rate": 0.5709677419354838
+      },
+      "gold": "# 随机存储器\n\n1. RAM 结构\n   - SRAM：静态 RAM\n   - DRAM：动态 RAM\n\n2. 六管 CMOS 静态存储单元：\n\n只读存储器：\n\n1. ROM 结构\n\n<<涂改>>（科kker/科普 相关字迹，无法辨认：[?][?]）\n\n# 单管 DRAM\n\n电路图（文字描述）：\n- 左侧：字线（WL）垂直交叉；晶体管栅极接字线\n- 晶体管漏极接位线 BL（节点），源极接存储电容 C_S（接地）\n- 位线节点旁接电容 C_B（接地，位线分布电容）\n\n（即：字线 —[MOS管]— 存储电容 C_S ∥ 位线电容 C_B 于一端接地）\n\n# 2. 存储器容量的扩展\n\n1. 位扩展、字扩展、字位扩展\n",
+      "prediction": "# 随机存储器\n\n1. RAM结构\n   - SRAM：静态RAM\n   - DRAM：动态RAM\n\n2. 管CMOS静态存储单元\n\n# 只读存储器\n\n1. ROM结构\n\n---\n\n## 单管DRAM\n\n由一个晶体管和一个电容组成，图中标注有 \\(C_s\\)、\\(C_B\\)。\n\n---\n\n## 2. 存储器容量的扩展\n\n- 位扩展、字扩展、字位扩展"
+    },
+    {
+      "id": "A09",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "strikethrough",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 71.17,
+        "prompt_tokens": 634,
+        "completion_tokens": 6846,
+        "total_tokens": 7480,
+        "reasoning_tokens": 6616,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 276011
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 119503,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [
+          "reasoning_high"
+        ],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 79.68,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 276011
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 119503,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 71.17,
+            "prompt_tokens": 634,
+            "completion_tokens": 6846,
+            "total_tokens": 7480,
+            "reasoning_tokens": 6616,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 276011
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 119503,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high"
+            ],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": true
+      },
+      "metrics": {
+        "edits": 643,
+        "insertions": 0,
+        "deletions": 396,
+        "substitutions": 247,
+        "edit_rate": 0.8677462887989204
+      },
+      "gold": "# 滚动轴承\n\n## 1. 结构\n\n- 外圈：装在轴承座孔内，起支承作用\n- 内圈：装在轴颈上\n- 滚动体：将滑动摩擦变为滚动摩擦\n- 保持架：将滚动体隔开并均匀分布\n\n## 2. 类型\n\n- 按承受载荷方向分：向心轴承（主要承受径向载荷）、推力轴承（主要承受轴向载荷）\n- 按滚动体形状分：球轴承、滚子轴承\n- 按调心性能分：调心轴承、刚性轴承\n\n代号：\n- 保持架：J（钢板冲压）、M（铜合金实体）、D（黄铜）\n- 后置代号：/C2、/AC、/B 等\n\n## 3. 受力分析\n\n- 径向载荷：F_r = F_R + F_A·tanα（对角接触轴承，α 为接触角）\n- 轴向载荷：F_a = F_A\n- 载荷系数：X、Y —— 径向系数、轴向系数\n- 当量动载荷：P = X·F_r + Y·F_a\n\n## 4. 失效形式及计算准则\n\n- 失效形式：疲劳点蚀、塑性变形、磨损\n- 计算准则：\n  - 一般转速：按疲劳寿命（额定动载荷）计算\n  - 低速、重载：按静强度（额定静载荷）校核\n  - 高速：校核极限转速\n\n## 5. 例题\n\n- 内径代号 04 → d = 4×5 = 20 mm\n- d = 22×28×32（内径×外径×宽度）\n- α ≈ 25°～15′?（接触角）\n- 寿命：L_10 = (C/P)^ε，其中 ε 对球轴承 = 3，对滚子轴承 = 10/3\n- L_10h = (10^6/60n)·(C/P)^ε\n- 简支梁轴向载荷：F_A = 0.5F_R?（派生轴向力 S = 0.5F_R）\n- 深沟球轴承轴向界限：0.5e?……\n- 计算得：n ≈ 7.9,12?转/分？\n\n---\n*注：本页部分字迹潦草，个别数字（如角度、系数）辨认可能有误。*\n",
+      "prediction": "# 提前还款\n\n期限：1年 2年 3年 4年 5年\n\nD：提前还款 8%、12% 的3、4、5年  \nP：提前还款 10% 的6、7年\n\n基础：\n1. 到期还本付息\n2. 提前还款\n\n等额本息\n\n| 期限 | 1年 | 2年 | 3年 | 4年 | 5年 |\n|------|-----|-----|-----|-----|-----|\n| D |  |  | 8% | 12% |  |\n| P |  |  |  |  | 10% |\n| 等额本息 | 10% | 10% | 15% | 15% | 15% |\n\n收益：10% 12% 15% 15% 15%  \n利率：7.8%  \n提前还款：15%  \n本金：10万\n\n风险：\n- 信用风险\n- 市场风险\n- 操作风险\n- 流动性风险"
+    },
+    {
+      "id": "B11",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "strikethrough",
+      "gold_proofed": false,
+      "meta": {
+        "status": "timeout",
+        "error": "socket timeout",
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 120.47,
+        "prompt_tokens": null,
+        "completion_tokens": null,
+        "total_tokens": null,
+        "reasoning_tokens": null,
+        "finish_reason": null,
+        "cost": null,
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 285016
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 120150,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 98.13,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 285016
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 120150,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "timeout",
+            "error": "socket timeout",
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 120.47,
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null,
+            "reasoning_tokens": null,
+            "finish_reason": null,
+            "cost": null,
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 285016
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 120150,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": false
+      },
+      "metrics": {
+        "edits": 1554,
+        "insertions": 0,
+        "deletions": 1554,
+        "substitutions": 0,
+        "edit_rate": 1.0
+      },
+      "gold": "<!-- 本页手稿倒置书写；按翻转后正确阅读方向转写。页面为左右两栏，逐行配对如下 -->\n\n**左栏（带传动设计计算）与右栏（齿轮失效）逐行对照：**\n\n```\n带传动设计计算参数及选择                    齿轮轮齿的失效\n已知：P、[?]、n₁，传动载荷、工作条件          1.齿轮失效形式：[?]齿失效\n确定[?]带型、根数、中心[?]等传动参数         轮齿[?][?][?]\nPₐ = k_A P                                  齿面[?][?]、[?][?]起\n→ 计算功率                                  [?]齿根[?]折断/[?]断/斜[?]\"(main)\"[?]\n→ 选型、d_{d1}\n带轮[?]基准[?]直径[?]选择：\nv = πd_{d1}n₁/(60×1000)    5~30 m/s         点蚀失效：[?]交[?]应力作用下，齿面[?][?]疲劳点蚀\n                                            [?]点蚀位置：靠[?]近节[?]线[?]的齿根[?]\n中心至[?]带轮基准直径 d_d                    严重[?]时[?]：[?]                 齿面[?]磨损：\n中心距过大：离心力[?]大、[?]胶合[?]           胶合：热胶合；冷胶合；\n中心距[?]过小：[?]...a ≤ 120°~180°,...       塑性[?]变形：...~    [?]面[?]磨损[?]：\nF₀小：[?]增大[?]u₁[?]：中心[?][?]...         [?]硬化[?]女王[?]两[?]：[?]最大[?]齿[?]面[?]/[?]：[?] [?]齿[?]\n增大K[?]：大[?]K[?][?]，[?]2[?]°~35°[?]      [?]接触[?]线[?][?]极限[?]\n[?]增大[?]x₁[?]：中心[?][?]；张[?]紧[?]轮     [?]齿轮[?][?]疲劳[?]曲[?][?]  [?] if([?]d_{d1}d_{d1}) < d_d, 2(d_{d1}+d_{d1})\n[?]增大[?]、[?]传动比[?]：[?]张[?]紧[?]轮     α ≈ 0.6[?] (1 + [?]) · a/a' [?] (d_{d1}·d_{d1})²\n[?][?]面[?]胶[?]合[?]：[?]迅[?]胶合；[?]摩擦[?]力[?]；[?]分离[?]的[?]曲[?]     σ_H < [σ_H]     老曲[?]疲劳[?]强度\n[?]皮带[?][?]初张力 F₀：                    σ_F < [σ_F]     接触[?]疲劳[?]强度\nF₀ = 500(P_α/(v·z))·k[?]·(1+120°)/[?]       2.设计准则：\n新带[?]补[?]拉[?]力[?]给[?][?]补偿值          z·y_{Fa1}⁻¹ · F_e/((z+2)k_α) ≤ τ<10；z ≤ [?]带[?]\n带绕[?]带轮[?]周期[?]循环[?]变[?]为:  使[?]动带轮作用在[?]轮轴上的[?]载荷F_Q：\n齿[?]轮[?]材料：σ_B              特[?]轮[?]宽度(小[?]轮)/_[?] >~12[?]^[?] 常取6~9\n[?]式[?]齿轮齿[?]的[?]\n```\n\n**其余无法辨认的行均已用 [?] 占位，如有涂改未能在影印件中明确分辨，此处保守保留原状，不擅自补写。**\n",
+      "prediction": ""
+    },
+    {
+      "id": "C05",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "strikethrough",
+      "gold_proofed": false,
+      "meta": {
+        "status": "timeout",
+        "error": "socket timeout",
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 120.98,
+        "prompt_tokens": null,
+        "completion_tokens": null,
+        "total_tokens": null,
+        "reasoning_tokens": null,
+        "finish_reason": null,
+        "cost": null,
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 324941
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 140795,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 68.45,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 324941
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 140795,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "timeout",
+            "error": "socket timeout",
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 120.98,
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null,
+            "reasoning_tokens": null,
+            "finish_reason": null,
+            "cost": null,
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 324941
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 140795,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": false
+      },
+      "metrics": {
+        "edits": 1789,
+        "insertions": 0,
+        "deletions": 1789,
+        "substitutions": 0,
+        "edit_rate": 1.0
+      },
+      "gold": "# 页面顶注（右上角）\n\n多自体 组群 <<草字>>\n\n---\n\n# 左栏\n\n## MAS 1.\n\nBold 模型：\n\nzσr：排斥已  zσa：吸引已\nzσo：定向 repulsion attraction 定向\nd_i(t+1): -Σ_σ^{σ∈M_i} f̂(r̂_ij) / ‖r̂_ij‖  M≠0\n　　　　Σ_{j∈N_i^{σr}} g(r̂_{ij}) / ‖r̂_ij‖  M=0 定向\n　　　　Σ_{j∈N_i^{σa}} f̂(r̂_ij) / ‖r̂_ij‖  M=0\n　　　　Σ_{j∈N_i^{σo}} h(r̂_{ij}) / ‖r̂_ij‖  M=0 边缘\n　　　　Σ_{α=σr,σa,σo} d_{i0}^{(σ)} r̂_{ij}(t) + Σ_{j∈N_i^{σw}} g(r̂_ij) + Σ_{j∈N_i^{σo}} f̂ HttpRequest ‖r̂‖  M≠0 说明\n\nViscole 模型：\n\nθ_i(t+1): arctan[ (Σ_{j=M_i,K_i} sin θ_ij(t)) / (Σ_{j∈M_i,K_i} cos θ_ij(t)) ] + β_i\nx_i(t+1) = x_i(t) + v(cos θ_i(t+1), sin θ_i(t+1))\n\n analogue 模型 <<划掉>>：\n\nV_i(t): dT_i/dt  为期望\nm_i dv_i/dt = m_i[ V_i^{(r)}(r_i(t) - x_i(t)) ] + 主观 + [is] + 期望w\nf_ij = ⟨k_ij[r_ij - d_ij(t)] g(r_ij) <<涂改>> | r_ij - d_ij | ẑ_ij⟩\n+ k_g[r_ij - d_ij] Δμ_g(r̂_ij) ẑ_ij\nΓ_ij: 生效半径(effective range)  Γ_ij: 个体作用力\nf_iw: A_i e^{-d_iw/W_i} + k_g(r_i - d_iw) f̂_iw⟨l⟩\nΦ - k_g(r_i - d_iw) v_i(t) f̂_iw⟨l⟩  →→~\n\nSOC 自组织临界性：P(x) ∝ x^{-2}\n\n## Ising 模型\n\nS_i: ±1\nE = -Σ_iΣ_j S_i S_ij <<涂改>> - Σ_i h_i S_i\nJ_ij: 相互作用 逻辑（划线）\nh_i: 外部环境（划线）\n\n---\n\n# 右栏\n\n## MAS 2.\n\n平均场建模方法：\n\n1. 种群模型：\n\na. 连续单种群 Malthus 指数增长\n离散： x(t) = R x(t)　x(t) = R^t x(0)\n连续 (Malthus)：\n\nλ(t) : Γλ(t)　λ(0) : e^t x(0)\n\nb. 引入竞争：Logistic 增长　阻滞增长\nṗ：ẋ = Γx(1 - x/k)\n⇒ x(t) = k N e^{Γt} / (e^{Γt} + (k/x(0)) <<涂改>> e^{Γt})\nlim_{t→∞} x(t) = k\n\n（图形：一条从低处上升、饱和趋于上界 k 的 S 形曲线，横轴向右，纵轴向上）\n\n离散数：\nλ(t+1) = R λ(t) (1 - λ(t)/k)\n全 x(t) : x(t)/k 满足 Logistic 映射\nThm: 若 |dF_μ/dx|x̂| < 1 ⇒ |F'(x̂-P)| < |1-P̂|\n⇒ 系统收敛、稳定\n\nc. Lotka-Volterra 方程 捕食-被捕食\n⟨ x(t) : a x(t) - b x(t) y(t)  被捕者\n　 y(t) : -c y(t) + d x(t) y(t)  捕者 ⟩\n⇒ 平衡态：x(t) : d/c　y(t) : a/b\n逆时针旋转椭圆周期\n\nd. 带有竞争关系的种群模型\ndN₁(t)/dt = a₁ N₁ (1 - N₁/K₁ - (α₁₂ N₂)/K₂)\ndN₂(t)/dt = a₂ N₂ (1 - N₂/K₂ - (β₂₁ N₁)/K₂)\n\ne. 植物与食植动物\ndy/dt = r V (1 - y/k) ⟨?⟩ - c_H [1 - e^{-d/v}]\ndx/dt = H[ -a + c_H(1 - e^{-d/v}) ]\n",
+      "prediction": ""
+    },
+    {
+      "id": "C09",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "strikethrough",
+      "gold_proofed": false,
+      "meta": {
+        "status": "ok",
+        "error": null,
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 30.56,
+        "prompt_tokens": 634,
+        "completion_tokens": 1326,
+        "total_tokens": 1960,
+        "reasoning_tokens": 739,
+        "finish_reason": "stop",
+        "cost": "0",
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 293712
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 127866,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 93.06,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 293712
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 127866,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 30.56,
+            "prompt_tokens": 634,
+            "completion_tokens": 1326,
+            "total_tokens": 1960,
+            "reasoning_tokens": 739,
+            "finish_reason": "stop",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 293712
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 127866,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": true
+      },
+      "metrics": {
+        "edits": 756,
+        "insertions": 179,
+        "deletions": 50,
+        "substitutions": 527,
+        "edit_rate": 0.7682926829268293
+      },
+      "gold": "# 系统的描述\n\n## 系统的数学模型：\n\n$$C_0\\frac{d^n r(t)}{dt^n}+C_1\\frac{d^{n-1}r(t)}{dt^{n-1}}+\\cdots+C_{n-1}\\frac{dr(t)}{dt}+C_n r(t)$$\n$$=E_0\\frac{d^m e(t)}{dt^m}+E_1\\frac{d^{m-1}e(t)}{dt^{m-1}}+\\cdots+E_{m-1}\\frac{de(t)}{dt}+E_m e(t)$$\n\ne(t)：激励/输入\n\nr(t)：响应/输出\n\n## 系统的功能框图：\n\n- 相加、乘、数乘、微分、积分、延［?］\n\n## 系统的数学模型：\n\n- e₁ ——(⊗)——Γ₂，　e₂↑，　e₁→[?]→Γ₂，　r = e₁e₂\n- e ——(⊗)——Γ，　e₂↑，　r = e₁e₂\n- e ——(A)——Γ，　e ⟶(×A)⟶ Γ，　r = Ae\n- e ——(□)——Γ，　r(t) = e(t-τ)　（<small>原文写作 r(t) = e(t-T)</small>）\n- e ——(d/dt)——Γ，　r = de/dt\n- e ——(∫)——Γ，　r(t) = ∫₋∞^t e(t₁)dt₁\n\n- n 阶常微分方程 只需 n 个积分器\n\n4. 可逆系统 / 不可逆系统\n- 可逆：不同激励不同响应\n- 不可逆：~~不同~~ <<划掉>>，否则 √\n\n·5. 因果系统：响应出现时间不早于激励\n- 非因果系统：～\n\n·6. 稳定系统与不稳定系统\n- 稳态定义：输入有界输出有界｜即 B D　（output？）［?］\n- 不稳定；～\n\n·7. 线性系统与非线性系统：\n- 线性：输入输出满足线性齐次与叠加\n- e₂ ⟶ e₁e₂ < prestig？>［?] 操作\n\n·8. 时变系统与时不变系统\n- 时变：激励随时间改变，系统响应相应地随相同时间做改变\n- 时变：～\n\n## 系统特性及分类\n\n1. 集总参数系统：\n- 集总参数元件，常微分方程\n\n分布参数系统：\n- 分布参数元件，偏微分方程\n\n2. 连续时间系统 / 离散时间系统\n\n3. 无记忆系统和有记忆系统\n- 无记忆：响应仅与当前激励有关\n  - 代数方程\n- 有记忆：响应与前递其它时间激励有关\n\n应有关－积分／微分\n\n（右下角注：微分/积分）\n",
+      "prediction": "# 系统的描述\n\n## 系统的数学模型：\n\n$$C_0\\frac{d^2r(t)}{dt^2}+C_1\\frac{dr(t)}{dt}+\\cdots+C_n\\frac{d^nr(t)}{dt^n}+C_{n+1}r(t)$$\n$$=E_0\\frac{d^2e(t)}{dt^2}+E_1\\frac{de(t)}{dt}+\\cdots+E_m\\frac{d^me(t)}{dt^m}+E_{m+1}e(t)$$\n\n$e(t)$:激励信号/输入\n\n$r(t)$:响应信号/输出\n\n## 系统的功能框图：\n\n- 加,乘,数乘,微分,积分运算\n\n### 系统的数学模型：\n\n- $e_1 \\rightarrow \\boxed{\\times} \\rightarrow r = e_1 e_2$ ($e_2$ 为另一输入)\n- $e_1 \\rightarrow \\boxed{\\sum} \\rightarrow r = e_1 + e_2$ ($e_2$ 为另一输入)\n- $e \\rightarrow \\boxed{\\int} \\rightarrow r = \\int e \\, dt$\n- $e \\rightarrow \\boxed{D} \\rightarrow r = \\frac{de}{dt}$\n- $e \\rightarrow \\boxed{} \\rightarrow r = e(t+1)$\n\nn阶微分方程 权需 n 个积分器\n\n## 系统特性及分类\n\n### 1. 集总参数系统：\n\n- 集总参数元件：常微分方程\n- 分布参数系统：\n- 分布参数元件：偏微分方程\n\n### 2. 连续时间系统 / 离散时间系统\n\n### 3. 无记忆系统和有记忆系统\n\n- 无记忆：响应仅与当前激励有关\n  - 代数方程\n- 有记忆：响应与当前及其它时间激励有关\n  - 微分/差分\n\n### 4. 可逆系统 / 不可逆系统\n\n- 可逆：不同激励不同响应\n- 不可逆：无\n\n### 5. 因果系统：响应出现时间不早于激励\n\n- 非因果系统：$\\checkmark$\n\n### 6. 稳定系统与不稳定系统\n\n- 稳定：输入/输出有界 → BIBO\n  - （稳定）\n- 不稳定：$\\checkmark$\n\n### 7. 线性系统与非线性系统：\n\n- 线性：输入/输出满足线性关系\n  - $e_1 + e_2 \\rightarrow r_1 + r_2$\n  - $ae \\rightarrow ar$\n\n### 8. 时变系统与时不变系统\n\n- 时变：激励随时间改变，系统响应相应地发生相同时间的改变\n- 时不变：$\\checkmark$"
+    },
+    {
+      "id": "C41",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "strikethrough",
+      "gold_proofed": false,
+      "meta": {
+        "status": "timeout",
+        "error": "socket timeout",
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 120.45,
+        "prompt_tokens": null,
+        "completion_tokens": null,
+        "total_tokens": null,
+        "reasoning_tokens": null,
+        "finish_reason": null,
+        "cost": null,
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 349419
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 155559,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 67.41,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 349419
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 155559,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "timeout",
+            "error": "socket timeout",
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 120.45,
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null,
+            "reasoning_tokens": null,
+            "finish_reason": null,
+            "cost": null,
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 349419
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 155559,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": false
+      },
+      "metrics": {
+        "edits": 1916,
+        "insertions": 0,
+        "deletions": 1916,
+        "substitutions": 0,
+        "edit_rate": 1.0
+      },
+      "gold": "```markdown\n# 非线性方程组求根\n\n## 1. 简单迭代法：\n\n- 二分法与分法：略\n\nThm. 设 φ(x) ∈ C[a,b] 在 (a,b) 内是，\n①. ∀x ∈ [a,b]，φ(x) ∈ [a,b]；\n②. ∃λ ∈ [a,b]，|φ'(x)| ≤ λ < 1\n则必有：\n①. ∃! s ∈ [a,b]，φ(s) = s\n②. ∀x₀ ∈ [a,b]，x_{k+1} = φ(x_k)，\n③. {x_k} 收敛 ⟹ C ≥ s，敛速 [?]，敛性收敛\n④. |s - x_k| ≤ (1/(1-λ)) |x_k - x_{k-1}|；\n   |s - x_k| ≤ (λ^k/(1-λ)) |x_1 - x_0|\n\nThm. 设 s = φ(s)，φ' 在 s 的某邻域内存在连续，且 |φ'(s)| < 1，∀x₀ ∈ U(s, δ)，x_{k+1} = φ(x_k)，则 {x_k} ∈ U(s, δ) 且收敛于 s。\n\nDef. 设 {x_k} → s，e_k = x_k - 0，若 ∃ Γ ≥ 1，C > 0，且 lim_{k→∞} |e_{k+1}|/|e_k|^Γ = C，∃ C > 0，|e_{k+1}|/|e_k|^Γ ≤ C\n称 {x_k} → s 是有 P 阶敛率收敛性，P 即是 P 阶敛率收敛。C 称敛率因子。\n\nThm. ①. Γ = 1 ⟹ 线性性收敛\n      ⟹ 0 < C ≤ 1\n②. Γ > 1：超线性收敛\n    Γ = 2：平方收敛\n\nThm. 设 φ^{(m)}(x) 在 [?] s-邻域内连续。\ns = φ(s)，若 φ^{(m)}(s) ≠ 0，s = 1, ..., m-1，\nφ^{(m)}(s) ≠ 0\n且 ∃ δ > 0，∀x₀ ∈ [s-δ, s+δ] 且 x₀ ≠ s，\nx_{k+1} = φ(x_k)，则 {x_k} 为 m 阶敛率收敛分歧率敛于 s。\n\n## 右栏：\n\n### 血. Steffensen 加速收敛法：\n\n- 收敛：φ(x_k)，记 h_k = φ(x_k)，\n  x_{k+1} = x_k + (y_k - x_k)^2 / (x_k - 2y_k + z_k)  （看起来类似“加速”方法：《计算》公众号与连接线）\n\n### 2. Newton 法（切线法）\n\nx_{k+1} = x_k - f(x_k)/f'(x_k)    (k = 0, 1, ...)\n\nThm. 若 f 在 [?] 区域内 [?] 有连续及 f'(x) ≠ 0，\n则 ∃ δ > 0。∀x₀ ∈ [s-δ, s+δ]，可由 Newton 法克制\n则 {x_k} 收敛于 s，若 f'(s) ≠ 0，∀x_k ≠ s，则 {x_k}\n是平方敛敛率的。（局部性收敛）\n\n定理证明\n\nThm. 若 f'' 在 [a,b] 上具有二阶连续导数。\nThm. ①. f(a)f(s) < 0    ②. f'(x) 在 [a,b] 不变号\n③. f'' 在 [a,b]，f'(x) ≠ 0   ④. x₀ ∈ [a,b]，f(x₀)F''(x₀) > 0\n则可 Newton 法产生的 {x_k} 是逐次收敛敛到 f(x)\n问 [a,b] 的唯一一根。且是平方收敛敛\n\n### 3. m 重根 Newton 迭代法：\n\n①. φ(x) = x - m f(x)/f'(x)     二阶敛收敛\n②. x_{k+1} = x_k - f(x_k) f'(x_k) / [f'(x_k)^2 - f(x_k) f''(x_k)]，\n   其中 m [?]\n③. φ(x) = x - f(x)/f'(x) - φ[?]\n\n### 4. 割线法：\n\nx_{k+1} = x_k - f(x_k)(x_k - x_{k-1}) / [f(x_k) - f(x_{k-1})]\n\nThm. 设 f(s) = 0，s ∈ [a,b] 且 s ∈ (a, b) 内 f'' 存在连续，f'(x) ≠ 0。记 e_k = s - x_k [?]，可\ne_k = s - x_{k+1} = e_k e_{k-1} [- f''(ξ_k)] / 2 f'(ζ_k)]\nξ_k [?] 存在于 x_{k-1}, x_k 之间\n\nThm. ∃ δ > 0，可 s [?]，由 f'' 连续，f'(x) ≠ 0，有\n割线法产生敛的 {x_k} 在 [?] 局部敛率收敛\n```\n（说明：个别字迹模糊处按 [?] 占位，手稿中勾划、改写痕迹的文字已尽量按可见笔迹如实誊录。）\n",
+      "prediction": ""
+    },
+    {
+      "id": "D07",
+      "model": "deepseek-v4-flash-vision-exp",
+      "category": "strikethrough",
+      "gold_proofed": false,
+      "meta": {
+        "status": "timeout",
+        "error": "socket timeout",
+        "model": "deepseek-v4-flash-vision-exp",
+        "session": "graph2note-spike-01",
+        "max_tokens": 10000,
+        "latency_seconds": 120.43,
+        "prompt_tokens": null,
+        "completion_tokens": null,
+        "total_tokens": null,
+        "reasoning_tokens": null,
+        "finish_reason": null,
+        "cost": null,
+        "prep": {
+          "original": {
+            "width": 1240,
+            "height": 1753,
+            "bytes": 304101
+          },
+          "resized": {
+            "width": 724,
+            "height": 1024,
+            "bytes": 131667,
+            "resized": true,
+            "max_dim": 1024,
+            "quality": 85
+          }
+        },
+        "warnings": [],
+        "attempt": 1,
+        "attempt_kind": "escalate_switch",
+        "attempts": [
+          {
+            "status": "ok",
+            "error": null,
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 3500,
+            "latency_seconds": 62.84,
+            "prompt_tokens": 634,
+            "completion_tokens": 3500,
+            "total_tokens": 4134,
+            "reasoning_tokens": 3500,
+            "finish_reason": "length",
+            "cost": "0",
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 304101
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 131667,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [
+              "reasoning_high",
+              "reasoning_runaway_capped"
+            ],
+            "attempt": 0,
+            "attempt_kind": "first_direct"
+          },
+          {
+            "status": "timeout",
+            "error": "socket timeout",
+            "model": "deepseek-v4-flash-vision-exp",
+            "session": "graph2note-spike-01",
+            "max_tokens": 10000,
+            "latency_seconds": 120.43,
+            "prompt_tokens": null,
+            "completion_tokens": null,
+            "total_tokens": null,
+            "reasoning_tokens": null,
+            "finish_reason": null,
+            "cost": null,
+            "prep": {
+              "original": {
+                "width": 1240,
+                "height": 1753,
+                "bytes": 304101
+              },
+              "resized": {
+                "width": 724,
+                "height": 1024,
+                "bytes": 131667,
+                "resized": true,
+                "max_dim": 1024,
+                "quality": 85
+              }
+            },
+            "warnings": [],
+            "attempt": 1,
+            "attempt_kind": "escalate_switch"
+          }
+        ],
+        "retried": true,
+        "cached": false
+      },
+      "metrics": {
+        "edits": 2422,
+        "insertions": 0,
+        "deletions": 2422,
+        "substitutions": 0,
+        "edit_rate": 1.0
+      },
+      "gold": "# 系统稳定性分析\n\n## 1. D.of.\n\n系统扰动偏离平衡点后，扰动消失后能否回复至平衡态。称系统稳定。\n\n一致性(渐近性)系统稳定性及自身有关\n\n## 2. 数学条件：\n\n设 $\\frac{G(j\\omega)G(-j\\omega)}{1+x} = \\frac{N(s)}{D(s)}$，取 $r(t)=\\delta(t)$，$R(s)=1$ [?] (原文：设 $\\frac{E(s\\cdots)}{D(s)} = \\frac{N(s)}{D(s)}$，取 $r(t)=\\delta(t)$，$R(s)=1$)\n\n∀ 无重根特征根 $\\tilde{s}$:\n\n$D(s) = a_0 \\prod_{i=1}^{n} (s - \\tilde{s}_i)$\n\n⟹ $c(t) = \\sum A_i e^{\\tilde{s}_i t} + C^A(t)$\n\n故稳定：$\\lim_{t\\to\\infty} e^{\\tilde{s}_i t} = 0 \\quad i = 1, 2, \\cdots, N$\n\n当 $\\tilde{s}_i$ 为 $s_i = \\sigma_i$，$\\sigma < 0$ 时：\n\n稳定：$\\Re\\tilde{s}_i = s_i < 0$ (原文：$$\\sigma_i < 0$$)\n\n当 $s_{ijk} \\mp \\sigma_i \\pm \\omega_i$ 时：\n\n$$\\lambda \\dot{\\lambda} = A_{i_1} e^{A_{i_1}t} + A_{i_1}^{\\varepsilon} A_{i_1}^{\\varepsilon} e^{(\\sigma_i + j \\omega_i)t} = A e^{\\sigma_i t} \\sin(\\omega_i t + \\varphi)$$\n\n⟹ $\\sigma_i < 0$\n\n亦即：系统稳定 ⟺ 特征方程所有根均具有负实部\n\n## §3 稳定性判据\n\n### ①. Hurwitz 判据\n\n对 $\\tilde{n}$ 阶 $a_n s^n \\cdots = 0$，$a_n > 0$\n\n系统稳定 ⟺ 特征方程 $\\frac{b_i[?]}{a_i}$ 移去维发行列式全部为正：\n\n$$D_n : \\begin{vmatrix} a_1 & a_3 & \\cdots & a_{2n-1} \\\\ a_0 & a_2 & \\cdots & a_{2n-2} \\\\ 0 & a_1 & \\cdots & a_{2n-3} \\\\ \\vdots & & \\ddots & \\\\ \\vdots & & & 0 & \\cdots & a_n \\end{vmatrix}$$ (原文：$$D_n : \\begin{vmatrix} a_1 & a_3 & \\cdots & a_{2n-1} \\\\ a_0 & a_2 & & a_{2n-2} \\\\ 0 & a_1 & \\cdots & a_{2n-3} & a_{2n-4} \\\\ \\vdots & & & \\vdots \\\\ 0 & \\cdots & & 0 & \\cdots & a_n \\end{vmatrix}$$)\n\n### ⓪. Lienard–Chipard 判据\n\n系统稳定 ⟺ $a_i > 0$\n\n奇/偶数阶 $\\Delta_i > 0$ (原文：$$\\pi_i > 0$$)\n\n### ②. Routh 判据\n\n劳斯表：\n\n| $S^n$ | $a_0$ | $a_2$ | $a_4$ | $a_6$ | ... |\n|---|---|---|---|---|---|\n| $S^{n-1}$ | $a_1$ | $a_3$ | $a_5$ | $a_7$ | ... |\n| $S^{n-2}$ | $C_{13}$ | $C_{23}$ | $C_{33}$ | ... | |\n| $S^{n-3}$ | $C_{14}$ | $C_{24}$ | ... | | |\n| ... | | | | | |\n| $S^2$ | $C_{1,n-1}$ | $C_{2,n-1}$ | | | |\n| $S$ | $C_{1,n}$ | | | | |\n| $S^0$ | $C_{0,n+1} = a_n$ | | | | |\n\n系统稳定 ⟺ 1. $D(s)$ 所有系数为正\n\n劳斯表第一列所有元为正\n\n**Thm.** 劳斯表第一列符号次数=次数等等 = 特征方程根的正半平面根数 (原文：$$\\text{Thm}.\\text{劳斯表第一列预号次数=次数等等}_{+}^{\\pi}\\text{特征方程}\\text{(?) 根的正}\\text{根}^{\\text{数}}\\text{数})\n\n**pro.**\n若某行第一元为零(?)，续行其它元非零(?)；用 $\\varepsilon \\to 0$ 代替 0 继续 (原文：用 $\\varepsilon \\to 0$ 代替 0 继续)\n\n若存在全 0 行：根 + 共轭复根/纯虚根 用上一行构参数构成(?) 辅助方程解点 代替 移除符号 (?) (原文：用上一行构参数构成辅助方程解点代替函数移)\n\n## 4. 相对稳定性：\n\n$$S = \\tilde{S} - \\sigma \\Rightarrow \\tilde{S} = S + \\sigma$$\n\n若系统在 $\\tilde{s}$ 稳定，则在 $S$ 具有负稳定性裕度 (原文：$$\\text{称谷}$$)\n\n$\\forall \\varepsilon > 0, \\exists \\delta > 0$\n\ns.t. $||x - x_e|| < \\delta$ 时，有\n\n$$||x(t) - x_e|| < \\varepsilon$$\n\n称平衡状态 $x_e$ 稳定\n",
+      "prediction": ""
     }
   ]
 }

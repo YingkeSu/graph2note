@@ -1,16 +1,33 @@
-# Handoff: Spike 1 视觉质量评估——harness 与冒烟交付
+# Handoff: Spike 1 视觉质量评估——harness + 30 页全量评估
 
-> from: Track C worker（dev/01-spike1-harness）
-> to: 维护者（HITL：评估集扩充 + gold 人工校对）；issue 03/08 接力 worker
-> status: harness 已交付并冒烟通过；选型结论待数据充足后给出初步观察
+> from: Track C worker（dev/01-spike1-full-eval）
+> to: 维护者（HITL：gold 人工校对 + 评估集抽检）；issue 03/08 接力 worker；issue 09（PDF 拆页）
+> status: harness 已交付；30 页全量评估已跑、初步选型已给；gold 人工校对待维护者
 
 ## 一句话
 
-评估 harness（`eval/`）已可用：`python -m eval.cli run --model <model>` 一键对指定模型
-跑全量评估集，计算 EditRate；`test-images/` 两张手稿已对两模型（glm-5.3-flash、
-deepseek-v4-flash-vision-exp）完成冒烟，产出真实报告。**当前 gold 为 AI 草拟、未经人工校对，
-EditRate 偏高（~92%–148%），不具选型意义，仅验证 harness 链路。** 后续请维护者补齐并人工校对
-gold 后，用本 harness 重跑出可用的选型数据。
+评估 harness（`eval/`）已可用：`python -m eval.cli run --model <model>` 一键对指定模型跑全量评估集
+计算 EditRate。已用修复后的生产配置（直出 prompt + 会话固定 + 1024 降采样 + 120s 硬超时）对两模型
+（glm-5.3-flash、deepseek-v4-flash-vision-exp）各跑 **30 页全量**评估集（缓存复用），给出正式报告与
+**初步选型倾向 glm-5.3-flash**。**gold 仍为 AI 草拟、未经人工校对 → 选型需文人工 gold 校对后复核。**
+
+## 全量评估结果（30 页，六分类目，含成本/耗时）
+
+汇总见 `eval/reports/spike1-full-eval-summary.md`，逐页见 `report-<model>.md` / `detail-<model>.json`。
+
+| 指标 | glm-5.3-flash | deepseek-v4-flash-vision-exp |
+|---|---|---|
+| 成功 / 总数 | 30 / 30 (100%) | 23 / 30 (77%) |
+| 样本均值 EditRate（OK，低=好） | **0.7685** | 0.8400 |
+| 失败样本 | — | 7×120s 超时（D27 C52 C50 B11 C05 C41 D07） |
+| 延迟均值 / 最大 (s) | **40.2 / 114** | 80.0 / 121 |
+| reasoning_tokens（OK 均值） | 未上报（直出） | 4648 |
+| 输出截断 | 无 | 多处 length 截断 / 过早停 |
+
+- 分类目均值比对见 summary 报告；glm 除「中英混排」外在所有类目一致更低。
+- 调用成本：网关订阅内 `cost=0`，未另计费。
+- 结论：初步**倾向 glm-5.3-flash**（更低 EditRate、100% 成功、无截断、延迟约减半）。样本受限 + gold
+  未人校，**非最终**。
 
 ## harness 用法
 
@@ -21,56 +38,63 @@ python -m eval.cli list                                    # 看评估集
 python -m eval.cli run --model glm-5.3-flash               # 全量（缓存复用）
 python -m eval.cli run --model deepseek-v4-flash-vision-exp
 python -m eval.cli run --model glm-5.3-flash --nocache     # 强制重调
+python -m eval.cli run --model <m> --only A15,A17          # 子集
 ```
 
-产物：`eval/reports/report-<model>.md`（总体/分类目/明细/涂改专项）+
-`eval/reports/detail-<model>.json`（gold/pred 全文 + 指标 + 成本/耗时/token）。
+产物：`eval/reports/report-<model>.md`（总体/分类目/明细/延迟分布/涂改专项）+
+`eval/reports/detail-<model>.json`（gold/pred 全文 + 指标 + 逐次调用 meta：latency/reasoning/finish_reason/cost）。
 同图同模型结果缓存于 `eval/cache/`（gitignore）不重复调用。
 
-## 冒烟结果（2 模型 × 2 图，含成本/耗时）
+## 数据集（30 页）
 
-| 模型 | 样本 | EditRate | status | latency_s | comp_tokens | comment |
-|---|---|---|---|---|---|---|
-| glm-5.3-flash | 01-requirements-arch | 1.4773 | ok | 40.7 | 246 | 目录/内容均可读，含「思考被截断重试」路径验证 |
-| glm-5.3-flash | 02-digitize-pipeline | 0.9170 | ok | 19.3 | 167 | 结构清晰，含少量 OCR 噪声 |
-| deepseek-v4-flash-vision-exp | 01-requirements-arch | 1.4740 | ok | 64.5 | 4909 | 内容完整，补充较多细节 |
-| deepseek-v4-flash-vision-exp | 02-digitize-pipeline | 0.9295 | ok | 54.1 | 5547 | 全链路文字转录较全 |
+`eval/fixtures/metadata.json` 的 `samples` 含 30 个样本（手写 10 / 流程图 6 / 涂改 6 / 中英混排 4 /
+公式 4；**印刷类目缺失**——批次内无真实打印页，仅空白格纸被 AI 误标 print，已剔除）。图片在
+`eval/fixtures/data/<id>.jpg`，gold 在 `eval/fixtures/gold/<id>.gold.md` + `<id>.meta.json`。
 
-- 调用成本：网关订阅内 `cost=0`，未另计费。
-- 汇总（未经人工校对 gold 作为分母）：glm 均值 1.1971、deepseek 均值 1.2017，两者近似。
-  **不适合作为选型依据**。
+## 给 issue 09 的输入（PDF 拆页 / 去重 / 缺页预警）
 
-## 数据集怎么扩充
+来源：维护者提供的 4 个多页扫描 PDF（`test-images/`，主检出目录含原件，工作区不提交 PDF，`*.pdf` 已
+入 gitignore）。本 spike 已做拆页与页级元数据，供 issue 09 复用：
 
-见 `eval/fixtures/CATEGORIES.md`。要点：
-
-1. 新图入 `test-images/`（或 `eval/fixtures/data/`），把 id/路径/类目填入 `eval/fixtures/metadata.json` 的 `samples`。
-2. 写 `eval/fixtures/gold/<id>.gold.md`；`gold_proofed` 初始 `false`。
-3. `python -m eval.cli list` 确认入列 → `python -m eval.cli run --model <model>`。
-4. 六类目：handwriting/print/formula/mixed/flowchart/strikethrough。当前仅 flow chart 覆盖，
-   其余五类样本待维护者提供；涂改类目样本现为空（harness 已预留 `deletion_note` 记录语义化删除表现）。
+- **拆页方法**：pymupdf `get_pixmap(matrix=2.08)` → JPEG quality≈85；A4（595×842 pt）→ 1240×1753 px、
+  单页 ≤500KB；30 页派生图共 ~7.33MB。
+- **id 约定**：`<源PDF字母><页码>`（1-索引），如 `A15` = A 文件第 15 页。
+- **源 PDF 映射**（4 文件）：
+  - `A` = `扫描件0908152342_1_1001.pdf`（21 页）
+  - `B` = `扫描件0908152342_2_1001.pdf`（21 页）
+  - `C` = `扫描件0908153007_1_1001.pdf`（55 页）
+  - `D` = `扫描件0908153009_2_1001.pdf`（57 页）
+  - 共 154 页，均为无文字层纯图扫描。
+- **页级元数据**（已落 `metadata.json` 每条 sample）：`source_pdf`（字母）、`source_page`（原始页码）、
+  `category`、`ai_classification`（单行内容概要）、`gold`、`gold_proofed`、`notes`。
+- **注意**：源 PDF 与 `*.pdf` 一律不入库；派生页图入库。此套 `metadata.json` 结构可作为 issue 09 拆页
+  产物（或 ingest/`out/*/pages/`）的页级元数据 schema 参考。
 
 ## gold 校对流程（给维护者 HITL）
 
-- 对每张图：以**原图为准**（不要以模型输出为准，避免模型输出污染 gold 形成循环），人工书写标准 Markdown。
-- 校对后把对应 `metadata.json` 里该样本的 `gold_proofed` 置 `true`。
-- 建议优先校对可重复的样本，并以「先补齐评估集规模（≥30 张）、再逐一校对」推进。
+- 对每张图：以**原图为准**（不要以模型输出或 AI 草拟 gold 为准，避免污染形成循环），人工修正标准 Markdown。
+- 校对后把 `metadata.json` 里该样本的 `gold_proofed` 置 `true`。
+- 建议优先校对旧低质量高的样本，先补齐人工 gold，再据其给出**最终**选型。
 - EditRate 分母为 gold 字符数；gold 越准确，EditRate 越有意义。
+
+## 涂改（语义化删除）行为记录
+
+- gold 口径：保留删除段并打 `<<划掉>>/<<涂改>>` 标（逐字忠实）；评估 prompt 口径：明确划掉的不输出、模糊的保守保留。
+- 两口径差会把「pred 已删删除段 / gold 仍含删除文」计为编辑，令涂改类目 EditRate 偏高——**已知测量差异，非 OCR 失败**。
+- glm 涂改 6/6 成功；deepseek 仅 2/6（余 4 超时）。harness 已预留 `deletion_note` 专项记录字段。
 
 ## 给 issue 03 / 08 接力的建议
 
-- **issue 03（解析链路 CLI）**：本 harness 的 `eval/gateway.py` 可直接复用为 VLM 调用层
-  （含思考截断回退逻辑已验证）。golden-file 测试可基于 `eval/reports/detail-<model>.json`
-  的 pred 录制成 golden。注意把本 harness 发现的「max_tokens=10000 下 glm 偶发思考过长被截断、
-  正文为空」回退策略带进主线调用层（建议在 router/parse 层做同款降级）。
-- **issue 08（Spike 2 / Route B）**：复用本 harness，在 `eval/fixtures/` 按五维（手写/印刷/公式/
-  中英混排/小字）补样本后即可对比。当前流水线是「图片 → VLM → Markdown 直转」，为 Route B 的
-  「OCR → LLM」新增 runner 时保持同样 `Sample` 结构与报告格式，方便同集 A/B 对比。
-- **模型选型**：数据不足，未下最终结论。初步观察（n=2/模型，均为 flowchart）两模型 EditRate 近似、
-  内容都可读；glm 更快更简、deepseek 更详尽。等评估集补齐 + gold 校对后再定量选型。
+- **issue 03（解析链路 CLI）**：本 harness 的 `eval/gateway.py` 已落地网关提速修复（R1 会话固定 / R2 直出
+  降预算 / R3 降采样 / R4 硬超时），可直接复用为 VLM 调用层；golden-file 测试可基于
+  `eval/reports/detail-<model>.json` 的 pred 录成 golden。
+- **issue 08（Spike 2 / Route B）**：复用本 harness，在 `eval/fixtures/` 补样本后即可对比；新增
+  「OCR→LLM」runner 时保持同 `Sample` 结构与报告格式，便于同集 A/B 对比。
 
-## 已留的坑 / 注意事项
+## 数据质量说明
 
-- gold 均未人工校对；报告会明确标注「未经人工校对」。
-- 部署环境 Python 3.12+；pytest 套件（`tests/`）完全离线，不触网。
-- 未提交任何密钥；密钥仅运行时从环境 / 仓库根 `.env` 读取。
+- 跑批窗口与 worker4/5 live 调用并发（spike-01 共享 session 抖动），已对 `eval/cache` 扫描短补全污染：
+  命中 1 例（deepseek B11，18 字符），清除并错峰重跑，仍 120s 超时，记为失败样本。deepseek 其余短 pred
+  为真实截断而非污染。报告标注了该检查结果。
+- 部署环境 Python 3.12+；pytest 套件（`tests/`）完全离线（129 passed / 2 skipped）。
+- 未提交任何密钥；密钥仅运行时从环境 / 仓库根 `.env` 读取（`.env` gitignore）。

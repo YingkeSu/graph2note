@@ -7,25 +7,48 @@
     "flowchart": "流程图/架构图",
     "strikethrough": "涂改/删除线"
   },
-  "samples": [
-    {
-      "id": "01-requirements-arch",
-      "category": "flowchart",
-      "image": "test-images/01-requirements-arch.jpg",
-      "gold": "eval/fixtures/gold/01-requirements-arch.gold.md",
-      "gold_proofed": false,
-      "language": "zh",
-      "notes": "Agent 编排架构/输入层→解析层→格式化输出与 LLM/OCR 路由；AI 草拟，未经人工校对（HITL 待维护者）"
+  "dataset_note": "来源：维护者提供 4 个多页扫描 PDF（test-images/，主检出目录），经 pymupdf 150DPI 拆页为 30 张派生图。类目为 AI 判定（VLM 辅助）待人工复核；gold 为 AI 草拟（glm-5.3-flash，逐字忠实 prompt）未经人工校对。",
+  "page_split": {
+    "method": "pymupdf get_pixmap(matrix=2.08x) → JPEG quality 85，A4(595x842pt)→1240x1753px，单页≤500KB，共30页 7.33MB",
+    "pdf_source_root": "test-images/（主检出，未提交 git，.gitignore *.pdf）",
+    "pdf_map": {
+      "A": "扫描件0908152342_1_1001.pdf",
+      "B": "扫描件0908152342_2_1001.pdf",
+      "C": "扫描件0908153007_1_1001.pdf",
+      "D": "扫描件0908153009_2_1001.pdf"
     },
-    {
-      "id": "02-digitize-pipeline",
-      "category": "flowchart",
-      "image": "test-images/02-digitize-pipeline.jpg",
-      "gold": "eval/fixtures/gold/02-digitize-pipeline.gold.md",
-      "gold_proofed": false,
-      "language": "zh",
-      "notes": "数字化管线：输入→LLM/OCR 解析→Markdown/CSS 模板→编译 PDF；AI 草拟，未经人工校对（HITL 待维护者）"
-    }
-  ],
-  "strikethrough_category_note": "当前无真实涂改样本，该类目留空；harness 已支持 deletion_note 记录字段。"
+    "id_convention": "<源PDF字母><页码>，如 A15 = A 文件第 15 页；1-索引"
+  },
+  "samples": [
+    {"id": "A15", "category": "handwriting", "image": "eval/fixtures/data/A15.jpg", "gold": "eval/fixtures/gold/A15.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "A", "source_page": 15, "ai_classification": "手写的财务计算笔记，涉及约当产量法、成本计算等中文内容", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "A17", "category": "handwriting", "image": "eval/fixtures/data/A17.jpg", "gold": "eval/fixtures/gold/A17.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "A", "source_page": 17, "ai_classification": "控制理论手写笔记：传递函数、状态空间、矩阵运算", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "B05", "category": "handwriting", "image": "eval/fixtures/data/B05.jpg", "gold": "eval/fixtures/gold/B05.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "B", "source_page": 5, "ai_classification": "手写数学笔记：公式、符号和批注", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "B10", "category": "handwriting", "image": "eval/fixtures/data/B10.jpg", "gold": "eval/fixtures/gold/B10.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "B", "source_page": 10, "ai_classification": "手写笔记：中英术语学习总结/知识点梳理", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "B13", "category": "handwriting", "image": "eval/fixtures/data/B13.jpg", "gold": "eval/fixtures/gold/B13.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "B", "source_page": 13, "ai_classification": "物理/工程学科手写课堂笔记：中文标注+数学公式", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "B17", "category": "handwriting", "image": "eval/fixtures/data/B17.jpg", "gold": "eval/fixtures/gold/B17.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "B", "source_page": 17, "ai_classification": "手写笔记扫描：文字书写，学习/工作笔记", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "C08", "category": "handwriting", "image": "eval/fixtures/data/C08.jpg", "gold": "eval/fixtures/gold/C08.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "C", "source_page": 8, "ai_classification": "手写物理笔记：光学波动，光的传播/干涉/衍射及公式", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "C23", "category": "handwriting", "image": "eval/fixtures/data/C23.jpg", "gold": "eval/fixtures/gold/C23.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "C", "source_page": 23, "ai_classification": "手写统计学术语：均值、标准差及公式", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "C28", "category": "handwriting", "image": "eval/fixtures/data/C28.jpg", "gold": "eval/fixtures/gold/C28.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "C", "source_page": 28, "ai_classification": "深度学习损失函数与优化算法手写笔记", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "D27", "category": "handwriting", "image": "eval/fixtures/data/D27.jpg", "gold": "eval/fixtures/gold/D27.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "D", "source_page": 27, "ai_classification": "手写半导体/物理相关计算笔记", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "A10", "category": "mixed", "image": "eval/fixtures/data/A10.jpg", "gold": "eval/fixtures/gold/A10.gold.md", "gold_proofed": false, "language": "zh-en", "source_pdf": "A", "source_page": 10, "ai_classification": "中英混合经济学/统计学笔记，含少量公式", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "C34", "category": "mixed", "image": "eval/fixtures/data/C34.jpg", "gold": "eval/fixtures/gold/C34.gold.md", "gold_proofed": false, "language": "zh-en", "source_pdf": "C", "source_page": 34, "ai_classification": "中英混排手写笔记，含数学公式", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "C40", "category": "mixed", "image": "eval/fixtures/data/C40.jpg", "gold": "eval/fixtures/gold/C40.gold.md", "gold_proofed": false, "language": "zh-en", "source_pdf": "C", "source_page": 40, "ai_classification": "中英手写笔记+数学公式", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "C52", "category": "mixed", "image": "eval/fixtures/data/C52.jpg", "gold": "eval/fixtures/gold/C52.gold.md", "gold_proofed": false, "language": "zh-en", "source_pdf": "C", "source_page": 52, "ai_classification": "中英混排，类与扫描器等概念", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "A02", "category": "formula", "image": "eval/fixtures/data/A02.jpg", "gold": "eval/fixtures/gold/A02.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "A", "source_page": 2, "ai_classification": "手写物理/数学公式与推导", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "B04", "category": "formula", "image": "eval/fixtures/data/B04.jpg", "gold": "eval/fixtures/gold/B04.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "B", "source_page": 4, "ai_classification": "手写数学推导：序列求和与积分公式", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "C19", "category": "formula", "image": "eval/fixtures/data/C19.jpg", "gold": "eval/fixtures/gold/C19.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "C", "source_page": 19, "ai_classification": "手写数学公式推导", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "D22", "category": "formula", "image": "eval/fixtures/data/D22.jpg", "gold": "eval/fixtures/gold/D22.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "D", "source_page": 22, "ai_classification": "手写数学：点线面定义与公式", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "A13", "category": "flowchart", "image": "eval/fixtures/data/A13.jpg", "gold": "eval/fixtures/gold/A13.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "A", "source_page": 13, "ai_classification": "手写流程/组织结构图，含文字说明与涂改", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "A18", "category": "flowchart", "image": "eval/fixtures/data/A18.jpg", "gold": "eval/fixtures/gold/A18.gold.md", "gold_proofed": false, "language": "zh-en", "source_pdf": "A", "source_page": 18, "ai_classification": "形式语言自动机 + 中英混排 + 箭头 + 涂改", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "C13", "category": "flowchart", "image": "eval/fixtures/data/C13.jpg", "gold": "eval/fixtures/gold/C13.gold.md", "gold_proofed": false, "language": "zh-en", "source_pdf": "C", "source_page": 13, "ai_classification": "中英数学/物理笔记 + 简单流程框图", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "C47", "category": "flowchart", "image": "eval/fixtures/data/C47.jpg", "gold": "eval/fixtures/gold/C47.gold.md", "gold_proofed": false, "language": "zh-en", "source_pdf": "C", "source_page": 47, "ai_classification": "电路/网络笔记 + 箭头图 + 中英文", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "C50", "category": "flowchart", "image": "eval/fixtures/data/C50.jpg", "gold": "eval/fixtures/gold/C50.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "C", "source_page": 50, "ai_classification": "概率论数理统计 + 公式 + 箭头图 + 中文注释", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "D35", "category": "flowchart", "image": "eval/fixtures/data/D35.jpg", "gold": "eval/fixtures/gold/D35.gold.md", "gold_proofed": false, "language": "zh-en", "source_pdf": "D", "source_page": 35, "ai_classification": "RAM/ROM 类型说明 + 晶体管电路示意图", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "A09", "category": "strikethrough", "image": "eval/fixtures/data/A09.jpg", "gold": "eval/fixtures/gold/A09.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "A", "source_page": 9, "ai_classification": "微积分推导手写笔记，部分涂改", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "B11", "category": "strikethrough", "image": "eval/fixtures/data/B11.jpg", "gold": "eval/fixtures/gold/B11.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "B", "source_page": 11, "ai_classification": "手写笔记，含被划掉/涂改内容", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "C05", "category": "strikethrough", "image": "eval/fixtures/data/C05.jpg", "gold": "eval/fixtures/gold/C05.gold.md", "gold_proofed": false, "language": "zh-en", "source_pdf": "C", "source_page": 5, "ai_classification": "中英混排数学笔记 + 公式推导 + 涂改", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "C09", "category": "strikethrough", "image": "eval/fixtures/data/C09.jpg", "gold": "eval/fixtures/gold/C09.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "C", "source_page": 9, "ai_classification": "线性代数/矩阵公式，部分涂改", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "C41", "category": "strikethrough", "image": "eval/fixtures/data/C41.jpg", "gold": "eval/fixtures/gold/C41.gold.md", "gold_proofed": false, "language": "zh-en", "source_pdf": "C", "source_page": 41, "ai_classification": "算法/编程学习笔记，多处涂改与删除线", "notes": "AI 判定+gold 草拟，待人工复核"},
+    {"id": "D07", "category": "strikethrough", "image": "eval/fixtures/data/D07.jpg", "gold": "eval/fixtures/gold/D07.gold.md", "gold_proofed": false, "language": "zh", "source_pdf": "D", "source_page": 7, "ai_classification": "线性代数/近世代数，含定义、推导与划线涂改", "notes": "AI 判定+gold 草拟，待人工复核"}
+  ]
 }

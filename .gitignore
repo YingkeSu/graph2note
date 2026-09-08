@@ -26,5 +26,8 @@ node_modules/
 # Scan samples stay local only
 test-images/*.pdf
 
+# Never commit source PDFs anywhere
+*.pdf
+
 # Large rendered page images (issue 09) stay local; keep the small reports
 out/*/pages/

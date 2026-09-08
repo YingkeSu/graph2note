@@ -39,3 +39,14 @@ None - can start immediately（图片扩充与 gold 校对需维护者参与）
 - 详见交接文档 `../handoffs/01-spike1-vision-quality-eval.md`。
 - 当前 gold 为 AI 草拟、未经人工校对，EditRate（~92%–148%）不具选型意义；待维护者补齐评估集（≥30 张，六类目）并人工校对 gold 后用本 harness 重跑。
 
+## 全量评估已跑（2026-09-08，全量批次，merged 网关修复后）
+
+- 评估集已从维护者 4 个多页 PDF 扩到 **30 张**派生页（覆盖五类：手写 10/流程图 6/涂改 6/中英混排 4/公式 4；印刷类缺失——批次无真实打印页）。
+- 用修复后生产配置（直出 prompt + 会话固定 + 1024 降采样 + 120s 硬超时）对两模型各跑全量 30 张，缓存复用，全量报告见 `eval/reports/spike1-full-eval-summary.md`。
+- **初步选型：倾向 glm-5.3-flash**——样本均值 EditRate 0.7685（vs deepseek 0.8400）、100% 成功（vs 77%，deepseek 7 张 120s 超时）、延迟均值 40s（vs 80s）、无输出截断、无思考型高 reasoning。
+- **强警示**：gold 为 AI 草拟（glm），未经人工校对 → glm 偏低有偏、绝对 EditRate 被 Markdown/LaTeX 标记差异抬高（两模型均未达 <5%）；选型结论为样本受限、待人工 gold 校对后复核，**非最终**。
+- 数据质量检查：扫描 cache 发现 1 例并发窗口污染（deepseek B11 短补全），已清除并错峰重跑，重跑仍超时，记为失败样本；deepseek 其余短输出为真实截断非污染。
+- 涂改类目口径：gold 保留删除段并打 `<<划掉>>` 标，评估 prompt 按语义化删除——该口径差计入编辑，涂改 EditRate 偏高属已知测量差异。
+- **HITL 验收依旧**：评估集人工抽检 + gold 人工校对仍待维护者，本 issue 保持 in-review，不 tick 验收项。
+
+
