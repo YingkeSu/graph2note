@@ -8,15 +8,15 @@
 |---|---|---|---|---|---|---|
 | 01 spike1 视觉质量评估 | C | graph2note-3（01 spike1 harness） | ~/.ao/data/worktrees/graph2note/graph2note-3 | dev/01-spike1-harness | in-review（harness+冒烟已合并 f50a414；评估集≥30张与 gold 校对、选型结论待数据集 HITL） | 2026-09-08 |
 | 02 IR schema+渲染器 | A | graph2note-2（02 IR+renderer） | ~/.ao/data/worktrees/graph2note/graph2note-2 | dev/02-ir-schema-renderer | merged（2a06952，验收：31 测试绿+AC 全证据+审查+无密钥） | 2026-09-08 |
-| 03 解析链路 CLI | A | graph2note-2（接力） | ~/.ao/data/worktrees/graph2note/graph2note-2 | dev/03-parse-pipeline-cli | claimed（提前启动：临时选型 glm-5.3-flash 可配置化，正式结论到达后仅切配置） | 2026-09-08 |
+| 03 解析链路 CLI | A | graph2note-2（接力） | ~/.ao/data/worktrees/graph2note/graph2note-2 | dev/03-parse-pipeline-cli | merged（4c0cb1e；92+2 测试绿；img01 golden 待网关修复后重录，AC 留一条未勾） | 2026-09-08 |
 | 04 Spike3 流程图重建 | B | graph2note-4（04 spike3 diagram） | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/04-spike3-diagram-rebuild | merged（bb28a01；结论 graphviz 主/matplotlib 回退已回写 PRD；真实样本复跑随数据集补） | 2026-09-08 |
 | 05 Diagram 渲染+附件 | B | graph2note-4（接力） | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/05-diagram-render-attachments | merged（9593366；验收：69 测试绿+2 干净 skip+AC 证据+审查） | 2026-09-08 |
-| 06 Web App 三栏 | — | — | — | — | ready-for-agent（阻塞于 03,05✅；03 完成后即启动） | 2026-09-08 |
+| 06 Web App 三栏 | A | graph2note-2（接力） | ~/.ao/data/worktrees/graph2note/graph2note-2 | dev/06-webapp-three-pane | claimed（03/05 均已并入，Track A 接力） | 2026-09-08 |
 | 07 本机文档库 | — | — | — | — | ready-for-agent（阻塞于 06；Wave 3） | 2026-09-08 |
 | 08 Spike2 / Route B | — | — | — | — | ready-for-agent（P1 时机，MVP 主链路稳定后；阻塞于 01） | 2026-09-08 |
 | 09 PDF 拆页+去重+缺页预警 | B | graph2note-4（接力） | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/09-pdf-split-dedup | claimed（提前启动：纯函数核心与 03 无耦合，集成以薄适配层） | 2026-09-08 |
-| 10 交叉验证引擎 | — | — | — | — | ready-for-agent（P1 增补；阻塞于 03） | 2026-09-08 |
-| 11 解析提速 | — | — | — | — | ready-for-agent（P1 增补；阻塞于 03；先基线后优化） | 2026-09-08 |
+| 10 交叉验证引擎 | — | — | — | — | ready-for-agent（P1 增补；03✅ 已并入；建议待网关修复合并后启动） | 2026-09-08 |
+| 11 解析提速 | 5（拟） | graph2note-5 | ~/.ao/data/worktrees/graph2note/graph2note-5 | — | ready-for-agent（03✅；网关修复 dev/gateway-speed-fix 即其先行落地；基线用 03 计时埋点） | 2026-09-08 |
 
 > 侧任务（非 issue）：graph2note-5 延迟诊断已完成并合并（e0bd5dc，reports/latency-diagnosis.md：根因=新 session 路由推理变体思考狂暴+10k 空转）。同 worker 续派网关修复（R1 稳定 session/R2 首调直出/R3 1024 降采样/R4 硬超时），分支 dev/gateway-speed-fix——issue 11 先行落地，03 与全量评估消费。2026-09-08。
 
