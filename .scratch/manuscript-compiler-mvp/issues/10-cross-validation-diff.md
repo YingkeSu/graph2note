@@ -1,6 +1,10 @@
 # 识别交叉验证引擎：双模型 diff + 重复块检测
 
-Status: claimed
+Status: in-review
+
+## Status note
+
+issue 10 交叉验证引擎已交付（分支 `dev/10-cross-validation`）。双模型独立解析 → diff → 三类分歧 + 文档内近重复 + 单模型降级「未验证」；实测 4 次 live 调用于两张评估图得到分歧率数据（记 `out/10/`）。详见 [handoff](../handoffs/10-cross-validation.md)。
 
 ## Parent
 
@@ -18,12 +22,12 @@ Status: claimed
 
 ## Acceptance criteria
 
-- [ ] `verify <image|document>` CLI 产出三类分歧报告（json + 可读 md）
-- [ ] 一致/单侧/不一致三类在构造的 fixtures 上各有点亮用例
-- [ ] 单模型失败路径降级为「未验证」标注，端到端不失败
-- [ ] 文档内重复块检测有正例与负例测试
-- [ ] 双模型对评估集样本的分歧率数据有记录（供选型与后续调优参考）
-- [ ] diff 引擎测试全部离线（golden fixtures），CI 无 live 调用
+- [x] `verify <image|document>` CLI 产出三类分歧报告（json + 可读 md）
+- [x] 一致/单侧/不一致三类在构造的 fixtures 上各有点亮用例
+- [x] 单模型失败路径降级为「未验证」标注，端到端不失败
+- [x] 文档内重复块检测有正例与负例测试
+- [x] 双模型对评估集样本的分歧率数据有记录（供选型与后续调优参考）
+- [x] diff 引擎测试全部离线（golden fixtures），CI 无 live 调用
 
 ## Blocked by
 

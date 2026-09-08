@@ -1,0 +1,179 @@
+{
+  "source": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/test-images/02-digitize-pipeline.jpg",
+  "model_a": "glm-5.3-flash",
+  "model_b": "deepseek-v4-flash-vision-exp",
+  "verified": true,
+  "note": "",
+  "diff": {
+    "counts": {
+      "consistent": 1,
+      "one_side": 10,
+      "conflict": 1
+    },
+    "order_changed": false,
+    "note": "",
+    "consistent": [
+      {
+        "tag": "consistent",
+        "block_type": "heading",
+        "text_a": "笔记/手稿 电子化",
+        "text_b": "笔记/手稿电子化",
+        "index_a": 1,
+        "index_b": 0,
+        "similarity": 1.0,
+        "side": "both"
+      }
+    ],
+    "one_side": [
+      {
+        "tag": "one_side",
+        "block_type": "paragraph",
+        "text_a": null,
+        "text_b": "输入 → 智能解析 → 结构化 → 输出",
+        "index_a": null,
+        "index_b": 1,
+        "similarity": null,
+        "side": "b"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "paragraph",
+        "text_a": "草图",
+        "text_b": null,
+        "index_a": 0,
+        "index_b": null,
+        "similarity": null,
+        "side": "a"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "diagram",
+        "text_a": "整体流程 | 输入 | 解析 | 格式化 | 输出 | f1->f2 | f2->f3 | f3->f4",
+        "text_b": null,
+        "index_a": 2,
+        "index_b": null,
+        "similarity": null,
+        "side": "a"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "paragraph",
+        "text_a": null,
+        "text_b": "调研：",
+        "index_a": null,
+        "index_b": 3,
+        "similarity": null,
+        "side": "b"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "paragraph",
+        "text_a": null,
+        "text_b": "输入：手稿，笔记 → 预置模板（格式：图文 → 排版）",
+        "index_a": null,
+        "index_b": 4,
+        "similarity": null,
+        "side": "b"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "paragraph",
+        "text_a": null,
+        "text_b": "解析",
+        "index_a": null,
+        "index_b": 5,
+        "similarity": null,
+        "side": "b"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "paragraph",
+        "text_a": null,
+        "text_b": "解析层：{LLM 直接？ OCR？ 路由}",
+        "index_a": null,
+        "index_b": 6,
+        "similarity": null,
+        "side": "b"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "paragraph",
+        "text_a": null,
+        "text_b": "格式化输出：{CSS / markdown（可配置模板）→ 编码 → 渲染}",
+        "index_a": null,
+        "index_b": 7,
+        "similarity": null,
+        "side": "b"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "diagram",
+        "text_a": "抽象 | 输入层：手稿、笔记等（拍照/扫描）→ 图片/标准文本 | 解析层：LLM直接解析？OCR？路由！ | 格式化层：CSS / Markdown（可配置模板） | 编辑 → PDF | n1->n2 | n2->n3 | n3->n4",
+        "text_b": null,
+        "index_a": 4,
+        "index_b": null,
+        "similarity": null,
+        "side": "a"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "paragraph",
+        "text_a": "设计",
+        "text_b": null,
+        "index_a": 5,
+        "index_b": null,
+        "similarity": null,
+        "side": "a"
+      }
+    ],
+    "conflict": [
+      {
+        "tag": "conflict",
+        "block_type": "list",
+        "text_a": "输入：手稿、笔记、论文扫描 | 解析：OCR？排版校验 | 目标输出格式： | a. HTML/CSS | b. Markdown → MVP | c. PDF",
+        "text_b": "① 输入：手稿，笔记，论文扫描 | ② 解析：预置 模板 降本 | ③ 结构化 格式： | a. HTML / CSS | b. markdown → MD | c. pdf",
+        "index_a": 3,
+        "index_b": 2,
+        "similarity": 0.7597,
+        "side": "both"
+      }
+    ]
+  },
+  "duplicates_a": [],
+  "duplicates_b": [],
+  "meta_a": {
+    "model": "glm-5.3-flash",
+    "status": "ok",
+    "cost": "0",
+    "latency_seconds": 109.86,
+    "image_size": [
+      1920,
+      1080
+    ],
+    "prompt_tokens": 1181,
+    "completion_tokens": 4941,
+    "total_tokens": 6122,
+    "reasoning_tokens": null,
+    "finish_reason": "stop",
+    "cached": false,
+    "retries": 0
+  },
+  "meta_b": {
+    "model": "deepseek-v4-flash-vision-exp",
+    "status": "ok",
+    "cost": "0",
+    "latency_seconds": 35.72,
+    "image_size": [
+      1920,
+      1080
+    ],
+    "prompt_tokens": 850,
+    "completion_tokens": 3711,
+    "total_tokens": 4561,
+    "reasoning_tokens": null,
+    "finish_reason": "stop",
+    "cached": false,
+    "retries": 0
+  },
+  "warnings": []
+}

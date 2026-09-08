@@ -25,6 +25,7 @@ packages = [
     "graph2note",
     "graph2note.diagrams",
     "graph2note.ingest",
+    "graph2note.verify",
 ]
 
 [tool.setuptools.package-data]

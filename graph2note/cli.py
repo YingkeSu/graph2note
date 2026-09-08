@@ -190,6 +190,10 @@ def main(argv: list[str] | None = None) -> int:
     if argv and argv[0] == "parse":
         args = build_parse_parser().parse_args(argv[1:])
         return _cmd_parse(args)
+    if argv and argv[0] == "verify":
+        from .verify import cli as _vcli
+        args = _vcli.build_verify_parser().parse_args(argv[1:])
+        return _vcli._cmd_verify(args)
     args = build_compile_parser().parse_args(argv)
     return _cmd_compile(args)
 

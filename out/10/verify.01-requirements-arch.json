@@ -1,0 +1,258 @@
+{
+  "source": "/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-4/test-images/01-requirements-arch.jpg",
+  "model_a": "glm-5.3-flash",
+  "model_b": "deepseek-v4-flash-vision-exp",
+  "verified": true,
+  "note": "",
+  "diff": {
+    "counts": {
+      "consistent": 0,
+      "one_side": 14,
+      "conflict": 6
+    },
+    "order_changed": false,
+    "note": "",
+    "consistent": [],
+    "one_side": [
+      {
+        "tag": "one_side",
+        "block_type": "paragraph",
+        "text_a": null,
+        "text_b": "Macmini",
+        "index_a": null,
+        "index_b": 1,
+        "similarity": null,
+        "side": "b"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "diagram",
+        "text_a": "局域网通信分层架构草图（Accounts） | Macbook（常用的文档） | Windows Laptop | Mac mini | linux Terminal 连接 | 其他服务器 | LLM | 任务拆分 | 模型/harness 路由 | 状态图 | 任务图 | 节点图 | macbook->mac_mini:中间层 | win_laptop->mac_mini:中间层 | mac_mini->linux_terminal | mac_mini->other_servers | mac_mini->llm:需求 | llm->task_split | llm->model_routing | task_split->state_graph | task_split->task_graph | model_routing->node_graph | node_graph->task_graph",
+        "text_b": null,
+        "index_a": 1,
+        "index_b": null,
+        "similarity": null,
+        "side": "a"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "list",
+        "text_a": null,
+        "text_b": "Mac ↔ Mac : Screen sharing | Windows ↔ Mac : Royal TS | Mac/Windows ↔ Linux : ssh -o 密码登录",
+        "index_a": null,
+        "index_b": 3,
+        "similarity": null,
+        "side": "b"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "paragraph",
+        "text_a": null,
+        "text_b": "支持 Apple VNC 协议",
+        "index_a": null,
+        "index_b": 4,
+        "similarity": null,
+        "side": "b"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "paragraph",
+        "text_a": null,
+        "text_b": "Tiger VNC 软件",
+        "index_a": null,
+        "index_b": 5,
+        "similarity": null,
+        "side": "b"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "paragraph",
+        "text_a": null,
+        "text_b": "Mac/Windows ↔ Linux : ssh -o 密码登录",
+        "index_a": null,
+        "index_b": 6,
+        "similarity": null,
+        "side": "b"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "list",
+        "text_a": "Mac ←→ Mac：screen sharing | Windows → Mac：RDP TS | 支持 Apple VNC 协议 | 或：Tiger VNC 服务",
+        "text_b": null,
+        "index_a": 3,
+        "index_b": null,
+        "similarity": null,
+        "side": "a"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "paragraph",
+        "text_a": "Win/mac → Linux：ssh 或 VNC，最轻便",
+        "text_b": null,
+        "index_a": 4,
+        "index_b": null,
+        "similarity": null,
+        "side": "a"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "paragraph",
+        "text_a": null,
+        "text_b": "Questions : ① 最大吞吐量 → agent 是否兼容",
+        "index_a": null,
+        "index_b": 11,
+        "similarity": null,
+        "side": "b"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "paragraph",
+        "text_a": null,
+        "text_b": "prefix / project",
+        "index_a": null,
+        "index_b": 12,
+        "similarity": null,
+        "side": "b"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "paragraph",
+        "text_a": null,
+        "text_b": "tasks / p1",
+        "index_a": null,
+        "index_b": 13,
+        "similarity": null,
+        "side": "b"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "paragraph",
+        "text_a": null,
+        "text_b": "根目录 / 工作台",
+        "index_a": null,
+        "index_b": 14,
+        "similarity": null,
+        "side": "b"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "paragraph",
+        "text_a": "Questions：① 账号管理/grant？全局技能",
+        "text_b": null,
+        "index_a": 9,
+        "index_b": null,
+        "similarity": null,
+        "side": "a"
+      },
+      {
+        "tag": "one_side",
+        "block_type": "paragraph",
+        "text_a": "Programs/016/project/project 假目录 /Tabs /Y 工作目录",
+        "text_b": null,
+        "index_a": 10,
+        "index_b": null,
+        "similarity": null,
+        "side": "a"
+      }
+    ],
+    "conflict": [
+      {
+        "tag": "conflict",
+        "block_type": "heading",
+        "text_a": "需求：",
+        "text_b": "需求",
+        "index_a": 0,
+        "index_b": 0,
+        "similarity": 0.8,
+        "side": "both"
+      },
+      {
+        "tag": "conflict",
+        "block_type": "heading",
+        "text_a": "通信层：",
+        "text_b": "通信",
+        "index_a": 2,
+        "index_b": 2,
+        "similarity": 0.6667,
+        "side": "both"
+      },
+      {
+        "tag": "conflict",
+        "block_type": "paragraph",
+        "text_a": "难点：critical patch 优化",
+        "text_b": "用途 : Critical path 优化",
+        "index_a": 5,
+        "index_b": 7,
+        "similarity": 0.8,
+        "side": "both"
+      },
+      {
+        "tag": "conflict",
+        "block_type": "paragraph",
+        "text_a": "问：已有多种 harness，选其固定一种，回答？",
+        "text_b": "问题 : 已有多种 harness 构建统一调度",
+        "index_a": 6,
+        "index_b": 8,
+        "similarity": 0.5909,
+        "side": "both"
+      },
+      {
+        "tag": "conflict",
+        "block_type": "paragraph",
+        "text_a": "答：三选一种：cost-benefit trade off",
+        "text_b": "第一种 : cost-benefit trade off",
+        "index_a": 7,
+        "index_b": 9,
+        "similarity": 0.8627,
+        "side": "both"
+      },
+      {
+        "tag": "conflict",
+        "block_type": "list",
+        "text_a": "Logi Graph | Codex / Session Manage | Agent Orchestrator",
+        "text_b": "① Long Graph | ② Codex Session Manage | ③ Agent Orchestrator",
+        "index_a": 8,
+        "index_b": 10,
+        "similarity": 0.9375,
+        "side": "both"
+      }
+    ]
+  },
+  "duplicates_a": [],
+  "duplicates_b": [],
+  "meta_a": {
+    "model": "glm-5.3-flash",
+    "status": "ok",
+    "cost": "0",
+    "latency_seconds": 104.41,
+    "image_size": [
+      1920,
+      1080
+    ],
+    "prompt_tokens": 1215,
+    "completion_tokens": 4612,
+    "total_tokens": 5827,
+    "reasoning_tokens": null,
+    "finish_reason": "stop",
+    "cached": true,
+    "retries": 0
+  },
+  "meta_b": {
+    "model": "deepseek-v4-flash-vision-exp",
+    "status": "ok",
+    "cost": "0",
+    "latency_seconds": 6.99,
+    "image_size": [
+      1920,
+      1080
+    ],
+    "prompt_tokens": 882,
+    "completion_tokens": 793,
+    "total_tokens": 1675,
+    "reasoning_tokens": null,
+    "finish_reason": "stop",
+    "cached": true,
+    "retries": 0
+  },
+  "warnings": []
+}
