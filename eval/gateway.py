@@ -26,11 +26,23 @@ GATEWAY_BASE = "https://opencode.ai/zen/go/v1"
 CHAT_COMPLETIONS = GATEWAY_BASE + "/chat/completions"
 
 # ---------- 配置（运行时可被环境变量覆盖） ----------
-DEFAULT_SESSION = "graph2note-spike-01"  # R1：已验证直出模式（glm 0 reasoning、~18s）
-DEFAULT_SESSIONS = {
-    "glm-5.3-flash": "graph2note-spike-01",
-    "deepseek-v4-flash-vision-exp": "graph2note-spike-01",
+# 按用途隔离的稳定「已验证直出模式」x-opencode-session（R1 扩展，见 docs/llm/opencode-go.md §会话隔离）。
+# parse / eval / verify 各自持有独立 session id，避免评估批次、产品解析、交叉验证并发争用同一会话
+# —— 同用 graph2note-spike-01 时，一方批量会令共享会话退化、返回极短「全黑页」/空 IR（issue 12 风控）。
+# 覆盖优先级：GRAPH2NOTE_SESSION_<PURPOSE> > GRAPH2NOTE_OPENCODE_SESSION / OPENCODE_SESSION > 用途默认。
+PURPOSES = ("parse", "eval", "verify")
+DEFAULT_PURPOSE_SESSIONS = {
+    "parse":  "graph2note-parse-01",
+    "eval":   "graph2note-eval-01",
+    "verify": "graph2note-verify-01",
 }
+# 历史统一覆盖（兼容旧 env）：GRAPH2NOTE_OPENCODE_SESSION（产品级）、OPENCODE_SESSION（通用）。
+GRAPH2NOTE_OPENCODE_SESSION = "GRAPH2NOTE_OPENCODE_SESSION"
+OPENCODE_SESSION = "OPENCODE_SESSION"
+# 历史默认：spike-01 曾是 parse/eval 共享的已验证直出会话（issue 12 已证其被并发争用）；
+# 仅作未知用途兜底/文档说明，勿再分配给具体用途。graph2note-parse-route-a 可用
+# GRAPH2NOTE_SESSION_PARSE=graph2note-parse-route-a 经 env 还原（历史产品默认）。
+DEFAULT_SESSION = "graph2note-spike-01"
 ALT_SESSIONS: list[str] = []  # R1：备选 session（可经 OPENCODE_SESSIONS 注入）
 
 FIRST_CALL_MAX_TOKENS = 3500    # R2：首调直出预算
@@ -192,9 +204,31 @@ def _env_bool(name, default):
     return v not in {"0", "false", "no", "off"}
 
 
+def purpose_session_env(purpose: str) -> str:
+    """用途专属会话环境变量名：GRAPH2NOTE_SESSION_<PARSE|EVAL|VERIFY>。"""
+    return f"GRAPH2NOTE_SESSION_{purpose.upper()}"
+
+
+def resolve_session_for(purpose: str, model: str | None = None) -> str:
+    """按用途解析稳定直出 session。
+
+    优先级：GRAPH2NOTE_SESSION_<PURPOSE> > GRAPH2NOTE_OPENCODE_SESSION / OPENCODE_SESSION
+    > DEFAULT_PURPOSE_SESSIONS[purpose]。model 保留给未来每模型覆盖用；未知用途抛 ValueError。
+    """
+    purpose = purpose.lower()
+    if purpose not in DEFAULT_PURPOSE_SESSIONS:
+        raise ValueError(f"unknown purpose {purpose!r}; expected one of {PURPOSES}")
+    for env in (purpose_session_env(purpose), GRAPH2NOTE_OPENCODE_SESSION, OPENCODE_SESSION):
+        v = os.environ.get(env, "").strip()
+        if v:
+            return v
+    return DEFAULT_PURPOSE_SESSIONS[purpose]
+
+
 def resolve_sessions(model: str) -> list[str]:
-    """有序 session 列表（主 session 在前，去重）。OPENCODE_SESSION>每模型默认>全局默认；OPENCODE_SESSIONS 注入备选。"""
-    primary = os.environ.get("OPENCODE_SESSION", "").strip() or DEFAULT_SESSIONS.get(model) or DEFAULT_SESSION
+    """有序 session 列表（主 session 在前，去重）；主 session 走 eval 用途隔离解析。
+    OPENCODE_SESSIONS 注入备选（兼容旧行为）。"""
+    primary = resolve_session_for("eval", model)
     extra_env = os.environ.get("OPENCODE_SESSIONS", "").strip()
     extras = [s.strip() for s in extra_env.split(",") if s.strip()] if extra_env else list(ALT_SESSIONS)
     out: list[str] = []
@@ -376,6 +410,90 @@ def _raw_call(image_path, model, *, api_key, session, max_tokens, prompt_text, t
         "warnings": warnings_for(reasoning_tokens, max_tokens),
     }
     return content, meta
+
+
+# ================= 会话直出验证（启动/首次调用；reasoning_tokens 检查） =================
+# 用途隔离后，每用途 session 都应被验证是「直出模式」（reasoning 占用低、content 非空），
+# 避免再次落入 issue 12 的空 IR（推理路由烧 token）场景。探针调用极轻量（2x2 PNG + 64 token）。
+DIRECT_SESSION_PROBE_PROMPT = "直接输出一个字或空白即可，不要思考。"
+PROBE_MAX_TOKENS = 64
+PROBE_TIMEOUT_SECONDS = 30.0
+PROBE_IMAGE_B64 = (
+    "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAADklEQVR4nGNoAAMGCAUAKg4GARWeQtcAAAAASUVORK5CYII="
+)
+_PROBE_MODEL = "glm-5.3-flash"
+_direct_validation_cache: dict = {}
+
+
+def probe_image_path() -> str:
+    """生成/复用 2x2 灰 PNG 探针图片（PIL-free，base64 内嵌），用于渠道通/直出验证。"""
+    path = os.path.join(tempfile.gettempdir(), "graph2note_session_probe.png")
+    if not os.path.exists(path):
+        with open(path, "wb") as f:
+            f.write(base64.b64decode(PROBE_IMAGE_B64))
+    return path
+
+
+def reset_direct_validation_cache() -> None:
+    """清空进程级直出验证缓存（测试/重验用）。"""
+    _direct_validation_cache.clear()
+
+
+def validate_session_direct(
+    purpose: str,
+    model: str | None = None,
+    *,
+    api_key: str | None = None,
+    timeout: float = PROBE_TIMEOUT_SECONDS,
+    max_tokens: int = PROBE_MAX_TOKENS,
+    threshold: int = RUNWAY_REASONING_TOKENS,
+    session: str | None = None,
+) -> dict:
+    """启动/首次调用时验证某用途 session 为「直出模式」。
+
+    发一次极小的探针调用，检查 content 非空且 reasoning_tokens <= threshold。结果按
+    (purpose, session, model) 缓存到进程级 ``_direct_validation_cache``，避免每次调用重复探测。
+
+    返回 record：{purpose, session, model, direct, reasoning_tokens, content_len, status, latency_seconds}。
+    ``direct`` 为 True 表示该 session 直出可用；网络/超时/响应异常时按 not-direct 计。
+    """
+    sess = session or resolve_session_for(purpose, model)
+    model = model or _PROBE_MODEL
+    key = (purpose, sess, model)
+    if key in _direct_validation_cache:
+        return _direct_validation_cache[key]
+    content, meta = _raw_call(
+        probe_image_path(), model, api_key=api_key, session=sess,
+        max_tokens=max_tokens, prompt_text=DIRECT_SESSION_PROBE_PROMPT, timeout=timeout,
+    )
+    rt = meta.get("reasoning_tokens")
+    status_ok = meta.get("status") == "ok"
+    # 直出判据针对 issue-12 的「推理吃满预算致空」签名：reasoning 填满整个 max_tokens 且无内容。
+    # 探针 max_tokens 很小（64），低推理（<<阈值）但内容字节为 0 不算失败——那是预算太紧没留出内容位，
+    # 真实调用（3500+）会正常产出。只有「无内容 且 reasoning >= max_tokens」才是 reasoning 独占预算的退化。
+    runaway = (not content) and rt is not None and max_tokens > 0 and rt >= max_tokens
+    direct = status_ok and not runaway and (rt is None or rt <= threshold)
+    record = {
+        "purpose": purpose, "session": sess, "model": model,
+        "direct": direct, "reasoning_tokens": rt,
+        "content_len": len(content or ""), "status": meta.get("status"),
+        "latency_seconds": meta.get("latency_seconds"),
+    }
+    _direct_validation_cache[key] = record
+    return record
+
+
+def session_validation_enabled() -> bool:
+    """是否开启启动/首次解析时的直出验证（env GRAPH2NOTE_VALIDATE_SESSIONS；默认关）。"""
+    return _env_bool("GRAPH2NOTE_VALIDATE_SESSIONS", False)
+
+
+def maybe_validate_direct(purpose: str, model: str | None = None) -> dict | None:
+    """首解析时按 env 开关做一次直出验证（进程级缓存，仅首调触网）；未开启时返回 None。"""
+    if not session_validation_enabled():
+        return None
+    return validate_session_direct(purpose, model)
+
 
 # ================= R2/R4：策略化调用（首调直出 + 换参/换 session + 不隐性双倍调用） =================
 

@@ -17,6 +17,7 @@ from typing import Callable, Optional
 
 from ..ir import DocumentIR, load_dict_as_ir
 from .. import vlm as _vlm  # local, network-isolated
+from eval.gateway import resolve_session_for as _resolve_session_for
 from .diffing import diff_documents, CONFIDENCE
 from .duplicates import detect_near_dup_blocks
 from .model import (
@@ -31,7 +32,13 @@ from .model import (
 DEFAULT_MODEL_A = "glm-5.3-flash"
 DEFAULT_MODEL_B = "deepseek-v4-flash-vision-exp"
 
-STABLE_SESSION = "graph2note-crossval"
+STABLE_SESSION = "graph2note-crossval"  # 历史 verify 会话（可用 GRAPH2NOTE_SESSION_VERIFY 还原）
+
+
+def _verify_session(model: str) -> str:
+    """verify 用途的按模型会话（用途隔离：默认 graph2note-verify-01-<model>）。"""
+    base = _resolve_session_for("verify", model)
+    return f"{base}-{model.replace('/', '_')}"
 
 
 def _parse_reply(content) -> Optional[DocumentIR]:
@@ -62,7 +69,7 @@ def run_model(
     strategy.  Retries are a strategy switch (recover) per the R4 policy.
     Returns ``(doc, meta, warnings)``; ``doc`` is None on total failure.
     """
-    session = session or f"{STABLE_SESSION}-{model.replace('/', '_')}"
+    session = session or _verify_session(model)
     warnings: list[str] = []
     last_err = None
     for attempt in range(max_retries + 1):

@@ -1,0 +1,31 @@
+{
+  "rows": [
+    {
+      "purpose": "parse",
+      "session": "graph2note-parse-01",
+      "reasoning_tokens": null,
+      "content_len": 1,
+      "status": "ok",
+      "direct": true,
+      "latency_seconds": null
+    },
+    {
+      "purpose": "eval",
+      "session": "graph2note-eval-01",
+      "reasoning_tokens": 61,
+      "content_len": 0,
+      "status": "ok",
+      "direct": true,
+      "latency_seconds": null
+    },
+    {
+      "purpose": "verify",
+      "session": "graph2note-verify-01",
+      "reasoning_tokens": 63,
+      "content_len": 0,
+      "status": "ok",
+      "direct": true,
+      "latency_seconds": null
+    }
+  ]
+}

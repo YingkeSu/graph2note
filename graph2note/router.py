@@ -121,7 +121,7 @@ class RouteARouter(RecognitionRouter):
         *,
         caller=None,
         max_retries: int = 2,
-        session: str = "graph2note-parse-route-a",
+        session: str | None = None,
         second_model: str | None = None,
     ) -> None:
         super().__init__(model)
