@@ -94,6 +94,11 @@
 - `cache/`（24 条记录）、`plots/{mpl,gv,pred,degrade}/`、`outputs/{compare_results,degrade}.json`
 - `tests/`：15 个离线用例（解析/评分/确定性/graphviz 逐字节/crop 无乱码），全绿
 
+运行测试说明：`../.venv-spike3/bin/python -m pytest spike3/tests/`。graphviz 逐字节用例
+同时依赖 **python `graphviz` 包（`pip install graphviz`）** 与系统 **`dot` 二进制**；两者
+任一缺失/不可导入时该用例会**干净 SKIP**（`pytest.importorskip` + `shutil.which` 双检），
+不影响其余用例。matplotlib/Pillow 用例仅需 `pip install matplotlib pillow`。
+
 ## 7. 结论摘要（供 issue 05 消费）
 
 1. **VLM 抽取可行**：干净流程图上两模型结构召回约 0.8–0.94、精确率 0.86–1.00，中文

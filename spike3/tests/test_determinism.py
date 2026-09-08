@@ -60,12 +60,12 @@ def test_layer_layout_layers_linear_chain():
 has_dot = shutil.which("dot") is not None
 
 
-@pytest.mark.skipif(not has_dot, reason="graphviz dot binary not installed")
 def test_graphviz_render_is_byte_deterministic(tmp_path):
-    import plot_graphviz as pg
+    # skip if the python-graphviz package cannot be imported (importorskip)
+    pg = pytest.importorskip("plot_graphviz")
+    if not has_dot:
+        pytest.skip("graphviz `dot` binary not installed")
     d = _gt_diagram("S06")
-    a = str(tmp_path / "a")
-    b = str(tmp_path / "b")
     pa = pg.render(d, os.path.join(tmp_path, "a.png"))
     pb = pg.render(d, os.path.join(tmp_path, "b.png"))
     # graphviz writes <path>.png
