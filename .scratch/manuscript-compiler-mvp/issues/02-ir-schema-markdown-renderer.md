@@ -1,6 +1,6 @@
 # Renderer tracer：Document IR schema + 确定性 Markdown 渲染器
 
-Status: ready-for-agent
+Status: claimed
 
 ## Parent
 

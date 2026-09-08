@@ -1,6 +1,6 @@
 # Spike 3：流程图语义提取与 matplotlib 重建可行性
 
-Status: ready-for-agent
+Status: claimed
 
 ## Parent
 

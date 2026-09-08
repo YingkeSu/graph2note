@@ -1,6 +1,8 @@
 # Spike 1：评估集搭建 + 视觉模型直转质量对比（EditRate）
 
-Status: ready-for-human
+Status: claimed
+
+> 2026-09-08 调度备注：harness 构建与现有样本冒烟已派 agent（graph2note-3）；评估集供图与 gold 人工校对为 HITL，已汇总给维护者，不阻塞交付。
 
 ## Parent
 
@@ -27,3 +29,7 @@ Status: ready-for-human
 ## Blocked by
 
 None - can start immediately（图片扩充与 gold 校对需维护者参与）
+
+## Comments
+
+- 2026-09-08 dispatcher：claimed by graph2note-3（分支 dev/01-spike1-harness）。交付范围 = harness + 2 张现有图冒烟报告；评估集扩充与 gold 校对待维护者。
