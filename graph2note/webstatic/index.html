@@ -16,20 +16,35 @@
 </head>
 <body>
   <header class="topbar">
-    <h1>graph2note</h1>
-    <span class="hint" id="model-label">手稿 → Markdown</span>
+    <a class="brand" href="#library">graph2note</a>
+    <button class="btn small" id="nav-library" title="文档库">文档库</button>
+    <button class="btn small primary" id="nav-upload" title="解析新手稿">新解析</button>
     <span class="spacer"></span>
     <!-- P1 placeholder: template selector (not implemented). -->
     <label class="ph" title="模板选择（P1）">模板 <select id="template-select" disabled>
       <option>简洁 Markdown（默认）</option></select></label>
+    <span class="ph" id="model-label"></span>
   </header>
 
+  <!-- Library list state (home) -->
+  <section id="library-zone" class="library-zone">
+    <div class="library-head">
+      <h2>本地文档库</h2>
+      <span class="dim" id="library-count"></span>
+    </div>
+    <div id="library-grid" class="library-grid"></div>
+    <div id="library-empty" class="library-empty hidden">
+      <div class="empty-icon">🗂</div>
+      <p>还没有文档。点「新解析」上传一张手稿图片开始。</p>
+    </div>
+  </section>
+
   <!-- Upload / intro state -->
-  <section id="upload-zone" class="upload-zone">
+  <section id="upload-zone" class="upload-zone hidden">
     <div class="upload-card" id="upload-card">
       <div class="upload-icon">📄</div>
       <p class="upload-title">上传手稿图片（JPG / JPEG / PNG，≤10MB）</p>
-      <p class="upload-sub">个人自用本地应用 · 解析后可在三栏中对照校对</p>
+      <p class="upload-sub">解析后自动存入本地文档库；可继续校对编辑</p>
       <button id="pick-file" class="btn primary">选择图片</button>
       <input id="file-input" type="file" accept=".jpg,.jpeg,.png" hidden />
       <p class="upload-sub" id="upload-hint"></p>
@@ -53,9 +68,11 @@
         <div class="pane-body image-body"><img id="original-img" alt="原图" /></div>
       </div>
       <div class="pane pane-md">
-        <div class="pane-head">可编辑 Markdown</div>
+        <div class="pane-head">可编辑 Markdown
+          <span class="dim" id="save-indicator"></span>
+        </div>
         <textarea id="md-editor" class="md-editor" spellcheck="false"
-                  placeholder="解析完成后，可在此直接编辑 Markdown…"></textarea>
+                  placeholder="解析完成后，可在此直接编辑 Markdown（自动保存）…"></textarea>
       </div>
       <div class="pane pane-preview">
         <div class="pane-head">实时渲染预览</div>
@@ -72,12 +89,16 @@
     <div class="statusbar" id="statusbar">
       <span id="status-text" class="dim"></span>
       <span id="warnings" class="warnings"></span>
+      <span class="spacer"></span>
+      <span class="dim" id="version-info"></span>
     </div>
 
     <div class="actions">
       <button id="btn-reparse" class="btn">重新解析</button>
       <button id="btn-copy" class="btn">复制到剪贴板</button>
       <button id="btn-download" class="btn primary">下载 .md + 附件</button>
+      <span class="spacer"></span>
+      <button id="btn-delete" class="btn danger">删除文档</button>
     </div>
   </section>
 

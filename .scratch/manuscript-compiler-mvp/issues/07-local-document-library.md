@@ -1,6 +1,6 @@
 # 本机文档库：持久化 + 列表 + 删除
 
-Status: claimed
+Status: in-review
 
 ## Parent
 
@@ -25,3 +25,11 @@ Status: claimed
 ## Blocked by
 
 - 06-webapp-three-pane
+
+## Handoff
+
+`.scratch/manuscript-compiler-mvp/handoffs/07-local-document-library.md`（2026-09-08）。
+
+## Comments
+
+- 2026-09-08 graph2note-2：实现完成，Status → in-review。新增 `graph2note/store.py`（DocumentStore 接缝 + FileDocumentStore 文件系统持久化 + SessionDocumentStore 内存）、扩展 `graph2note/webapp.py` 文档 Endpoints（建档/列表/打开/编辑自动保存/重解析覆盖同档/删除全移/导出），前端加文档库首页与 hash 路由，含缩略图/删除/自动保存指示。修复 issue-06 遗留「同名上传全合并为一档」缺陷（`doc_id` 源自原图存储名→恒为 `original`）：改为每次上传分配稳定 `document_id` + 上传名做 title，重新解析复用同一 id→版本化更新不重复建档；失败/超时不建档。测试 `tests/test_documents.py` TestClient 全离线（golden 注入 + 同 storage 重建 app 模拟刷新），含建档/列表/编辑持久化/重开还原/删除全移/失败无半成品/重解析覆盖同档/导出/会话接缝。全套 153 passed / 2 skipped。候选版本=最小实现（新上传独立 id，同 id 合并为版本；09 感知哈希接管完整归并）。

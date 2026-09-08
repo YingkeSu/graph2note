@@ -121,6 +121,33 @@ body {
 .toast.err { background: var(--danger); }
 .toast.ok { background: var(--ok); }
 
+/* Library list (issue 07) */
+.brand { font-weight: 700; font-size: 17px; color: var(--ink); text-decoration: none; }
+.library-zone { flex: 1; overflow: auto; padding: 22px 26px; }
+.library-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; }
+.library-head h2 { margin: 0; font-size: 20px; }
+.library-grid {
+  display: grid; gap: 14px;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+}
+.doc-card {
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  overflow: hidden; cursor: pointer; transition: transform .08s ease, box-shadow .12s ease;
+}
+.doc-card:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(0,0,0,.08); }
+.doc-card .thumb { height: 150px; background: #111; display: flex; align-items: center;
+  justify-content: center; overflow: hidden; }
+.doc-card .thumb img { max-width: 100%; max-height: 100%; object-fit: contain; }
+.doc-card .doc-meta { padding: 10px 12px; }
+.doc-card .doc-title { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden;
+  text-overflow: ellipsis; }
+.doc-card .doc-time { font-size: 12px; margin-top: 3px; }
+.library-empty { text-align: center; color: var(--muted); padding: 60px 0; }
+.empty-icon { font-size: 44px; }
+
+.btn.danger { border-color: var(--danger); color: var(--danger); }
+.btn.danger:hover:not(:disabled) { background: var(--danger); color: #fff; }
+
 /* Preview typography (Markdown rendered) */
 .preview h1, .preview h2, .preview h3 { line-height: 1.3; }
 .preview pre { background: #f3f4f6; padding: 10px; border-radius: 8px; overflow: auto; }
