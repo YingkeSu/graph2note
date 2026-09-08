@@ -157,7 +157,8 @@ def build_report(run: EvalRun, model: str) -> str:
         )
     lines.append("")
 
-    real = [r for r in run.results if r["meta"].get("status", "ok") != "error"]
+    real = [r for r in run.results if r["meta"].get("status", "ok") == "ok" and (r["gold"] or "").strip()]
+    failed = [r for r in run.results if r["meta"].get("status", "ok") != "ok" or not (r["prediction"] or "").strip()]
     if real:
         overall = sum(r["edit_rate"] for r in real) / len(real)
         total_edits = sum(r["edits"] for r in real)
@@ -166,8 +167,10 @@ def build_report(run: EvalRun, model: str) -> str:
         overall, total_edits, total_chars = 0.0, 0, 0
     lines.append("## 总体 EditRate")
     lines.append("")
-    lines.append(f"- 样本均值 EditRate: **{overall:.4f}** ({overall*100:.2f}%)")
+    lines.append(f"- 样本均值 EditRate（仅 OK 样本）: **{overall:.4f}** ({overall*100:.2f}%)")
     lines.append(f"- 聚合 EditRate（Σ编辑字符 / Σgold 字符）: {total_edits / max(total_chars, 1):.4f} | Σ编辑字符 {total_edits} / Σgold 字符 {total_chars}")
+    if failed:
+        lines.append(f"- 失败/空内容样本 {len(failed)} 个（不纳入均值）: " + ", ".join(r["id"] + "=" + str(r["meta"].get("status", "ok")) for r in failed))
     lines.append(f"- 目标: < 5.0% (SC-001)")
     lines.append("")
 
@@ -195,12 +198,40 @@ def build_report(run: EvalRun, model: str) -> str:
                 "gold_proofed": "是" if r["gold_proofed"] else "否",
                 "status": m.get("status", "ok"),
                 "latency_s": m.get("latency_seconds"),
+                "reasoning_tok": m.get("reasoning_tokens"),
+                "finish_reason": m.get("finish_reason"),
                 "total_tokens": m.get("total_tokens"),
                 "cost": m.get("cost"),
                 "cached": "是" if m.get("cached") else "否",
             }
         )
     lines.append(format_markdown_table(detail))
+    lines.append("")
+
+    # 调用延迟与推理分布（供延迟诊断 worker 使用）
+    lines.append("## 调用延迟与推理分布")
+    lines.append("")
+    lat = [r["meta"].get("latency_seconds") for r in run.results]
+    lat = [x for x in lat if x is not None]
+    rt = [r["meta"].get("reasoning_tokens") for r in run.results]
+    rt = [x for x in rt if x is not None]
+    okr = [r for r in run.results if r["meta"].get("status", "ok") == "ok"]
+    fr = {}
+    for r in run.results:
+        k = r["meta"].get("finish_reason") or "(none)"
+        fr[k] = fr.get(k, 0) + 1
+    lines.append(format_markdown_table([
+        {"指标": "latency_s", "count": len(lat), "min": min(lat) if lat else None,
+         "mean": round(sum(lat) / len(lat), 2) if lat else None,
+         "max": max(lat) if lat else None},
+        {"指标": "reasoning_tok", "count": len(rt), "min": min(rt) if rt else None,
+         "mean": round(sum(rt) / len(rt), 1) if rt else None,
+         "max": max(rt) if rt else None},
+        {"指标": "ok_samples", "count": len(okr), "min": None, "mean": None, "max": None},
+    ]))
+    lines.append("")
+    lines.append(f"- finish_reason 分布: {fr}")
+    lines.append("- 注：完整逐次调用数据（含 attempts、prep 降采样、reasoning_tokens）见 `detail-<model>.json` 的 `meta`。")
     lines.append("")
 
     # 涂改类目专项记录

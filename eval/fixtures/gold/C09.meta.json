@@ -1,0 +1,11 @@
+{
+  "latency_seconds": 57.25,
+  "prompt_tokens": 1089,
+  "completion_tokens": 668,
+  "total_tokens": 1757,
+  "reasoning_tokens": null,
+  "finish_reason": "stop",
+  "downsample_max_dim": 1024,
+  "gold_drafter": "glm-5.3-flash",
+  "gold_proofed": false
+}
