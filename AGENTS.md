@@ -11,3 +11,7 @@ Five canonical triage roles using their default strings: `needs-triage`, `needs-
 ### Domain docs
 
 Single-context layout: one `CONTEXT.md` plus `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+### Parallel development
+
+Multi-agent worktree protocol: dispatcher classifies issues by dependency graph, each worker gets its own worktree, handoffs via `/handoff` documents, automated acceptance, dispatcher-only merges to main. See `docs/agents/parallel-dev.md`.

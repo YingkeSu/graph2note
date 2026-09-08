@@ -15,3 +15,6 @@ node_modules/
 # Tooling
 .specify/
 .claude/
+
+# Parallel dev worktrees
+.worktrees/

@@ -75,6 +75,7 @@ Phase: Concept / MVP Definition
 ## Implementation Decisions
 
 - **四层管线**：输入层（上传 + 预处理）→ 智能解析层（Recognition Router）→ Document IR → 格式化输出层（Renderer：Markdown / HTML / PDF）。层间只通过数据契约通信。
+- **技术栈：Python 全栈**（3.12+；Web 层 FastAPI、测试 pytest、预处理 Pillow/OpenCV、绘图 matplotlib/graphviz 按 Spike 结论）——绘图工具链的决策使渲染层与管线同语言，无跨语言契约。
 - **Document IR 是系统的中心契约**：解析层的目标产物、渲染层的唯一输入。新增输出格式 = 新增 renderer，不改解析层；改进识别 = 只改解析层，不动渲染。这是对原始草图「图片→Markdown 直转」的最大架构修正。
 - **IR 为带类型的 block 序列**，每个 block 携带语义字段。块类型第一版全集：`heading / paragraph / list / formula / table / code / quote / image / diagram / flow`。契约形态（来自设计讨论，字段以实现期 schema 为准）：
 
