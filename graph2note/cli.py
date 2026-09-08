@@ -185,6 +185,54 @@ def _cmd_compile(args) -> int:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# notes-export [storage] -o vault — incremental export closed loop (issue 03)
+# ---------------------------------------------------------------------------
+
+
+def build_notes_export_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="graph2note notes-export",
+        description=(
+            "Incremental Obsidian vault export closed loop: load the document "
+            "library, classify (rule classifier) into a scheme, persist topics,"
+            " then incrementally apply only the changed files to the vault.  "
+            "Re-run after parsing docs."
+        ),
+    )
+    p.add_argument(
+        "-o", "--output", type=Path, help="vault output directory"
+    )
+    p.add_argument(
+        "--storage", default=os.environ.get("GRAPH2NOTE_STORAGE", "storage"),
+        help="document library storage dir (default %%default)",
+    )
+    return p
+
+
+def _cmd_notes_export(args) -> int:
+    from .notes.loop import run_incremental_export
+    from .store import FileDocumentStore
+
+    out_dir = args.output or Path("notes-export")
+    store = FileDocumentStore(str(args.storage))
+    try:
+        report, vault, entries = run_incremental_export(store, out_dir)
+    except Exception as exc:  # includes VaultExportError (dead link)
+        print(f"notes-export failed: {exc}", file=sys.stderr)
+        return 1
+    print(f"{'documents='}{len(entries)}")
+    for label in ("added", "updated", "deleted", "conflicts", "kept_user"):
+        items = report[label]
+        if items:
+            print(f"{label}: {len(items)}")
+    print(f"vault={vault.root}")
+    return 0
+
+
+# ---------------------------------------------------------------------------
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv and argv[0] == "parse":
@@ -194,6 +242,9 @@ def main(argv: list[str] | None = None) -> int:
         from .verify import cli as _vcli
         args = _vcli.build_verify_parser().parse_args(argv[1:])
         return _vcli._cmd_verify(args)
+    if argv and argv[0] == "notes-export":
+        args = build_notes_export_parser().parse_args(argv[1:])
+        return _cmd_notes_export(args)
     args = build_compile_parser().parse_args(argv)
     return _cmd_compile(args)
 

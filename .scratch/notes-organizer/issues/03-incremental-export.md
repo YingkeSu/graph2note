@@ -1,6 +1,6 @@
 # 增量导出闭环：幂等、不覆盖用户修改
 
-Status: claimed
+Status: in-review
 
 ## Parent
 
@@ -17,14 +17,16 @@ Status: claimed
 
 ## Acceptance criteria
 
-- [ ] 新增/更新/删除文档后增量导出，vault 中对应变化正确落地
-- [ ] 用户编辑过的笔记文件不被覆盖，冲突文件重命名保留双方且报告列出
-- [ ] 用户改名的文件不被当作已删除而清理（路径追踪测试）
-- [ ] MOC 在增量后与实际笔记集一致（无死链、无遗漏）
-- [ ] 连续两次无变化导出为零写入（幂等性测试）
-- [ ] 以上场景在临时目录集成测试中全部覆盖
+- [x] 新增/更新/删除文档后增量导出，vault 中对应变化正确落地 — `test_add_new_document`/`test_update_document`/`test_delete_document`
+- [x] 用户编辑过的笔记文件不被覆盖，冲突文件重命名保留双方且报告列出 — `test_user_edit_not_overwritten`（`note.md` → `note.md.user-<hash>`，报告 `conflicts`/`conflict_backups`）
+- [x] 用户改名的文件不被当作已删除而清理（路径追踪测试）— `test_user_renamed_file_not_deleted`（`My Essay.md` 保留，受管理路径回填，不在 `deleted`）
+- [x] MOC 在增量后与实际笔记集一致（无死链、无遗漏）— `test_moc_matches_docs_after_remove_and_add`（+ 全量死链校验全程）
+- [x] 连续两次无变化导出为零写入（幂等性测试）— `test_no_change_export_is_zero_write`（mtime 稳定）
+- [x] 以上场景在临时目录集成测试中全部覆盖 — 全部离线集成
 
 ## Blocked by
 
 - 01-vault-exporter
 - 02-topic-classification-moc
+
+## Handoff
