@@ -30,12 +30,13 @@ CHAT_COMPLETIONS = GATEWAY_BASE + "/chat/completions"
 # parse / eval / verify 各自持有独立 session id，避免评估批次、产品解析、交叉验证并发争用同一会话
 # —— 同用 graph2note-spike-01 时，一方批量会令共享会话退化、返回极短「全黑页」/空 IR（issue 12 风控）。
 # 覆盖优先级：GRAPH2NOTE_SESSION_<PURPOSE> > GRAPH2NOTE_OPENCODE_SESSION / OPENCODE_SESSION > 用途默认。
-PURPOSES = ("parse", "eval", "verify", "routeb")
+PURPOSES = ("parse", "eval", "verify", "routeb", "diagram")
 DEFAULT_PURPOSE_SESSIONS = {
     "parse":  "graph2note-parse-01",
     "eval":   "graph2note-eval-01",
     "verify": "graph2note-verify-01",
     "routeb": "graph2note-routeb-01",   # issue 08：Route B（OCR->文本 LLM 结构化），独立会话避免与 parse/eval 争用
+    "diagram": "graph2note-diagram-01", # issue 15：图像->nodes/edges 提取（spike3 产品化），独立会话避免争用
 }
 # 历史统一覆盖（兼容旧 env）：GRAPH2NOTE_OPENCODE_SESSION（产品级）、OPENCODE_SESSION（通用）。
 GRAPH2NOTE_OPENCODE_SESSION = "GRAPH2NOTE_OPENCODE_SESSION"

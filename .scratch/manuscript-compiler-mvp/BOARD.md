@@ -16,7 +16,7 @@
 | 08 Spike2 / Route B | 5 | graph2note-5 | ~/.ao/data/worktrees/graph2note/graph2note-5 | dev/08-spike2-route-b | merged（b46561f；Route A 全面占优，清印刷窄域切 B；AutoRouter 落地待维护者决策） | 2026-09-08 |
 | 12 Route A 空IR修复（新立） | 5 | graph2note-5 | ~/.ao/data/worktrees/graph2note/graph2note-5 | dev/12-route-a-empty-ir | merged（2227dd3；两阶段解析：VLM→Markdown→确定性 IR；6/6 页非空；EditRate 绝对值优化随 01/11 跟进） | 2026-09-08 |
 | 14 网关会话隔离（worker 立项） | 5 | graph2note-5 | ~/.ao/data/worktrees/graph2note/graph2note-5 | dev/gateway-session-isolation | merged（57187b3；三用途独立已验证 session + 64-token 探针；docs/llm §2.1 规范） | 2026-09-08 |
-| 15 图形提取入管线（FR-009 闭环，新立） | B | graph2note-4 | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/15-diagram-extraction | claimed（维护者 UI 实测发现：架构图输出纯文本；组件在但未接线） | 2026-09-08 |
+| 15 图形提取入管线（FR-009 闭环） | B | graph2note-4 | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/15-diagram-extraction | in-review（310 离线通过；文本侧确定性汇聚 + 视觉提取器产品化/独立接入） | 2026-09-08 |
 | 13 Ingest↔Store 去重集成（新立） | B | graph2note-4 | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/13-ingest-store-dedup | merged（0043ed8；pHash 同页并入候选版本+可拆分+web 提示） | 2026-09-08 |
 | 09 PDF 拆页+去重+缺页预警 | B | graph2note-4（接力） | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/09-pdf-split-dedup | merged（ingest 包 9 模块+可调阈值、recluster 拆分、93 测试绿；真实扫描无内容重复） | 2026-09-08 |
 | 10 交叉验证引擎 | B | graph2note-4 | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/10-cross-validation | in-review（verify 包 9 模块+router 缝实现+CLI；162 测试绿；实测 2 评估图×双模型分歧率数据记 out/10） | 2026-09-08 |

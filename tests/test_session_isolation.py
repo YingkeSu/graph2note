@@ -44,6 +44,7 @@ def test_three_purposes_fully_isolated():
         "eval": "graph2note-eval-01",
         "verify": "graph2note-verify-01",
         "routeb": "graph2note-routeb-01",  # issue 08 Route B 独立会话
+        "diagram": "graph2note-diagram-01",  # issue 15 视觉提取独立会话
     }
 
 
