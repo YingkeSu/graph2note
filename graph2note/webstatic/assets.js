@@ -44,5 +44,28 @@
     return base + encodeURIComponent(leaf);
   }
 
-  return { isAssetRef: isAssetRef, resolveAssetSrc: resolveAssetSrc };
+  // marked v4 passes (href, title, text) strings to renderer.image; marked
+  // v12+ passes a single token object {href, title, text, ...}.  Normalize
+  // both shapes into {href, title, text} so the renderer keeps working
+  // regardless of which marked version is loaded (issue 06c).
+  function normalizeImageArgs(hrefOrToken, title, text) {
+    if (hrefOrToken && typeof hrefOrToken === "object") {
+      return {
+        href: typeof hrefOrToken.href === "string" ? hrefOrToken.href : "",
+        title: typeof hrefOrToken.title === "string" ? hrefOrToken.title : null,
+        text: typeof hrefOrToken.text === "string" ? hrefOrToken.text : "",
+      };
+    }
+    return {
+      href: typeof hrefOrToken === "string" ? hrefOrToken : "",
+      title: typeof title === "string" ? title : null,
+      text: typeof text === "string" ? text : "",
+    };
+  }
+
+  return {
+    isAssetRef: isAssetRef,
+    resolveAssetSrc: resolveAssetSrc,
+    normalizeImageArgs: normalizeImageArgs,
+  };
 });

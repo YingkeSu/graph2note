@@ -269,18 +269,21 @@ function currentPreviewContext() {
 let markedPrepared = false;
 
 /* Install a marked image renderer that re-writes ``assets/<name>`` refs to the
-   context asset endpoint.  Runs once; non-asset refs keep marked's default. */
+   context asset endpoint.  Runs once; non-asset refs keep marked's default.
+   Tolerates both marked signatures: v4 (href, title, text) strings and
+   v12+ token object (normalized by assets.js, issue 06c). */
 function ensureMarkedPrepared() {
   if (markedPrepared || !window.marked || !window.marked.Renderer) return;
   if (!window.__g2nAssets) return;      // assets.js not loaded -> leave refs as-is
   markedPrepared = true;
   const Renderer = window.marked.Renderer;
   const renderer = new Renderer();
-  renderer.image = function (href, title, text) {
+  renderer.image = function (hrefOrToken, title, text) {
+    const a = window.__g2nAssets.normalizeImageArgs(hrefOrToken, title, text);
     const ctx = currentPreviewContext();
-    const src = ctx ? window.__g2nAssets.resolveAssetSrc(href, ctx.kind, ctx.id) : href;
-    let attrs = `src="${src}" alt="${esc(text || "")}"`;
-    if (title) attrs += ` title="${esc(title)}"`;
+    const src = ctx ? window.__g2nAssets.resolveAssetSrc(a.href, ctx.kind, ctx.id) : a.href;
+    let attrs = `src="${src}" alt="${esc(a.text || "")}"`;
+    if (a.title) attrs += ` title="${esc(a.title)}"`;
     return `<img ${attrs}>`;
   };
   window.marked.use({ renderer });
