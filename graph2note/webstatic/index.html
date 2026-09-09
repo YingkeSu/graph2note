@@ -8,7 +8,11 @@
   <!-- Client-side preview: marked (markdown) + KaTeX (math).  CDN is used for a
        zero-build local tool; a fallback keeps the editor usable if the CDN is
        unreachable (preview-only degradation, never touches the editor). -->
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" onerror="window.__mdMissing=1"></script>
+  <!-- marked is PINNED to 4.3.0: unmarked "latest" (v12+) changed renderer.image
+       to take a token object; our renderer app.js uses the v4 string signature
+       (and also tolerates the v12+ token object defensively).  KaTeX stays at
+       its existing pin. -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js" onerror="window.__mdMissing=1"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"

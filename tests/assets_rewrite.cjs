@@ -1,9 +1,13 @@
-// Node unit test for the asset path rewriter (issue 06b).
+// Node unit test for the asset path rewriter (issue 06b + 06c).
 // Pure function under graph2note/webstatic/assets.js — no DOM / no build.
 // Run: node tests/assets_rewrite.cjs
 "use strict";
 const assert = require("node:assert");
-const { resolveAssetSrc, isAssetRef } = require("../graph2note/webstatic/assets.js");
+const {
+  resolveAssetSrc,
+  isAssetRef,
+  normalizeImageArgs,
+} = require("../graph2note/webstatic/assets.js");
 
 // 1) job view relative asset ref -> /api/jobs/<id>/assets/<name>
 assert.strictEqual(
@@ -43,6 +47,54 @@ assert.strictEqual(
   resolveAssetSrc("assets/sub/rebuild.png", "doc", "doc 1"),
   "/api/documents/doc%201/assets/sub%2Frebuild.png",
   "sub-path name preserved"
+);
+
+// ---- issue 06c: marked signature compat -------------------------------------
+
+// 6) marked v4 legacy string signature (href, title, text)
+assert.deepStrictEqual(
+  normalizeImageArgs("assets/arch.png", "fig 1", "rebuild"),
+  { href: "assets/arch.png", title: "fig 1", text: "rebuild" },
+  "legacy string signature"
+);
+assert.deepStrictEqual(
+  normalizeImageArgs("assets/a.png", null, "alt"),
+  { href: "assets/a.png", title: null, text: "alt" },
+  "legacy null title"
+);
+
+// 7) marked v12+ token object signature — the regression that broke preview
+const token = { type: "image", raw: "![r](assets/arch.png)", href: "assets/arch.png",
+                title: null, text: "rebuild", tokens: [] };
+assert.deepStrictEqual(
+  normalizeImageArgs(token),
+  { href: "assets/arch.png", title: null, text: "rebuild" },
+  "token object signature"
+);
+// end-to-end through the rewriter: token href -> context API URL
+assert.strictEqual(
+  resolveAssetSrc(normalizeImageArgs(token).href, "doc", "doc-42"),
+  "/api/documents/doc-42/assets/arch.png",
+  "token href rewritten end-to-end"
+);
+// token object whose href is NOT an asset ref stays untouched after normalize
+assert.strictEqual(
+  resolveAssetSrc(normalizeImageArgs({ href: "https://x/y.png" }).href, "doc", "doc-42"),
+  "https://x/y.png",
+  "token external href untouched"
+);
+
+// 8) defensive: token object never passes isAssetRef, malformed args safe
+assert.strictEqual(isAssetRef(token), false, "token object is not an asset ref");
+assert.deepStrictEqual(
+  normalizeImageArgs(undefined, undefined, undefined),
+  { href: "", title: null, text: "" },
+  "malformed args normalize safely"
+);
+assert.strictEqual(
+  resolveAssetSrc(normalizeImageArgs({ href: 123 }).href, "job", "j"),
+  "",
+  "non-string token href normalizes to empty"
 );
 
 console.log("assets_rewrite: all assertions passed ✓");
