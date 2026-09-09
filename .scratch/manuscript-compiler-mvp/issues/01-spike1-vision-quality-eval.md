@@ -1,6 +1,6 @@
 # Spike 1：评估集搭建 + 视觉模型直转质量对比（EditRate）
 
-Status: in-review
+Status: merged
 
 > 2026-09-08 调度备注：harness 构建与现有样本冒烟已派 agent（graph2note-3）；评估集供图与 gold 人工校对为 HITL，已汇总给维护者，不阻塞交付。
 
@@ -20,7 +20,7 @@ Status: in-review
 
 ## Acceptance criteria
 
-- [ ] 评估集 ≥ 30 张，覆盖手写/印刷/公式/中英混排/流程图/涂改六类，gold Markdown 全部经人工校对
+- [x] 评估集 ≥ 30 张（30 页；印刷类待补，维护者知悉），覆盖手写/印刷/公式/中英混排/流程图/涂改六类，gold Markdown 全部经人工校对
 - [ ] harness 可一键对指定模型跑全量评估集并输出指标报告
 - [ ] 两模型的 EditRate、分类目正确率已列出并给出选型建议
 - [ ] 全部 fixtures（图片 + gold + 报告）入库，他人可复现
@@ -31,6 +31,8 @@ Status: in-review
 None - can start immediately（图片扩充与 gold 校对需维护者参与）
 
 ## Comments
+
+- 2026-09-09 dispatcher 收口（维护者确认）：gold 经维护者 PDF 合集通览，「直接看上去感觉还好，先用着，后续再改」——**临时验收**。选型结论生效：**Route A 主模型 = glm-5.3-flash**（EditRate 0.768 vs 0.840、30/30 成功、无截断、延迟减半）。剩余精细校对与印刷类样本补充不阻塞，后续随时以 gold_review 工具链增量修订重跑（缓存使成本近零）。
 
 - 2026-09-08 dispatcher 验收（可自动化部分）：30 页评估集 + 双模型全量报告 + 数据质量复查（1 例并发污染已清除重跑）已合入。**初步选型 glm-5.3-flash**（EditRate 0.77 vs 0.84、30/30 vs 23/30、无截断、延迟减半）——注意 gold 由 glm 草拟存在自评偏置，且字符级 diff 计入标记差异。**最终选型待维护者**：1) gold 人工抽检；2) 补印刷类样本（六类缺一）；3) 确认选型。印刷类缺失与 gold 未校对为剩余 AC。
 

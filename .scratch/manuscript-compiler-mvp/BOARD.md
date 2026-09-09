@@ -6,7 +6,7 @@
 
 | issue | track | agent | worktree | branch | status | updated |
 |---|---|---|---|---|---|---|
-| 01 spike1 视觉质量评估 | C | graph2note-3 | ~/.ao/data/worktrees/graph2note/graph2note-3 | dev/01-spike1-full-eval | in-review（全量评估已合并 9ece166：glm 初步胜出；剩 HITL=gold 人校+印刷类样本+最终选型确认） | 2026-09-08 |
+| 01 spike1 视觉质量评估 | C | graph2note-3 | ~/.ao/data/worktrees/graph2note/graph2note-3 | dev/01-spike1-full-eval | merged（维护者临时验收：选型定案 glm-5.3-flash；gold 精修与印刷样本后续增量） | 2026-09-09 |
 | 02 IR schema+渲染器 | A | graph2note-2（02 IR+renderer） | ~/.ao/data/worktrees/graph2note/graph2note-2 | dev/02-ir-schema-renderer | merged（2a06952，验收：31 测试绿+AC 全证据+审查+无密钥） | 2026-09-08 |
 | 03 解析链路 CLI | A | graph2note-2（接力） | ~/.ao/data/worktrees/graph2note/graph2note-2 | dev/03-parse-pipeline-cli | merged（4c0cb1e；92+2 测试绿；img01 golden 待网关修复后重录，AC 留一条未勾） | 2026-09-08 |
 | 04 Spike3 流程图重建 | B | graph2note-4（04 spike3 diagram） | ~/.ao/data/worktrees/graph2note/graph2note-4 | dev/04-spike3-diagram-rebuild | merged（bb28a01；结论 graphviz 主/matplotlib 回退已回写 PRD；真实样本复跑随数据集补） | 2026-09-08 |
