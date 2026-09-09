@@ -1,7 +1,9 @@
 # BOARD：manuscript-compiler-mvp
 
 > 由调度 agent 维护；依赖关系以各 issue 的 Blocked by 为准，本表只是快照。
-> Updated: 2026-09-08（全部在册 issue 完成度：16 个中 15 merged；唯 01 等 HITL——gold 人校+印刷样本+最终选型确认）
+> Updated: 2026-09-09（第一阶段收官：两 feature 20/20 issue 全部 merged，分支/worktree 已清理）
+> 阶段总结：PHASE-SUMMARY.md（架构、质量证据、决策记录、开放事项）
+> 开放候选（未立项）：EditRate 质量迭代、印刷样本+AutoRouter 决策、模板/HTML/PDF、公式表格质量、真实使用反馈驱动
 > Worktree 位置：AO 管理的 worktree（`~/.ao/data/worktrees/graph2note/<session>`），分支按协议命名 `dev/<NN>-<slug>`；主检出目录不建 `.worktrees/`。
 
 | issue | track | agent | worktree | branch | status | updated |
