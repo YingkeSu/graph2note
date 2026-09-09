@@ -256,6 +256,36 @@ function setDocImage(id) {
 
 /* ---------- editable markdown + autosave + live preview ---------- */
 
+/* Current preview context for re-writing relative ``assets/`` image refs to
+   the owning API URL (issue 06b).  ``doc`` view is the document library route;
+   ``job`` view is the fresh-parse/working context. */
+function currentPreviewContext() {
+  const r = parseHash();
+  if (r.name === "doc" && state.docId) return { kind: "doc", id: state.docId };
+  if (state.jobId) return { kind: "job", id: state.jobId };
+  return null;
+}
+
+let markedPrepared = false;
+
+/* Install a marked image renderer that re-writes ``assets/<name>`` refs to the
+   context asset endpoint.  Runs once; non-asset refs keep marked's default. */
+function ensureMarkedPrepared() {
+  if (markedPrepared || !window.marked || !window.marked.Renderer) return;
+  if (!window.__g2nAssets) return;      // assets.js not loaded -> leave refs as-is
+  markedPrepared = true;
+  const Renderer = window.marked.Renderer;
+  const renderer = new Renderer();
+  renderer.image = function (href, title, text) {
+    const ctx = currentPreviewContext();
+    const src = ctx ? window.__g2nAssets.resolveAssetSrc(href, ctx.kind, ctx.id) : href;
+    let attrs = `src="${src}" alt="${esc(text || "")}"`;
+    if (title) attrs += ` title="${esc(title)}"`;
+    return `<img ${attrs}>`;
+  };
+  window.marked.use({ renderer });
+}
+
 function renderPreview(md) {
   const out = el.preview;
   out.innerHTML = "";
@@ -268,6 +298,7 @@ function renderPreview(md) {
       out.innerHTML = `<div class="preview-error">预览引擎加载中…（编辑不受影响）</div>`;
       return;
     }
+    ensureMarkedPrepared();
     out.innerHTML = window.marked.parse(md || "");
     if (window.renderMathInElement) {
       renderMathInElement(out, {
