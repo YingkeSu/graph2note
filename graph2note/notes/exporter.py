@@ -174,6 +174,7 @@ class ExportEntry:
     tags: list = field(default_factory=list)
     collections: list = field(default_factory=list)
     attachments: dict = field(default_factory=dict)  # {name: absolute path}
+    metadata: dict = field(default_factory=dict)     # document-level workspace metadata
 
     @property
     def safe_id(self) -> str:
@@ -285,6 +286,17 @@ def build_note(
     """Render one note (frontmatter + embedded original + body) as a string."""
     title = entry.title or entry.document_id
     src = f"source{entry.source_ext}"
+    metadata = entry.metadata if isinstance(entry.metadata, dict) else {}
+
+    def metadata_value(field: str) -> str:
+        slot = metadata.get(field)
+        if isinstance(slot, dict):
+            return str(slot.get("value") or "")
+        return str(slot or "")
+
+    effective = metadata.get("effective_time")
+    effective_value = effective.get("value") if isinstance(effective, dict) else ""
+    effective_field = effective.get("field") if isinstance(effective, dict) else ""
     lines = [
         "---",
         f"document_id: {entry.document_id}",
@@ -293,6 +305,13 @@ def build_note(
         f"source_original_path: {entry.original_path}",
         f"parsed_at: {_iso(entry.parsed_at, '')}",
         f"exported_at: {exported_at}",
+        f"capture_time: {metadata_value('capture_time')}",
+        f"document_time: {metadata_value('document_time')}",
+        f"import_time: {metadata_value('import_time')}",
+        f"modified_time: {metadata_value('modified_time')}",
+        f"effective_time: {effective_value or ''}",
+        f"effective_time_field: {effective_field or ''}",
+        f"needs_organization: {'true' if metadata.get('needs_organization') else 'false'}",
     ]
     body = "\n".join(lines) + "\n\n"
     body += _yaml_list("topics", entry.topics)

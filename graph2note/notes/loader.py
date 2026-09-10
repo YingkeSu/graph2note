@@ -52,6 +52,7 @@ def load_entries(
                 collections=[collection_names.get(cid, cid)
                              for cid in (rec.get("collections") or [])],
                 attachments=_latest_attachments(latest),
+                metadata=rec.get("metadata") or {},
             )
         )
     if not entries:

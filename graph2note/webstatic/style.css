@@ -104,6 +104,9 @@ body {
   border: 1px solid var(--line); border-radius: 10px; font-size: 12px;
 }
 .metadata-head { display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 8px; }
+.metadata-head-actions { display: flex; align-items: center; gap: 12px; }
+.metadata-pending { display: inline-flex; align-items: center; gap: 5px; color: var(--accent-dark); font-weight: 500; }
+.metadata-pending input { accent-color: var(--accent); }
 .metadata-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
 .metadata-field { display: flex; flex-direction: column; gap: 4px; color: var(--muted); }
 .metadata-field input { width: 100%; min-height: 28px; border: 1px solid var(--line); border-radius: 5px; padding: 4px 6px; color: var(--ink); background: var(--panel); }
@@ -165,6 +168,29 @@ body {
 .doc-card .doc-time { font-size: 12px; margin-top: 3px; }
 .library-empty { text-align: center; color: var(--muted); padding: 60px 0; }
 .empty-icon { font-size: 44px; }
+
+/* Inbox (issue 07) */
+.inbox-zone { flex: 1; overflow: auto; padding: 22px 26px 36px; }
+.inbox-head { display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 18px; margin-bottom: 18px; }
+.inbox-head h2 { margin: 0; font-size: 20px; }
+.inbox-head p { margin: 5px 0 0; font-size: 13px; }
+.inbox-list { display: flex; flex-direction: column; gap: 8px; }
+.inbox-item { display: flex; align-items: center; gap: 14px; width: 100%;
+  padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--panel); color: var(--ink); text-align: left; cursor: pointer; }
+.inbox-item:hover { border-color: var(--accent); background: #eff6ff; }
+.inbox-item-main { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 5px; }
+.inbox-item-title { font-size: 14px; font-weight: 600; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap; }
+.inbox-item-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 5px;
+  color: var(--muted); font-size: 11px; }
+.inbox-reasons { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 5px; }
+.inbox-reason { display: inline-flex; align-items: center; border-radius: 999px;
+  padding: 3px 8px; background: #fff7ed; color: #c2410c; font-size: 11px; white-space: nowrap; }
+.inbox-item-arrow { color: var(--muted); font-size: 20px; line-height: 1; }
+.inbox-empty { text-align: center; color: var(--muted); padding: 60px 0; }
+.inbox-empty p { margin: 9px 0 3px; }
 
 /* Timeline (issue 04) */
 .timeline-zone { flex: 1; overflow: auto; padding: 22px 26px 36px; }
@@ -313,6 +339,9 @@ body {
   .timeline-summary { justify-content: flex-start; }
   .timeline-item-date { width: 72px; flex-basis: 72px; }
   .graph-head { flex-direction: column; }
+  .inbox-head { flex-direction: column; }
+  .inbox-item { align-items: flex-start; }
+  .inbox-reasons { justify-content: flex-start; }
   .dashboard-periods, .dashboard-columns, .dashboard-columns:last-child { grid-template-columns: 1fr; }
   .dashboard-head { flex-direction: column; }
 }

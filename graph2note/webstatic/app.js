@@ -1,6 +1,6 @@
 /* graph2note — local document library + three-pane review/edit.
    Views routed by location.hash: #library (home), #timeline/day|week,
-   #graph, #dashboard, #upload, #doc/<id>. */
+   #graph, #dashboard, #inbox, #upload, #doc/<id>. */
 "use strict";
 
 const $ = (s) => document.querySelector(s);
@@ -23,6 +23,9 @@ const state = {
 
 const el = {
   libraryZone: $("#library-zone"),
+  inboxZone: $("#inbox-zone"),
+  inboxEmpty: $("#inbox-empty"),
+  inboxList: $("#inbox-list"),
   timelineZone: $("#timeline-zone"),
   graphZone: $("#graph-zone"),
   graphEmpty: $("#graph-empty"),
@@ -78,6 +81,7 @@ const el = {
   documentTagInput: $("#document-tag-input"),
   documentTagList: $("#document-tag-list"),
   metadataDocumentTime: $("#metadata-document-time"),
+  metadataNeedsOrganization: $("#metadata-needs-organization"),
   metadataCaptureTime: $("#metadata-capture-time"),
   metadataImportTime: $("#metadata-import-time"),
   metadataModifiedTime: $("#metadata-modified-time"),
@@ -91,6 +95,7 @@ const el = {
   btnDelete: $("#btn-delete"),
   btnRepic: $("#btn-repic"),
   navLibrary: $("#nav-library"),
+  navInbox: $("#nav-inbox"),
   navTimeline: $("#nav-timeline"),
   navGraph: $("#nav-graph"),
   navDashboard: $("#nav-dashboard"),
@@ -148,6 +153,7 @@ function parseHash() {
   const h = (location.hash || "#library").replace(/^#\/?/, "");
   const parts = h.split("/");
   if (parts[0] === "doc" && parts[1]) return { name: "doc", id: decodeURIComponent(parts[1]) };
+  if (parts[0] === "inbox") return { name: "inbox" };
   if (parts[0] === "timeline") return { name: "timeline", group: parts[1] === "week" ? "week" : "day" };
   if (parts[0] === "graph") return { name: "graph" };
   if (parts[0] === "dashboard") return { name: "dashboard" };
@@ -170,6 +176,7 @@ function render() {
   hideAll();
   if (r.name === "upload") { renderUpload(); }
   else if (r.name === "doc") { state.docId = r.id; renderDocument(r.id); }
+  else if (r.name === "inbox") { renderInbox(); }
   else if (r.name === "timeline") { state.timelineGroup = r.group; renderTimeline(r.group); }
   else if (r.name === "graph") { renderGraph(); }
   else if (r.name === "dashboard") { renderDashboard(); }
@@ -191,7 +198,7 @@ function render() {
 }
 
 function hideAll() {
-  [el.libraryZone, el.timelineZone, el.graphZone, el.dashboardZone, el.uploadZone, el.workingZone, el.workZone]
+  [el.libraryZone, el.inboxZone, el.timelineZone, el.graphZone, el.dashboardZone, el.uploadZone, el.workingZone, el.workZone]
     .forEach((n) => n.classList.add("hidden"));
 }
 
@@ -256,6 +263,48 @@ function filterLibraryDocuments(docs) {
     const day = value ? String(value).slice(0, 10) : "";
     return state.libraryFilter === "today" ? day === today : day >= lower && day <= today;
   });
+}
+
+/* ---------- Inbox (read-only projection) ---------- */
+
+function inboxItemHtml(item) {
+  const reasons = (item.inbox_reason_labels || []).map((reason) =>
+    `<span class="inbox-reason">${esc(reason)}</span>`).join("");
+  const topics = (item.topics || []).map((topic) =>
+    `<span class="timeline-topic">${esc(topic)}</span>`).join("");
+  const tags = (item.tags || []).map((tag) =>
+    `<span class="document-tag">#${esc(tag)}</span>`).join("");
+  const effective = item.effective_time && item.effective_time.value
+    ? displayTime(item.effective_time.value) : "无有效日期";
+  return `<button class="inbox-item" type="button" data-route="${esc(`#doc/${encodeURIComponent(item.document_id)}`)}">
+    <span class="inbox-item-main">
+      <span class="inbox-item-title">${esc(item.title)}</span>
+      <span class="inbox-item-meta">${esc(effective)}${topics}${tags}</span>
+    </span>
+    <span class="inbox-reasons">${reasons}</span>
+    <span class="inbox-item-arrow" aria-hidden="true">›</span>
+  </button>`;
+}
+
+async function renderInbox() {
+  el.inboxZone.classList.remove("hidden");
+  el.inboxList.innerHTML = "";
+  el.inboxEmpty.classList.add("hidden");
+  try {
+    const items = await api("/api/inbox");
+    if (!items.length) {
+      el.inboxEmpty.classList.remove("hidden");
+      return;
+    }
+    el.inboxList.innerHTML = items.map(inboxItemHtml).join("");
+    el.inboxList.querySelectorAll("button.inbox-item[data-route]").forEach((button) => {
+      button.addEventListener("click", () => go(button.dataset.route));
+    });
+  } catch (e) {
+    el.inboxEmpty.classList.remove("hidden");
+    el.inboxEmpty.querySelector("p").textContent = "Inbox 加载失败。";
+    showToast("加载 Inbox 失败：" + e.message, "err");
+  }
 }
 
 /* ---------- timeline (read-only view model) ---------- */
@@ -728,6 +777,9 @@ function renderMetadata(metadata) {
   const imported = m.import_time || {};
   const modified = m.modified_time || {};
   el.metadataDocumentTime.value = doc.value || "";
+  if (el.metadataNeedsOrganization) {
+    el.metadataNeedsOrganization.checked = Boolean(m.needs_organization);
+  }
   el.metadataCaptureTime.textContent = displayTime(capture.value);
   el.metadataImportTime.textContent = displayTime(imported.value);
   el.metadataModifiedTime.textContent = displayTime(modified.value);
@@ -751,7 +803,10 @@ async function saveDocumentMetadata() {
     const result = await api(`/api/documents/${encodeURIComponent(state.docId)}/metadata`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ document_time: el.metadataDocumentTime.value || null }),
+      body: JSON.stringify({
+        document_time: el.metadataDocumentTime.value || null,
+        needs_organization: Boolean(el.metadataNeedsOrganization && el.metadataNeedsOrganization.checked),
+      }),
     });
     if (state.doc) state.doc.metadata = result.metadata;
     renderMetadata(result.metadata);
@@ -965,7 +1020,9 @@ el.tagCreateForm.addEventListener("submit", async (event) => {
   } catch (e) { showToast("新增标签失败：" + e.message, "err"); }
 });
 el.metadataDocumentTime.addEventListener("change", saveDocumentMetadata);
+el.metadataNeedsOrganization.addEventListener("change", saveDocumentMetadata);
 el.navLibrary.onclick = () => go("#library");
+el.navInbox.onclick = () => go("#inbox");
 el.navTimeline.onclick = () => go("#timeline/day");
 el.navGraph.onclick = () => go("#graph");
 el.navDashboard.onclick = () => go("#dashboard");

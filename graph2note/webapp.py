@@ -41,6 +41,7 @@ from .ir import dumps_ir
 from .metadata import extract_capture_time, infer_document_time
 from .collections import CollectionError
 from .graph import build_graph
+from .inbox import build_inbox
 from .tags import TagError
 from .telemetry import build_stats, load_price_table
 from .timeline import GROUPINGS, build_timeline
@@ -516,6 +517,15 @@ def create_app(
             if record is not None:
                 records.append(record)
         return build_stats(records, now=now, price_table=app.state.price_table)
+
+    @app.get("/api/inbox")
+    def inbox_list():
+        records = []
+        for summary in store.list_documents():
+            record = store.get_document(summary["document_id"])
+            if record is not None:
+                records.append(record)
+        return build_inbox(records)
 
     @app.get("/api/documents/{document_id}")
     def document_get(document_id: str):

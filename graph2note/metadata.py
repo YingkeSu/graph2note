@@ -18,6 +18,7 @@ from pydantic import BaseModel, Field, ValidationError
 
 
 TIME_FIELDS = ("capture_time", "document_time", "import_time", "modified_time")
+WORKSPACE_FIELDS = ("needs_organization",)
 _CONFIDENCES = ("high", "medium", "low")
 _DATE_KEYS = ("date", "document_date", "document_time", "created", "created_at", "手稿日期")
 
@@ -45,6 +46,38 @@ def _slot(
         "evidence": evidence,
         "manual": bool(manual),
     }
+
+
+def _flag(value: Any) -> bool:
+    """Normalize a legacy workspace flag without making old records fail."""
+
+    if isinstance(value, dict):
+        value = value.get("value", value.get("enabled"))
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)) and value in (0, 1):
+        return bool(value)
+    if isinstance(value, str):
+        return value.strip().casefold() in {"1", "true", "yes", "on", "待整理"}
+    return False
+
+
+def _strict_flag(value: Any, field: str) -> bool:
+    """Validate a user-supplied workspace flag before persisting it."""
+
+    if value is None:
+        return False
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int) and value in (0, 1):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().casefold()
+        if normalized in {"1", "true", "yes", "on", "待整理"}:
+            return True
+        if normalized in {"0", "false", "no", "off", "已整理", ""}:
+            return False
+    raise ValueError(f"{field} 必须是布尔值")
 
 
 def _date_from_text(value: Any) -> date | None:
@@ -260,6 +293,10 @@ def normalize_metadata(raw: Any, *, aliases: dict[str, Any] | None = None) -> di
                                               field=field)
             out[field] = _slot(normalized, source="legacy" if normalized else "none",
                                 confidence=None, evidence="旧记录回填" if normalized else None)
+    raw_flag = raw.get("needs_organization")
+    if raw_flag is None:
+        raw_flag = aliases.get("needs_organization")
+    out["needs_organization"] = _flag(raw_flag)
     out["effective_time"] = select_effective_time(out)
     return out
 
@@ -274,6 +311,9 @@ def ensure_record_metadata(
 
     before = record.get("metadata")
     aliases = {field: record.get(field) for field in TIME_FIELDS}
+    aliases["needs_organization"] = record.get(
+        "needs_organization", record.get("inbox", False)
+    )
     metadata = normalize_metadata(before, aliases=aliases)
     if not metadata["import_time"]["value"]:
         metadata["import_time"] = _slot(
@@ -376,7 +416,14 @@ def apply_metadata_updates(
             evidence="用户手工修正" if normalized else "用户清除",
             manual=True,
         )
-    forbidden = set(updates) - {"document_time", "capture_time"}
+    flag_updates = [
+        key for key in ("needs_organization", "inbox", "pending_organization", "pending")
+        if key in updates
+    ]
+    if flag_updates:
+        key = "needs_organization" if "needs_organization" in updates else flag_updates[0]
+        metadata["needs_organization"] = _strict_flag(updates[key], key)
+    forbidden = set(updates) - {"document_time", "capture_time", *flag_updates}
     if forbidden:
         names = ", ".join(sorted(forbidden))
         raise ValueError(f"以下时间字段由系统维护，不能手工修改：{names}")
@@ -411,12 +458,14 @@ def sync_record_metadata(record: dict[str, Any], metadata: dict[str, Any]) -> di
     record["metadata"] = metadata
     for field in TIME_FIELDS:
         record[field] = (metadata.get(field) or {}).get("value")
+    record["needs_organization"] = bool(metadata.get("needs_organization"))
     record["effective_time"] = metadata.get("effective_time")
     return record
 
 
 __all__ = [
     "TIME_FIELDS",
+    "WORKSPACE_FIELDS",
     "DateInference",
     "apply_metadata_updates",
     "ensure_record_metadata",

@@ -22,6 +22,7 @@
   <header class="topbar">
     <a class="brand" href="#library">graph2note</a>
     <button class="btn small" id="nav-library" title="文档库">文档库</button>
+    <button class="btn small" id="nav-inbox" title="待整理">Inbox</button>
     <button class="btn small" id="nav-timeline" title="时间轴">时间轴</button>
     <button class="btn small" id="nav-graph" title="知识图谱">知识图谱</button>
     <button class="btn small" id="nav-dashboard" title="数据看板">数据看板</button>
@@ -74,6 +75,23 @@
       <div class="empty-icon">🗂</div>
       <p>还没有文档。点「新解析」上传一张手稿图片开始。</p>
     </div>
+  </section>
+
+  <!-- Read-only Inbox projection (issue 07) -->
+  <section id="inbox-zone" class="inbox-zone hidden">
+    <div class="inbox-head">
+      <div>
+        <h2>Inbox</h2>
+        <p class="dim">集中处理无主题、无标签或明确标记为待整理的文档。</p>
+      </div>
+      <span class="dim">点击条目回到三栏编辑器整理</span>
+    </div>
+    <div id="inbox-empty" class="inbox-empty hidden">
+      <div class="empty-icon">✓</div>
+      <p>Inbox 是空的。</p>
+      <span class="dim">所有文档都已具备基本归档信息。</span>
+    </div>
+    <div id="inbox-list" class="inbox-list"></div>
   </section>
 
   <!-- Read-only timeline projection (issue 04) -->
@@ -237,7 +255,10 @@
     <section id="metadata-panel" class="metadata-panel" aria-label="文档时间元数据">
       <div class="metadata-head">
         <span>时间元数据</span>
-        <span id="metadata-save" class="dim"></span>
+        <span class="metadata-head-actions">
+          <label class="metadata-pending"><input id="metadata-needs-organization" type="checkbox" /> 待整理</label>
+          <span id="metadata-save" class="dim"></span>
+        </span>
       </div>
       <div class="metadata-grid">
         <label class="metadata-field editable">手稿日期
