@@ -29,6 +29,7 @@ import time
 import uuid
 import zipfile
 from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
@@ -41,6 +42,7 @@ from .metadata import extract_capture_time, infer_document_time
 from .collections import CollectionError
 from .graph import build_graph
 from .tags import TagError
+from .telemetry import build_stats, load_price_table
 from .timeline import GROUPINGS, build_timeline
 from .store import (
     DocumentStore,
@@ -258,6 +260,7 @@ def create_app(
     router_factory=None,
     max_retries: int = 1,
     dedup_threshold: int = 6,
+    price_table: dict | None = None,
 ) -> FastAPI:
     """Build the FastAPI app.
 
@@ -278,6 +281,7 @@ def create_app(
     app.state.runner = JobRunner(app)
     # issue 13: near-dup merge threshold (hamming distance on page pHash)
     app.state.dedup_threshold = dedup_threshold
+    app.state.price_table = load_price_table() if price_table is None else price_table
 
     def _get_job(job_id: str) -> Job:
         with app.state.jobs_lock:
@@ -485,6 +489,33 @@ def create_app(
             record["collection_names"] = collection_names
             records.append(record)
         return build_graph(records)
+
+    @app.get("/api/stats")
+    def stats(as_of: str | None = None):
+        now = None
+        if as_of:
+            normalized_as_of = as_of.strip().replace("Z", "+00:00")
+            try:
+                now = datetime.fromisoformat(normalized_as_of)
+            except ValueError as exc:
+                # A raw ``+08:00`` in a query string is decoded as a space by
+                # URL parsers.  Accept that common hand-written URL form too.
+                match = re.match(r"^(.*) ([+-]?\d{2}:\d{2})$", normalized_as_of)
+                if not match:
+                    raise HTTPException(status_code=422, detail="as_of 不是合法 ISO 时间") from exc
+                offset = match.group(2)
+                if not offset.startswith(("+", "-")):
+                    offset = "+" + offset
+                try:
+                    now = datetime.fromisoformat(match.group(1) + offset)
+                except ValueError as offset_exc:
+                    raise HTTPException(status_code=422, detail="as_of 不是合法 ISO 时间") from offset_exc
+        records = []
+        for summary in store.list_documents():
+            record = store.get_document(summary["document_id"])
+            if record is not None:
+                records.append(record)
+        return build_stats(records, now=now, price_table=app.state.price_table)
 
     @app.get("/api/documents/{document_id}")
     def document_get(document_id: str):

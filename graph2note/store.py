@@ -67,6 +67,7 @@ from .tags import (
     validate_tag_inference,
     vocabulary_entries,
 )
+from .telemetry import normalize_telemetry
 
 
 def _safe(name: str) -> str:
@@ -260,6 +261,11 @@ class SessionDocumentStore(DocumentStore):
             markdown=record.get("current_markdown"),
         )
         record.setdefault("tags", [])
+        for version in record.get("versions") or []:
+            if isinstance(version, dict) and "telemetry" not in version:
+                version["telemetry"] = normalize_telemetry(
+                    version.get("timing_json"), model=version.get("model")
+                )
         apply_topic_defaults(record, self._collection_registry)
         return record
 
@@ -299,6 +305,7 @@ class SessionDocumentStore(DocumentStore):
             "preprocessed_raw_path": preprocessed_raw_path,
             "assets_dir": assets_dir,
             "timing_json": timing_json,
+            "telemetry": normalize_telemetry(timing_json, model=model),
             "pg_hash": pg_hash,
             "original_path": original_path,
             "original_ext": original_ext,
@@ -659,12 +666,24 @@ class FileDocumentStore(SessionDocumentStore):
         for v in latest:
             vid = v["version_id"]
             vdir = base / "versions" / vid
+            timing_path = vdir / "timing.json"
+            timing_json = {}
+            if timing_path.is_file():
+                try:
+                    timing_json = json.loads(timing_path.read_text(encoding="utf-8"))
+                except (OSError, TypeError, ValueError, json.JSONDecodeError):
+                    timing_json = {}
+            telemetry = v.get("telemetry")
+            if not isinstance(telemetry, dict) or "schema_version" not in telemetry:
+                telemetry = normalize_telemetry(timing_json, model=v.get("model"))
             versions.append({
                 "version_id": vid,
                 "created_at": v.get("created_at"),
                 "model": v.get("model"),
                 "pg_hash": v.get("pg_hash") or "",
                 "page_path": str(_first(vdir, "page.*") or vdir / "markdown.md"),
+                "timing_path": str(timing_path),
+                "telemetry": telemetry,
                 "current": vid == lv["version_id"],
             })
         rec["versions"] = versions
@@ -681,6 +700,7 @@ class FileDocumentStore(SessionDocumentStore):
                 "preprocessed_raw_path": str(vdir / "preprocessed_raw.png"),
                 "assets_root": str(vdir),
                 "timing_path": str(vdir / "timing.json"),
+                "telemetry": versions[-1].get("telemetry") if versions else None,
             }
         # live (edited) markdown
         mp = base / "markdown.md"
@@ -748,6 +768,7 @@ class FileDocumentStore(SessionDocumentStore):
             "created_at": now,
             "model": model,
             "pg_hash": pg_hash,
+            "telemetry": normalize_telemetry(timing_json, model=model),
         })
         rec["versions"] = versions
         merge_record_metadata(

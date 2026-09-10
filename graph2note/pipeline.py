@@ -28,6 +28,83 @@ from .router import RecognitionRouter, RouteARouter, RouteResult
 from .timing import StageTimer
 
 
+def _provider_from_meta(meta: dict) -> str | None:
+    for key in ("provider", "vendor", "gateway"):
+        value = meta.get(key)
+        if value:
+            return str(value)
+    return os.environ.get("GRAPH2NOTE_PROVIDER") or os.environ.get("GRAPH2NOTE_GATEWAY") or None
+
+
+def _meta_cache_hit(meta: dict) -> bool:
+    if meta.get("cached") is True:
+        return True
+    for nested_key in ("markdown_stage", "ir_stage", "diagram_stage"):
+        nested = meta.get(nested_key)
+        if isinstance(nested, dict) and nested.get("cached") is True:
+            return True
+        if isinstance(nested, dict):
+            for attempt in nested.get("attempts") or []:
+                if isinstance(attempt, dict) and attempt.get("cached") is True:
+                    return True
+    return any(
+        isinstance(attempt, dict) and attempt.get("cached") is True
+        for attempt in (meta.get("attempts") or [])
+    )
+
+
+def _meta_retry_count(meta: dict) -> int:
+    retries = int(meta.get("retries_stage1") or 0)
+    markdown = meta.get("markdown_stage") or {}
+    if isinstance(markdown, dict):
+        retries += int(markdown.get("retries_stage1") or 0)
+    ir = meta.get("ir_stage") or {}
+    if isinstance(ir, dict) and ir.get("retried"):
+        retries += max(len(ir.get("attempts") or []) - 1, 1)
+    diagram = meta.get("diagram_stage") or {}
+    if isinstance(diagram, dict) and diagram.get("retried"):
+        retries += 1
+    return retries
+
+
+_ATTEMPT_FIELDS = {
+    "prompt_tokens", "completion_tokens", "reasoning_tokens", "total_tokens",
+    "latency_seconds", "cached", "retries",
+}
+
+
+def _flatten_attempts(meta: dict) -> list[dict]:
+    """Return leaf model attempts from router/stage metadata.
+
+    ``call_ir`` nests stage-1/2/3 metadata under a router attempt.  Keep the
+    persisted timing contract flat so consumers do not need to understand
+    every gateway stage, while avoiding the stage summary objects that would
+    double-count their child attempts.
+    """
+
+    result: list[dict] = []
+
+    def visit(node) -> None:
+        if not isinstance(node, dict):
+            return
+        attempts = node.get("attempts")
+        if isinstance(attempts, list):
+            for item in attempts:
+                visit(item)
+            return
+        nested = False
+        for key in ("meta", "llm", "markdown_stage", "ir_stage", "diagram_stage", "diagram"):
+            child = node.get(key)
+            if isinstance(child, dict):
+                nested = True
+                visit(child)
+        if not nested and any(key in node for key in _ATTEMPT_FIELDS):
+            result.append(dict(node))
+
+    visit(meta)
+    return result
+
+
 @dataclass
 class ParseResult:
     markdown: str
@@ -159,21 +236,36 @@ def parse_document(
 
     # issue-11 baseline: record LLM meta (reasoning_tokens + latency) per attempt
     llm_attempts = []
+    providers: list[str] = []
+    internal_retries = 0
+    cache_hit = bool(timing_json.get("cached"))
     for a in route.attempts:
         meta = a.get("meta") or {}
-        llm_attempts.append({
-            "attempt": a.get("attempt"),
-            "status": meta.get("status"),
-            "cached": bool(meta.get("cached")),
-            "latency_seconds": meta.get("latency_seconds"),
-            "reasoning_tokens": meta.get("reasoning_tokens"),
-            "completion_tokens": meta.get("completion_tokens"),
-            "prompt_tokens": meta.get("prompt_tokens"),
-            "finish_reason": meta.get("finish_reason"),
-        })
+        provider = _provider_from_meta(meta)
+        if provider:
+            providers.append(provider)
+        internal_retries += _meta_retry_count(meta)
+        cache_hit = cache_hit or _meta_cache_hit(meta)
+        attempts = _flatten_attempts(meta) or [meta]
+        for index, attempt_meta in enumerate(attempts):
+            attempt_provider = _provider_from_meta(attempt_meta) or provider
+            llm_attempts.append({
+                "attempt": attempt_meta.get("attempt", a.get("attempt", index)),
+                "status": attempt_meta.get("status"),
+                "cached": bool(attempt_meta.get("cached")),
+                "provider": attempt_provider,
+                "latency_seconds": attempt_meta.get("latency_seconds"),
+                "reasoning_tokens": attempt_meta.get("reasoning_tokens"),
+                "completion_tokens": attempt_meta.get("completion_tokens"),
+                "prompt_tokens": attempt_meta.get("prompt_tokens"),
+                "total_tokens": attempt_meta.get("total_tokens"),
+                "finish_reason": attempt_meta.get("finish_reason"),
+            })
+    provider = providers[0] if providers else _provider_from_meta({})
     timing_json["llm"] = {
         "model": model,
-        "retries": route.retries,
+        "provider": provider,
+        "retries": route.retries + internal_retries,
         "attempts": llm_attempts,
         "max_reasoning_tokens": max(
             (a.get("reasoning_tokens") or 0) for a in llm_attempts
@@ -197,12 +289,14 @@ def parse_document(
                 "edges": diagram_meta.get("edge_count"),
                 "retried": bool(diagram_meta.get("retried")),
             }
-    # keep the file on disk in sync
+    # Keep the cache result and the persisted timing artifact in sync.  This
+    # must happen after route metadata is collected so cache hits from a
+    # gateway attempt are not written as a non-cached event.
+    timing_json["cached"] = cache_hit
     with open(timing_path, "w", encoding="utf-8") as fh:
         json.dump(timing_json, fh, ensure_ascii=False, indent=2)
 
     # O2: persist full parse result for zero-call reparse.
-    timing_json["cached"] = False
     if result_cache is not None:
         result_cache.put(image_path, model, preprocess, {
             "markdown": md,

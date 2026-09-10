@@ -24,6 +24,7 @@
     <button class="btn small" id="nav-library" title="文档库">文档库</button>
     <button class="btn small" id="nav-timeline" title="时间轴">时间轴</button>
     <button class="btn small" id="nav-graph" title="知识图谱">知识图谱</button>
+    <button class="btn small" id="nav-dashboard" title="数据看板">数据看板</button>
     <button class="btn small primary" id="nav-upload" title="解析新手稿">新解析</button>
     <span class="spacer"></span>
     <!-- P1 placeholder: template selector (not implemented). -->
@@ -124,6 +125,36 @@
     </div>
     <div id="graph-scroll" class="graph-scroll">
       <svg id="graph-canvas" class="graph-canvas" role="img" aria-label="文档关系图谱"></svg>
+    </div>
+  </section>
+
+  <!-- Read-only telemetry Dashboard (issue 06) -->
+  <section id="dashboard-zone" class="dashboard-zone hidden">
+    <div class="dashboard-head">
+      <div>
+        <h2>数据看板</h2>
+        <p class="dim">解析节奏、分类分布与本地遥测成本估计。</p>
+      </div>
+      <span id="dashboard-quality-label" class="dim"></span>
+    </div>
+    <div id="dashboard-empty" class="dashboard-empty hidden">
+      <div class="empty-icon">▦</div>
+      <p>文档库还是空的。</p>
+      <span class="dim">完成一次解析后，这里会显示统计数据。</span>
+    </div>
+    <div id="dashboard-content" class="dashboard-content">
+      <div id="dashboard-periods" class="dashboard-periods"></div>
+      <div id="dashboard-quality" class="dashboard-quality"></div>
+      <div class="dashboard-columns">
+        <section class="dashboard-panel"><h3>新增文档趋势</h3><div id="dashboard-trend"></div></section>
+        <section class="dashboard-panel"><h3>分类分布</h3><div id="dashboard-categories"></div></section>
+        <section class="dashboard-panel"><h3>标签 Top</h3><div id="dashboard-tags"></div></section>
+      </div>
+      <section class="dashboard-panel"><h3>按模型 token 与成本</h3><div id="dashboard-models"></div></section>
+      <div class="dashboard-columns">
+        <section class="dashboard-panel"><h3>按日 token 用量</h3><div id="dashboard-day"></div></section>
+        <section class="dashboard-panel"><h3>按月 token 用量</h3><div id="dashboard-month"></div></section>
+      </div>
     </div>
   </section>
 
