@@ -43,6 +43,12 @@ import time
 from abc import ABC, abstractmethod
 from pathlib import Path
 
+from .metadata import (
+    apply_metadata_updates,
+    ensure_record_metadata,
+    merge_record_metadata,
+)
+
 
 def _safe(name: str) -> str:
     s = re.sub(r"[^A-Za-z0-9._\-]", "-", name or "doc")
@@ -87,12 +93,16 @@ class DocumentStore(ABC):
     def save_document(self, *, document_id, title, source_job_id, model,
                       markdown, ir_json, original_path, original_ext,
                       preprocessed_path, preprocessed_raw_path, assets_dir,
-                      timing_json) -> dict:
+                      timing_json, metadata=None) -> dict:
         """Commit a successful parse as the latest version of a record."""
 
     @abstractmethod
     def save_edits(self, document_id: str, markdown: str) -> dict | None:
         """Persist (autosave) edited markdown; return updated record or None."""
+
+    @abstractmethod
+    def update_metadata(self, document_id: str, updates: dict) -> dict | None:
+        """Persist user-managed document metadata without making a new version."""
 
     @abstractmethod
     def set_topics(self, document_id: str, topics: list[str]) -> dict | None:
@@ -156,19 +166,37 @@ class SessionDocumentStore(DocumentStore):
 
     # --- document library ------------------------------------------------------
     def list_documents(self) -> list[dict]:
-        return [
-            {k: d[k] for k in ("document_id", "title", "created_at",
-                               "updated_at", "versions")}
-            for d in self._docs.values()
-        ]
+        items = []
+        for record in self._docs.values():
+            record, _ = ensure_record_metadata(
+                record,
+                original_path=record.get("original_path"),
+                markdown=record.get("current_markdown"),
+            )
+            items.append({
+                k: record[k] for k in ("document_id", "title", "created_at",
+                                       "updated_at", "versions")
+            } | {
+                "metadata": record.get("metadata"),
+                "effective_time": record.get("effective_time"),
+            })
+        return items
 
     def get_document(self, document_id: str) -> dict | None:
-        return self._docs.get(document_id)
+        record = self._docs.get(document_id)
+        if record is None:
+            return None
+        record, _ = ensure_record_metadata(
+            record,
+            original_path=record.get("original_path"),
+            markdown=record.get("current_markdown"),
+        )
+        return record
 
     def save_document(self, *, document_id, title, source_job_id, model,
                       markdown, ir_json, original_path, original_ext,
                       preprocessed_path, preprocessed_raw_path, assets_dir,
-                      timing_json, pg_hash="") -> dict:
+                      timing_json, pg_hash="", metadata=None) -> dict:
         now = _now()
         rec = self._docs.get(document_id)
         version_id = f"v{int(time.time() * 1000)}-{len(rec.get('versions')) if rec else 0}"
@@ -205,6 +233,14 @@ class SessionDocumentStore(DocumentStore):
         })
         for i, v in enumerate(rec["versions"]):
             v["current"] = (v["version_id"] == rec["latest_version"])
+        merge_record_metadata(
+            rec,
+            markdown=markdown,
+            original_path=original_path,
+            import_time=rec.get("created_at") or now,
+            modified_time=now,
+            candidate=metadata,
+        )
         self._docs[document_id] = rec
         return rec
 
@@ -213,7 +249,28 @@ class SessionDocumentStore(DocumentStore):
         if rec is None:
             return None
         rec["current_markdown"] = markdown
-        rec["updated_at"] = _now()
+        now = _now()
+        rec["updated_at"] = now
+        merge_record_metadata(
+            rec,
+            markdown=markdown,
+            original_path=rec.get("original_path"),
+            import_time=rec.get("created_at") or now,
+            modified_time=now,
+        )
+        self._docs[document_id] = rec
+        return rec
+
+    def update_metadata(self, document_id: str, updates: dict) -> dict | None:
+        rec = self._docs.get(document_id)
+        if rec is None:
+            return None
+        ensure_record_metadata(
+            rec,
+            original_path=rec.get("original_path"),
+            markdown=rec.get("current_markdown"),
+        )
+        apply_metadata_updates(rec, updates)
         self._docs[document_id] = rec
         return rec
 
@@ -292,7 +349,7 @@ class FileDocumentStore(SessionDocumentStore):
             return []
         for p in sorted(docs.iterdir(), key=lambda d: d.stat().st_mtime,
                          reverse=True):
-            r = self._read_record(p.name)
+            r = self._load_record_with_metadata(p.name)
             if r:
                 items.append({
                     "document_id": r["document_id"],
@@ -300,6 +357,8 @@ class FileDocumentStore(SessionDocumentStore):
                     "created_at": r["created_at"],
                     "updated_at": r["updated_at"],
                     "version_count": len(r["versions"]),
+                    "metadata": r.get("metadata"),
+                    "effective_time": r.get("effective_time"),
                 })
         return items
 
@@ -312,8 +371,27 @@ class FileDocumentStore(SessionDocumentStore):
         except Exception:
             return None
 
-    def get_document(self, document_id: str) -> dict | None:
+    def _load_record_with_metadata(self, document_id: str) -> dict | None:
+        """Read and lazily persist metadata for pre-workspace records."""
         rec = self._read_record(document_id)
+        if rec is None:
+            return None
+        base = self._doc_dir(document_id)
+        original = self._find_original(base)
+        markdown_path = base / "markdown.md"
+        markdown = markdown_path.read_text(encoding="utf-8") if markdown_path.is_file() else ""
+        rec, changed = ensure_record_metadata(
+            rec,
+            original_path=original,
+            markdown=markdown,
+        )
+        if changed:
+            (base / "record.json").write_text(
+                json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+        return rec
+
+    def get_document(self, document_id: str) -> dict | None:
+        rec = self._load_record_with_metadata(document_id)
         if rec is None:
             return None
         rec = dict(rec)  # shallow copy
@@ -369,12 +447,12 @@ class FileDocumentStore(SessionDocumentStore):
     def save_document(self, *, document_id, title, source_job_id, model,
                       markdown, ir_json, original_path, original_ext,
                       preprocessed_path, preprocessed_raw_path, assets_dir,
-                      timing_json, pg_hash="") -> dict:
+                      timing_json, pg_hash="", metadata=None) -> dict:
         document_id = _safe(document_id)
         base = self._doc_dir(document_id)
         base.mkdir(parents=True, exist_ok=True)
         now = _now()
-        rec0 = self._read_record(document_id)
+        rec0 = self._load_record_with_metadata(document_id)
         version_id = f"v{int(time.time() * 1000)}-{len(rec0.get('versions')) if rec0 else 0}"
         vdir = base / "versions" / version_id
         (vdir / "assets").mkdir(parents=True, exist_ok=True)
@@ -417,6 +495,14 @@ class FileDocumentStore(SessionDocumentStore):
             "pg_hash": pg_hash,
         })
         rec["versions"] = versions
+        merge_record_metadata(
+            rec,
+            markdown=markdown,
+            original_path=original_path,
+            import_time=rec.get("created_at") or now,
+            modified_time=now,
+            candidate=metadata,
+        )
         (base / "record.json").write_text(
             json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
 
@@ -432,9 +518,29 @@ class FileDocumentStore(SessionDocumentStore):
         (base / "markdown.md").write_text(markdown, encoding="utf-8")
         rec = self._read_record(document_id)
         if rec is not None:
-            rec["updated_at"] = _now()
+            now = _now()
+            rec["updated_at"] = now
+            merge_record_metadata(
+                rec,
+                markdown=markdown,
+                original_path=self._find_original(base),
+                import_time=rec.get("created_at") or now,
+                modified_time=now,
+            )
             (base / "record.json").write_text(
                 json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+        return self.get_document(document_id)
+
+    def update_metadata(self, document_id: str, updates: dict) -> dict | None:
+        base = self._doc_dir(document_id)
+        if not (base / "record.json").is_file():
+            return None
+        rec = self._load_record_with_metadata(document_id)
+        if rec is None:
+            return None
+        apply_metadata_updates(rec, updates)
+        (base / "record.json").write_text(
+            json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
         return self.get_document(document_id)
 
     def set_topics(self, document_id: str, topics: list[str]) -> dict | None:

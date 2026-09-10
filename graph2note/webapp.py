@@ -37,6 +37,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .attachments import missing_attachments
 from .ir import dumps_ir
+from .metadata import extract_capture_time, infer_document_time
 from .store import (
     DocumentStore,
     FileDocumentStore,
@@ -210,6 +211,12 @@ class JobRunner:
         document_id = (merged_into
                        or job.document_id
                        or _safe_filename(job.doc_id or "doc"))
+        metadata = {
+            "capture_time": extract_capture_time(original),
+        }
+        document_time = infer_document_time(result.markdown)
+        if document_time:
+            metadata["document_time"] = document_time
         store.save_document(
             document_id=document_id,
             title=job.title or job.doc_id or document_id,
@@ -224,6 +231,7 @@ class JobRunner:
             assets_dir=result.assets_dir,
             timing_json=result.timing_json,
             pg_hash=pg_hash,
+            metadata=metadata,
         )
         # the record is durable NOW; only then present the job as done so a
         # poller can rely on the document existing with its final id(s)
@@ -411,6 +419,24 @@ def create_app(
     @app.get("/api/documents/{document_id}")
     def document_get(document_id: str):
         return _get_document(document_id)
+
+    @app.put("/api/documents/{document_id}/metadata")
+    @app.patch("/api/documents/{document_id}/metadata")
+    def document_update_metadata(document_id: str, body: dict | None = None):
+        updates = (body or {}).get("metadata", body or {})
+        if not isinstance(updates, dict):
+            raise HTTPException(status_code=422, detail="metadata 必须是对象。")
+        try:
+            rec = store.update_metadata(document_id, updates)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        if rec is None:
+            raise HTTPException(status_code=404, detail="文档不存在或已被删除。")
+        return {
+            "document_id": document_id,
+            "metadata": rec.get("metadata"),
+            "effective_time": rec.get("effective_time"),
+        }
 
     @app.post("/api/documents/{document_id}/markdown")
     def document_save_markdown(document_id: str, body: dict | None = None):

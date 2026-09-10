@@ -97,6 +97,29 @@
       <span class="dim" id="version-info"></span>
     </div>
 
+    <section id="metadata-panel" class="metadata-panel" aria-label="文档时间元数据">
+      <div class="metadata-head">
+        <span>时间元数据</span>
+        <span id="metadata-save" class="dim"></span>
+      </div>
+      <div class="metadata-grid">
+        <label class="metadata-field editable">手稿日期
+          <input id="metadata-document-time" type="date" />
+          <span class="dim">可手工纠正，保存后优先于自动推断</span>
+        </label>
+        <div class="metadata-field">拍摄时间
+          <span id="metadata-capture-time" class="metadata-value"></span>
+        </div>
+        <div class="metadata-field">导入时间
+          <span id="metadata-import-time" class="metadata-value"></span>
+        </div>
+        <div class="metadata-field">修改时间
+          <span id="metadata-modified-time" class="metadata-value"></span>
+        </div>
+      </div>
+      <div id="metadata-evidence" class="metadata-evidence dim"></div>
+    </section>
+
     <div class="actions">
       <button id="btn-reparse" class="btn">重新解析</button>
       <button id="btn-copy" class="btn">复制到剪贴板</button>

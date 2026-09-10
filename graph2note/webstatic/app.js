@@ -35,6 +35,12 @@ const el = {
   statusText: $("#status-text"),
   warnings: $("#warnings"),
   versionInfo: $("#version-info"),
+  metadataDocumentTime: $("#metadata-document-time"),
+  metadataCaptureTime: $("#metadata-capture-time"),
+  metadataImportTime: $("#metadata-import-time"),
+  metadataModifiedTime: $("#metadata-modified-time"),
+  metadataEvidence: $("#metadata-evidence"),
+  metadataSave: $("#metadata-save"),
   saveIndicator: $("#save-indicator"),
   toast: $("#toast"),
   btnReparse: $("#btn-reparse"),
@@ -237,6 +243,7 @@ async function renderDocument(id) {
     el.versionInfo.textContent = doc.versions && doc.versions.length > 1
       ? `第 ${doc.versions.length} 版（历史 ${doc.versions.length - 1} 版留存）` : "第 1 版";
     el.warnings.textContent = "";
+    renderMetadata(doc.metadata);
     el.statusText.textContent = doc.current_markdown && doc.current_markdown.trim()
       ? "文档已载入，编辑自动保存 ✓" : "空文档：未识别出可渲染内容。";
     el.saveIndicator.textContent = "";
@@ -252,6 +259,51 @@ function setDocImage(id) {
   el.originalImg.onerror = () => {
     el.originalImg.src = `/api/documents/${encodeURIComponent(id)}/original`;
   };
+}
+
+function displayTime(value) {
+  return value ? String(value).replace("T", " ") : "未记录";
+}
+
+function renderMetadata(metadata) {
+  const m = metadata || {};
+  const doc = m.document_time || {};
+  const capture = m.capture_time || {};
+  const imported = m.import_time || {};
+  const modified = m.modified_time || {};
+  el.metadataDocumentTime.value = doc.value || "";
+  el.metadataCaptureTime.textContent = displayTime(capture.value);
+  el.metadataImportTime.textContent = displayTime(imported.value);
+  el.metadataModifiedTime.textContent = displayTime(modified.value);
+  const effective = m.effective_time;
+  const parts = [];
+  if (effective && effective.value) {
+    parts.push(`时间轴采用：${displayTime(effective.value)}（${effective.source || effective.field}）`);
+  }
+  if (doc.evidence) {
+    parts.push(`手稿日期依据：${doc.evidence}`);
+    if (doc.confidence) parts.push(`置信度：${doc.confidence}`);
+  }
+  el.metadataEvidence.textContent = parts.join(" · ") || "暂无日期推断依据";
+  el.metadataSave.textContent = "";
+}
+
+async function saveDocumentMetadata() {
+  if (!state.docId || !el.metadataDocumentTime) return;
+  el.metadataSave.textContent = "保存中…";
+  try {
+    const result = await api(`/api/documents/${encodeURIComponent(state.docId)}/metadata`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ document_time: el.metadataDocumentTime.value || null }),
+    });
+    if (state.doc) state.doc.metadata = result.metadata;
+    renderMetadata(result.metadata);
+    el.metadataSave.textContent = "已保存";
+  } catch (e) {
+    el.metadataSave.textContent = "保存失败";
+    showToast("时间元数据保存失败：" + e.message, "err");
+  }
 }
 
 /* ---------- editable markdown + autosave + live preview ---------- */
@@ -406,6 +458,7 @@ el.btnDelete.onclick = async () => {
 };
 
 el.btnRepic.onclick = () => state.docId && setDocImage(state.docId);
+el.metadataDocumentTime.addEventListener("change", saveDocumentMetadata);
 el.navLibrary.onclick = () => go("#library");
 el.navUpload.onclick = () => go("#upload");
 
