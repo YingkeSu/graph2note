@@ -182,6 +182,21 @@ def parse_document(
             sum((a.get("latency_seconds") or 0) for a in llm_attempts), 3
         ) if llm_attempts else None,
     }
+    # Keep a compact audit record of the optional image-level graph pass.  The
+    # full structured graph lives in ``ir``; this summary makes it visible in
+    # the web/CLI timing artifact without duplicating the whole payload.
+    if route.attempts:
+        last_meta = route.attempts[-1].get("meta") or {}
+        diagram_meta = last_meta.get("diagram_stage")
+        if isinstance(diagram_meta, dict):
+            timing_json["diagram"] = {
+                "verdict": diagram_meta.get("verdict"),
+                "specialist_model": diagram_meta.get("specialist_model")
+                or diagram_meta.get("model"),
+                "nodes": diagram_meta.get("node_count"),
+                "edges": diagram_meta.get("edge_count"),
+                "retried": bool(diagram_meta.get("retried")),
+            }
     # keep the file on disk in sync
     with open(timing_path, "w", encoding="utf-8") as fh:
         json.dump(timing_json, fh, ensure_ascii=False, indent=2)

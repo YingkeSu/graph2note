@@ -77,6 +77,19 @@ def test_markdown_to_ir_architecture_text():
     assert any(b["type"] == "flow" and b["nodes"] for b in blocks)
 
 
+def test_markdown_list_chain_is_one_fallback_graph():
+    ir_str, _ = vlm._ir_from_markdown(
+        "- 输入 → 解析 → 输出\n- 说明：保留正文\n- 输出 → 发布\n",
+        "x", key="k", sess="s", max_tokens=100, timeout=30,
+    )
+    obj = vlm.parse_ir_json(ir_str)
+    flows = [b for b in obj["blocks"] if b["type"] == "flow"]
+    assert len(flows) == 1
+    assert {(e["from"], e["to"]) for e in flows[0]["edges"]} == {
+        ("n1", "n2"), ("n2", "n3"), ("n3", "n4")
+    }
+
+
 def test_relation_unparseable_preserves_caption():
     # relation-like line that can't be structured -> caption-only diagram block
     ir_str, _ = vlm._ir_from_markdown("→ → →\n", "x", key="k", sess="s",
@@ -186,6 +199,43 @@ def test_img01_authentic_transcription_yields_structured_flow(tmp_path, monkeypa
     assert "assets/" in md
     from graph2note.attachments import missing_attachments
     assert missing_attachments(md, result.assets_dir) == []
+
+
+def test_visual_graph_replaces_fragmented_text_graph(monkeypatch):
+    markdown = "# 架构\n- 输入 → 解析\n- 解析 → 输出\n说明文字"
+    text_ir, _ = vlm._ir_from_markdown(
+        markdown, "x", key="k", sess="s", max_tokens=100, timeout=30,
+    )
+
+    monkeypatch.setattr(
+        diagram,
+        "extract_diagram_image",
+        lambda *args, **kwargs: {
+            "ok": True,
+            "verdict": "ok",
+            "nodes": [
+                {"id": "n1", "label": "输入"},
+                {"id": "n2", "label": "解析"},
+                {"id": "n3", "label": "输出"},
+            ],
+            "edges": [
+                {"from": "n1", "to": "n2", "label": ""},
+                {"from": "n2", "to": "n3", "label": ""},
+            ],
+            "caption": "主流程",
+            "meta": {"model": "graph-model", "attempts": []},
+        },
+    )
+    merged, meta = vlm._merge_visual_graph(
+        text_ir, markdown, str(IMG01), model="graph-model", api_key="k",
+        session="s", timeout=30,
+    )
+    obj = vlm.parse_ir_json(merged)
+    flows = [b for b in obj["blocks"] if b["type"] == "flow"]
+    assert len(flows) == 1
+    assert [n["label"] for n in flows[0]["nodes"]] == ["输入", "解析", "输出"]
+    assert any(b["type"] == "heading" for b in obj["blocks"])
+    assert meta["verdict"] == "ok"
 
 
 # ---------------- AC4: degrade path (empty / unparseable never fails) --------

@@ -70,18 +70,23 @@ DEFAULT_SEND_MAX_SIDE = 1024
 DEFAULT_JPEG_QUALITY = 85
 DEFAULT_TIMEOUT = 120
 
-# ================= issue 12：两阶段解析（VLM Markdown 直出 → 文本 LLM 结构化 IR） ===
+# ================= 解析链路（文字转录 → 图结构 → IR） =========================
 # 根因（issue 11 基线 §7）：产品 IR-JSON 直出 prompt 在密集扫描板书上常返回**合法但 blocks
 # 为空**的 IR（completion 很短），导致渲染空 Markdown，EditRate 恒 1.0。eval harness 已证明
-# 「VLM Markdown 直出」策略对同批页面稳定非空。故修复采用两阶段：
+# 「VLM Markdown 直出」策略对同批页面稳定非空。当前链路分为三步：
 #   stage1 = 已校验的 VLM Markdown 直出（非空、完整转录）；
-#   stage2 = 轻量**文本** LLM 把 Markdown 结构化收敛为 Document IR JSON（schema 见 ir.py）。
+#   stage2 = 轻量**文本** LLM/确定性 parser 把 Markdown 收敛为 Document IR JSON；
+#   stage3 = 专用图 VLM 从原图抽取 nodes/edges，成功时替换碎片化的文字侧 flow。
 # 文本模型仅用 chat/completions 清单（docs/llm/opencode-go.md §4）；muse 系列（responses 端点、
 # 用输入训练）一律禁用。prompt 策略集中在 vlm 层，Router 缝（caller 返回 IR JSON 字符串）不变。
 IR_MODEL = os.environ.get("GRAPH2NOTE_IR_MODEL", "deepseek-v4-flash")  # 廉价文本模型，muse 禁用
 DEFAULT_IR_MAX_TOKENS = int(os.environ.get("GRAPH2NOTE_IR_MAX_TOKENS", "6000"))
 # stage-1 推理耗尽时的升级预算（对齐 worker4 verify/run_model 的 10000）
 MARKDOWN_STAGE_RETRY_TOKENS = int(os.environ.get("GRAPH2NOTE_MARKDOWN_RETRY_TOKENS", "10000"))
+# Optional specialist model.  If unset, the same vision model is called with a
+# different strict topology prompt; deployments can point this at a cheaper or
+# more capable graph/VLM without changing the document route.
+DIAGRAM_MODEL = os.environ.get("GRAPH2NOTE_DIAGRAM_MODEL", "")
 
 # stage-1：VLM 视觉转录 -> Markdown（对齐 eval harness 已验证的 DIRECT_USER_TEMPLATE + 非空约束）
 MARKDOWN_SYSTEM_PROMPT = (
@@ -489,18 +494,16 @@ def _markdown_to_ir(markdown: str) -> dict:
     from .diagrams import infer as _infer
 
     if _infer.detect_diagram_markdown(markdown):
-        lines_raw = markdown.split("\n")
-        k = 0
-        while k < len(lines_raw):
-            rs = k
-            while k < len(lines_raw) and _infer.is_relation_line(lines_raw[k]):
-                k += 1
-            if k > rs:
-                fb = _infer.arrow_flow_block(lines_raw, rs)
-                if fb is not None:
-                    blocks.append(fb)
-            else:
-                k += 1
+        # A page-level graph should not be split merely because the VLM put a
+        # bullet, heading, or explanatory line between two visual rows.
+        # Collect all arrow-bearing rows into one deterministic fallback graph;
+        # the dedicated image extractor below can replace it with richer
+        # topology when available.
+        relation_rows = _infer.relation_lines(markdown.split("\n"))
+        if relation_rows:
+            fb = _infer.arrow_flow_block(relation_rows, 0)
+            if fb is not None:
+                blocks.append(fb)
     if not blocks:
         blocks.append({"type": "paragraph", "text": markdown.strip()})
     return {"document_type": "note", "blocks": blocks}
@@ -590,6 +593,73 @@ def _ir_from_markdown(
     if rs:
         meta["reasoning_tokens"] = rs[-1]
     return json.dumps(ir, ensure_ascii=False), meta
+
+
+def _merge_visual_graph(
+    ir_str: str,
+    markdown: str,
+    image_path: str,
+    *,
+    model: str,
+    api_key: str,
+    session: str,
+    timeout: int,
+) -> tuple[str, dict | None]:
+    """Replace text-inferred graph blocks with a strict image graph when possible.
+
+    Text transcription remains the source of paragraphs and lists.  A second,
+    purpose-built VLM call owns only topology, so prose recognition can never
+    accidentally turn a bullet or an edge label into a node.  Any extraction
+    failure is intentionally non-fatal: the deterministic Markdown inference
+    already present in ``ir_str`` remains the fallback.
+    """
+    from . import diagram
+    from .diagrams import infer
+
+    if not infer.detect_diagram_markdown(markdown):
+        return ir_str, None
+    try:
+        graph_model = DIAGRAM_MODEL or model
+        result = diagram.extract_diagram_image(
+            image_path,
+            model=graph_model,
+            api_key=api_key,
+            session=session,
+            timeout=timeout,
+        )
+    except Exception as exc:  # defensive boundary: graph extraction is optional
+        return ir_str, {"verdict": "exception", "error": str(exc)}
+
+    if not result.get("ok") or not result.get("nodes"):
+        meta = dict(result.get("meta") or {})
+        meta["verdict"] = result.get("verdict", "unknown")
+        return ir_str, meta
+
+    obj = parse_ir_json(ir_str)
+    if not isinstance(obj, dict) or not isinstance(obj.get("blocks"), list):
+        return ir_str, {"verdict": "ir_parse_fail"}
+
+    # The parser's flow/diagram blocks are a fallback representation of the
+    # same visual region.  Keep all textual blocks, then add exactly one graph
+    # block produced from the image-level structured output.
+    kept = [b for b in obj["blocks"] if b.get("type") not in {"flow", "diagram"}]
+    kept.append({
+        "type": "flow",
+        "orientation": "TB",
+        "nodes": result["nodes"],
+        "edges": result.get("edges", []),
+        "caption": result.get("caption", ""),
+        "source": None,
+    })
+    obj["blocks"] = kept
+    meta = dict(result.get("meta") or {})
+    meta["verdict"] = "ok"
+    meta["specialist_model"] = DIAGRAM_MODEL or model
+    meta["node_count"] = len(result["nodes"])
+    meta["edge_count"] = len(result.get("edges", []))
+    return json.dumps(obj, ensure_ascii=False), meta
+
+
 def call_ir(
     image_path: str,
     model: str,
@@ -603,11 +673,10 @@ def call_ir(
     ir_model: str | None = None,
     ir_max_tokens: int | None = None,
 ) -> tuple[str, dict]:
-    """两阶段解析：VLM Markdown 直出 -> 轻量文本 LLM 结构化 IR（issue 12 修复）。
+    """Parse an image into text IR plus an optional specialist graph IR block.
 
-    ``content`` 仍是 IR JSON 字符串（Router 缝不变）；``meta`` 含两阶段信息
-    （stage1 markdown 的计时/reasoning + stage2 IR 的计时/reasoning，以及
-    markdown_len / empty / empty_stage）。``recover`` 令两层都用更紧的重试约束
+    ``content`` 仍是 IR JSON 字符串（Router 缝不变）；``meta`` 含文字转录、
+    IR 和专用图结构阶段的信息。``recover`` 令各阶段都用更紧的重试约束
     （R4 策略切换，绝不同参重复）。muse 系列一律禁用（见 IR_MODEL 注释）。
     """
     key = api_key or load_api_key()
@@ -649,6 +718,19 @@ def call_ir(
         markdown, ir_model, key=key, sess=sess,
         max_tokens=ir_mt, timeout=timeout, recover=recover, use_llm=use_llm,
     )
+    # Dedicated image-level topology extraction is deliberately after the
+    # normal text pass: text remains useful even when the graph VLM times out.
+    # It is activated only for pages whose transcription contains relation
+    # signals, avoiding a second vision call for ordinary notes.
+    ir_str, m3 = _merge_visual_graph(
+        ir_str,
+        markdown,
+        image_path,
+        model=model,
+        api_key=key,
+        session=sess,
+        timeout=timeout,
+    )
     meta = {
         "stage": "ir",
         "status": "ok",
@@ -657,6 +739,7 @@ def call_ir(
         "recover": recover,
         "markdown_stage": m1,
         "ir_stage": m2,
+        "diagram_stage": m3,
         "reasoning_tokens": m2.get("reasoning_tokens"),
         "finish_reason": m2.get("finish_reason"),
         "markdown_len": len(markdown),
@@ -680,6 +763,7 @@ __all__ = [
     "USER_PROMPT",
     "MARKDOWN_SYSTEM_PROMPT",
     "MARKDOWN_USER_PROMPT",
+    "DIAGRAM_MODEL",
     "IR_MODEL",
     "parse_ir_json",
     "VlmCache",

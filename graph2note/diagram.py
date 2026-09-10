@@ -15,12 +15,11 @@ Model strategy (Spike 3 $\u00a77, verbatim):
   Spike 3 calls returned empty; those funnel to the crop&embed degrade path
   which cannot produce mojibake.
 
-The DEFAULT production path does NOT call this per diagram page: stage-1 VLM
-already transcribes arrows, and ``diagrams/infer.arrow_flow_block`` (wired into
-``vlm._markdown_to_ir``) converts them deterministically with zero extra LLM
-cost.  This standalone extractor is productized here for direct/opt-in use
-(e.g. high-confidence flowchart pages, future CLI/pipeline wiring).  A
-``; resolve_session``: ``diagram`` purpose session for issue-14 session isolation.
+The production path calls this only after stage-1 transcription detects arrow
+signals.  The Markdown parser remains the deterministic fallback, while this
+specialist pass owns the page-level topology and replaces fragmented text-side
+flow blocks when it succeeds.  A dedicated ``diagram`` purpose session keeps
+the graph call isolated from parse retries.
 """
 
 from __future__ import annotations
@@ -124,8 +123,11 @@ SYSTEM_PROMPT = (
     "要求：\n"
     "1. 节点 label 原样保留中文与标点，id 自增编号互不重复。\n"
     "2. 每条边 from/to 必须引用已定义的节点 id；不要自环；方向跟着图中箭头。\n"
-    "3. 若图中没有可提取的流程/架构关系，直接输出 {\"error\":\"no_flow_extractable\"}。\n"
-    "4. 无法可靠读出的文字不要编造。\n"
+    "3. 一页中可能有多个相互独立的区域；仍输出一个 page-level graph，"
+    "把每个可见方框/概念作为节点，把每一条明确箭头作为边，不要只挑一条主线。\n"
+    "4. 不要把普通说明、项目符号或问题清单臆造为边；没有箭头的文字只在它是节点标签时保留。\n"
+    "5. 若图中没有可提取的流程/架构关系，直接输出 {\"error\":\"no_flow_extractable\"}。\n"
+    "6. 无法可靠读出的文字不要编造；宁可使用短标签或省略该节点。\n"
     "只输出 JSON："
 )
 
@@ -257,10 +259,13 @@ def extract_diagram_image(
 
 
 def _post(payload, *, key, sess, timeout):
-    from eval.gateway import post_gateway
+    # Reuse the product gateway seam so the dedicated graph call shares the
+    # same auth/session policy as the text transcription stage and remains
+    # straightforward to stub in offline tests.
+    from . import vlm
 
-    return post_gateway(payload, api_key=key, session=sess, timeout=timeout,
-                        user_agent=USER_AGENT)
+    return vlm.post_gateway(payload, api_key=key, session=sess, timeout=timeout,
+                            user_agent=USER_AGENT)
 
 
 __all__ = [
