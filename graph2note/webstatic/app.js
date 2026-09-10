@@ -1,5 +1,6 @@
 /* graph2note — local document library + three-pane review/edit.
-   Views routed by location.hash: #library (home), #upload, #doc/<id>. */
+   Views routed by location.hash: #library (home), #timeline/day|week,
+   #upload, #doc/<id>. */
 "use strict";
 
 const $ = (s) => document.querySelector(s);
@@ -15,10 +16,18 @@ const state = {
   jobId: null,
   libraryCollection: null,
   libraryFilter: "all",
+  timelineGroup: "day",
 };
 
 const el = {
   libraryZone: $("#library-zone"),
+  timelineZone: $("#timeline-zone"),
+  timelineGroups: $("#timeline-groups"),
+  timelineEmpty: $("#timeline-empty"),
+  timelineUndated: $("#timeline-undated"),
+  timelineUndatedCount: $("#timeline-undated-count"),
+  timelineUndatedItems: $("#timeline-undated-items"),
+  timelineGroup: $("#timeline-group"),
   libraryGrid: $("#library-grid"),
   libraryEmpty: $("#library-empty"),
   libraryCount: $("#library-count"),
@@ -63,6 +72,7 @@ const el = {
   btnDelete: $("#btn-delete"),
   btnRepic: $("#btn-repic"),
   navLibrary: $("#nav-library"),
+  navTimeline: $("#nav-timeline"),
   navUpload: $("#nav-upload"),
   modelLabel: $("#model-label"),
 };
@@ -117,6 +127,7 @@ function parseHash() {
   const h = (location.hash || "#library").replace(/^#\/?/, "");
   const parts = h.split("/");
   if (parts[0] === "doc" && parts[1]) return { name: "doc", id: decodeURIComponent(parts[1]) };
+  if (parts[0] === "timeline") return { name: "timeline", group: parts[1] === "week" ? "week" : "day" };
   if (parts[0] === "upload") return { name: "upload" };
   return { name: "library" };
 }
@@ -127,11 +138,12 @@ function render() {
   hideAll();
   if (r.name === "upload") { renderUpload(); }
   else if (r.name === "doc") { state.docId = r.id; renderDocument(r.id); }
+  else if (r.name === "timeline") { state.timelineGroup = r.group; renderTimeline(r.group); }
   else { renderLibrary(); }
 }
 
 function hideAll() {
-  [el.libraryZone, el.uploadZone, el.workingZone, el.workZone]
+  [el.libraryZone, el.timelineZone, el.uploadZone, el.workingZone, el.workZone]
     .forEach((n) => n.classList.add("hidden"));
 }
 
@@ -188,6 +200,76 @@ function filterLibraryDocuments(docs) {
     const day = value ? String(value).slice(0, 10) : "";
     return state.libraryFilter === "today" ? day === today : day >= lower && day <= today;
   });
+}
+
+/* ---------- timeline (read-only view model) ---------- */
+
+function timelineItemHtml(item) {
+  const effective = item.effective_time || {};
+  const topics = (item.topics || []).map((topic) => `<span class="timeline-topic">${esc(topic)}</span>`).join("");
+  const collections = (item.collections || []).map((collection) => `<span class="timeline-collection">${esc(collection)}</span>`).join("");
+  return `<button class="timeline-item" type="button" data-route="${esc(item.route)}">
+    <span class="timeline-item-date">${esc(item.date || "无日期")}</span>
+    <span class="timeline-item-main">
+      <span class="timeline-item-title">${esc(item.title)}</span>
+      <span class="timeline-item-meta">${esc(effective.source || "无有效时间")}${topics}${collections}</span>
+    </span>
+    <span class="timeline-item-arrow" aria-hidden="true">›</span>
+  </button>`;
+}
+
+function timelineGroupHtml(group) {
+  const aggregates = (group.topic_aggregates || []).map((item) =>
+    `<span class="timeline-summary-chip">${esc(item.topic)} · ${item.count}</span>`).join("");
+  const runs = (group.adjacent_topic_runs || []).filter((run) => run.count > 1).map((run) =>
+    `<span class="timeline-run-chip">${esc(run.topic)} 连续 ${run.count} 份</span>`).join("");
+  return `<section class="timeline-group">
+    <div class="timeline-group-head">
+      <div>
+        <h3>${esc(group.label)}</h3>
+        <span class="dim">${group.count} 份 · ${esc(group.start_date)}${group.end_date !== group.start_date ? ` 至 ${esc(group.end_date)}` : ""}</span>
+      </div>
+      <div class="timeline-summary">${aggregates || `<span class="dim">暂无主题</span>`}</div>
+    </div>
+    ${runs ? `<div class="timeline-runs"><span class="dim">相邻主题</span>${runs}</div>` : ""}
+    <div class="timeline-items">${group.items.map(timelineItemHtml).join("")}</div>
+  </section>`;
+}
+
+function wireTimelineLinks(root) {
+  root.querySelectorAll("button.timeline-item[data-route]").forEach((button) => {
+    button.addEventListener("click", () => go(button.dataset.route));
+  });
+}
+
+async function renderTimeline(groupBy) {
+  el.timelineZone.classList.remove("hidden");
+  el.timelineGroup.value = groupBy;
+  el.timelineGroups.innerHTML = "";
+  el.timelineUndatedItems.innerHTML = "";
+  el.timelineUndated.classList.add("hidden");
+  el.timelineEmpty.classList.add("hidden");
+  try {
+    const timeline = await api(`/api/timeline?group_by=${encodeURIComponent(groupBy)}`);
+    const total = Number(timeline.total || 0);
+    if (!total) {
+      el.timelineEmpty.classList.remove("hidden");
+    } else {
+      el.timelineGroups.innerHTML = (timeline.groups || []).map(timelineGroupHtml).join("");
+      wireTimelineLinks(el.timelineGroups);
+    }
+    const undated = timeline.undated || [];
+    if (undated.length) {
+      el.timelineUndated.classList.remove("hidden");
+      el.timelineUndatedCount.textContent = `${undated.length} 份`;
+      el.timelineUndatedItems.innerHTML = undated.map(timelineItemHtml).join("");
+      wireTimelineLinks(el.timelineUndatedItems);
+    }
+  } catch (e) {
+    el.timelineEmpty.classList.remove("hidden");
+    el.timelineEmpty.querySelector("p").textContent = "时间轴加载失败。";
+    showToast("加载时间轴失败：" + e.message, "err");
+  }
 }
 
 async function renderCollectionNavigation() {
@@ -666,7 +748,9 @@ el.tagCreateForm.addEventListener("submit", async (event) => {
 });
 el.metadataDocumentTime.addEventListener("change", saveDocumentMetadata);
 el.navLibrary.onclick = () => go("#library");
+el.navTimeline.onclick = () => go("#timeline/day");
 el.navUpload.onclick = () => go("#upload");
+el.timelineGroup.addEventListener("change", () => go(`#timeline/${el.timelineGroup.value}`));
 
 /* ---------- upload wiring ---------- */
 

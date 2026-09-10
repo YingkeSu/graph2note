@@ -165,6 +165,47 @@ body {
 .doc-card .doc-time { font-size: 12px; margin-top: 3px; }
 .library-empty { text-align: center; color: var(--muted); padding: 60px 0; }
 .empty-icon { font-size: 44px; }
+
+/* Timeline (issue 04) */
+.timeline-zone { flex: 1; overflow: auto; padding: 22px 26px 36px; }
+.timeline-head { display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 18px; margin-bottom: 18px; }
+.timeline-head h2 { margin: 0; font-size: 20px; }
+.timeline-head p { margin: 5px 0 0; font-size: 13px; }
+.timeline-group-control { display: flex; align-items: center; gap: 7px; color: var(--muted); font-size: 13px; }
+.timeline-group-control select { min-height: 30px; border: 1px solid var(--line); border-radius: 6px;
+  padding: 4px 7px; background: var(--panel); color: var(--ink); }
+.timeline-groups { display: flex; flex-direction: column; gap: 14px; }
+.timeline-group, .timeline-undated { background: var(--panel); border: 1px solid var(--line);
+  border-radius: 12px; padding: 14px; }
+.timeline-group-head { display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 14px; }
+.timeline-group-head h3 { margin: 0 0 3px; font-size: 16px; }
+.timeline-summary { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 5px; }
+.timeline-summary-chip, .timeline-run-chip, .timeline-topic, .timeline-collection {
+  display: inline-flex; align-items: center; border-radius: 999px; padding: 2px 7px;
+  font-size: 11px; white-space: nowrap;
+}
+.timeline-summary-chip { background: #eef2ff; color: #4338ca; }
+.timeline-runs { display: flex; align-items: center; flex-wrap: wrap; gap: 6px;
+  margin: 11px 0 3px; font-size: 11px; }
+.timeline-run-chip { background: #ecfdf5; color: #047857; }
+.timeline-items { display: flex; flex-direction: column; gap: 6px; margin-top: 11px; }
+.timeline-item { display: flex; align-items: center; gap: 12px; width: 100%;
+  border: 1px solid transparent; border-radius: 8px; padding: 9px 10px; text-align: left;
+  background: #fafbfc; color: var(--ink); cursor: pointer; }
+.timeline-item:hover { border-color: var(--accent); background: #eff6ff; }
+.timeline-item-date { width: 92px; flex: 0 0 92px; color: var(--muted); font-family: var(--mono); font-size: 11px; }
+.timeline-item-main { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 4px; }
+.timeline-item-title { font-size: 14px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.timeline-item-meta { display: flex; align-items: center; flex-wrap: wrap; gap: 5px; color: var(--muted); font-size: 11px; }
+.timeline-topic { background: #f3f4f6; color: #4b5563; }
+.timeline-collection { background: #fff7ed; color: #c2410c; }
+.timeline-item-arrow { color: var(--muted); font-size: 20px; line-height: 1; }
+.timeline-empty { text-align: center; color: var(--muted); padding: 60px 0; }
+.timeline-empty p { margin: 9px 0 3px; }
+.timeline-undated { margin-top: 14px; }
+
 .tag-vocabulary, .document-tags {
   margin: 0 0 16px; padding: 10px 12px; background: var(--panel);
   border: 1px solid var(--line); border-radius: 10px; font-size: 12px;
@@ -196,4 +237,7 @@ body {
 
 @media (max-width: 900px) {
   .metadata-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .timeline-head, .timeline-group-head { flex-direction: column; }
+  .timeline-summary { justify-content: flex-start; }
+  .timeline-item-date { width: 72px; flex-basis: 72px; }
 }

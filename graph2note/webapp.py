@@ -40,6 +40,7 @@ from .ir import dumps_ir
 from .metadata import extract_capture_time, infer_document_time
 from .collections import CollectionError
 from .tags import TagError
+from .timeline import GROUPINGS, build_timeline
 from .store import (
     DocumentStore,
     FileDocumentStore,
@@ -421,6 +422,25 @@ def create_app(
         if not selected:
             return documents
         return [item for item in documents if selected in (item.get("collections") or [])]
+
+    @app.get("/api/timeline")
+    def timeline_list(
+        group_by: str = "day",
+        collection_id: str | None = None,
+        collection: str | None = None,
+    ):
+        if group_by not in GROUPINGS:
+            raise HTTPException(status_code=422, detail="group_by 必须是 day 或 week")
+        selected = collection_id or collection
+        records = []
+        for summary in store.list_documents():
+            record = store.get_document(summary["document_id"])
+            if record is None:
+                continue
+            if selected and selected not in (record.get("collections") or []):
+                continue
+            records.append(record)
+        return build_timeline(records, group_by=group_by)
 
     @app.get("/api/documents/{document_id}")
     def document_get(document_id: str):
