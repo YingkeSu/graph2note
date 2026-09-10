@@ -26,6 +26,15 @@ node_modules/
 # Scan samples stay local only
 test-images/*.pdf
 
+# Webapp runtime storage (documents/jobs) — never commit
+.g2n-storage/
+
+# Local CLI run artifacts next to test images (outputs, the .jpg fixtures stay tracked)
+test-images/*.md
+test-images/timing.json
+test-images/assets/
+test-images/preprocessed/
+
 # Never commit source PDFs anywhere
 *.pdf
 
