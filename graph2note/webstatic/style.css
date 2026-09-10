@@ -154,6 +154,21 @@ body {
 .doc-card .doc-time { font-size: 12px; margin-top: 3px; }
 .library-empty { text-align: center; color: var(--muted); padding: 60px 0; }
 .empty-icon { font-size: 44px; }
+.tag-vocabulary, .document-tags {
+  margin: 0 0 16px; padding: 10px 12px; background: var(--panel);
+  border: 1px solid var(--line); border-radius: 10px; font-size: 12px;
+}
+.document-tags { margin: 0 18px 8px; }
+.tag-vocabulary-head, .document-tags-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.tag-vocabulary h3 { margin: 0; font-size: 14px; }
+.tag-create-form { display: flex; gap: 6px; }
+.tag-create-form input { width: 150px; min-height: 28px; border: 1px solid var(--line); border-radius: 5px; padding: 4px 7px; }
+.tag-list, .document-tag-list { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+.tag-vocabulary-item { display: inline-flex; align-items: center; gap: 6px; padding: 4px 7px; border: 1px solid var(--line); border-radius: 6px; }
+.tag-name { font-weight: 600; color: var(--accent-dark); }
+.tag-action { border: 0; background: transparent; color: var(--accent); padding: 0; cursor: pointer; font-size: 11px; }
+.document-tag { display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: 999px; background: #eff6ff; color: var(--accent-dark); }
+.document-tag button { border: 0; background: transparent; color: inherit; cursor: pointer; padding: 0 2px; font-size: 14px; }
 
 .btn.danger { border-color: var(--danger); color: var(--danger); }
 .btn.danger:hover:not(:disabled) { background: var(--danger); color: #fff; }

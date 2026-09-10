@@ -38,6 +38,7 @@ from fastapi.staticfiles import StaticFiles
 from .attachments import missing_attachments
 from .ir import dumps_ir
 from .metadata import extract_capture_time, infer_document_time
+from .tags import TagError
 from .store import (
     DocumentStore,
     FileDocumentStore,
@@ -420,6 +421,39 @@ def create_app(
     def document_get(document_id: str):
         return _get_document(document_id)
 
+    # ---- tag vocabulary + document memberships (issue 02) -------------------
+
+    @app.get("/api/tags")
+    def tags_list():
+        return store.list_tags()
+
+    @app.post("/api/tags")
+    def tag_create(body: dict | None = None):
+        payload = body or {}
+        tag = payload.get("tag", payload.get("name"))
+        try:
+            return {"tags": store.create_tag(tag)}
+        except (TagError, TypeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.post("/api/tags/rename")
+    def tag_rename(body: dict | None = None):
+        payload = body or {}
+        try:
+            tags = store.rename_tag(payload.get("source"), payload.get("target", payload.get("name")))
+        except (TagError, TypeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        return {"tags": tags}
+
+    @app.post("/api/tags/merge")
+    def tag_merge(body: dict | None = None):
+        payload = body or {}
+        try:
+            tags = store.merge_tags(payload.get("source"), payload.get("target"))
+        except (TagError, TypeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        return {"tags": tags}
+
     @app.put("/api/documents/{document_id}/metadata")
     @app.patch("/api/documents/{document_id}/metadata")
     def document_update_metadata(document_id: str, body: dict | None = None):
@@ -437,6 +471,44 @@ def create_app(
             "metadata": rec.get("metadata"),
             "effective_time": rec.get("effective_time"),
         }
+
+    @app.put("/api/documents/{document_id}/tags")
+    def document_set_tags(document_id: str, body: dict | None = None):
+        payload = body or {}
+        tags = payload.get("tags")
+        if tags is None and "tag" in payload:
+            tags = [payload.get("tag")]
+        try:
+            rec = store.set_tags(document_id, tags or [])
+        except (TagError, TypeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        if rec is None:
+            raise HTTPException(status_code=404, detail="文档不存在或已被删除。")
+        return {"document_id": document_id, "tags": rec.get("tags", [])}
+
+    @app.post("/api/documents/{document_id}/tags")
+    def document_add_auto_tags(document_id: str, body: dict | None = None):
+        payload = body or {}
+        raw_tags = payload.get("tags", payload.get("tag", []))
+        if isinstance(raw_tags, str):
+            raw_tags = [raw_tags]
+        try:
+            rec = store.add_auto_tags(document_id, raw_tags)
+        except (TagError, TypeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        if rec is None:
+            raise HTTPException(status_code=404, detail="文档不存在或已被删除。")
+        return {"document_id": document_id, "tags": rec.get("tags", [])}
+
+    @app.delete("/api/documents/{document_id}/tags/{tag}")
+    def document_remove_tag(document_id: str, tag: str):
+        rec = _get_document(document_id)
+        kept = [item for item in (rec.get("tags") or []) if item != tag]
+        try:
+            updated = store.set_tags(document_id, kept)
+        except (TagError, TypeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        return {"document_id": document_id, "tags": updated.get("tags", [])}
 
     @app.post("/api/documents/{document_id}/markdown")
     def document_save_markdown(document_id: str, body: dict | None = None):

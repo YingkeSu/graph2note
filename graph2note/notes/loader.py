@@ -44,6 +44,7 @@ def load_entries(
                 ).suffix or ".jpg",
                 preprocessed_path=latest.get("preprocessed_path") or "",
                 topics=rec.get("topics") or [],
+                tags=rec.get("tags") or [],
                 attachments=_latest_attachments(latest),
             )
         )

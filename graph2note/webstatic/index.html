@@ -36,6 +36,16 @@
       <h2>本地文档库</h2>
       <span class="dim" id="library-count"></span>
     </div>
+    <section id="tag-vocabulary" class="tag-vocabulary" aria-label="标签词表">
+      <div class="tag-vocabulary-head">
+        <h3>标签词表</h3>
+        <form id="tag-create-form" class="tag-create-form">
+          <input id="tag-create-input" type="text" placeholder="新增标签" />
+          <button class="btn small" type="submit">添加</button>
+        </form>
+      </div>
+      <div id="tag-list" class="tag-list"></div>
+    </section>
     <div id="library-grid" class="library-grid"></div>
     <div id="library-empty" class="library-empty hidden">
       <div class="empty-icon">🗂</div>
@@ -96,6 +106,17 @@
       <span class="spacer"></span>
       <span class="dim" id="version-info"></span>
     </div>
+
+    <section id="document-tags" class="document-tags" aria-label="文档标签">
+      <div class="document-tags-head">
+        <span>文档标签</span>
+        <form id="document-tag-form" class="tag-create-form">
+          <input id="document-tag-input" type="text" placeholder="添加标签" />
+          <button class="btn small" type="submit">添加</button>
+        </form>
+      </div>
+      <div id="document-tag-list" class="document-tag-list"></div>
+    </section>
 
     <section id="metadata-panel" class="metadata-panel" aria-label="文档时间元数据">
       <div class="metadata-head">

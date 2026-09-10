@@ -20,6 +20,9 @@ const el = {
   libraryGrid: $("#library-grid"),
   libraryEmpty: $("#library-empty"),
   libraryCount: $("#library-count"),
+  tagList: $("#tag-list"),
+  tagCreateForm: $("#tag-create-form"),
+  tagCreateInput: $("#tag-create-input"),
   uploadZone: $("#upload-zone"),
   uploadCard: $("#upload-card"),
   fileInput: $("#file-input"),
@@ -35,6 +38,9 @@ const el = {
   statusText: $("#status-text"),
   warnings: $("#warnings"),
   versionInfo: $("#version-info"),
+  documentTagForm: $("#document-tag-form"),
+  documentTagInput: $("#document-tag-input"),
+  documentTagList: $("#document-tag-list"),
   metadataDocumentTime: $("#metadata-document-time"),
   metadataCaptureTime: $("#metadata-capture-time"),
   metadataImportTime: $("#metadata-import-time"),
@@ -146,6 +152,7 @@ async function renderLibrary() {
     card.addEventListener("click", () => go(`#doc/${encodeURIComponent(d.document_id)}`));
     el.libraryGrid.appendChild(card);
   }
+  await renderTagVocabulary();
   // lazy-load thumbnails
   requestAnimationFrame(() => {
     el.libraryGrid.querySelectorAll("img[data-src]").forEach((img) => {
@@ -154,6 +161,60 @@ async function renderLibrary() {
       img.onerror = () => { img.remove(); };
     });
   });
+}
+
+async function renderTagVocabulary() {
+  if (!el.tagList) return;
+  let tags = [];
+  try { tags = await api("/api/tags"); }
+  catch (e) { showToast("加载标签词表失败：" + e.message, "err"); return; }
+  el.tagList.innerHTML = tags.length ? tags.map((item) => `
+    <span class="tag-vocabulary-item">
+      <span class="tag-name">#${esc(item.tag)}</span>
+      <span class="dim">${item.count} 份${item.aliases && item.aliases.length ? ` · 别名：${esc(item.aliases.join("、"))}` : ""}</span>
+      <button class="tag-action" data-tag-action="rename" data-tag="${esc(item.tag)}">重命名</button>
+      <button class="tag-action" data-tag-action="merge" data-tag="${esc(item.tag)}">合并</button>
+    </span>`).join("") : `<span class="dim">暂无标签，打开文档后可添加。</span>`;
+  el.tagList.querySelectorAll("button[data-tag-action]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const source = button.dataset.tag;
+      const target = window.prompt(button.dataset.tagAction === "merge" ? "合并到哪个标签？" : "重命名为？", source);
+      if (!target || target === source) return;
+      try {
+        await api(`/api/tags/${button.dataset.tagAction}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ source, target }),
+        });
+        await renderTagVocabulary();
+        showToast(button.dataset.tagAction === "merge" ? "标签已合并" : "标签已重命名", "ok");
+      } catch (e) { showToast("标签治理失败：" + e.message, "err"); }
+    });
+  });
+}
+
+function renderDocumentTags(tags) {
+  if (!el.documentTagList) return;
+  const values = tags || [];
+  el.documentTagList.innerHTML = values.length ? values.map((tag) => `
+    <span class="document-tag">#${esc(tag)}<button type="button" data-remove-tag="${esc(tag)}" aria-label="移除 ${esc(tag)}">×</button></span>`).join("")
+    : `<span class="dim">暂无标签</span>`;
+  el.documentTagList.querySelectorAll("button[data-remove-tag]").forEach((button) => {
+    button.addEventListener("click", () => updateDocumentTags(values.filter((tag) => tag !== button.dataset.removeTag)));
+  });
+}
+
+async function updateDocumentTags(tags) {
+  if (!state.docId) return;
+  try {
+    const result = await api(`/api/documents/${encodeURIComponent(state.docId)}/tags`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tags }),
+    });
+    if (state.doc) state.doc.tags = result.tags;
+    renderDocumentTags(result.tags);
+  } catch (e) { showToast("文档标签保存失败：" + e.message, "err"); }
 }
 
 /* ---------- upload ---------- */
@@ -243,6 +304,7 @@ async function renderDocument(id) {
     el.versionInfo.textContent = doc.versions && doc.versions.length > 1
       ? `第 ${doc.versions.length} 版（历史 ${doc.versions.length - 1} 版留存）` : "第 1 版";
     el.warnings.textContent = "";
+    renderDocumentTags(doc.tags);
     renderMetadata(doc.metadata);
     el.statusText.textContent = doc.current_markdown && doc.current_markdown.trim()
       ? "文档已载入，编辑自动保存 ✓" : "空文档：未识别出可渲染内容。";
@@ -458,6 +520,27 @@ el.btnDelete.onclick = async () => {
 };
 
 el.btnRepic.onclick = () => state.docId && setDocImage(state.docId);
+el.documentTagForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const value = el.documentTagInput.value.trim();
+  if (!value || !state.doc) return;
+  el.documentTagInput.value = "";
+  updateDocumentTags([...(state.doc.tags || []), value]);
+});
+el.tagCreateForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const value = el.tagCreateInput.value.trim();
+  if (!value) return;
+  try {
+    await api("/api/tags", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tag: value }),
+    });
+    el.tagCreateInput.value = "";
+    await renderTagVocabulary();
+  } catch (e) { showToast("新增标签失败：" + e.message, "err"); }
+});
 el.metadataDocumentTime.addEventListener("change", saveDocumentMetadata);
 el.navLibrary.onclick = () => go("#library");
 el.navUpload.onclick = () => go("#upload");

@@ -8,7 +8,7 @@ Core guarantees:
 
 * **One note per document** under ``notes/<safe_document_id>/note.md`` with the
   required traceability frontmatter (``document_id`` / ``source_image`` /
-  ``parsed_at`` / ``exported_at`` / ``topics``).
+  ``parsed_at`` / ``exported_at`` / ``topics`` / ``tags``).
 * **溯源对照**: the original manuscript image is copied beside the note and
   embedded at the top of the body via a relative path; an absolute
   ``source_original_path`` field keeps the link to the system DocumentRecord.
@@ -158,6 +158,7 @@ class ExportEntry:
     source_ext: str         # image extension (incl. dot)
     preprocessed_path: str = ""
     topics: list = field(default_factory=list)
+    tags: list = field(default_factory=list)
     attachments: dict = field(default_factory=dict)  # {name: absolute path}
 
     @property
@@ -244,12 +245,12 @@ def dedupe_documents(
     return sorted(out, key=lambda e: e.safe_id)
 
 
-def _yaml_list(items: Iterable[str]) -> str:
+def _yaml_list(name: str, items: Iterable[str]) -> str:
     items = [str(i) for i in items]
     if not items:
-        return "topics: []\n"
+        return f"{name}: []\n"
     body = "\n".join(f"  - {i}" for i in items)
-    return f"topics:\n{body}\n"
+    return f"{name}:\n{body}\n"
 
 
 def note_body(markdown: str) -> str:
@@ -279,7 +280,10 @@ def build_note(
         f"parsed_at: {_iso(entry.parsed_at, '')}",
         f"exported_at: {exported_at}",
     ]
-    body = "\n".join(lines) + "\n\n" + _yaml_list(entry.topics) + "---\n\n"
+    body = "\n".join(lines) + "\n\n"
+    body += _yaml_list("topics", entry.topics)
+    body += _yaml_list("tags", entry.tags)
+    body += "---\n\n"
     body += f"![{title} 原稿]({src})\n\n"
     md = note_body(entry.markdown)
     body += md + ("\n" if md else "")

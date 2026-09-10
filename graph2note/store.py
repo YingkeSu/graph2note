@@ -48,6 +48,15 @@ from .metadata import (
     ensure_record_metadata,
     merge_record_metadata,
 )
+from .tags import (
+    TagError,
+    canonicalize_tags,
+    merge_vocabulary_tags,
+    new_vocabulary,
+    rename_vocabulary_tag,
+    validate_tag_inference,
+    vocabulary_entries,
+)
 
 
 def _safe(name: str) -> str:
@@ -105,6 +114,30 @@ class DocumentStore(ABC):
         """Persist user-managed document metadata without making a new version."""
 
     @abstractmethod
+    def list_tags(self) -> list[dict]:
+        """Return vocabulary entries with aliases and document usage counts."""
+
+    @abstractmethod
+    def create_tag(self, tag: str) -> list[dict]:
+        """Create/reuse a vocabulary entry without assigning it to a document."""
+
+    @abstractmethod
+    def set_tags(self, document_id: str, tags: list[str]) -> dict | None:
+        """Replace a document's fine-grained tags after normalization."""
+
+    @abstractmethod
+    def add_auto_tags(self, document_id: str, raw_tags) -> dict | None:
+        """Validate and append recorded auto-tag output."""
+
+    @abstractmethod
+    def rename_tag(self, source: str, target: str) -> list[dict]:
+        """Rename a vocabulary tag and update all document memberships."""
+
+    @abstractmethod
+    def merge_tags(self, source: str, target: str) -> list[dict]:
+        """Merge one vocabulary tag into another."""
+
+    @abstractmethod
     def set_topics(self, document_id: str, topics: list[str]) -> dict | None:
         """Persist the document's topic tags (notes-organizer classification).
 
@@ -141,6 +174,7 @@ class SessionDocumentStore(DocumentStore):
         self.root = Path(storage_dir)
         self.root.mkdir(parents=True, exist_ok=True)
         self._docs: dict[str, dict] = {}
+        self._tag_vocab = new_vocabulary()
 
     # --- job workspace ---------------------------------------------------------
     def job_out_dir(self, job_id: str) -> Path:
@@ -173,6 +207,7 @@ class SessionDocumentStore(DocumentStore):
                 original_path=record.get("original_path"),
                 markdown=record.get("current_markdown"),
             )
+            record.setdefault("tags", [])
             items.append({
                 k: record[k] for k in ("document_id", "title", "created_at",
                                        "updated_at", "versions")
@@ -191,6 +226,7 @@ class SessionDocumentStore(DocumentStore):
             original_path=record.get("original_path"),
             markdown=record.get("current_markdown"),
         )
+        record.setdefault("tags", [])
         return record
 
     def save_document(self, *, document_id, title, source_job_id, model,
@@ -211,10 +247,12 @@ class SessionDocumentStore(DocumentStore):
                 "current_markdown": markdown,
                 "current_markdown_path": None,
                 "versions": [],
+                "tags": [],
             }
         rec["updated_at"] = now
         rec["current_markdown"] = markdown
         rec["current_hash"] = pg_hash  # issue 13: perceptual hash of the page
+        rec.setdefault("tags", [])
         rec["latest_version"] = version_id
         rec["versions"].append({
             "version_id": version_id,
@@ -273,6 +311,46 @@ class SessionDocumentStore(DocumentStore):
         apply_metadata_updates(rec, updates)
         self._docs[document_id] = rec
         return rec
+
+    def list_tags(self) -> list[dict]:
+        counts: dict[str, int] = {}
+        for rec in self._docs.values():
+            rec.setdefault("tags", [])
+            for tag in rec["tags"]:
+                counts[tag] = counts.get(tag, 0) + 1
+        return vocabulary_entries(self._tag_vocab, counts)
+
+    def create_tag(self, tag: str) -> list[dict]:
+        canonicalize_tags(self._tag_vocab, [tag])
+        return self.list_tags()
+
+    def set_tags(self, document_id: str, tags: list[str]) -> dict | None:
+        rec = self._docs.get(document_id)
+        if rec is None:
+            return None
+        normalized, _ = canonicalize_tags(self._tag_vocab, tags)
+        rec["tags"] = normalized
+        self._docs[document_id] = rec
+        return rec
+
+    def add_auto_tags(self, document_id: str, raw_tags) -> dict | None:
+        tags = validate_tag_inference(raw_tags)
+        if tags is None:
+            raise TagError("自动标签输出不符合 schema")
+        rec = self._docs.get(document_id)
+        if rec is None:
+            return None
+        return self.set_tags(document_id, list(rec.get("tags") or []) + tags)
+
+    def rename_tag(self, source: str, target: str) -> list[dict]:
+        records = list(self._docs.values())
+        rename_vocabulary_tag(self._tag_vocab, records, source, target)
+        return self.list_tags()
+
+    def merge_tags(self, source: str, target: str) -> list[dict]:
+        records = list(self._docs.values())
+        merge_vocabulary_tags(self._tag_vocab, records, source, target)
+        return self.list_tags()
 
     def set_topics(self, document_id: str, topics: list[str]) -> dict | None:
         rec = self._docs.get(document_id)
@@ -341,6 +419,41 @@ class FileDocumentStore(SessionDocumentStore):
         d = self.root / "documents" / _safe(document_id)
         return d
 
+    def _tag_vocab_path(self) -> Path:
+        return self.root / "tag-vocabulary.json"
+
+    def _load_tag_vocab(self) -> dict:
+        from .tags import normalize_vocabulary
+
+        path = self._tag_vocab_path()
+        if not path.is_file():
+            return new_vocabulary()
+        try:
+            return normalize_vocabulary(json.loads(path.read_text(encoding="utf-8")))
+        except (OSError, ValueError):
+            return new_vocabulary()
+
+    def _save_tag_vocab(self, vocabulary: dict) -> None:
+        self._tag_vocab_path().write_text(
+            json.dumps(vocabulary, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    def _all_tag_records(self) -> list[dict]:
+        docs = self.root / "documents"
+        if not docs.is_dir():
+            return []
+        records = []
+        for path in sorted(docs.iterdir()):
+            if path.is_dir():
+                record = self._load_record_with_metadata(path.name)
+                if record is not None:
+                    record.setdefault("tags", [])
+                    records.append(record)
+        return records
+
+    def _write_tag_record(self, record: dict) -> None:
+        self._doc_dir(record["document_id"]).joinpath("record.json").write_text(
+            json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
+
     # --- library (durable) ------------------------------------------------------
     def list_documents(self) -> list[dict]:
         items = []
@@ -395,9 +508,11 @@ class FileDocumentStore(SessionDocumentStore):
         if rec is None:
             return None
         rec = dict(rec)  # shallow copy
+        rec.setdefault("tags", [])
         base = self._doc_dir(document_id)
         rec["document_id"] = document_id
-        rec["original_path"] = str(self._find_original(base))
+        original = self._find_original(base)
+        rec["original_path"] = str(original) if original else ""
         latest = rec.get("versions") or []
         rec["hash"] = rec.get("current_hash") or (
             latest[-1].get("pg_hash") if latest else "")
@@ -485,6 +600,7 @@ class FileDocumentStore(SessionDocumentStore):
         rec["updated_at"] = now
         rec["source_job_id"] = source_job_id
         rec["original_ext"] = original_ext
+        rec.setdefault("tags", [])
         rec["latest_version"] = version_id
         rec["current_hash"] = pg_hash
         versions = rec.setdefault("versions", [])
@@ -531,6 +647,12 @@ class FileDocumentStore(SessionDocumentStore):
                 json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
         return self.get_document(document_id)
 
+    def create_tag(self, tag: str) -> list[dict]:
+        vocabulary = self._load_tag_vocab()
+        canonicalize_tags(vocabulary, [tag])
+        self._save_tag_vocab(vocabulary)
+        return self.list_tags()
+
     def update_metadata(self, document_id: str, updates: dict) -> dict | None:
         base = self._doc_dir(document_id)
         if not (base / "record.json").is_file():
@@ -542,6 +664,66 @@ class FileDocumentStore(SessionDocumentStore):
         (base / "record.json").write_text(
             json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
         return self.get_document(document_id)
+
+    def list_tags(self) -> list[dict]:
+        vocabulary = self._load_tag_vocab()
+        records = self._all_tag_records()
+        counts: dict[str, int] = {}
+        changed = False
+        for record in records:
+            normalized, tags_changed = canonicalize_tags(vocabulary, record.get("tags") or [])
+            if tags_changed or normalized != record.get("tags"):
+                record["tags"] = normalized
+                self._write_tag_record(record)
+                changed = True
+            for tag in normalized:
+                counts[tag] = counts.get(tag, 0) + 1
+        if changed or vocabulary != self._load_tag_vocab():
+            self._save_tag_vocab(vocabulary)
+        else:
+            # A missing vocabulary file still needs to be materialized when
+            # the library is first observed, even if there are no documents.
+            if not self._tag_vocab_path().is_file():
+                self._save_tag_vocab(vocabulary)
+        return vocabulary_entries(vocabulary, counts)
+
+    def set_tags(self, document_id: str, tags: list[str]) -> dict | None:
+        record = self._load_record_with_metadata(document_id)
+        if record is None:
+            return None
+        vocabulary = self._load_tag_vocab()
+        normalized, _ = canonicalize_tags(vocabulary, tags)
+        record["tags"] = normalized
+        self._write_tag_record(record)
+        self._save_tag_vocab(vocabulary)
+        return self.get_document(document_id)
+
+    def add_auto_tags(self, document_id: str, raw_tags) -> dict | None:
+        tags = validate_tag_inference(raw_tags)
+        if tags is None:
+            raise TagError("自动标签输出不符合 schema")
+        record = self._load_record_with_metadata(document_id)
+        if record is None:
+            return None
+        return self.set_tags(document_id, list(record.get("tags") or []) + tags)
+
+    def rename_tag(self, source: str, target: str) -> list[dict]:
+        vocabulary = self._load_tag_vocab()
+        records = self._all_tag_records()
+        rename_vocabulary_tag(vocabulary, records, source, target)
+        for record in records:
+            self._write_tag_record(record)
+        self._save_tag_vocab(vocabulary)
+        return self.list_tags()
+
+    def merge_tags(self, source: str, target: str) -> list[dict]:
+        vocabulary = self._load_tag_vocab()
+        records = self._all_tag_records()
+        merge_vocabulary_tags(vocabulary, records, source, target)
+        for record in records:
+            self._write_tag_record(record)
+        self._save_tag_vocab(vocabulary)
+        return self.list_tags()
 
     def set_topics(self, document_id: str, topics: list[str]) -> dict | None:
         rp = self._doc_dir(document_id) / "record.json"
