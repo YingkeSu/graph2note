@@ -39,6 +39,7 @@ from .attachments import missing_attachments
 from .ir import dumps_ir
 from .metadata import extract_capture_time, infer_document_time
 from .collections import CollectionError
+from .graph import build_graph
 from .tags import TagError
 from .timeline import GROUPINGS, build_timeline
 from .store import (
@@ -416,12 +417,36 @@ def create_app(
         return rec
 
     @app.get("/api/documents")
-    def documents_list(collection_id: str | None = None, collection: str | None = None):
+    def documents_list(
+        collection_id: str | None = None,
+        collection: str | None = None,
+        tag: str | None = None,
+        tag_id: str | None = None,
+        topic: str | None = None,
+        topic_id: str | None = None,
+    ):
         selected = collection_id or collection
+        selected_tag = tag_id or tag
+        selected_topic = topic_id or topic
         documents = store.list_documents()
-        if not selected:
+        if selected:
+            documents = [
+                item for item in documents
+                if selected in (item.get("collections") or [])
+            ]
+        if not selected_tag and not selected_topic:
             return documents
-        return [item for item in documents if selected in (item.get("collections") or [])]
+        filtered = []
+        for item in documents:
+            record = store.get_document(item["document_id"])
+            if record is None:
+                continue
+            if selected_tag and selected_tag not in (record.get("tags") or []):
+                continue
+            if selected_topic and selected_topic not in (record.get("topics") or []):
+                continue
+            filtered.append(item)
+        return filtered
 
     @app.get("/api/timeline")
     def timeline_list(
@@ -441,6 +466,25 @@ def create_app(
                 continue
             records.append(record)
         return build_timeline(records, group_by=group_by)
+
+    @app.get("/api/graph")
+    def graph_list(collection_id: str | None = None, collection: str | None = None):
+        selected = collection_id or collection
+        collection_names = {
+            item["collection_id"]: item["name"]
+            for item in store.list_collections()
+        }
+        records = []
+        for summary in store.list_documents():
+            record = store.get_document(summary["document_id"])
+            if record is None:
+                continue
+            if selected and selected not in (record.get("collections") or []):
+                continue
+            record = dict(record)
+            record["collection_names"] = collection_names
+            records.append(record)
+        return build_graph(records)
 
     @app.get("/api/documents/{document_id}")
     def document_get(document_id: str):

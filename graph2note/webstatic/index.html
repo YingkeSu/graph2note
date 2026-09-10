@@ -23,6 +23,7 @@
     <a class="brand" href="#library">graph2note</a>
     <button class="btn small" id="nav-library" title="文档库">文档库</button>
     <button class="btn small" id="nav-timeline" title="时间轴">时间轴</button>
+    <button class="btn small" id="nav-graph" title="知识图谱">知识图谱</button>
     <button class="btn small primary" id="nav-upload" title="解析新手稿">新解析</button>
     <span class="spacer"></span>
     <!-- P1 placeholder: template selector (not implemented). -->
@@ -36,6 +37,7 @@
     <div class="library-head">
       <h2>本地文档库</h2>
       <span class="dim" id="library-count"></span>
+      <span class="dim" id="library-filter-label"></span>
     </div>
     <section id="workspace-navigation" class="workspace-navigation" aria-label="工作台导航">
       <div class="workspace-nav-column">
@@ -100,6 +102,29 @@
       </div>
       <div id="timeline-undated-items" class="timeline-items"></div>
     </section>
+  </section>
+
+  <!-- Read-only relationship graph (issue 05) -->
+  <section id="graph-zone" class="graph-zone hidden">
+    <div class="graph-head">
+      <div>
+        <h2>知识图谱</h2>
+        <p class="dim">图谱只消费现有主题、标签和手工关系，不会触发新的模型调用。</p>
+      </div>
+      <div class="graph-legend" aria-label="关系来源图例">
+        <span><i class="graph-legend-dot topic"></i>主题</span>
+        <span><i class="graph-legend-dot tag"></i>标签</span>
+        <span><i class="graph-legend-dot manual"></i>手工</span>
+      </div>
+    </div>
+    <div id="graph-empty" class="graph-empty hidden">
+      <div class="empty-icon">◎</div>
+      <p>暂无可导航的关系图谱。</p>
+      <span class="dim">文档、主题或标签进入文档库后会显示在这里。</span>
+    </div>
+    <div id="graph-scroll" class="graph-scroll">
+      <svg id="graph-canvas" class="graph-canvas" role="img" aria-label="文档关系图谱"></svg>
+    </div>
   </section>
 
   <!-- Upload / intro state -->

@@ -1,6 +1,6 @@
 /* graph2note — local document library + three-pane review/edit.
    Views routed by location.hash: #library (home), #timeline/day|week,
-   #upload, #doc/<id>. */
+   #graph, #upload, #doc/<id>. */
 "use strict";
 
 const $ = (s) => document.querySelector(s);
@@ -16,12 +16,18 @@ const state = {
   jobId: null,
   libraryCollection: null,
   libraryFilter: "all",
+  libraryTag: null,
+  libraryTopic: null,
   timelineGroup: "day",
 };
 
 const el = {
   libraryZone: $("#library-zone"),
   timelineZone: $("#timeline-zone"),
+  graphZone: $("#graph-zone"),
+  graphEmpty: $("#graph-empty"),
+  graphScroll: $("#graph-scroll"),
+  graphCanvas: $("#graph-canvas"),
   timelineGroups: $("#timeline-groups"),
   timelineEmpty: $("#timeline-empty"),
   timelineUndated: $("#timeline-undated"),
@@ -31,6 +37,7 @@ const el = {
   libraryGrid: $("#library-grid"),
   libraryEmpty: $("#library-empty"),
   libraryCount: $("#library-count"),
+  libraryFilterLabel: $("#library-filter-label"),
   collectionTree: $("#collection-tree"),
   collectionCreateForm: $("#collection-create-form"),
   collectionCreateInput: $("#collection-create-input"),
@@ -73,6 +80,7 @@ const el = {
   btnRepic: $("#btn-repic"),
   navLibrary: $("#nav-library"),
   navTimeline: $("#nav-timeline"),
+  navGraph: $("#nav-graph"),
   navUpload: $("#nav-upload"),
   modelLabel: $("#model-label"),
 };
@@ -128,6 +136,16 @@ function parseHash() {
   const parts = h.split("/");
   if (parts[0] === "doc" && parts[1]) return { name: "doc", id: decodeURIComponent(parts[1]) };
   if (parts[0] === "timeline") return { name: "timeline", group: parts[1] === "week" ? "week" : "day" };
+  if (parts[0] === "graph") return { name: "graph" };
+  if (parts[0] === "library" && parts[1] === "topic" && parts[2]) {
+    return { name: "library", topic: decodeURIComponent(parts.slice(2).join("/")) };
+  }
+  if (parts[0] === "library" && parts[1] === "tag" && parts[2]) {
+    return { name: "library", tag: decodeURIComponent(parts.slice(2).join("/")) };
+  }
+  if (parts[0] === "library" && parts[1] === "collection" && parts[2]) {
+    return { name: "library", collection: decodeURIComponent(parts.slice(2).join("/")) };
+  }
   if (parts[0] === "upload") return { name: "upload" };
   return { name: "library" };
 }
@@ -139,11 +157,26 @@ function render() {
   if (r.name === "upload") { renderUpload(); }
   else if (r.name === "doc") { state.docId = r.id; renderDocument(r.id); }
   else if (r.name === "timeline") { state.timelineGroup = r.group; renderTimeline(r.group); }
-  else { renderLibrary(); }
+  else if (r.name === "graph") { renderGraph(); }
+  else {
+    state.libraryTag = r.tag || null;
+    state.libraryTopic = r.topic || null;
+    if (r.collection) {
+      state.libraryCollection = r.collection;
+      state.libraryTag = null;
+      state.libraryTopic = null;
+      state.libraryFilter = "all";
+    }
+    if (r.tag || r.topic) {
+      state.libraryCollection = null;
+      state.libraryFilter = "all";
+    }
+    renderLibrary();
+  }
 }
 
 function hideAll() {
-  [el.libraryZone, el.timelineZone, el.uploadZone, el.workingZone, el.workZone]
+  [el.libraryZone, el.timelineZone, el.graphZone, el.uploadZone, el.workingZone, el.workZone]
     .forEach((n) => n.classList.add("hidden"));
 }
 
@@ -155,12 +188,20 @@ async function renderLibrary() {
   el.libraryZone.classList.remove("hidden");
   el.libraryGrid.innerHTML = "";
   let docs = [];
-  const query = state.libraryCollection
-    ? `?collection_id=${encodeURIComponent(state.libraryCollection)}` : "";
+  const params = new URLSearchParams();
+  if (state.libraryCollection) params.set("collection_id", state.libraryCollection);
+  if (state.libraryTag) params.set("tag", state.libraryTag);
+  if (state.libraryTopic) params.set("topic", state.libraryTopic);
+  const query = params.toString() ? `?${params.toString()}` : "";
   try { docs = await api(`/api/documents${query}`); }
   catch (e) { showToast("加载文档库失败：" + e.message, "err"); }
   docs = filterLibraryDocuments(docs);
   el.libraryCount.textContent = docs.length ? `共 ${docs.length} 份` : "";
+  if (el.libraryFilterLabel) {
+    el.libraryFilterLabel.textContent = state.libraryTopic
+      ? `主题：${state.libraryTopic}`
+      : state.libraryTag ? `标签：#${state.libraryTag}` : "";
+  }
   el.libraryEmpty.classList.toggle("hidden", docs.length > 0);
   for (const d of docs) {
     const card = document.createElement("div");
@@ -272,6 +313,91 @@ async function renderTimeline(groupBy) {
   }
 }
 
+/* ---------- graph (read-only, provenance-aware navigation) ---------- */
+
+const GRAPH_EDGE_COLORS = { topic: "#4f7fe8", tag: "#c07a1a", manual: "#16836d" };
+const GRAPH_KIND_LABELS = { document: "文档", topic: "主题", tag: "标签", collection: "集合" };
+
+function graphLayout(nodes) {
+  const width = 1000;
+  const columns = { document: 150, topic: 390, tag: 630, collection: 870 };
+  const groups = {};
+  for (const node of nodes) (groups[node.kind] ||= []).push(node);
+  const maxCount = Math.max(1, ...Object.values(groups).map((items) => items.length));
+  const height = Math.max(430, maxCount * 76 + 80);
+  const positions = {};
+  for (const [kind, items] of Object.entries(groups)) {
+    const step = height / (items.length + 1);
+    items.forEach((node, index) => {
+      positions[node.id] = { x: columns[kind] || 150, y: step * (index + 1) };
+    });
+  }
+  return { width, height, positions };
+}
+
+function graphNodeText(node) {
+  const prefix = node.kind === "tag" ? "#" : "";
+  return `${prefix}${node.label}`;
+}
+
+function wireGraphNodes() {
+  el.graphCanvas.querySelectorAll("g.graph-node[data-route]").forEach((node) => {
+    const open = () => go(node.dataset.route);
+    node.addEventListener("click", open);
+    node.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault(); open();
+      }
+    });
+  });
+}
+
+function renderGraphSvg(payload) {
+  const { width, height, positions } = graphLayout(payload.nodes || []);
+  const lines = (payload.edges || []).map((edge) => {
+    const from = positions[edge.from];
+    const to = positions[edge.to];
+    if (!from || !to) return "";
+    const color = GRAPH_EDGE_COLORS[edge.source] || "#9ca3af";
+    return `<line class="graph-edge graph-edge-${esc(edge.source)}" x1="${from.x}" y1="${from.y}" x2="${to.x}" y2="${to.y}" stroke="${color}" />`;
+  }).join("");
+  const nodes = (payload.nodes || []).map((node) => {
+    const point = positions[node.id];
+    const label = graphNodeText(node);
+    const escaped = esc(label);
+    return `<g class="graph-node graph-node-${esc(node.kind)}${node.isolated ? " isolated" : ""}" data-route="${esc(node.route)}" data-node-id="${esc(node.id)}" role="button" tabindex="0" transform="translate(${point.x} ${point.y})">
+      <title>${escaped} · ${esc(GRAPH_KIND_LABELS[node.kind] || node.kind)} · ${node.degree} 条关系</title>
+      <circle r="${node.kind === "document" ? 26 : 22}"></circle>
+      <text text-anchor="middle" dy="4">${escaped.length > 18 ? `${esc(label.slice(0, 17))}…` : escaped}</text>
+    </g>`;
+  }).join("");
+  el.graphCanvas.setAttribute("viewBox", `0 0 ${width} ${height}`);
+  el.graphCanvas.innerHTML = `<g class="graph-edges">${lines}</g><g class="graph-nodes">${nodes}</g>`;
+  wireGraphNodes();
+}
+
+async function renderGraph() {
+  el.graphZone.classList.remove("hidden");
+  el.graphEmpty.classList.add("hidden");
+  el.graphScroll.classList.remove("hidden");
+  el.graphCanvas.innerHTML = "";
+  el.graphEmpty.querySelector("p").textContent = "暂无可导航的关系图谱。";
+  try {
+    const graph = await api("/api/graph");
+    if (graph.empty) {
+      el.graphEmpty.classList.remove("hidden");
+      el.graphScroll.classList.add("hidden");
+      return;
+    }
+    renderGraphSvg(graph);
+  } catch (e) {
+    el.graphEmpty.querySelector("p").textContent = "图谱加载失败。";
+    el.graphEmpty.classList.remove("hidden");
+    el.graphScroll.classList.add("hidden");
+    showToast("加载图谱失败：" + e.message, "err");
+  }
+}
+
 async function renderCollectionNavigation() {
   if (!el.collectionTree) return;
   let collections = [];
@@ -287,6 +413,8 @@ async function renderCollectionNavigation() {
     button.addEventListener("click", () => {
       state.libraryCollection = button.dataset.collectionId;
       state.libraryFilter = "all";
+      state.libraryTag = null;
+      state.libraryTopic = null;
       renderLibrary();
     });
   });
@@ -714,6 +842,8 @@ el.collectionCreateForm.addEventListener("submit", async (event) => {
 document.querySelectorAll("button[data-library-filter]").forEach((button) => {
   button.addEventListener("click", () => {
     state.libraryCollection = null;
+    state.libraryTag = null;
+    state.libraryTopic = null;
     state.libraryFilter = button.dataset.libraryFilter;
     renderLibrary();
   });
@@ -749,6 +879,7 @@ el.tagCreateForm.addEventListener("submit", async (event) => {
 el.metadataDocumentTime.addEventListener("change", saveDocumentMetadata);
 el.navLibrary.onclick = () => go("#library");
 el.navTimeline.onclick = () => go("#timeline/day");
+el.navGraph.onclick = () => go("#graph");
 el.navUpload.onclick = () => go("#upload");
 el.timelineGroup.addEventListener("change", () => go(`#timeline/${el.timelineGroup.value}`));
 
