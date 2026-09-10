@@ -32,6 +32,13 @@ Status: merged
 - 交付分支 `dev/15-diagram-extraction` 自 origin/main 创建；提交 `09a6d92`（工作树干净，未 push）。
 - 实现边界：检测为**文本结构性**（`_markdown_to_ir` 对关系行确定性汇聚为 flow/diagram block，段落与列表项均可）；视觉提取器已产品化但默认独立/opt-in，未挂入生产 parse 主路径（避免逐页第二发 live 调用），供 FR-009 闭环按需启用。
 
+### 迭代 15c（2026-09-10，main 直提）
+
+- 解除上条边界：视觉提取器作为 **stage-3** 挂入生产 parse 主路径——stage-1 转录检出箭头信号即触发，成功时以一个 page-level graph block 替换文字侧碎片化 flow blocks；任何失败非致命，确定性 Markdown 推断仍为回退。`GRAPH2NOTE_DIAGRAM_MODEL` 可选独立拓扑模型。
+- 确定性层升级：单行链式箭头（`输入 → 解析 → 输出`）拆分为连续边；`←` 反向边；`relation_lines` 跨 bullet/heading 边界按页汇聚；Kahn 分层处理环剩余；渲染支持 TB/LR/RL/BT 方向（附件语义透传）；CJK 节点标签 18 单位换行。
+- `diagram._post` 改走 `vlm.post_gateway` 缝（产品代码不再 import `eval.gateway`）；`timing.json` 增加 diagram 阶段审计（verdict/model/nodes/edges）。
+- 提交：`c9da3c7`（确定性层）+ `57bd686`（stage-3 接线）；离线 `tests/` 295 passed。
+
 ## Blocked by
 
 None（所有依赖组件已在 main）
