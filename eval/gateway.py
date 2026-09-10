@@ -1,4 +1,8 @@
-"""经 opencode go 网关调用视觉 LLM（见 docs/llm/opencode-go.md）。
+"""LLM 网关传输层：默认 opencode go 网关，可切 DeepSeek 官方 API。
+
+opencode 接入见 docs/llm/opencode-go.md；DeepSeek 备援见 docs/llm/deepseek.md。
+2026-09-10 起支持 ``GRAPH2NOTE_GATEWAY=opencode|deepseek`` 切换（opencode 暂不可用期间的
+备援通道），base URL / 认证 key / session 头 / 模型名映射收敛在 post_gateway 单点处理。
 
 按诊断报告（reports/latency-diagnosis.md）落地提速修复：
 - R1(P0) 每模型固定已验证直出 session；记录 reasoning_tokens，超阈值告警，支持换 session。
@@ -22,6 +26,75 @@ import time
 import urllib.error
 import urllib.request
 
+# ---------- 网关选择（2026-09-10：opencode 暂不可用，DeepSeek 官方 API 备援） ----------
+# GRAPH2NOTE_GATEWAY=opencode（默认/历史主通道）| deepseek（https://api.deepseek.com）。
+# 所有调用方（parse/IR/diagram/eval/verify/gold_draft）沿用 opencode 时代模型名，
+# post_gateway 负责端点、认证、session 头与模型名翻译——单一 choke point。
+GATEWAYS = {
+    "opencode": {
+        "base": "https://opencode.ai/zen/go/v1",
+        "key_env": "OPENCODE_API_KEY",
+        "session_header": "x-opencode-session",
+    },
+    "deepseek": {
+        "base": "https://api.deepseek.com",
+        "key_env": "DEEPSEEK_API_KEY",
+        "session_header": None,  # 无会话语义；重试策略中的「换 session」退化为仅换参
+    },
+}
+# deepseek 网关模型名翻译（实测 2026-09-10：/models 仅 deepseek-flash 与 deepseek-v4-pro；
+# deepseek-v4-flash-vision-exp 是官方文档化视觉别名，响应 model 字段回显为 deepseek-flash，
+# 两个名字等价，映射到显式别名便于对账文档）。
+DEEPSEEK_MODEL_MAP = {
+    "glm-5.3-flash": "deepseek-v4-flash-vision-exp",  # parse 默认视觉模型
+    "deepseek-v4-flash": "deepseek-flash",            # IR/文本侧廉价模型
+}
+
+
+def _dotenv_get(key: str) -> str:
+    """从 cwd/.env 或仓库根 .env 读取一个键值（与 load_api_key 同一候选序）。
+
+    让 GRAPH2NOTE_GATEWAY 与 API key 一样「改 .env 即生效」，进程无需 export。
+    """
+    for candidate in (".env", os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")):
+        if os.path.exists(candidate):
+            try:
+                with open(candidate, encoding="utf-8") as fh:
+                    for line in fh:
+                        line = line.strip()
+                        if line.startswith(key + "="):
+                            return line.split("=", 1)[1].strip().strip("\"'")
+            except OSError:
+                continue
+    return ""
+
+
+def active_gateway_name() -> str:
+    raw = os.environ.get("GRAPH2NOTE_GATEWAY", "").strip() or _dotenv_get("GRAPH2NOTE_GATEWAY")
+    name = raw.strip().lower() or "opencode"
+    if name not in GATEWAYS:
+        raise GatewayError(
+            f"未知 GRAPH2NOTE_GATEWAY={name!r}（可选：{' / '.join(GATEWAYS)}）"
+        )
+    return name
+
+
+def gateway_config() -> dict:
+    return GATEWAYS[active_gateway_name()]
+
+
+def chat_completions_url() -> str:
+    return gateway_config()["base"] + "/chat/completions"
+
+
+def map_model(model: str) -> str:
+    """deepseek 网关下把 opencode 时代模型名翻译为官方 API 名；其余网关原样返回。"""
+    if active_gateway_name() != "deepseek":
+        return model
+    return DEEPSEEK_MODEL_MAP.get(model, model)
+
+
+# 旧常量保留（opencode 默认端点；历史引用与 gold_draft 兼容），运行时端点以 chat_completions_url() 为准。
 GATEWAY_BASE = "https://opencode.ai/zen/go/v1"
 CHAT_COMPLETIONS = GATEWAY_BASE + "/chat/completions"
 
@@ -88,18 +161,25 @@ def post_gateway(
     """POST 一个 chat/completions payload，返回解析后的 body。
 
     网络/HTTP 错误抛 :class:`GatewayError`；超时抛 :class:`GatewayTimeout`。
-    这是 eval/gateway 与 graph2note/vlm 收敛后的单一上传/认证/会话实现。
+    这是 eval/gateway 与 graph2note/vlm 收敛后的单一上传/认证/会话实现，
+    也是网关选择的唯一 choke point（端点/认证 key/session 头/模型名映射）。
     """
     key = api_key or load_api_key()
+    cfg = gateway_config()
+    headers = {
+        "Authorization": f"Bearer {key}",
+        "Content-Type": "application/json",
+        "User-Agent": user_agent,
+    }
+    if cfg["session_header"]:
+        headers[cfg["session_header"]] = session
+    body = dict(payload)
+    if body.get("model"):
+        body["model"] = map_model(body["model"])
     req = urllib.request.Request(
-        CHAT_COMPLETIONS,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json",
-            "x-opencode-session": session,
-            "User-Agent": user_agent,
-        },
+        chat_completions_url(),
+        data=json.dumps(body).encode("utf-8"),
+        headers=headers,
         method="POST",
     )
     try:
@@ -119,17 +199,11 @@ def post_gateway(
 
 
 def load_api_key() -> str:
-    key = os.environ.get("OPENCODE_API_KEY", "").strip()
+    key_env = gateway_config()["key_env"]
+    key = os.environ.get(key_env, "").strip() or _dotenv_get(key_env)
     if key:
         return key
-    for candidate in (".env", os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")):
-        if os.path.exists(candidate):
-            with open(candidate, encoding="utf-8") as fh:
-                for line in fh:
-                    line = line.strip()
-                    if line.startswith("OPENCODE_API_KEY="):
-                        return line.split("=", 1)[1].strip().strip("\"'")
-    raise GatewayError("未找到 OPENCODE_API_KEY（环境变量或仓库根 .env）")
+    raise GatewayError(f"未找到 {key_env}（环境变量或仓库根 .env）")
 
 
 def image_to_data_url(image_path: str) -> str:
@@ -491,8 +565,14 @@ def session_validation_enabled() -> bool:
 
 
 def maybe_validate_direct(purpose: str, model: str | None = None) -> dict | None:
-    """首解析时按 env 开关做一次直出验证（进程级缓存，仅首调触网）；未开启时返回 None。"""
+    """首解析时按 env 开关做一次直出验证（进程级缓存，仅首调触网）；未开启时返回 None。
+
+    会话直出验证是 opencode 专属风控（服务端按 session 路由/缓存）；无会话语义的
+    网关（如 deepseek）直接跳过，不浪费探针调用。
+    """
     if not session_validation_enabled():
+        return None
+    if gateway_config()["session_header"] is None:
         return None
     return validate_session_direct(purpose, model)
 

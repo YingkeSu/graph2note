@@ -29,7 +29,7 @@ import urllib.request
 from PIL import Image
 
 from .dataset import FIXTURES_DIR, GOLD_DIR, load_dataset
-from .gateway import CHAT_COMPLETIONS, DEFAULT_SESSION, USER_AGENT, image_to_data_url, load_api_key
+from .gateway import DEFAULT_SESSION, USER_AGENT, image_to_data_url, load_api_key, post_gateway
 
 GOLD_PROMPT = (
     "你是手稿转录校对员。请把这一页手稿**逐字忠实**转写为 Markdown，保留所有可见文字、"
@@ -67,20 +67,10 @@ def _call(image_path: str, model: str, api_key: str, max_tokens: int, prompt: st
             }
         ],
     }
-    req = urllib.request.Request(
-        CHAT_COMPLETIONS,
-        data=json.dumps(payload).encode("utf-8"),
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            "x-opencode-session": DEFAULT_SESSION,
-            "User-Agent": USER_AGENT,
-        },
-        method="POST",
-    )
     start = time.monotonic()
-    with urllib.request.urlopen(req, timeout=600) as resp:
-        body = json.loads(resp.read().decode("utf-8"))
+    # 走统一 choke point：端点/认证/session 头/模型名映射随 GRAPH2NOTE_GATEWAY 切换。
+    body = post_gateway(payload, api_key=api_key, session=DEFAULT_SESSION,
+                        timeout=600, user_agent=USER_AGENT)
     latency = time.monotonic() - start
     choice = body["choices"][0]
     content = choice["message"].get("content", "") or ""

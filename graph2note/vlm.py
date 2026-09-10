@@ -1,12 +1,17 @@
-"""VLM gateway producing a Document IR JSON string via the opencode go gateway.
+"""VLM gateway producing a Document IR JSON string via the configured LLM gateway.
 
-Contract (docs/llm/opencode-go.md):
+Contract (docs/llm/opencode-go.md; DeepSeek fallback: docs/llm/deepseek.md):
   * endpoint https://opencode.ai/zen/go/v1/chat/completions (OpenAI-compatible)
   * Authorization: Bearer $OPENCODE_API_KEY  (env var, or repo-root .env — never
     committed)
   * must carry ``x-opencode-session`` (kept stable for retries / prompt cache)
   * ``max_tokens`` 10000 (reasoning consumes the budget; 200 truncates to empty)
   * image sent as a base64 ``data:`` URL; final text is ``message.content``
+
+Gateway selection (2026-09-10): ``GRAPH2NOTE_GATEWAY=opencode|deepseek`` —
+eval.gateway.post_gateway is the single choke point for endpoint/auth/session
+header/model-name mapping (glm-5.3-flash → deepseek-v4-flash-vision-exp,
+deepseek-v4-flash → deepseek-flash), so callers keep opencode-era model ids.
 
 The parse prompt demands strict Document IR JSON (schema in ``graph2note/ir.py``)
 plus semantic deletion.  The gateway never fails open: HTTP/status/JSON errors
@@ -39,8 +44,8 @@ from eval.gateway import (  # type: ignore
     warnings_for as _warnings_for,
 )
 
-GATEWAY_BASE = "https://opencode.ai/zen/go/v1"
-CHAT_COMPLETIONS = GATEWAY_BASE + "/chat/completions"
+# 端点/认证/session 头由 eval.gateway 按 GRAPH2NOTE_GATEWAY 选择（单一 choke point，
+# 见模块 docstring）；本模块不再持有端点常量。
 # session 按用途隔离：parse 用独立已验证直出 session，避免与 eval/verify 并发争用同一会话
 # （issue 12 风控；见 docs/llm/opencode-go.md §会话隔离）。可由 GRAPH2NOTE_SESSION_PARSE 覆盖；
 # 历史 GRAPH2NOTE_OPENCODE_SESSION / OPENCODE_SESSION（含 spike-01、parse-route-a）经 env 还原。
@@ -111,34 +116,15 @@ class GatewayError(RuntimeError):
 
 
 def load_api_key() -> str:
-    """OPENCODE_API_KEY from env, else from the repo-root `.env`."""
-
-    key = os.environ.get("OPENCODE_API_KEY", "").strip()
-    if key:
-        return key
-    here = os.path.dirname(os.path.abspath(__file__))
-    candidates = [
-        os.path.join(here, "..", ".env"),
-        # main checkout .env (this worktree has none)
-        "/Users/suyingke/Programs/OHO/graph2note/.env",
-    ]
-    seen = set()
-    for cand in candidates:
-        cand = os.path.abspath(cand)
-        if cand in seen or not os.path.exists(cand):
-            continue
-        seen.add(cand)
-        try:
-            with open(cand, encoding="utf-8") as fh:
-                for line in fh:
-                    line = line.strip()
-                    if line.startswith("OPENCODE_API_KEY="):
-                        return line.split("=", 1)[1].strip().strip("\"'")
-        except OSError:
-            continue
-    raise GatewayError(
-        "OPENCODE_API_KEY not found (set env var or put it in repo-root .env)"
-    )
+    """Gateway-aware API key (OPENCODE_API_KEY or DEEPSEEK_API_KEY by
+    GRAPH2NOTE_GATEWAY), delegated to the shared loader in eval.gateway.
+    Re-raised as this module's GatewayError to keep the Router seam stable."""
+    from eval.gateway import GatewayError as _GatewayError
+    from eval.gateway import load_api_key as _gateway_load_api_key
+    try:
+        return _gateway_load_api_key()
+    except _GatewayError as exc:
+        raise GatewayError(str(exc)) from exc
 
 
 def image_to_data_url(image_path: str) -> str:

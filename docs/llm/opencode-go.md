@@ -1,5 +1,10 @@
 # OpenCode Go 网关参考（LLM 接入文档）
 
+> **状态（2026-09-10）：本通道暂不可用。** 仓库已切装备援通道 DeepSeek 官方 API
+> （`.env` 中 `GRAPH2NOTE_GATEWAY=deepseek`；接入文档见 [deepseek.md](deepseek.md)）。
+> 恢复后删除 `.env` 中该行即回到本文档描述的默认通道。本文档保留为 opencode 恢复后的
+> 权威参考；下述会话隔离/直出验证等风控仅适用于 opencode（无会话语义的网关自动跳过）。
+
 > 用途：本项目（Manuscript Compiler）Spike 阶段及 MVP 的 LLM 调用通道。
 > 检索与验证日期：2026-09-08。模型清单来自官方文档 + `/v1/models` 实测交叉验证。
 > 认证密钥：仓库根目录 `.env` 中的 `OPENCODE_API_KEY`（已加入 `.gitignore`，勿提交、勿写入任何文档或代码）。

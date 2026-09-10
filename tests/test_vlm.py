@@ -49,12 +49,16 @@ def test_cache_roundtrip(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "key_expected",
+    "gateway,key_env,key_val",
     [
-        ("OPENCODE_API_KEY", "online"),
+        ("opencode", "OPENCODE_API_KEY", "sk-test-op"),
+        ("deepseek", "DEEPSEEK_API_KEY", "sk-test-ds"),
     ],
 )
-def test_load_api_key_absent_env_only(monkeypatch, key_expected):
-    # We only verify that an env var is honored; no key is required offline.
-    monkeypatch.setenv("OPENCODE_API_KEY", "sk-test")
-    assert vlm.load_api_key() == "sk-test"
+def test_load_api_key_absent_env_only(monkeypatch, gateway, key_env, key_val):
+    # We only verify that an env var is honored per active gateway; no key
+    # is required offline. Gateway is set explicitly so the repo's real .env
+    # (which may switch gateways) cannot leak into the assertion.
+    monkeypatch.setenv("GRAPH2NOTE_GATEWAY", gateway)
+    monkeypatch.setenv(key_env, key_val)
+    assert vlm.load_api_key() == key_val
