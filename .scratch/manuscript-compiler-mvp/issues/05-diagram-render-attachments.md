@@ -1,6 +1,6 @@
 # Diagram 重建：nodes/edges → 确定性绘图 → 附件嵌入 + 裁原图降级
 
-Status: in-review
+Status: merged
 
 ## Parent
 
