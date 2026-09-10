@@ -43,6 +43,7 @@ from eval.gateway import (  # type: ignore
     resolve_session_for as _resolve_session_for,
     warnings_for as _warnings_for,
 )
+from .llm_settings import resolve_channel as _resolve_channel
 
 # 端点/认证/session 头由 eval.gateway 按 GRAPH2NOTE_GATEWAY 选择（单一 choke point，
 # 见模块 docstring）；本模块不再持有端点常量。
@@ -115,14 +116,14 @@ class GatewayError(RuntimeError):
     """Gateway call failed (network, auth, HTTP, bad response shape)."""
 
 
-def load_api_key() -> str:
+def load_api_key(provider: str | None = None) -> str:
     """Gateway-aware API key (OPENCODE_API_KEY or DEEPSEEK_API_KEY by
     GRAPH2NOTE_GATEWAY), delegated to the shared loader in eval.gateway.
     Re-raised as this module's GatewayError to keep the Router seam stable."""
     from eval.gateway import GatewayError as _GatewayError
     from eval.gateway import load_api_key as _gateway_load_api_key
     try:
-        return _gateway_load_api_key()
+        return _gateway_load_api_key(provider)
     except _GatewayError as exc:
         raise GatewayError(str(exc)) from exc
 
@@ -252,10 +253,12 @@ def parse_ir_json(content: str) -> dict | None:
     return None
 
 
-def _cache_key(image_path: str, model: str, prompt_version: str) -> str:
+def _cache_key(image_path: str, model: str, prompt_version: str,
+               provider: str | None = None) -> str:
     with open(image_path, "rb") as fh:
         digest = hashlib.sha1(fh.read()).hexdigest()[:16]
-    return f"{model.replace('/', '_')}__{digest}__{prompt_version}"
+    provider_prefix = f"{provider}__" if provider else ""
+    return f"{provider_prefix}{model.replace('/', '_')}__{digest}__{prompt_version}"
 
 
 class VlmCache:
@@ -271,19 +274,32 @@ class VlmCache:
         self.cache_dir = Path(cache_dir)
         self.prompt_version = prompt_version
 
-    def _path(self, image_path: str, model: str) -> Path:
-        return self.cache_dir / (_cache_key(image_path, model, self.prompt_version) + ".json")
+    def _path(self, image_path: str, model: str, provider: str | None = None) -> Path:
+        return self.cache_dir / (_cache_key(image_path, model, self.prompt_version, provider) + ".json")
 
-    def get(self, image_path: str, model: str) -> str | None:
-        p = self._path(image_path, model)
+    def get(self, image_path: str, model: str, provider: str | None = None) -> str | None:
+        p = self._path(image_path, model, provider)
         if p.exists():
             return p.read_text(encoding="utf-8")
+        if provider:
+            # Read old caches written before provider-aware keys were added,
+            # but never reuse a cache that already identifies another provider.
+            legacy = self._path(image_path, model)
+            if legacy.exists():
+                try:
+                    record = json.loads(legacy.read_text(encoding="utf-8"))
+                    cached_provider = (record.get("meta") or {}).get("provider")
+                    if not cached_provider or cached_provider == provider:
+                        return legacy.read_text(encoding="utf-8")
+                except (OSError, json.JSONDecodeError):
+                    return None
         return None
 
-    def put(self, image_path: str, model: str, content: str, meta: dict | None = None) -> None:
+    def put(self, image_path: str, model: str, content: str,
+            meta: dict | None = None, provider: str | None = None) -> None:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         rec = {"content": content, "meta": meta or {}}
-        self._path(image_path, model).write_text(
+        self._path(image_path, model, provider).write_text(
             json.dumps(rec, ensure_ascii=False), encoding="utf-8"
         )
 
@@ -306,6 +322,7 @@ def _transcribe_markdown(
     max_tokens: int,
     timeout: int,
     recover: bool = False,
+    provider: str | None = None,
 ) -> tuple[str, dict]:
     """stage-1：VLM 视觉转录——图片 -> 非空 Markdown（eval 已验证策略）。
 
@@ -343,7 +360,8 @@ def _transcribe_markdown(
         }
         start = time.monotonic()
         try:
-            body = post_gateway(payload, api_key=key, session=sess, timeout=timeout, user_agent=USER_AGENT)
+            body = post_gateway(payload, provider=provider, api_key=key, session=sess,
+                                timeout=timeout, user_agent=USER_AGENT)
         except _GatewayTimeout as exc:
             raise GatewayError(f"gateway timeout after {timeout}s: {exc}") from exc
         except _GatewayError as exc:
@@ -379,6 +397,7 @@ def _transcribe_markdown(
     meta = {
         "stage": "markdown",
         "model": model,
+        "provider": provider,
         "status": "ok",
         "cost": body.get("cost", "0"),
         "image_size": send_size,
@@ -503,6 +522,7 @@ def _ir_from_markdown(
     timeout: int,
     recover: bool = False,
     use_llm: bool = False,
+    provider: str | None = None,
 ) -> tuple[str, dict]:
     """stage-2：Markdown -> Document IR JSON。
 
@@ -515,6 +535,8 @@ def _ir_from_markdown(
         meta = {
             "stage": "ir",
             "model": "markdown-parser",
+            "configured_model": ir_model,
+            "provider": provider,
             "retried": False,
             "reasoning_tokens": None,
             "finish_reason": None,
@@ -525,7 +547,8 @@ def _ir_from_markdown(
         }
         return json.dumps(ir, ensure_ascii=False), meta
 
-    meta = {"stage": "ir", "model": ir_model, "retried": False, "attempts": []}
+    meta = {"stage": "ir", "model": ir_model, "provider": provider,
+            "retried": False, "attempts": []}
     for attempt in range(2):
         system = SYSTEM_PROMPT
         if attempt > 0 or recover:
@@ -543,7 +566,8 @@ def _ir_from_markdown(
         }
         start = time.monotonic()
         try:
-            body = post_gateway(payload, api_key=key, session=sess, timeout=timeout, user_agent=USER_AGENT)
+            body = post_gateway(payload, provider=provider, api_key=key, session=sess,
+                                timeout=timeout, user_agent=USER_AGENT)
         except _GatewayTimeout as exc:
             raise GatewayError(f"gateway timeout after {timeout}s: {exc}") from exc
         except _GatewayError as exc:
@@ -590,6 +614,9 @@ def _merge_visual_graph(
     api_key: str,
     session: str,
     timeout: int,
+    provider: str | None = None,
+    diagram_provider: str | None = None,
+    diagram_model: str | None = None,
 ) -> tuple[str, dict | None]:
     """Replace text-inferred graph blocks with a strict image graph when possible.
 
@@ -605,16 +632,22 @@ def _merge_visual_graph(
     if not infer.detect_diagram_markdown(markdown):
         return ir_str, None
     try:
-        graph_model = DIAGRAM_MODEL or model
+        graph_model = diagram_model or DIAGRAM_MODEL or model
         result = diagram.extract_diagram_image(
             image_path,
             model=graph_model,
-            api_key=api_key,
+            api_key=api_key if (diagram_provider or provider) == provider else None,
             session=session,
             timeout=timeout,
+            provider=diagram_provider or provider,
         )
     except Exception as exc:  # defensive boundary: graph extraction is optional
-        return ir_str, {"verdict": "exception", "error": str(exc)}
+        return ir_str, {
+            "verdict": "exception",
+            "error": str(exc),
+            "provider": diagram_provider or provider,
+            "specialist_model": diagram_model or DIAGRAM_MODEL or model,
+        }
 
     if not result.get("ok") or not result.get("nodes"):
         meta = dict(result.get("meta") or {})
@@ -640,7 +673,8 @@ def _merge_visual_graph(
     obj["blocks"] = kept
     meta = dict(result.get("meta") or {})
     meta["verdict"] = "ok"
-    meta["specialist_model"] = DIAGRAM_MODEL or model
+    meta["specialist_model"] = diagram_model or DIAGRAM_MODEL or model
+    meta["provider"] = diagram_provider or provider
     meta["node_count"] = len(result["nodes"])
     meta["edge_count"] = len(result.get("edges", []))
     return json.dumps(obj, ensure_ascii=False), meta
@@ -648,7 +682,7 @@ def _merge_visual_graph(
 
 def call_ir(
     image_path: str,
-    model: str,
+    model: str | None = None,
     *,
     api_key: str | None = None,
     session: str | None = None,
@@ -658,6 +692,7 @@ def call_ir(
     recover: bool = False,
     ir_model: str | None = None,
     ir_max_tokens: int | None = None,
+    provider: str | None = None,
 ) -> tuple[str, dict]:
     """Parse an image into text IR plus an optional specialist graph IR block.
 
@@ -665,13 +700,30 @@ def call_ir(
     IR 和专用图结构阶段的信息。``recover`` 令各阶段都用更紧的重试约束
     （R4 策略切换，绝不同参重复）。muse 系列一律禁用（见 IR_MODEL 注释）。
     """
-    key = api_key or load_api_key()
+    parse_channel = _resolve_channel("parse_visual")
+    if model is None:
+        model = parse_channel["model"]
+    provider = provider or parse_channel["provider"]
+    ir_channel = _resolve_channel("ir_text")
+    diagram_channel = _resolve_channel("diagram")
+
+    def _key_for(channel_provider: str) -> str:
+        if api_key:
+            return api_key
+        try:
+            return load_api_key(channel_provider)
+        except TypeError:
+            # Existing offline fixtures replace load_api_key with a zero-arg callable.
+            return load_api_key()
+
+    key = _key_for(provider)
     sess = session if session is not None else resolve_session(model)
-    ir_model = ir_model or IR_MODEL
+    ir_model = ir_model or ir_channel["model"]
+    ir_provider = ir_channel["provider"]
     ir_mt = ir_max_tokens or DEFAULT_IR_MAX_TOKENS
 
     if cache is not None:
-        cached = cache.get(image_path, model)
+        cached = cache.get(image_path, model, provider=provider)
         if cached is not None:
             rec = json.loads(cached)
             meta = dict(rec.get("meta") or {})
@@ -681,7 +733,7 @@ def call_ir(
     # stage-1：VLM -> 非空 Markdown（eval 已验证对真实扫描页稳定非空）
     markdown, m1 = _transcribe_markdown(
         image_path, model, key=key, sess=sess,
-        max_tokens=max_tokens, timeout=timeout, recover=recover,
+        max_tokens=max_tokens, timeout=timeout, recover=recover, provider=provider,
     )
     if not (markdown or "").strip():
         m1w = list(m1.get("warnings") or [])
@@ -695,14 +747,15 @@ def call_ir(
             "retried": recover,
         }
         if cache is not None:
-            cache.put(image_path, model, "", meta)
+            cache.put(image_path, model, "", meta, provider=provider)
         return "", meta
 
     # stage-2：轻量文本 LLM -> IR JSON
     use_llm = os.environ.get("GRAPH2NOTE_IR_MODE", "parser") == "llm"
     ir_str, m2 = _ir_from_markdown(
-        markdown, ir_model, key=key, sess=sess,
+        markdown, ir_model, key=_key_for(ir_provider), sess=sess,
         max_tokens=ir_mt, timeout=timeout, recover=recover, use_llm=use_llm,
+        provider=ir_provider,
     )
     # Dedicated image-level topology extraction is deliberately after the
     # normal text pass: text remains useful even when the graph VLM times out.
@@ -716,16 +769,22 @@ def call_ir(
         api_key=key,
         session=sess,
         timeout=timeout,
+        provider=provider,
+        diagram_provider=diagram_channel["provider"],
+        diagram_model=diagram_channel["model"],
     )
     meta = {
         "stage": "ir",
         "status": "ok",
         "model": model,
+        "provider": provider,
         "session": sess,
         "recover": recover,
         "markdown_stage": m1,
         "ir_stage": m2,
         "diagram_stage": m3,
+        "ir_model": ir_model,
+        "ir_provider": ir_provider,
         "reasoning_tokens": m2.get("reasoning_tokens"),
         "finish_reason": m2.get("finish_reason"),
         "markdown_len": len(markdown),
@@ -737,7 +796,7 @@ def call_ir(
             "IR stage produced no parseable non-empty JSON"
         ]
     if cache is not None:
-        cache.put(image_path, model, ir_str, meta)
+        cache.put(image_path, model, ir_str, meta, provider=provider)
     return ir_str, meta
 __all__ = [
     "GatewayError",

@@ -22,6 +22,7 @@ from .classify import (
     SchemeError,
     classify_documents,
 )
+from ..llm_settings import resolve_channel
 
 # a non-vision chat/completions model (see docs/llm/opencode-go.md §4)
 DEFAULT_TEXT_MODEL = "kimi-k3"
@@ -87,7 +88,7 @@ def classify_via_llm(
     entries: Iterable,
     *,
     planner: Optional[Callable[[str, str], str]] = None,
-    model: str = DEFAULT_TEXT_MODEL,
+    model: str | None = None,
     max_topics: int = DEFAULT_MAX_TOPICS,
 ) -> ClassificationScheme:
     """Ask a text model to classify ``entries``; schema-validate the result.
@@ -96,34 +97,39 @@ def classify_via_llm(
     recorded golden reply to stay offline.
     """
     entries = list(entries)
-    planner = planner or _gateway_text
+    channel = resolve_channel("classify")
+    model = model or channel["model"]
+    planner = planner or (lambda prompt, selected_model: _gateway_text(
+        prompt, selected_model, provider=channel["provider"]
+    ))
     prompt = build_prompt(entries)
     raw = planner(prompt, model)
     scheme = parse_scheme_json(raw)
-    return classify_documents(entries, classifier=lambda _e: scheme,
-                              max_topics=max_topics)
+    validated = classify_documents(entries, classifier=lambda _e: scheme,
+                                   max_topics=max_topics)
+    validated.runtime = {"provider": channel["provider"], "model": model}
+    return validated
 
 
-def _gateway_text(prompt: str, model: str) -> str:
-    """Live opencode chat/completions call for a text model."""
-    import httpx
+def _gateway_text(prompt: str, model: str | None = None, *, provider: str | None = None) -> str:
+    """Live provider-aware chat/completions call for a text model."""
+    from eval.gateway import load_api_key, post_gateway
 
-    api_key = os.environ.get("OPENCODE_API_KEY", "")
-    r = httpx.post(
-        f"{_BASE}/chat/completions",
-        headers={
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-            "x-opencode-session": os.environ.get(
-                "GRAPH2NOTE_CLASSIFY_SESSION", DEFAULT_SESSION),
-        },
-        json={
+    channel = resolve_channel("classify")
+    model = model or channel["model"]
+    provider = provider or channel["provider"]
+    key = load_api_key(provider)
+    body = post_gateway(
+        {
             "model": model,
             "max_tokens": 4096,
             "temperature": 0,
             "messages": [{"role": "user", "content": prompt}],
         },
+        provider=provider,
+        api_key=key,
+        session=os.environ.get("GRAPH2NOTE_CLASSIFY_SESSION", DEFAULT_SESSION),
         timeout=180,
+        user_agent="graph2note-classify/0.2",
     )
-    r.raise_for_status()
-    return r.json()["choices"][0]["message"]["content"]
+    return body["choices"][0]["message"]["content"]

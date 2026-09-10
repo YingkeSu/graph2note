@@ -26,6 +26,7 @@
     <button class="btn small" id="nav-timeline" title="时间轴">时间轴</button>
     <button class="btn small" id="nav-graph" title="知识图谱">知识图谱</button>
     <button class="btn small" id="nav-dashboard" title="数据看板">数据看板</button>
+    <button class="btn small" id="nav-settings" title="LLM 设置">LLM 设置</button>
     <button class="btn small primary" id="nav-upload" title="解析新手稿">新解析</button>
     <span class="spacer"></span>
     <!-- P1 placeholder: template selector (not implemented). -->
@@ -92,6 +93,23 @@
       <span class="dim">所有文档都已具备基本归档信息。</span>
     </div>
     <div id="inbox-list" class="inbox-list"></div>
+  </section>
+
+  <!-- Provider/model settings projection (issue 16) -->
+  <section id="settings-zone" class="settings-zone hidden">
+    <div class="settings-head">
+      <div>
+        <h2>LLM 设置</h2>
+        <p class="dim">按用途选择已注册供应商与模型；凭证只从本地运行时读取。</p>
+      </div>
+      <div class="settings-actions">
+        <button id="llm-health-button" class="btn small">检测可用性</button>
+        <button id="llm-save-button" class="btn small primary">保存配置</button>
+      </div>
+    </div>
+    <div id="llm-provider-list" class="llm-provider-list"></div>
+    <div id="llm-channel-list" class="llm-channel-list"></div>
+    <div id="llm-health-list" class="llm-health-list"></div>
   </section>
 
   <!-- Read-only timeline projection (issue 04) -->

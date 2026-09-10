@@ -123,12 +123,14 @@ class RouteARouter(RecognitionRouter):
         max_retries: int = 2,
         session: str | None = None,
         second_model: str | None = None,
+        provider: str | None = None,
     ) -> None:
         super().__init__(model)
         self._caller = caller
         self.max_retries = max_retries
         self.session = session
         self.second_model = second_model
+        self.provider = provider
         self._image_path: str | None = None  # last recognized image (for cross-val)
 
     def _call(self, image_path: str, recover: bool = False) -> tuple[str, dict]:
@@ -140,7 +142,8 @@ class RouteARouter(RecognitionRouter):
         from . import vlm  # local import keeps network out of import path
 
         return vlm.call_ir(
-            image_path, self.model, session=self.session, recover=recover
+            image_path, self.model, session=self.session, recover=recover,
+            provider=self.provider,
         )
 
     def verify_second_model(

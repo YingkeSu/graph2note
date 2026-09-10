@@ -19,6 +19,7 @@ from __future__ import annotations
 import os
 
 from .ir import DocumentIR, IRValidationError, load_dict_as_ir
+from .llm_settings import resolve_channel
 from .ocr import ocr_available, ocr_image, ocr_mean_confidence
 from .router import RecognitionRouter, RouteResult, _inject_degrade_source
 from .vlm import _markdown_to_ir
@@ -33,8 +34,9 @@ def _empty_ir() -> DocumentIR:
 
 def route_b_chain(
     image_path: str,
-    model: str = DEFAULT_ROUTE_B_MODEL,
+    model: str | None = None,
     *,
+    provider: str | None = None,
     ocr_caller=None,
     text_caller=None,
     ocr_text: str | None = None,
@@ -46,6 +48,11 @@ def route_b_chain(
     可注入 ``ocr_caller(image_path)->(text,meta)`` 与 ``text_caller(ocr_text, model, recover)->(content,meta)``
     以便离线测试；未注入时用真实 tesseract + eval.gateway.transcribe_text。
     """
+    if model is None:
+        channel = resolve_channel("ir_text")
+        model = channel["model"]
+        provider = provider or channel["provider"]
+
     ocr_meta: dict = {}
     if ocr_caller is not None:
         ocr_text, ocr_meta = ocr_caller(image_path)
@@ -76,7 +83,11 @@ def route_b_chain(
             content, tmeta = text_caller(raw, model, recover=recover)
         else:
             from eval.gateway import transcribe_text
-            content, tmeta = transcribe_text(raw, model)
+            content, tmeta = transcribe_text(raw, model, provider=provider)
+        tmeta = dict(tmeta or {})
+        tmeta.setdefault("model", model)
+        if provider is not None:
+            tmeta.setdefault("provider", provider)
         attempts.append({"attempt": attempt, "stage": "text_llm", "meta": tmeta})
         if (content or "").strip() and not _looks_like_refusal(content):
             markdown = content.strip()
@@ -140,14 +151,17 @@ class RouteBRouter(RecognitionRouter):
 
     def __init__(
         self,
-        model: str = DEFAULT_ROUTE_B_MODEL,
+        model: str | None = None,
         *,
+        provider: str | None = None,
         ocr_caller=None,
         text_caller=None,
         max_retries: int = 2,
         session: str | None = None,
     ) -> None:
-        super().__init__(model)
+        super().__init__(model or DEFAULT_ROUTE_B_MODEL)
+        self._configured_model = model
+        self.provider = provider
         self._ocr_caller = ocr_caller
         self._text_caller = text_caller
         self.max_retries = max_retries
@@ -161,9 +175,18 @@ class RouteBRouter(RecognitionRouter):
         diagram_source: str | None = None,
     ) -> RouteResult:
         self._image_path = image_path
+        model = self._configured_model
+        provider = self.provider
+        if model is None:
+            channel = resolve_channel("ir_text")
+            model = channel["model"]
+            provider = provider or channel["provider"]
+        self.model = model
+        self.provider = provider
         return route_b_chain(
             image_path,
-            self.model,
+            model,
+            provider=provider,
             ocr_caller=self._ocr_caller,
             text_caller=self._text_caller,
             max_retries=self.max_retries,

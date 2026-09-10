@@ -97,6 +97,25 @@ def test_deepseek_request_maps_endpoint_model_and_headers(monkeypatch, capture_r
     assert capture_request["body"]["model"] == "deepseek-v4-flash-vision-exp"
 
 
+def test_post_gateway_accepts_explicit_provider_without_mutating_active_gateway(
+    monkeypatch, capture_request
+):
+    monkeypatch.setenv("GRAPH2NOTE_GATEWAY", "opencode")
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "ds-key")
+    g.post_gateway(
+        {"model": "glm-5.3-flash"},
+        provider="deepseek",
+        session="ignored",
+        timeout=5,
+        api_key=None,
+    )
+    assert capture_request["url"] == "https://api.deepseek.com/chat/completions"
+    assert capture_request["headers"]["authorization"] == "Bearer ds-key"
+    assert "x-opencode-session" not in capture_request["headers"]
+    assert capture_request["body"]["model"] == "deepseek-v4-flash-vision-exp"
+    assert g.active_gateway_name() == "opencode"
+
+
 def test_model_mapping_table(monkeypatch):
     monkeypatch.setenv("GRAPH2NOTE_GATEWAY", "deepseek")
     assert g.map_model("glm-5.3-flash") == "deepseek-v4-flash-vision-exp"

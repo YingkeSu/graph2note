@@ -32,14 +32,40 @@ import urllib.request
 # post_gateway 负责端点、认证、session 头与模型名翻译——单一 choke point。
 GATEWAYS = {
     "opencode": {
+        "label": "OpenCode Go",
         "base": "https://opencode.ai/zen/go/v1",
         "key_env": "OPENCODE_API_KEY",
         "session_header": "x-opencode-session",
+        "models": {
+            "parse_visual": ["glm-5.3-flash", "deepseek-v4-flash-vision-exp"],
+            "ir_text": ["deepseek-v4-flash", "kimi-k3", "glm-5.3"],
+            "diagram": ["glm-5.3-flash", "deepseek-v4-flash-vision-exp"],
+            "classify": ["kimi-k3", "deepseek-v4-flash", "glm-5.3"],
+        },
+        "defaults": {
+            "parse_visual": "glm-5.3-flash",
+            "ir_text": "deepseek-v4-flash",
+            "diagram": "glm-5.3-flash",
+            "classify": "kimi-k3",
+        },
     },
     "deepseek": {
+        "label": "DeepSeek API",
         "base": "https://api.deepseek.com",
         "key_env": "DEEPSEEK_API_KEY",
         "session_header": None,  # 无会话语义；重试策略中的「换 session」退化为仅换参
+        "models": {
+            "parse_visual": ["deepseek-v4-flash-vision-exp", "glm-5.3-flash"],
+            "ir_text": ["deepseek-v4-flash", "deepseek-flash", "deepseek-v4-pro"],
+            "diagram": ["deepseek-v4-flash-vision-exp", "glm-5.3-flash"],
+            "classify": ["deepseek-v4-flash", "deepseek-flash", "deepseek-v4-pro"],
+        },
+        "defaults": {
+            "parse_visual": "glm-5.3-flash",
+            "ir_text": "deepseek-v4-flash",
+            "diagram": "glm-5.3-flash",
+            "classify": "deepseek-v4-flash",
+        },
     },
 }
 # deepseek 网关模型名翻译（实测 2026-09-10：/models 仅 deepseek-flash 与 deepseek-v4-pro；
@@ -79,17 +105,25 @@ def active_gateway_name() -> str:
     return name
 
 
-def gateway_config() -> dict:
-    return GATEWAYS[active_gateway_name()]
+def gateway_config(provider: str | None = None) -> dict:
+    """Return a registered gateway, optionally overriding the env default."""
+
+    name = (provider or active_gateway_name()).strip().lower() if isinstance(provider, str) else active_gateway_name()
+    if name not in GATEWAYS:
+        raise GatewayError(
+            f"未知 provider={name!r}（可选：{' / '.join(GATEWAYS)}）"
+        )
+    return GATEWAYS[name]
 
 
-def chat_completions_url() -> str:
-    return gateway_config()["base"] + "/chat/completions"
+def chat_completions_url(provider: str | None = None) -> str:
+    return gateway_config(provider)["base"] + "/chat/completions"
 
 
-def map_model(model: str) -> str:
+def map_model(model: str, provider: str | None = None) -> str:
     """deepseek 网关下把 opencode 时代模型名翻译为官方 API 名；其余网关原样返回。"""
-    if active_gateway_name() != "deepseek":
+    name = (provider or active_gateway_name()).strip().lower() if isinstance(provider, str) else active_gateway_name()
+    if name != "deepseek":
         return model
     return DEEPSEEK_MODEL_MAP.get(model, model)
 
@@ -153,6 +187,7 @@ def reasoning_tokens_of(usage: dict) -> int | None:
 def post_gateway(
     payload: dict,
     *,
+    provider: str | None = None,
     api_key: str | None = None,
     session: str,
     timeout: float,
@@ -164,8 +199,8 @@ def post_gateway(
     这是 eval/gateway 与 graph2note/vlm 收敛后的单一上传/认证/会话实现，
     也是网关选择的唯一 choke point（端点/认证 key/session 头/模型名映射）。
     """
-    key = api_key or load_api_key()
-    cfg = gateway_config()
+    key = api_key or load_api_key(provider)
+    cfg = gateway_config(provider)
     headers = {
         "Authorization": f"Bearer {key}",
         "Content-Type": "application/json",
@@ -175,9 +210,9 @@ def post_gateway(
         headers[cfg["session_header"]] = session
     body = dict(payload)
     if body.get("model"):
-        body["model"] = map_model(body["model"])
+        body["model"] = map_model(body["model"], provider)
     req = urllib.request.Request(
-        chat_completions_url(),
+        chat_completions_url(provider),
         data=json.dumps(body).encode("utf-8"),
         headers=headers,
         method="POST",
@@ -198,8 +233,8 @@ def post_gateway(
         raise GatewayError(f"gateway connection error: {exc}") from exc
 
 
-def load_api_key() -> str:
-    key_env = gateway_config()["key_env"]
+def load_api_key(provider: str | None = None) -> str:
+    key_env = gateway_config(provider)["key_env"]
     key = os.environ.get(key_env, "").strip() or _dotenv_get(key_env)
     if key:
         return key
@@ -710,6 +745,7 @@ def transcribe_text(
     text: str,
     model: str = ROUTE_B_TEXT_MODEL,
     *,
+    provider: str | None = None,
     api_key: str | None = None,
     session: str | None = None,
     purpose: str = "routeb",
@@ -723,7 +759,7 @@ def transcribe_text(
     ``main_text`` 覆盖传给用户的消息正文（默认 ROUTE_B_USER_TEMPLATE）。
     返回 (content, meta)；网络/超时/响应异常以 meta.status 标记，不抛业务异常。
     """
-    key = api_key or load_api_key()
+    key = api_key or load_api_key(provider)
     sess = session or resolve_session_for(purpose, model)
     timeout = timeout if timeout is not None else call_timeout()
     payload = {
@@ -736,20 +772,36 @@ def transcribe_text(
     }
     start = time.monotonic()
     try:
-        body = post_gateway(payload, api_key=key, session=sess, timeout=timeout, user_agent=USER_AGENT)
+        body = post_gateway(
+            payload,
+            provider=provider,
+            api_key=key,
+            session=sess,
+            timeout=timeout,
+            user_agent=USER_AGENT,
+        )
     except GatewayTimeout as exc:
-        return "", _meta_fail("timeout", str(exc), model=model, session=sess,
-                              max_tokens=max_tokens, latency=time.monotonic() - start, prep={})
+        meta = _meta_fail("timeout", str(exc), model=model, session=sess,
+                          max_tokens=max_tokens, latency=time.monotonic() - start, prep={})
+        if provider is not None:
+            meta["provider"] = provider
+        return "", meta
     except GatewayError as exc:
-        return "", _meta_fail("error", str(exc), model=model, session=sess,
-                              max_tokens=max_tokens, latency=time.monotonic() - start, prep={})
+        meta = _meta_fail("error", str(exc), model=model, session=sess,
+                          max_tokens=max_tokens, latency=time.monotonic() - start, prep={})
+        if provider is not None:
+            meta["provider"] = provider
+        return "", meta
     latency = time.monotonic() - start
     try:
         choice = body["choices"][0]
         content = choice["message"].get("content", "") or ""
     except (KeyError, IndexError, TypeError):
-        return "", _meta_fail("error", f"响应结构异常: {body}", model=model, session=sess,
-                              max_tokens=max_tokens, latency=latency, prep={})
+        meta = _meta_fail("error", f"响应结构异常: {body}", model=model, session=sess,
+                          max_tokens=max_tokens, latency=latency, prep={})
+        if provider is not None:
+            meta["provider"] = provider
+        return "", meta
     usage = body.get("usage", {}) or {}
     rt = reasoning_tokens_of(usage)
     meta = {
@@ -767,5 +819,6 @@ def transcribe_text(
         "cost": body.get("cost", "0"),
         "prep": {},
         "warnings": warnings_for(rt, max_tokens),
+        "provider": provider,
     }
     return content, meta

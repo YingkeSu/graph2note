@@ -144,6 +144,7 @@ def extract_diagram_image(
     retry_tokens: int = DIAGRAM_RETRY_TOKENS,
     timeout: int = DEFAULT_TIMEOUT,
     cache=None,
+    provider: str | None = None,
 ) -> dict:
     """Extract a diagram from an image.  Returns a result dict:
 
@@ -158,8 +159,19 @@ def extract_diagram_image(
     """
     from . import vlm  # lazy: keeps ingest import free of vlm's banner side effects
 
-    model = model or DEFAULT_MODEL
-    key = api_key or vlm.load_api_key()
+    from .llm_settings import resolve_channel
+
+    channel = resolve_channel("diagram")
+    model = model or channel["model"]
+    provider = provider or channel["provider"]
+    if api_key:
+        key = api_key
+    else:
+        try:
+            key = vlm.load_api_key(provider)
+        except TypeError:
+            # Keep compatibility with zero-argument offline fixtures.
+            key = vlm.load_api_key()
     sess = session if session is not None else resolve_session()
 
     if cache is not None:
@@ -200,12 +212,12 @@ def extract_diagram_image(
         start = time.monotonic()
         try:
             body = None
-            body = _post(payload, key=key, sess=sess, timeout=timeout)
+            body = _post(payload, key=key, sess=sess, timeout=timeout, provider=provider)
         except Exception as exc:
             return {
                 "ok": False, "verdict": "http_error", "nodes": [], "edges": [],
                 "caption": "",
-                "meta": {"model": model, "error": str(exc),
+                "meta": {"model": model, "provider": provider, "error": str(exc),
                          "attempts": attempts, "session": sess},
             }
         latency = time.monotonic() - start
@@ -214,7 +226,7 @@ def extract_diagram_image(
             content = choice["message"].get("content", "") or ""
         except (KeyError, IndexError, TypeError) as exc:
             return {"ok": False, "verdict": "http_error", "nodes": [], "edges": [],
-                    "caption": "", "meta": {"model": model, "error": str(exc),
+                    "caption": "", "meta": {"model": model, "provider": provider, "error": str(exc),
                                             "attempts": attempts, "session": sess}}
         finish = choice.get("finish_reason")
         last_content = content
@@ -249,7 +261,7 @@ def extract_diagram_image(
         "caption": caption,
     }
     meta = {
-        "model": model, "session": sess, "image_size": send_size,
+        "model": model, "provider": provider, "session": sess, "image_size": send_size,
         "retried": len(attempts) > 1, "attempts": attempts,
     }
     if cache is not None:
@@ -258,14 +270,14 @@ def extract_diagram_image(
     return {**result, "meta": meta}
 
 
-def _post(payload, *, key, sess, timeout):
+def _post(payload, *, key, sess, timeout, provider=None):
     # Reuse the product gateway seam so the dedicated graph call shares the
     # same auth/session policy as the text transcription stage and remains
     # straightforward to stub in offline tests.
     from . import vlm
 
-    return vlm.post_gateway(payload, api_key=key, session=sess, timeout=timeout,
-                            user_agent=USER_AGENT)
+    return vlm.post_gateway(payload, provider=provider, api_key=key, session=sess,
+                            timeout=timeout, user_agent=USER_AGENT)
 
 
 __all__ = [

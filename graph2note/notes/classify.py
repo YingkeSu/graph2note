@@ -39,6 +39,9 @@ class ClassificationScheme:
     assignments: dict = field(default_factory=dict)
     summaries: dict = field(default_factory=dict)
     version: int = 1
+    # Runtime audit metadata is intentionally excluded from the serialized
+    # classification contract; it records which configured channel produced it.
+    runtime: dict = field(default_factory=dict, repr=False, compare=False)
 
     def to_dict(self) -> dict:
         return {
@@ -125,6 +128,7 @@ def validate_scheme(
         assignments={t: list(ds) for t, ds in assignments.items()},
         summaries={str(k): str(v) for k, v in (scheme.summaries or {}).items()},
         version=scheme.version,
+        runtime=dict(scheme.runtime or {}),
     )
 
 

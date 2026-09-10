@@ -192,6 +192,35 @@ body {
 .inbox-empty { text-align: center; color: var(--muted); padding: 60px 0; }
 .inbox-empty p { margin: 9px 0 3px; }
 
+/* LLM provider/model settings (issue 16) */
+.settings-zone { flex: 1; overflow: auto; padding: 22px 26px 36px; }
+.settings-head { display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 18px; margin-bottom: 18px; }
+.settings-head h2 { margin: 0; font-size: 20px; }
+.settings-head p { margin: 5px 0 0; font-size: 13px; }
+.settings-actions { display: flex; gap: 8px; }
+.llm-provider-list { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 18px; }
+.llm-provider-card { display: flex; gap: 8px; align-items: center; padding: 8px 10px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--panel); font-size: 12px; }
+.llm-channel-list { display: flex; flex-direction: column; gap: 8px; }
+.llm-channel-row { display: grid; grid-template-columns: 1.1fr 1fr 1.4fr auto; align-items: center;
+  gap: 10px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 9px;
+  background: var(--panel); }
+.llm-channel-label { display: flex; flex-direction: column; gap: 3px; }
+.llm-channel-label strong { font-size: 13px; }
+.llm-channel-label .dim { font-size: 11px; }
+.llm-channel-row select { min-height: 30px; border: 1px solid var(--line); border-radius: 5px;
+  padding: 4px 7px; background: var(--panel); color: var(--ink); }
+.llm-status { display: inline-flex; justify-content: center; min-width: 72px; padding: 4px 8px;
+  border-radius: 999px; color: var(--muted); background: #f3f4f6; font-size: 11px; white-space: nowrap; }
+.llm-status.available { color: #166534; background: #dcfce7; }
+.llm-status.missing_credentials { color: #92400e; background: #fef3c7; }
+.llm-status.auth_failed, .llm-status.request_failed { color: #b91c1c; background: #fee2e2; }
+.llm-health-list { display: flex; flex-direction: column; gap: 6px; margin-top: 18px; }
+.llm-health-item { display: flex; align-items: center; gap: 9px; padding: 8px 10px;
+  color: var(--muted); font-size: 12px; }
+.llm-health-item strong { color: var(--ink); min-width: 80px; }
+
 /* Timeline (issue 04) */
 .timeline-zone { flex: 1; overflow: auto; padding: 22px 26px 36px; }
 .timeline-head { display: flex; align-items: flex-start; justify-content: space-between;
@@ -342,6 +371,9 @@ body {
   .inbox-head { flex-direction: column; }
   .inbox-item { align-items: flex-start; }
   .inbox-reasons { justify-content: flex-start; }
+  .settings-head { flex-direction: column; }
+  .llm-channel-row { grid-template-columns: 1fr; }
+  .llm-health-item { align-items: flex-start; flex-wrap: wrap; }
   .dashboard-periods, .dashboard-columns, .dashboard-columns:last-child { grid-template-columns: 1fr; }
   .dashboard-head { flex-direction: column; }
 }

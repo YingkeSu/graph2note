@@ -123,21 +123,29 @@ def default_doc_id(image_path: str) -> str:
 
 
 def make_router(
-    model: str,
+    model: str | None = None,
     *,
     caller=None,
     max_retries: int = 2,
     cache=None,
+    provider: str | None = None,
 ) -> RouteARouter:
     """Build the MVP Route A router (injectable caller for offline tests)."""
+    from .llm_settings import resolve_channel
+
+    selected = resolve_channel("parse_visual")
+    model = model or selected["model"]
+    provider = provider or selected["provider"]
     if caller is None and cache is not None:
         from . import vlm
 
         def _caller(image_path, mdl, recover=False):
-            return vlm.call_ir(image_path, mdl, cache=cache, recover=recover)
+            return vlm.call_ir(image_path, mdl, cache=cache, recover=recover,
+                               provider=provider)
 
         caller = _caller
-    return RouteARouter(model, caller=caller, max_retries=max_retries)
+    return RouteARouter(model, caller=caller, max_retries=max_retries,
+                        provider=provider)
 
 
 def parse_document(
@@ -167,7 +175,10 @@ def parse_document(
 
     # O2: result-cache fast path (同文档重新解析零调用).
     if result_cache is not None:
-        hit = result_cache.get(image_path, model, preprocess)
+        hit = result_cache.get(
+            image_path, model, preprocess,
+            provider=getattr(router, "provider", None),
+        )
         if hit is not None:
             tj = dict(hit.get("timing", {}))
             tj["cached"] = True              # 缓存命中标记
@@ -261,7 +272,9 @@ def parse_document(
                 "total_tokens": attempt_meta.get("total_tokens"),
                 "finish_reason": attempt_meta.get("finish_reason"),
             })
-    provider = providers[0] if providers else _provider_from_meta({})
+    provider = providers[0] if providers else (
+        getattr(router, "provider", None) or _provider_from_meta({})
+    )
     timing_json["llm"] = {
         "model": model,
         "provider": provider,
@@ -274,17 +287,22 @@ def parse_document(
             sum((a.get("latency_seconds") or 0) for a in llm_attempts), 3
         ) if llm_attempts else None,
     }
+    last_meta = (route.attempts[-1].get("meta") or {}) if route.attempts else {}
+    ir_meta = last_meta.get("ir_stage") if isinstance(last_meta, dict) else None
+    if isinstance(ir_meta, dict):
+        timing_json["llm"]["ir_model"] = ir_meta.get("configured_model") or ir_meta.get("model")
+        timing_json["llm"]["ir_provider"] = ir_meta.get("provider")
     # Keep a compact audit record of the optional image-level graph pass.  The
     # full structured graph lives in ``ir``; this summary makes it visible in
     # the web/CLI timing artifact without duplicating the whole payload.
     if route.attempts:
-        last_meta = route.attempts[-1].get("meta") or {}
         diagram_meta = last_meta.get("diagram_stage")
         if isinstance(diagram_meta, dict):
             timing_json["diagram"] = {
                 "verdict": diagram_meta.get("verdict"),
                 "specialist_model": diagram_meta.get("specialist_model")
                 or diagram_meta.get("model"),
+                "provider": diagram_meta.get("provider"),
                 "nodes": diagram_meta.get("node_count"),
                 "edges": diagram_meta.get("edge_count"),
                 "retried": bool(diagram_meta.get("retried")),
@@ -301,7 +319,7 @@ def parse_document(
         result_cache.put(image_path, model, preprocess, {
             "markdown": md,
             "timing": timing_json,
-        })
+        }, provider=getattr(router, "provider", None))
     return ParseResult(
         markdown=md,
         markdown_path=str(md_path),
@@ -324,7 +342,8 @@ __all__ = [
 
 # ================= O2：整页解析结果缓存（同文档重新解析零调用） =================
 
-def _config_fingerprint(*, model: str, preprocess: bool) -> str:
+def _config_fingerprint(*, model: str, preprocess: bool,
+                        provider: str | None = None) -> str:
     """提示/配置指纹：prompt、会话、降采样或预处理开关变化时旧结果缓存失效。"""
     try:
         from .vlm import SYSTEM_PROMPT, USER_PROMPT
@@ -332,7 +351,7 @@ def _config_fingerprint(*, model: str, preprocess: bool) -> str:
         raw = SYSTEM_PROMPT + USER_PROMPT
     except Exception:
         raw = ""
-    raw = raw + f"|model={model}|preprocess={int(preprocess)}"
+    raw = raw + f"|model={model}|provider={provider or ''}|preprocess={int(preprocess)}"
     return hashlib.md5(raw.encode("utf-8")).hexdigest()[:16]
 
 
@@ -353,13 +372,16 @@ class ParseCache:
         with open(source, "rb") as fh:
             return hashlib.sha1(fh.read()).hexdigest()[:16]
 
-    def path_for(self, image_path: str, model: str, preprocess: bool) -> Path:
-        fp = _config_fingerprint(model=model, preprocess=preprocess)
+    def path_for(self, image_path: str, model: str, preprocess: bool,
+                 provider: str | None = None) -> Path:
+        fp = _config_fingerprint(model=model, preprocess=preprocess, provider=provider)
         digest = self._sha1(image_path)
-        return self.cache_dir / f"{model.replace('/', '_')}__{digest}__{fp}.json"
+        provider_prefix = f"{provider}__" if provider else ""
+        return self.cache_dir / f"{provider_prefix}{model.replace('/', '_')}__{digest}__{fp}.json"
 
-    def get(self, image_path: str, model: str, preprocess: bool) -> dict | None:
-        p = self.path_for(image_path, model, preprocess)
+    def get(self, image_path: str, model: str, preprocess: bool,
+            provider: str | None = None) -> dict | None:
+        p = self.path_for(image_path, model, preprocess, provider)
         if not p.exists():
             return None
         try:
@@ -367,9 +389,10 @@ class ParseCache:
         except json.JSONDecodeError:
             return None
 
-    def put(self, image_path: str, model: str, preprocess: bool, record: dict) -> None:
+    def put(self, image_path: str, model: str, preprocess: bool, record: dict,
+            provider: str | None = None) -> None:
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-        self.path_for(image_path, model, preprocess).write_text(
+        self.path_for(image_path, model, preprocess, provider).write_text(
             json.dumps(record, ensure_ascii=False), encoding="utf-8"
         )
 

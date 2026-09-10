@@ -42,6 +42,13 @@ from .metadata import extract_capture_time, infer_document_time
 from .collections import CollectionError
 from .graph import build_graph
 from .inbox import build_inbox
+from .llm_settings import (
+    LLMSettingsStore,
+    MODEL_PURPOSES,
+    SettingsError,
+    configure_settings_path,
+    probe_channel,
+)
 from .tags import TagError
 from .telemetry import build_stats, load_price_table
 from .timeline import GROUPINGS, build_timeline
@@ -70,6 +77,7 @@ class Job:
     job_id: str
     model: str
     original_ext: str
+    provider: str | None = None
     status: str = "queued"          # queued|processing|done|failed|timeout
     error: str | None = None
     error_kind: str | None = None   # invalid|failed|timeout
@@ -104,6 +112,7 @@ class Job:
                 "degraded": list(self.degraded),
                 "timing": self.timing,
                 "model": self.model,
+                "provider": self.provider,
                 "empty": bool(self.markdown is not None and self.markdown.strip() == ""),
                 "can_reparse": self.status in ("done", "failed", "timeout"),
             }
@@ -153,17 +162,26 @@ class JobRunner:
             job.doc_id = original.stem
         out_dir = store.job_out_dir(job.job_id) / "out"
 
+        channel = app.state.llm_settings.resolve("parse_visual")
+        selected_model = app.state.model_override or channel["model"]
+        selected_provider = channel["provider"]
+        with job.lock:
+            job.model = selected_model
+            job.provider = selected_provider
+
         if app.state.router_factory is not None:
-            router = app.state.router_factory(str(original), app.state.model)
+            router = app.state.router_factory(str(original), selected_model)
         else:
             router = pipeline.make_router(
-                app.state.model, max_retries=app.state.max_retries
+                selected_model,
+                provider=selected_provider,
+                max_retries=app.state.max_retries,
             )
 
         result = pipeline.parse_document(
             str(original),
             str(out_dir),
-            model=app.state.model,
+            model=selected_model,
             router=router,
             doc_id=job.doc_id,
             preprocess=True,
@@ -228,7 +246,7 @@ class JobRunner:
             document_id=document_id,
             title=job.title or job.doc_id or document_id,
             source_job_id=job.job_id,
-            model=app.state.model,
+            model=selected_model,
             markdown=result.markdown,
             ir_json=dumps_ir(result.ir),
             original_path=str(original),
@@ -255,13 +273,15 @@ class JobRunner:
 
 def create_app(
     *,
-    model: str = DEFAULT_MODEL,
+    model: str | None = None,
     storage_dir: str | Path | None = None,
     document_store: DocumentStore | None = None,
     router_factory=None,
     max_retries: int = 1,
     dedup_threshold: int = 6,
     price_table: dict | None = None,
+    llm_settings: LLMSettingsStore | None = None,
+    llm_probe=None,
 ) -> FastAPI:
     """Build the FastAPI app.
 
@@ -271,12 +291,21 @@ def create_app(
     """
     storage_dir = storage_dir or os.environ.get("GRAPH2NOTE_STORAGE", "./.g2n-storage")
     store = document_store or FileDocumentStore(storage_dir)
+    settings_path = os.environ.get("GRAPH2NOTE_SETTINGS_FILE") or str(
+        Path(storage_dir) / "llm-settings.json"
+    )
+    settings = llm_settings or LLMSettingsStore(settings_path)
+    configure_settings_path(settings.path)
 
     app = FastAPI(title="graph2note", docs_url=None, redoc_url=None)
     app.state.store = store
     app.state.jobs: dict[str, Job] = {}
     app.state.jobs_lock = threading.Lock()
-    app.state.model = model
+    app.state.model_override = model
+    app.state.llm_settings = settings
+    app.state.llm_probe = llm_probe
+    app.state.model = model or settings.resolve("parse_visual")["model"]
+    app.state.provider = settings.resolve("parse_visual")["provider"]
     app.state.max_retries = max_retries
     app.state.router_factory = router_factory
     app.state.runner = JobRunner(app)
@@ -312,12 +341,15 @@ def create_app(
             raise HTTPException(status_code=415, detail="文件不是有效的 JPG/JPEG/PNG 图片。")
 
         # one stable document_id per upload (reparse reuses it, never a dup doc)
-        job = Job(job_id=job_id, model=model, original_ext=ext,
+        channel = app.state.llm_settings.resolve("parse_visual")
+        selected_model = app.state.model_override or channel["model"]
+        job = Job(job_id=job_id, model=selected_model, provider=channel["provider"], original_ext=ext,
                   title=title, document_id=document_id)
         with app.state.jobs_lock:
             app.state.jobs[job_id] = job
         app.state.runner.trigger(job)
-        return {"job_id": job_id, "status": job.status, "model": model,
+        return {"job_id": job_id, "status": job.status, "model": selected_model,
+                "provider": channel["provider"],
                 "document_id": document_id}
 
     @app.get("/api/jobs/{job_id}")
@@ -518,6 +550,34 @@ def create_app(
                 records.append(record)
         return build_stats(records, now=now, price_table=app.state.price_table)
 
+    # ---- LLM provider/model settings (issue 16) ----------------------------
+
+    @app.get("/api/llm/settings")
+    def llm_settings_get():
+        return app.state.llm_settings.snapshot()
+
+    @app.put("/api/llm/settings")
+    @app.patch("/api/llm/settings")
+    def llm_settings_update(body: dict | None = None):
+        try:
+            return app.state.llm_settings.update(body or {})
+        except SettingsError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.get("/api/llm/health")
+    @app.post("/api/llm/health")
+    def llm_health():
+        channels = app.state.llm_settings.snapshot()["channels"]
+        results = [
+            probe_channel(
+                channel["provider"], purpose, channel["model"],
+                probe=app.state.llm_probe,
+            )
+            for purpose, channel in channels.items()
+            if purpose in MODEL_PURPOSES
+        ]
+        return {"channels": results, "statuses": {item["purpose"]: item for item in results}}
+
     @app.get("/api/inbox")
     def inbox_list():
         records = []
@@ -688,7 +748,9 @@ def create_app(
         ext = rec.get("original_ext") or Path(op).suffix or ".jpg"
         job_id = uuid.uuid4().hex[:12]
         store.save_original(job_id, Path(op).read_bytes(), ext)
-        job = Job(job_id=job_id, model=model, original_ext=ext,
+        channel = app.state.llm_settings.resolve("parse_visual")
+        selected_model = app.state.model_override or channel["model"]
+        job = Job(job_id=job_id, model=selected_model, provider=channel["provider"], original_ext=ext,
                   title=rec.get("title") or document_id, document_id=document_id)
         with app.state.jobs_lock:
             app.state.jobs[job_id] = job
