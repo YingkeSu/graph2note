@@ -1,9 +1,10 @@
 # PRD：Manuscript Compiler MVP — 手写图片 → 结构化 Markdown
 
 Status: ready-for-agent
-Version: v0.2
+Version: v0.3
 Created: 2026-09-08
 Revised: 2026-09-08 — 落实维护者评审决策：个人自用本地平台定位、流程图重建进 MVP、语义化删除、三栏实时预览、数据保留至用户删除
+Revised: 2026-09-10 — 新增 P2：LLM 供应商选择（网关注册表 seam 已随 DeepSeek 备援落地）
 Phase: Concept / MVP Definition
 
 > 一句话：**Manuscript Compiler 是一个基于多模态文档理解的手稿电子化工具，将手写笔记、草稿和扫描文档解析为结构化中间表示（Document IR），并自动生成可编辑 Markdown；模板系统在核心链路稳定后进一步渲染为 HTML/CSS 与 PDF。**
@@ -71,6 +72,7 @@ Phase: Concept / MVP Definition
 28. 作为用户，我希望圈选、下划线、插入箭头等更多手写编辑语义被理解并生效，以便手写修改语义完整落地（删除线已进 MVP）。
 29. 作为高频用户，我希望系统学习我的书写风格和符号习惯，以便识别越用越准。
 30. 作为用户，我想一次上传多页文档并保持页序合并输出，以便整本笔记电子化。
+36. 作为用户，我想选择 LLM 供应商与各用途模型（解析视觉 / IR 文本 / 图形提取 / 分类归纳），并看到当前生效通道及其可用性状态，以便某条通道不可用（如 opencode 故障）或性价比变化时，无需改代码、无需重启即可切换。
 
 ### P1 增补（2026-09-08 评审：去重/缺页/交叉验证/提速）
 
@@ -102,6 +104,7 @@ Phase: Concept / MVP Definition
 
 - **Recognition Router 是统一入口接口**：MVP 落地 Route A（Vision LLM 直接输出 IR）；Route B（OCR → LLM 结构化）与 Hybrid（分类器 + Formula OCR + Fusion/Judge）是路由的后续策略。MVP 允许路由实现退化为「恒走 A」，但上游调用必须经 router，不得绕过。**Spike 2 已落地并测量（2026）**：实现 `RouteBRouter`（OCR+文本 LLM 结构化）与 `AutoRouter`（特征路由，默认 A）；在 30 页评估集上 Route A 全面占优（EditRate 0.768 vs 0.865，24/30 页更优，含公式/手写/混排/图示/涂改全部类目），故默认**恒走 Route A**；仅当输入 OCR 平均置信度高分（≥55，判为清印刷）且以纯文本为主时才切 Route B（合成清中文印刷样本 EditRate 0.114 优于同路径公式页；公式/符号页仍应走 A）。详细对比见 `eval/reports/route-b-ocr-vs-vlm-summary.md`。
 - **LLM 通道（Spike 与 MVP）**：经 opencode go 网关调用，接入文档落在 `docs/llm/opencode-go.md`，密钥在本机 `.env`（已 gitignore）。已实测两个视觉模型：`glm-5.3-flash` 与 `deepseek-v4-flash-vision-exp`（均通过本仓库手稿样本 `test-images/` 冒烟验证，调用参数见接入文档）；Spike 1 对两者做定量对比，若均不达标则引入其他供应商（解析层契约不变）。禁止使用会以用户输入训练模型的 muse 系列。
+- **LLM 供应商选择（P2，user story 36；seam 已就绪）**：网关传输层已收敛为单一注册表 seam——端点/认证 key/session 头/模型名映射在 `post_gateway` 一处按 `GRAPH2NOTE_GATEWAY` 解析（2026-09-10 DeepSeek 官方 API 备援已落地：`opencode | deepseek`，文档 `docs/llm/deepseek.md`）。供应商选择功能在该注册表上扩展：新增供应商 = 新增注册项 + 模型名映射，调用方模型名不变；用途级模型选择沿用既有 `GRAPH2NOTE_*_MODEL` env 缩并暴露为 Web 设置；通道可用性探针复用会话直出验证的极小探针思路。首版为**手动选择**（.env / 设置界面），自动故障转移与多供应商并跑不承诺；单用户本地定位下不涉及供应商账号池管理。
 - **语义化删除**：解析 prompt 明确指示不输出被删除线/涂抹明确废弃的内容；判断模糊时保守保留（宁可漏删交用户处理，不可误删正文）。系统化的手写编辑语义保证与评测留在 P2。
 - **扫描 PDF 接入与页级去重（P1 增补）**：扫描 PDF 按页拆分为图片进入管线（保留页码可追溯）；感知哈希（pHash/dHash）做页级近重复检测，同页多次扫描/拍摄合并为同一 DocumentRecord 的候选版本（默认取最新、其余版本留存可查）。缺页检测为 best-effort——仅利用可检测线索（页码、日期标题、系列连续性）给出警告，无线索时不做完整性声明。
 - **识别交叉验证（P1 增补）**：双模型独立解析（`glm-5.3-flash` 与 `deepseek-v4-flash-vision-exp`）后 diff 两份 IR：双侧一致→高置信；单侧出现→疑似漏识别；不一致→分歧块标记给用户审核；另做单文档内近重复块检测。双倍调用成本在个人自用定位下可接受。
