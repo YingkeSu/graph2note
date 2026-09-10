@@ -28,13 +28,16 @@ def available() -> bool:
     return _GV_PKG and shutil.which("dot") is not None
 
 
-def render(nodes, edges, out_path: str) -> str:
+def render(nodes, edges, out_path: str, *, orientation: str = "TB") -> str:
     """Render canonical node ids/edge pairs to a deterministic PNG."""
     if not available():
         raise RuntimeError("graphviz/dot is not available")
 
     g = graphviz.Digraph(format="png", engine="dot")
-    g.attr(rankdir="TB", dpi="120", nodesep="0.4", ranksep="0.5")
+    rankdir = {"LR": "LR", "TB": "TB", "RL": "RL", "BT": "BT"}.get(
+        orientation, "TB"
+    )
+    g.attr(rankdir=rankdir, dpi="120", nodesep="0.4", ranksep="0.5")
     g.attr(label="", labelloc="t")
     for n in nodes:
         g.node(n.id, label=n.label or "", shape="box",

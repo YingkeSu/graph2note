@@ -62,7 +62,25 @@ def _label_len(label: str) -> int:
     return sum(2 if ord(c) > 127 else 1 for c in label)
 
 
-def render(nodes, edges, labels: dict[str, str], out_path: str) -> str:
+def _wrap_label(label: str, max_units: int = 18) -> str:
+    """Wrap mixed CJK/Latin labels without letting one node fill the canvas."""
+    lines: list[str] = []
+    current: list[str] = []
+    units = 0
+    for char in label:
+        width = 2 if ord(char) > 127 else 1
+        if current and units + width > max_units:
+            lines.append("".join(current))
+            current, units = [], 0
+        current.append(char)
+        units += width
+    if current or not lines:
+        lines.append("".join(current))
+    return "\n".join(lines)
+
+
+def render(nodes, edges, labels: dict[str, str], out_path: str,
+           *, orientation: str = "TB") -> str:
     """Render canonical node ids/edge pairs to a deterministic PNG."""
     if not _MPL_OK:  # pragma: no cover
         raise RuntimeError("matplotlib is not available")
@@ -71,6 +89,14 @@ def render(nodes, edges, labels: dict[str, str], out_path: str) -> str:
     edge_pairs = [(e.from_, e.to) for e in edges]
     lay = LayerLayout(nid, edge_pairs)
     pos = lay.positions()
+    if orientation == "TB":
+        # LayerLayout's native coordinates are left-to-right; transpose them
+        # so graph depth is top-to-bottom in the fallback renderer too.
+        pos = {nid: (y, 1.0 - x) for nid, (x, y) in pos.items()}
+    elif orientation == "BT":
+        pos = {nid: (y, x) for nid, (x, y) in pos.items()}
+    elif orientation == "RL":
+        pos = {nid: (1.0 - x, y) for nid, (x, y) in pos.items()}
 
     fig = plt.figure(figsize=(12, 8), dpi=120)
     ax = fig.add_axes([0.02, 0.02, 0.96, 0.96])
@@ -79,23 +105,33 @@ def render(nodes, edges, labels: dict[str, str], out_path: str) -> str:
     ax.invert_yaxis()  # top->down flow
     ax.axis("off")
 
-    box_w = {nid: 0.06 + 0.012 * _label_len(labels.get(nid, "")) for nid in nid}
-    box_h = 0.09
+    wrapped = {node_id: _wrap_label(labels.get(node_id, "")) for node_id in nid}
+    box_w = {
+        node_id: min(0.42, max(0.12, 0.06 + 0.012 * min(
+            _label_len(labels.get(node_id, "")), 24
+        )))
+        for node_id in nid
+    }
+    box_h = {
+        node_id: min(0.20, 0.09 + 0.035 * (wrapped[node_id].count("\n")))
+        for node_id in nid
+    }
     npos = {n.id: pos[n.id] for n in nodes}
 
     for e in edges:
         x0, y0 = npos[e.from_]
         x1, y1 = npos[e.to]
-        _draw_arrow(ax, x0, y0, x1, y1, box_w[e.from_], box_h,
-                    box_w[e.to], box_h, e.label)
+        _draw_arrow(ax, x0, y0, x1, y1, box_w[e.from_], box_h[e.from_],
+                    box_w[e.to], box_h[e.to], e.label)
     for n in nodes:
         x, y = npos[n.id]
         bw = box_w[n.id]
-        ax.add_patch(Rectangle((x - bw / 2, y - box_h / 2), bw, box_h,
+        bh = box_h[n.id]
+        ax.add_patch(Rectangle((x - bw / 2, y - bh / 2), bw, bh,
                                fill=False, edgecolor="#1a1d29", linewidth=2.0,
                                zorder=3))
-        ax.text(x, y, labels.get(n.id, ""), ha="center", va="center",
-                fontsize=15, color="#101018", zorder=4)
+        ax.text(x, y, wrapped[n.id], ha="center", va="center",
+                fontsize=13, color="#101018", zorder=4)
 
     fig.savefig(out_path, dpi=120, facecolor="white",
                 bbox_inches="tight", pad_inches=0.1)

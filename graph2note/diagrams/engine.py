@@ -44,6 +44,7 @@ def render_structured(
     out_path: str,
     *,
     prefer: str = "graphviz",
+    orientation: str = "TB",
 ) -> RenderOutcome:
     """Render structured nodes/edges to a deterministic PNG at out_path."""
     nc = _canonical.canonical_nodes(nodes)
@@ -52,10 +53,11 @@ def render_structured(
     labels = {n.id: n.label for n in nc}
 
     if prefer == "graphviz" and graphviz_renderer.available():
-        path = graphviz_renderer.render(nc, ec, out_path)
+        path = graphviz_renderer.render(nc, ec, out_path, orientation=orientation)
         return RenderOutcome(engine="graphviz", path=path)
     if matplotlib_renderer.available():
-        path = matplotlib_renderer.render(nc, ec, labels, out_path)
+        path = matplotlib_renderer.render(nc, ec, labels, out_path,
+                                         orientation=orientation)
         return RenderOutcome(engine="matplotlib", path=path)
 
     raise RuntimeError(
@@ -72,11 +74,13 @@ def render_to_png(
     *,
     prefer: str = "graphviz",
     max_embed_width: int = 900,
+    orientation: str = "TB",
 ) -> RenderOutcome:
     """Full policy: structured render, else crop original, else empty marker."""
     os.makedirs(os.path.dirname(os.path.abspath(out_path)) or ".", exist_ok=True)
     if nodes or edges:
-        return render_structured(nodes, edges, out_path, prefer=prefer)
+        return render_structured(nodes, edges, out_path, prefer=prefer,
+                                 orientation=orientation)
     if source:
         path = crop_image(source, out_path, max_width=max_embed_width)
         return RenderOutcome(engine="degrade", path=path, degraded=True,

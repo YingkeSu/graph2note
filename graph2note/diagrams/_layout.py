@@ -19,16 +19,31 @@ class LayerLayout:
                 self.parents[t].append(s)
 
     def layers(self) -> list[list[str]]:
+        # Kahn ranks are monotonic only on the acyclic portion of the graph.
+        # The previous repeated-relaxation scheme kept increasing ranks around
+        # a back-edge until its hard pass limit, which made cyclic diagrams
+        # needlessly wide and put long labels on top of one another.  Edges
+        # inside the remaining cycle are routed later, but do not define depth.
         depth: dict[str, int] = {n: 0 for n in self.nid}
-        for _ in range(len(self.nid) + 2):  # enough passes for any acyclic graph
-            changed = False
-            for s in self.nid:
-                for t in self.adj[s]:
-                    if depth[t] < depth[s] + 1:
-                        depth[t] = depth[s] + 1
-                        changed = True
-            if not changed:
-                break
+        indegree = {n: len(self.parents[n]) for n in self.nid}
+        queue = [n for n in self.nid if indegree[n] == 0]
+        visited: set[str] = set()
+        while queue:
+            s = queue.pop(0)
+            visited.add(s)
+            for t in self.adj[s]:
+                depth[t] = max(depth[t], depth[s] + 1)
+                indegree[t] -= 1
+                if indegree[t] == 0:
+                    queue.append(t)
+
+        # Collapse each unresolved cyclic remainder to a stable layer based on
+        # its incoming acyclic parents.  This keeps both ends of a back-edge
+        # visible instead of manufacturing artificial ranks.
+        cyclic = [n for n in self.nid if n not in visited]
+        for n in cyclic:
+            outside = [p for p in self.parents[n] if p in visited]
+            depth[n] = max((depth[p] + 1 for p in outside), default=0)
         maxd = max(depth.values()) if depth else 0
         lay: list[list[str]] = [[] for _ in range(maxd + 1)]
         for n in self.nid:

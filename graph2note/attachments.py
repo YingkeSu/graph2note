@@ -117,6 +117,7 @@ class FileAssetWriter(AttachmentWriter):
             str(target),
             prefer=self.prefer,
             max_embed_width=self.max_embed_width,
+            orientation=semantics.orientation or "TB",
         )
         self.results.append((rel, {
             "engine": outcome.engine,

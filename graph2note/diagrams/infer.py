@@ -55,7 +55,35 @@ def _clean_token(text: str) -> str:
     return text
 
 
-def parse_relation_line(line: str) -> tuple[str, str, str] | None:
+def _relation_parts(line: str) -> list[tuple[str, str, str]]:
+    """Return consecutive ``(left, operator, right)`` pieces from a line.
+
+    Stage-1 transcription often writes a whole chain on one line, e.g.
+    ``输入 → 解析 → 输出``.  Splitting the chain before assigning labels keeps
+    the middle node from becoming the literal label of the next edge.
+    """
+    s = line.strip()
+    matches = []
+    for tok in _RELATION_TOKENS:
+        matches.extend((m.start(), m.end(), tok) for m in re.finditer(re.escape(tok), s))
+    matches.sort(key=lambda item: (item[0], -(item[1] - item[0])))
+    # Prefer the longest token at the same position (``-->`` before ``->``).
+    chosen: list[tuple[int, int, str]] = []
+    for item in matches:
+        if chosen and item[0] < chosen[-1][1]:
+            continue
+        chosen.append(item)
+    out: list[tuple[str, str, str]] = []
+    for i, (start, end, op) in enumerate(chosen):
+        left = _clean_token(s[:start] if i == 0 else s[chosen[i - 1][1]:start])
+        right_end = chosen[i + 1][0] if i + 1 < len(chosen) else len(s)
+        right = _clean_token(s[end:right_end])
+        if left and right:
+            out.append((left, op, right))
+    return out
+
+
+def parse_relation_line(line: str) -> tuple[str, str, str, str] | None:
     """Parse ``A → B`` (or ``-->``/``->``/``=>``/``↔``) into (src, tgt, label).
 
     An optional edge label is taken from ``:``/``：`` after the target
@@ -63,26 +91,19 @@ def parse_relation_line(line: str) -> tuple[str, str, str] | None:
     the caller.  Returns None when the line has no clear two-sided relation
     (e.g. a bare arrow line with an empty side).
     """
-    s = line.strip()
-    idx = _first_relation_op(s)
-    if idx is None:
+    parts = _relation_parts(line)
+    if not parts:
         return None
-    matched = None
-    for t in _RELATION_TOKENS:
-        if s.startswith(t, idx):
-            matched = t
-            break
-    if matched is None:
+    left, op, right = parts[0]
+    # An edge label is meaningful only on the final target of a simple pair.
+    # For chains, the next arrow is a stronger signal than a colon heuristic.
+    if len(parts) == 1:
+        right, label = _split_label(right)
+    else:
+        label = ""
+    if not right:
         return None
-    left = _clean_token(s[:idx])
-    right = _clean_token(s[idx + len(matched):])
-    if not left or not right:
-        return None
-    # edge label after target: "A → B：说明" / "A → B: label"
-    tgt, label = _split_label(right)
-    if not tgt:
-        return None
-    return (left, tgt, label, matched)
+    return (left, right, label, op)
 
 
 def _split_label(right: str) -> tuple[str, str]:
@@ -144,13 +165,19 @@ def infer_flow_from_lines(lines: list[str]) -> tuple[list[dict], list[dict]] | N
     """
     edgelist: list[tuple[str, str, str]] = []  # (src_label, tgt_label, edge_label)
     for raw in lines:
-        parsed = parse_relation_line(raw)
-        if parsed is None:
-            continue
-        src, tgt, label, op = parsed
-        edgelist.append((src, tgt, label))
-        if op in ("↔", "<->"):
-            edgelist.append((tgt, src, label))
+        parts = _relation_parts(raw)
+        for left, op, right in parts:
+            label = ""
+            if len(parts) == 1:
+                right, label = _split_label(right)
+            if not right:
+                continue
+            if op == "←":
+                edgelist.append((right, left, label))
+            else:
+                edgelist.append((left, right, label))
+            if op in ("↔", "<->", "←→", "←->"):
+                edgelist.append((right, left, label))
     if not edgelist:
         return None
     # node labels in first-appearance order
@@ -175,6 +202,17 @@ def relation_run(lines: list[str], start: int) -> int:
         k += 1
         i += 1
     return k
+
+
+def relation_lines(lines: list[str]) -> list[str]:
+    """Collect relation-bearing lines across Markdown block boundaries.
+
+    Bullets and headings frequently interrupt a hand-drawn flow transcription.
+    The old contiguous-run rule therefore produced one tiny graph per visual
+    row.  The graph is a page-level semantic object, so collect all rows and
+    let the structure extractor/layout decide how to arrange them.
+    """
+    return [line.strip() for line in lines if is_relation_line(line)]
 
 
 def arrow_flow_block(lines: list[str], start: int) -> dict | None:
@@ -213,5 +251,6 @@ __all__ = [
     "detect_diagram_markdown",
     "infer_flow_from_lines",
     "relation_run",
+    "relation_lines",
     "arrow_flow_block",
 ]
