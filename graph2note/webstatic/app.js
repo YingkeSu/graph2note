@@ -13,6 +13,8 @@ const state = {
   busy: false,
   pollTimer: null,
   jobId: null,
+  libraryCollection: null,
+  libraryFilter: "all",
 };
 
 const el = {
@@ -20,6 +22,12 @@ const el = {
   libraryGrid: $("#library-grid"),
   libraryEmpty: $("#library-empty"),
   libraryCount: $("#library-count"),
+  collectionTree: $("#collection-tree"),
+  collectionCreateForm: $("#collection-create-form"),
+  collectionCreateInput: $("#collection-create-input"),
+  documentCollectionForm: $("#document-collection-form"),
+  documentCollectionSelect: $("#document-collection-select"),
+  documentCollectionList: $("#document-collection-list"),
   tagList: $("#tag-list"),
   tagCreateForm: $("#tag-create-form"),
   tagCreateInput: $("#tag-create-input"),
@@ -135,8 +143,11 @@ async function renderLibrary() {
   el.libraryZone.classList.remove("hidden");
   el.libraryGrid.innerHTML = "";
   let docs = [];
-  try { docs = await api("/api/documents"); }
+  const query = state.libraryCollection
+    ? `?collection_id=${encodeURIComponent(state.libraryCollection)}` : "";
+  try { docs = await api(`/api/documents${query}`); }
   catch (e) { showToast("加载文档库失败：" + e.message, "err"); }
+  docs = filterLibraryDocuments(docs);
   el.libraryCount.textContent = docs.length ? `共 ${docs.length} 份` : "";
   el.libraryEmpty.classList.toggle("hidden", docs.length > 0);
   for (const d of docs) {
@@ -152,6 +163,7 @@ async function renderLibrary() {
     card.addEventListener("click", () => go(`#doc/${encodeURIComponent(d.document_id)}`));
     el.libraryGrid.appendChild(card);
   }
+  await renderCollectionNavigation();
   await renderTagVocabulary();
   // lazy-load thumbnails
   requestAnimationFrame(() => {
@@ -159,6 +171,60 @@ async function renderLibrary() {
       img.src = img.dataset.src;
       img.removeAttribute("data-src");
       img.onerror = () => { img.remove(); };
+    });
+  });
+}
+
+function filterLibraryDocuments(docs) {
+  if (state.libraryFilter === "recent") return docs.slice(0, 12);
+  if (state.libraryFilter === "all") return docs;
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const start = new Date(now);
+  start.setDate(start.getDate() - (state.libraryFilter === "week" ? 6 : 0));
+  const lower = start.toISOString().slice(0, 10);
+  return docs.filter((doc) => {
+    const value = doc.metadata && doc.metadata.import_time && doc.metadata.import_time.value;
+    const day = value ? String(value).slice(0, 10) : "";
+    return state.libraryFilter === "today" ? day === today : day >= lower && day <= today;
+  });
+}
+
+async function renderCollectionNavigation() {
+  if (!el.collectionTree) return;
+  let collections = [];
+  try { collections = await api("/api/collections"); }
+  catch (e) { showToast("加载集合失败：" + e.message, "err"); return; }
+  el.collectionTree.innerHTML = collections.length ? collections.map((item) => `
+    <span class="collection-tree-item ${state.libraryCollection === item.collection_id ? "selected" : ""}">
+      <button class="workspace-link collection-open" data-collection-id="${esc(item.collection_id)}">${esc(item.name)} <span class="dim">${item.document_count}</span></button>
+      <button class="tag-action" data-collection-action="rename" data-collection-id="${esc(item.collection_id)}">改名</button>
+      <button class="tag-action" data-collection-action="delete" data-collection-id="${esc(item.collection_id)}">删除</button>
+    </span>`).join("") : `<span class="dim">暂无集合</span>`;
+  el.collectionTree.querySelectorAll("button.collection-open").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.libraryCollection = button.dataset.collectionId;
+      state.libraryFilter = "all";
+      renderLibrary();
+    });
+  });
+  el.collectionTree.querySelectorAll("button[data-collection-action]").forEach((button) => {
+    button.addEventListener("click", async () => {
+      const cid = button.dataset.collectionId;
+      try {
+        if (button.dataset.collectionAction === "delete") {
+          await api(`/api/collections/${encodeURIComponent(cid)}`, { method: "DELETE" });
+          if (state.libraryCollection === cid) state.libraryCollection = null;
+        } else {
+          const name = window.prompt("集合重命名为？", cid);
+          if (!name || name === cid) return;
+          await api(`/api/collections/${encodeURIComponent(cid)}`, {
+            method: "PATCH", headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name }),
+          });
+        }
+        await renderLibrary();
+      } catch (e) { showToast("集合操作失败：" + e.message, "err"); }
     });
   });
 }
@@ -215,6 +281,35 @@ async function updateDocumentTags(tags) {
     if (state.doc) state.doc.tags = result.tags;
     renderDocumentTags(result.tags);
   } catch (e) { showToast("文档标签保存失败：" + e.message, "err"); }
+}
+
+async function renderDocumentCollections(collectionIds) {
+  if (!el.documentCollectionList) return;
+  let collections = [];
+  try { collections = await api("/api/collections"); } catch (_) { collections = []; }
+  const current = collectionIds || [];
+  el.documentCollectionSelect.innerHTML = `<option value="">选择集合</option>` + collections
+    .filter((item) => !current.includes(item.collection_id))
+    .map((item) => `<option value="${esc(item.collection_id)}">${esc(item.name)}</option>`).join("");
+  el.documentCollectionList.innerHTML = current.length ? current.map((cid) => {
+    const item = collections.find((entry) => entry.collection_id === cid);
+    return `<span class="document-tag">${esc(item ? item.name : cid)}<button type="button" data-remove-collection="${esc(cid)}">×</button></span>`;
+  }).join("") : `<span class="dim">暂无集合</span>`;
+  el.documentCollectionList.querySelectorAll("button[data-remove-collection]").forEach((button) => {
+    button.addEventListener("click", () => updateDocumentCollections(current.filter((cid) => cid !== button.dataset.removeCollection)));
+  });
+}
+
+async function updateDocumentCollections(collectionIds) {
+  if (!state.docId) return;
+  try {
+    const result = await api(`/api/documents/${encodeURIComponent(state.docId)}/collections`, {
+      method: "PUT", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ collection_ids: collectionIds }),
+    });
+    if (state.doc) state.doc.collections = result.collections;
+    await renderDocumentCollections(result.collections);
+  } catch (e) { showToast("文档集合保存失败：" + e.message, "err"); }
 }
 
 /* ---------- upload ---------- */
@@ -305,6 +400,7 @@ async function renderDocument(id) {
       ? `第 ${doc.versions.length} 版（历史 ${doc.versions.length - 1} 版留存）` : "第 1 版";
     el.warnings.textContent = "";
     renderDocumentTags(doc.tags);
+    await renderDocumentCollections(doc.collections);
     renderMetadata(doc.metadata);
     el.statusText.textContent = doc.current_markdown && doc.current_markdown.trim()
       ? "文档已载入，编辑自动保存 ✓" : "空文档：未识别出可渲染内容。";
@@ -520,12 +616,39 @@ el.btnDelete.onclick = async () => {
 };
 
 el.btnRepic.onclick = () => state.docId && setDocImage(state.docId);
+el.collectionCreateForm.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const name = el.collectionCreateInput.value.trim();
+  if (!name) return;
+  try {
+    await api("/api/collections", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ name }),
+    });
+    el.collectionCreateInput.value = "";
+    await renderLibrary();
+  } catch (e) { showToast("新建集合失败：" + e.message, "err"); }
+});
+document.querySelectorAll("button[data-library-filter]").forEach((button) => {
+  button.addEventListener("click", () => {
+    state.libraryCollection = null;
+    state.libraryFilter = button.dataset.libraryFilter;
+    renderLibrary();
+  });
+});
 el.documentTagForm.addEventListener("submit", (event) => {
   event.preventDefault();
   const value = el.documentTagInput.value.trim();
   if (!value || !state.doc) return;
   el.documentTagInput.value = "";
   updateDocumentTags([...(state.doc.tags || []), value]);
+});
+el.documentCollectionForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  const value = el.documentCollectionSelect.value;
+  if (!value || !state.doc) return;
+  el.documentCollectionSelect.value = "";
+  updateDocumentCollections([...(state.doc.collections || []), value]);
 });
 el.tagCreateForm.addEventListener("submit", async (event) => {
   event.preventDefault();

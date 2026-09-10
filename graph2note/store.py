@@ -48,6 +48,16 @@ from .metadata import (
     ensure_record_metadata,
     merge_record_metadata,
 )
+from .collections import (
+    CollectionError,
+    apply_topic_defaults,
+    collection_entries,
+    collection_id_for,
+    ensure_collection,
+    new_registry,
+    normalize_registry,
+    set_manual_memberships,
+)
 from .tags import (
     TagError,
     canonicalize_tags,
@@ -138,6 +148,26 @@ class DocumentStore(ABC):
         """Merge one vocabulary tag into another."""
 
     @abstractmethod
+    def list_collections(self) -> list[dict]:
+        """Return collections with stable ids, folders, and document counts."""
+
+    @abstractmethod
+    def create_collection(self, name: str) -> dict:
+        """Create or reject a duplicate logical collection."""
+
+    @abstractmethod
+    def rename_collection(self, collection_id: str, name: str) -> dict:
+        """Rename a collection and update memberships without moving files."""
+
+    @abstractmethod
+    def delete_collection(self, collection_id: str) -> bool:
+        """Delete a logical collection and detach its documents."""
+
+    @abstractmethod
+    def set_collections(self, document_id: str, collection_ids: list[str]) -> dict | None:
+        """Replace manual collection memberships for one document."""
+
+    @abstractmethod
     def set_topics(self, document_id: str, topics: list[str]) -> dict | None:
         """Persist the document's topic tags (notes-organizer classification).
 
@@ -175,6 +205,7 @@ class SessionDocumentStore(DocumentStore):
         self.root.mkdir(parents=True, exist_ok=True)
         self._docs: dict[str, dict] = {}
         self._tag_vocab = new_vocabulary()
+        self._collection_registry = new_registry()
 
     # --- job workspace ---------------------------------------------------------
     def job_out_dir(self, job_id: str) -> Path:
@@ -208,12 +239,14 @@ class SessionDocumentStore(DocumentStore):
                 markdown=record.get("current_markdown"),
             )
             record.setdefault("tags", [])
+            apply_topic_defaults(record, self._collection_registry)
             items.append({
                 k: record[k] for k in ("document_id", "title", "created_at",
                                        "updated_at", "versions")
             } | {
                 "metadata": record.get("metadata"),
                 "effective_time": record.get("effective_time"),
+                "collections": list(record.get("collections") or []),
             })
         return items
 
@@ -227,6 +260,7 @@ class SessionDocumentStore(DocumentStore):
             markdown=record.get("current_markdown"),
         )
         record.setdefault("tags", [])
+        apply_topic_defaults(record, self._collection_registry)
         return record
 
     def save_document(self, *, document_id, title, source_job_id, model,
@@ -253,6 +287,7 @@ class SessionDocumentStore(DocumentStore):
         rec["current_markdown"] = markdown
         rec["current_hash"] = pg_hash  # issue 13: perceptual hash of the page
         rec.setdefault("tags", [])
+        apply_topic_defaults(rec, self._collection_registry)
         rec["latest_version"] = version_id
         rec["versions"].append({
             "version_id": version_id,
@@ -352,11 +387,66 @@ class SessionDocumentStore(DocumentStore):
         merge_vocabulary_tags(self._tag_vocab, records, source, target)
         return self.list_tags()
 
+    def list_collections(self) -> list[dict]:
+        counts: dict[str, int] = {}
+        for record in self._docs.values():
+            apply_topic_defaults(record, self._collection_registry)
+            for cid in record.get("collections") or []:
+                counts[cid] = counts.get(cid, 0) + 1
+        return collection_entries(self._collection_registry, counts)
+
+    def create_collection(self, name: str) -> dict:
+        cid = collection_id_for(name)
+        if cid in self._collection_registry.get("collections", {}):
+            raise CollectionError(f"集合已存在：{name}")
+        ensure_collection(self._collection_registry, name)
+        return next(item for item in self.list_collections() if item["collection_id"] == cid)
+
+    def rename_collection(self, collection_id: str, name: str) -> dict:
+        collections = self._collection_registry.get("collections", {})
+        if collection_id not in collections:
+            raise CollectionError(f"集合不存在：{collection_id}")
+        target_id = collection_id_for(name)
+        if target_id != collection_id and target_id in collections:
+            raise CollectionError(f"集合已存在：{name}")
+        entry = collections.pop(collection_id)
+        entry.update({"collection_id": target_id, "name": str(name).strip(), "source": "manual", "topic": None})
+        collections[target_id] = entry
+        for record in self._docs.values():
+            record["manual_collections"] = [target_id if cid == collection_id else cid
+                                             for cid in (record.get("manual_collections") or [])]
+            record["collections"] = [target_id if cid == collection_id else cid
+                                      for cid in (record.get("collections") or [])]
+            apply_topic_defaults(record, self._collection_registry)
+        return next(item for item in self.list_collections() if item["collection_id"] == target_id)
+
+    def delete_collection(self, collection_id: str) -> bool:
+        collections = self._collection_registry.get("collections", {})
+        entry = collections.get(collection_id)
+        if entry is None:
+            return False
+        if entry.get("source") == "topic":
+            raise CollectionError("主题派生集合不能单独删除，请先调整主题分类")
+        collections.pop(collection_id, None)
+        for record in self._docs.values():
+            record["manual_collections"] = [cid for cid in (record.get("manual_collections") or []) if cid != collection_id]
+            apply_topic_defaults(record, self._collection_registry)
+        return True
+
+    def set_collections(self, document_id: str, collection_ids: list[str]) -> dict | None:
+        record = self._docs.get(document_id)
+        if record is None:
+            return None
+        set_manual_memberships(record, collection_ids, self._collection_registry)
+        self._docs[document_id] = record
+        return record
+
     def set_topics(self, document_id: str, topics: list[str]) -> dict | None:
         rec = self._docs.get(document_id)
         if rec is None:
             return None
         rec["topics"] = list(topics)
+        apply_topic_defaults(rec, self._collection_registry)
         self._docs[document_id] = rec
         return rec
 
@@ -454,16 +544,52 @@ class FileDocumentStore(SessionDocumentStore):
         self._doc_dir(record["document_id"]).joinpath("record.json").write_text(
             json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    def _collection_registry_path(self) -> Path:
+        return self.root / "collections.json"
+
+    def _load_collection_registry(self) -> dict:
+        path = self._collection_registry_path()
+        if not path.is_file():
+            return new_registry()
+        try:
+            return normalize_registry(json.loads(path.read_text(encoding="utf-8")))
+        except (OSError, ValueError):
+            return new_registry()
+
+    def _save_collection_registry(self, registry: dict) -> None:
+        self._collection_registry_path().write_text(
+            json.dumps(registry, ensure_ascii=False, indent=2), encoding="utf-8")
+
+    def _apply_file_collections(self, record: dict, registry: dict) -> bool:
+        before = (record.get("collections"), record.get("manual_collections"))
+        registry_before = json.dumps(registry, ensure_ascii=False, sort_keys=True)
+        changed = apply_topic_defaults(record, registry)
+        registry_changed = registry_before != json.dumps(registry, ensure_ascii=False, sort_keys=True)
+        changed = changed or before != (record.get("collections"), record.get("manual_collections"))
+        if changed:
+            self._write_tag_record(record)
+        if registry_changed:
+            self._save_collection_registry(registry)
+        return changed or registry_changed
+
     # --- library (durable) ------------------------------------------------------
     def list_documents(self) -> list[dict]:
         items = []
         docs = self.root / "documents"
         if not docs.is_dir():
             return []
+        registry = self._load_collection_registry()
+        registry_changed = False
         for p in sorted(docs.iterdir(), key=lambda d: d.stat().st_mtime,
                          reverse=True):
             r = self._load_record_with_metadata(p.name)
             if r:
+                before = json.dumps(registry, ensure_ascii=False, sort_keys=True)
+                apply_topic_defaults(r, registry)
+                if before != json.dumps(registry, ensure_ascii=False, sort_keys=True):
+                    registry_changed = True
+                if r.get("collections") != self._read_record(p.name).get("collections"):
+                    self._write_tag_record(r)
                 items.append({
                     "document_id": r["document_id"],
                     "title": r["title"],
@@ -472,7 +598,10 @@ class FileDocumentStore(SessionDocumentStore):
                     "version_count": len(r["versions"]),
                     "metadata": r.get("metadata"),
                     "effective_time": r.get("effective_time"),
+                    "collections": list(r.get("collections") or []),
                 })
+        if registry_changed:
+            self._save_collection_registry(registry)
         return items
 
     def _read_record(self, document_id: str) -> dict | None:
@@ -507,6 +636,14 @@ class FileDocumentStore(SessionDocumentStore):
         rec = self._load_record_with_metadata(document_id)
         if rec is None:
             return None
+        registry = self._load_collection_registry()
+        before = json.dumps(registry, ensure_ascii=False, sort_keys=True)
+        memberships_before = (rec.get("collections"), rec.get("manual_collections"))
+        apply_topic_defaults(rec, registry)
+        if memberships_before != (rec.get("collections"), rec.get("manual_collections")):
+            self._write_tag_record(rec)
+        if before != json.dumps(registry, ensure_ascii=False, sort_keys=True):
+            self._save_collection_registry(registry)
         rec = dict(rec)  # shallow copy
         rec.setdefault("tags", [])
         base = self._doc_dir(document_id)
@@ -601,6 +738,8 @@ class FileDocumentStore(SessionDocumentStore):
         rec["source_job_id"] = source_job_id
         rec["original_ext"] = original_ext
         rec.setdefault("tags", [])
+        registry = self._load_collection_registry()
+        apply_topic_defaults(rec, registry)
         rec["latest_version"] = version_id
         rec["current_hash"] = pg_hash
         versions = rec.setdefault("versions", [])
@@ -621,6 +760,7 @@ class FileDocumentStore(SessionDocumentStore):
         )
         (base / "record.json").write_text(
             json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+        self._save_collection_registry(registry)
 
         # keep original copy (== effective/latest source) + live markdown
         _copy_if_exists(str(original_path), base / f"original{original_ext}")
@@ -725,6 +865,89 @@ class FileDocumentStore(SessionDocumentStore):
         self._save_tag_vocab(vocabulary)
         return self.list_tags()
 
+    def _all_collection_records(self) -> list[dict]:
+        docs = self.root / "documents"
+        if not docs.is_dir():
+            return []
+        records = []
+        for path in sorted(docs.iterdir()):
+            if path.is_dir():
+                record = self._load_record_with_metadata(path.name)
+                if record is not None:
+                    records.append(record)
+        return records
+
+    def list_collections(self) -> list[dict]:
+        registry = self._load_collection_registry()
+        counts: dict[str, int] = {}
+        changed = False
+        for record in self._all_collection_records():
+            before = (record.get("collections"), record.get("manual_collections"))
+            apply_topic_defaults(record, registry)
+            if before != (record.get("collections"), record.get("manual_collections")):
+                self._write_tag_record(record)
+                changed = True
+            for cid in record.get("collections") or []:
+                counts[cid] = counts.get(cid, 0) + 1
+        if changed or not self._collection_registry_path().is_file():
+            self._save_collection_registry(registry)
+        return collection_entries(registry, counts)
+
+    def create_collection(self, name: str) -> dict:
+        registry = self._load_collection_registry()
+        cid = collection_id_for(name)
+        if cid in registry.get("collections", {}):
+            raise CollectionError(f"集合已存在：{name}")
+        ensure_collection(registry, name)
+        self._save_collection_registry(registry)
+        return next(item for item in collection_entries(registry) if item["collection_id"] == cid)
+
+    def rename_collection(self, collection_id: str, name: str) -> dict:
+        registry = self._load_collection_registry()
+        collections = registry.get("collections", {})
+        if collection_id not in collections:
+            raise CollectionError(f"集合不存在：{collection_id}")
+        target_id = collection_id_for(name)
+        if target_id != collection_id and target_id in collections:
+            raise CollectionError(f"集合已存在：{name}")
+        entry = collections.pop(collection_id)
+        entry.update({"collection_id": target_id, "name": str(name).strip(), "source": "manual", "topic": None})
+        collections[target_id] = entry
+        for record in self._all_collection_records():
+            record["manual_collections"] = [target_id if cid == collection_id else cid
+                                             for cid in (record.get("manual_collections") or [])]
+            record["collections"] = [target_id if cid == collection_id else cid
+                                      for cid in (record.get("collections") or [])]
+            apply_topic_defaults(record, registry)
+            self._write_tag_record(record)
+        self._save_collection_registry(registry)
+        return next(item for item in collection_entries(registry) if item["collection_id"] == target_id)
+
+    def delete_collection(self, collection_id: str) -> bool:
+        registry = self._load_collection_registry()
+        entry = registry.get("collections", {}).get(collection_id)
+        if entry is None:
+            return False
+        if entry.get("source") == "topic":
+            raise CollectionError("主题派生集合不能单独删除，请先调整主题分类")
+        registry["collections"].pop(collection_id, None)
+        for record in self._all_collection_records():
+            record["manual_collections"] = [cid for cid in (record.get("manual_collections") or []) if cid != collection_id]
+            apply_topic_defaults(record, registry)
+            self._write_tag_record(record)
+        self._save_collection_registry(registry)
+        return True
+
+    def set_collections(self, document_id: str, collection_ids: list[str]) -> dict | None:
+        record = self._load_record_with_metadata(document_id)
+        if record is None:
+            return None
+        registry = self._load_collection_registry()
+        set_manual_memberships(record, collection_ids, registry)
+        self._write_tag_record(record)
+        self._save_collection_registry(registry)
+        return self.get_document(document_id)
+
     def set_topics(self, document_id: str, topics: list[str]) -> dict | None:
         rp = self._doc_dir(document_id) / "record.json"
         if not rp.is_file():
@@ -733,9 +956,12 @@ class FileDocumentStore(SessionDocumentStore):
         if rec is None:
             return None
         rec["topics"] = list(topics)
+        registry = self._load_collection_registry()
+        apply_topic_defaults(rec, registry)
         rp.write_text(json.dumps(rec, ensure_ascii=False, indent=2),
                       encoding="utf-8")
-        return rec
+        self._save_collection_registry(registry)
+        return self.get_document(document_id)
 
     def delete_document(self, document_id: str) -> bool:
         rec = self._read_record(document_id)

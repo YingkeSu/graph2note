@@ -136,6 +136,17 @@ body {
 .library-zone { flex: 1; overflow: auto; padding: 22px 26px; }
 .library-head { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; }
 .library-head h2 { margin: 0; font-size: 20px; }
+.workspace-navigation { display: grid; grid-template-columns: 1.4fr 1fr; gap: 12px; margin-bottom: 14px; }
+.workspace-nav-column { padding: 10px 12px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; }
+.workspace-nav-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.workspace-nav-column h3 { margin: 0; font-size: 14px; }
+.collection-tree { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+.collection-tree-item { display: inline-flex; align-items: center; gap: 5px; padding: 4px 7px; border: 1px solid var(--line); border-radius: 6px; }
+.collection-tree-item.selected { border-color: var(--accent); background: #eff6ff; }
+.workspace-link { border: 0; background: transparent; color: var(--ink); cursor: pointer; padding: 3px; text-align: left; }
+.workspace-link:hover { color: var(--accent); }
+.quick-links { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.quick-links h3 { width: 100%; }
 .library-grid {
   display: grid; gap: 14px;
   grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));

@@ -38,6 +38,7 @@ from fastapi.staticfiles import StaticFiles
 from .attachments import missing_attachments
 from .ir import dumps_ir
 from .metadata import extract_capture_time, infer_document_time
+from .collections import CollectionError
 from .tags import TagError
 from .store import (
     DocumentStore,
@@ -414,8 +415,12 @@ def create_app(
         return rec
 
     @app.get("/api/documents")
-    def documents_list():
-        return store.list_documents()
+    def documents_list(collection_id: str | None = None, collection: str | None = None):
+        selected = collection_id or collection
+        documents = store.list_documents()
+        if not selected:
+            return documents
+        return [item for item in documents if selected in (item.get("collections") or [])]
 
     @app.get("/api/documents/{document_id}")
     def document_get(document_id: str):
@@ -453,6 +458,37 @@ def create_app(
         except (TagError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         return {"tags": tags}
+
+    # ---- collections + workspace navigation (issue 03) ---------------------
+
+    @app.get("/api/collections")
+    def collections_list():
+        return store.list_collections()
+
+    @app.post("/api/collections")
+    def collection_create(body: dict | None = None):
+        try:
+            return store.create_collection((body or {}).get("name"))
+        except (CollectionError, TypeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.put("/api/collections/{collection_id}")
+    @app.patch("/api/collections/{collection_id}")
+    def collection_rename(collection_id: str, body: dict | None = None):
+        try:
+            return store.rename_collection(collection_id, (body or {}).get("name"))
+        except (CollectionError, TypeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.delete("/api/collections/{collection_id}")
+    def collection_delete(collection_id: str):
+        try:
+            deleted = store.delete_collection(collection_id)
+        except CollectionError as exc:
+            raise HTTPException(status_code=409, detail=str(exc)) from exc
+        if not deleted:
+            raise HTTPException(status_code=404, detail="集合不存在。")
+        return {"deleted": True, "collection_id": collection_id}
 
     @app.put("/api/documents/{document_id}/metadata")
     @app.patch("/api/documents/{document_id}/metadata")
@@ -509,6 +545,20 @@ def create_app(
         except (TagError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         return {"document_id": document_id, "tags": updated.get("tags", [])}
+
+    @app.put("/api/documents/{document_id}/collections")
+    def document_set_collections(document_id: str, body: dict | None = None):
+        payload = body or {}
+        collection_ids = payload.get("collection_ids", payload.get("collections", []))
+        if isinstance(collection_ids, str):
+            collection_ids = [collection_ids]
+        try:
+            rec = store.set_collections(document_id, collection_ids or [])
+        except (CollectionError, TypeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        if rec is None:
+            raise HTTPException(status_code=404, detail="文档不存在或已被删除。")
+        return {"document_id": document_id, "collections": rec.get("collections", [])}
 
     @app.post("/api/documents/{document_id}/markdown")
     def document_save_markdown(document_id: str, body: dict | None = None):

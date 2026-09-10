@@ -25,6 +25,10 @@ def load_entries(
 ) -> list[ExportEntry]:
     """Load the library into per-document latest-version entries (deduped)."""
     entries = []
+    collection_names = {
+        item["collection_id"]: item["name"]
+        for item in store.list_collections()
+    }
     for meta in store.list_documents():
         rec = store.get_document(meta["document_id"])
         if rec is None:
@@ -45,6 +49,8 @@ def load_entries(
                 preprocessed_path=latest.get("preprocessed_path") or "",
                 topics=rec.get("topics") or [],
                 tags=rec.get("tags") or [],
+                collections=[collection_names.get(cid, cid)
+                             for cid in (rec.get("collections") or [])],
                 attachments=_latest_attachments(latest),
             )
         )

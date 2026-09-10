@@ -104,7 +104,8 @@ def render_vault_files(
     from .moc import build_mocs
 
     files: dict[str, bytes] = {}
-    lists = {"note_files": [], "source_files": [], "attachment_files": [], "moc_files": []}
+    lists = {"note_files": [], "source_files": [], "attachment_files": [],
+             "moc_files": [], "collection_files": []}
     for e in entries:
         d = f"notes/{e.safe_id}"
         lists["note_files"].append(f"{d}/note.md")
@@ -118,6 +119,17 @@ def render_vault_files(
             rel = f"{d}/assets/{safe}"
             lists["attachment_files"].append(rel)
             files[rel] = _read_bytes(path)
+        for collection in sorted(set(e.collections)):
+            collection_rel = f"collections/{_safe_name(collection)}/{e.safe_id}.md"
+            lists["collection_files"].append(collection_rel)
+            files[collection_rel] = (
+                "---\n"
+                "type: collection-link\n"
+                f"collection: {collection}\n"
+                f"document_id: {e.document_id}\n"
+                "---\n\n"
+                f"[{e.title or e.document_id}](../../notes/{e.safe_id}/note.md)\n"
+            ).encode("utf-8")
     if scheme is not None:
         for topic, content in build_mocs(scheme, entries).items():
             rel = f"mocs/{_safe_name(topic)}.md"
@@ -139,6 +151,7 @@ def _build_manifest(
         "moc_files": lists["moc_files"],
         "attachment_files": lists["attachment_files"],
         "source_files": lists["source_files"],
+        "collection_files": lists["collection_files"],
         # content fingerprints let a later incremental diff tell "stale system
         # file" (safe to overwrite/delete) from "user-edited file" (must keep).
         "fingerprints": fingerprints,
@@ -159,6 +172,7 @@ class ExportEntry:
     preprocessed_path: str = ""
     topics: list = field(default_factory=list)
     tags: list = field(default_factory=list)
+    collections: list = field(default_factory=list)
     attachments: dict = field(default_factory=dict)  # {name: absolute path}
 
     @property
@@ -283,6 +297,7 @@ def build_note(
     body = "\n".join(lines) + "\n\n"
     body += _yaml_list("topics", entry.topics)
     body += _yaml_list("tags", entry.tags)
+    body += _yaml_list("collections", entry.collections)
     body += "---\n\n"
     body += f"![{title} 原稿]({src})\n\n"
     md = note_body(entry.markdown)
@@ -323,6 +338,7 @@ class Vault:
     attachments: list[str]             # copied attachments (relative)
     sources: list[str]                 # copied original images (relative)
     moc_files: list[str]               # generated MOC index notes (relative)
+    collection_files: list[str]        # deterministic membership links (relative)
     manifest_path: Path
 
     @property
@@ -362,11 +378,12 @@ def export_vault(
     mpath = root / "export-manifest.json"
     _write(mpath, _dump(_build_manifest(entries, exported_at, lists, fingerprints)))
 
-    documentation = lists["note_files"] + lists["moc_files"]
+    documentation = lists["note_files"] + lists["moc_files"] + lists["collection_files"]
     vault = Vault(
         root=root, notes_dir=root / "notes", moc_dir=root / "mocs",
         documentation=documentation, attachments=lists["attachment_files"],
         sources=lists["source_files"], moc_files=lists["moc_files"],
+        collection_files=lists["collection_files"],
         manifest_path=mpath,
     )
 
@@ -475,11 +492,12 @@ def export_incremental(
     if not (mpath.exists() and mpath.read_text(encoding="utf-8") == manifest_str):
         _write(mpath, manifest_str)
 
-    documentation = lists["note_files"] + lists["moc_files"]
+    documentation = lists["note_files"] + lists["moc_files"] + lists["collection_files"]
     vault = Vault(
         root=root, notes_dir=root / "notes", moc_dir=root / "mocs",
         documentation=documentation, attachments=lists["attachment_files"],
         sources=lists["source_files"], moc_files=lists["moc_files"],
+        collection_files=lists["collection_files"],
         manifest_path=mpath,
     )
     _validate_all_links(vault, exported_at)

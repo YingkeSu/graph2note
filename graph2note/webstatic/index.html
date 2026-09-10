@@ -36,6 +36,25 @@
       <h2>本地文档库</h2>
       <span class="dim" id="library-count"></span>
     </div>
+    <section id="workspace-navigation" class="workspace-navigation" aria-label="工作台导航">
+      <div class="workspace-nav-column">
+        <div class="workspace-nav-head">
+          <h3>集合</h3>
+          <form id="collection-create-form" class="tag-create-form">
+            <input id="collection-create-input" type="text" placeholder="新建集合" />
+            <button class="btn small" type="submit">添加</button>
+          </form>
+        </div>
+        <div id="collection-tree" class="collection-tree"></div>
+      </div>
+      <div class="workspace-nav-column quick-links">
+        <h3>快捷入口</h3>
+        <button class="workspace-link" data-library-filter="today">今日新增</button>
+        <button class="workspace-link" data-library-filter="week">本周新增</button>
+        <button class="workspace-link" data-library-filter="recent">最近编辑</button>
+        <button class="workspace-link" data-library-filter="all">全部 Library</button>
+      </div>
+    </section>
     <section id="tag-vocabulary" class="tag-vocabulary" aria-label="标签词表">
       <div class="tag-vocabulary-head">
         <h3>标签词表</h3>
@@ -116,6 +135,17 @@
         </form>
       </div>
       <div id="document-tag-list" class="document-tag-list"></div>
+    </section>
+
+    <section id="document-collections" class="document-tags" aria-label="文档集合">
+      <div class="document-tags-head">
+        <span>所属集合</span>
+        <form id="document-collection-form" class="tag-create-form">
+          <select id="document-collection-select"><option value="">选择集合</option></select>
+          <button class="btn small" type="submit">加入</button>
+        </form>
+      </div>
+      <div id="document-collection-list" class="document-tag-list"></div>
     </section>
 
     <section id="metadata-panel" class="metadata-panel" aria-label="文档时间元数据">
