@@ -101,7 +101,7 @@ DocumentRecord ─┬─ 时间模型（capture / document / import / modified �
 - **解析遥测持久化**：每次解析的遥测（模型、prompt/completion/reasoning tokens、延迟、重试、缓存命中）随版本记录落库（当前只在运行期 timing 产物中，attempts 字段已预留 token 位但网关未回填 usage——本期补全网关 usage 捕获）；成本估计用本地价目配置，不引入外部计量服务。
 - **视图模型为纯函数**：`DocumentRecord[] + ClassificationScheme + 元数据 → timeline / graph / dashboard / inbox 视图数据`，确定性、可快照；Graph 边来源枚举 `topic | tag | manual`，本期不产生 `inferred` 边、不新增模型调用。
 - **API 契约（前端技术不锁，契约先行）**：现有 `/api/documents` 系列不变；新增只读为主的工作台端点——统计聚合（`/api/stats`）、时间轴（`/api/timeline`）、图谱（`/api/graph`）、集合 CRUD（`/api/collections` + 文档归属变更）、标签词表（`/api/tags`，含合并/重命名）、文档元数据读写（`/api/documents/{id}/metadata`）。具体形态以 SPEC 为准。
-- **前端视图需求**（供并行进行的界面设计）：工作台布局为「左侧集合/导航树 + 中间内容区 + 右侧今日/本周/历史侧栏」；核心视图为 Library（现有列表升级）、Timeline、Graph、Dashboard、Inbox 与既有三栏编辑器；技术栈（演进现有静态 app 或框架重写）由实现期决定，API 契约与交互行为是唯一约束。
+- **前端视图需求**（供并行进行的界面设计）：工作台布局为「左侧集合/导航树 + 中间内容区 + 右侧今日/本周/历史侧栏」；核心视图为 Library（现有列表升级）、Timeline、Graph、Dashboard、Inbox 与既有三栏编辑器；技术栈（演进现有静态 app 或框架重写）由实现期决定，API 契约与交互行为是唯一约束。首版界面概念稿见 `design/01-note_compiler_concept.html`（2026-09-10，仅供参考，不构成契约）。
 - **回填与增量**：时间推断、标签、集合归属对存量文档可批量补跑（复用 notes 增量导出的「以 document_id 为锚」模式），不要求一次性迁移。
 
 ## Testing Decisions
@@ -128,6 +128,9 @@ DocumentRecord ─┬─ 时间模型（capture / document / import / modified �
 ## Further Notes
 
 - **与 2026-09-10 手稿 PRD 草案（GPT 识别稿）的对照**：草案中的 Recognition Router、Document IR、结构化 Markdown、流程图重建、自动分类 + Obsidian 集成（溯源/MOC/增量导出）均已在 manuscript-compiler-mvp 与 notes-organizer 交付，本 PRD 只承接其「知识工作台」增量（时间轴/图谱/Dashboard/Token 统计/文件夹管理/标签治理）；草案中「增量处理」一处字迹不确定，按 Semantic Merge 归入 Out of Scope；「交叉比对」按版本间 Semantic Diff 归入后续独立 PRD。
-- 前端界面由维护者并行设计；API 契约与视图需求是设计稿与实现的协作界面，SPEC 阶段冻结字段形态。
+- 前端界面由维护者并行设计；API 契约与视图需求是设计稿与实现的协作界面，SPEC 阶段冻结字段形态。**2026-09-10 概念稿**（`design/01-note_compiler_concept.html`，仅供参考、非契约）与 PRD 的对照：
+  - 一致：三栏布局（集合树 / 内容区 / 信息侧栏）、顶部 Tab（工作台 / 知识图谱 / 时间轴 / 数据看板）、Inbox、文档详情的「原稿预览 / AI 解析 / 历史版本 / 导出 / 同步到 Obsidian」操作组、自动分类带置信度展示、右侧栏图谱预览与时间线。
+  - 概念稿超出 PRD 的元素，是否纳入 scope 由 SPEC 逐项裁定：星标、回收站、存储空间用量、⌘K 全局搜索、「Obsidian 同步」一级 Tab（PRD 定位为导出入口而非独立视图）。
+  - 语义对齐：概念稿「自动分类建议归档到目录」对应本 PRD 的集合（collection，多对多归属），不是物理目录。
 - 开放问题（不阻塞 PRD，SPEC/实现期决策）：时间轴分组粒度的自适应规则（日/周切换是否自动）；成本价目表的维护方式与默认币种；标签词表的初始种子（是否从已有 ClassificationScheme 的 topic 别名冷启动）；Inbox「待整理」的判定阈值（无标签即入，还是含低置信交叉验证标记）。
 - 依赖：manuscript-compiler-mvp issue 07（DocumentRecord 持久化）、issue 10（交叉验证标记，Inbox 低置信信号的候选来源）、issue 11（timing 遥测）；notes-organizer 全部（ClassificationScheme、导出幂等锚点）。

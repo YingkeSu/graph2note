@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Note Compiler — 前端概念稿</title>
+<style>
+  :root{
+    --bg:#f6f8fb;
+    --panel:#ffffff;
+    --line:#e6eaf0;
+    --line-strong:#d8dee8;
+    --text:#172033;
+    --muted:#738096;
+    --soft:#f2f5fa;
+    --blue:#2f6fed;
+    --blue-2:#6ea8ff;
+    --blue-soft:#eaf2ff;
+    --teal:#22a699;
+    --teal-soft:#eaf8f6;
+    --violet:#7257e8;
+    --violet-soft:#f1edff;
+    --orange:#e79a36;
+    --orange-soft:#fff4e5;
+    --red:#e35e6b;
+    --red-soft:#fff0f2;
+    --shadow:0 10px 30px rgba(28, 46, 78, .08);
+    --radius:14px;
+    --sidebar:240px;
+    --rightbar:320px;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+    color:var(--text);
+    background:var(--bg);
+    overflow:hidden;
+  }
+  button,input{font:inherit}
+  button{cursor:pointer}
+  .app{
+    height:100vh;
+    display:grid;
+    grid-template-rows:58px 1fr;
+  }
+
+  /* Topbar */
+  .topbar{
+    display:grid;
+    grid-template-columns:var(--sidebar) 1fr var(--rightbar);
+    align-items:center;
+    background:rgba(255,255,255,.95);
+    border-bottom:1px solid var(--line);
+    backdrop-filter:blur(14px);
+    z-index:20;
+  }
+  .brand{
+    display:flex;align-items:center;gap:11px;
+    padding:0 18px;
+  }
+  .logo{
+    width:32px;height:32px;border-radius:9px;
+    display:grid;place-items:center;
+    background:linear-gradient(135deg,#4e7df7,#6057e8);
+    color:white;font-weight:800;
+    box-shadow:0 8px 18px rgba(47,111,237,.25);
+  }
+  .brand-text{line-height:1.05}
+  .brand-title{font-size:15px;font-weight:800;letter-spacing:.1px}
+  .brand-sub{font-size:10px;color:var(--muted);margin-top:4px}
+
+  .top-center{
+    display:flex;align-items:center;justify-content:space-between;
+    min-width:0;padding:0 18px 0 12px;
+  }
+  .tabs{display:flex;gap:7px;align-items:center}
+  .tab{
+    padding:9px 12px;border:0;border-radius:9px;background:transparent;
+    color:#43516a;font-weight:650;font-size:13px;
+  }
+  .tab.active{background:var(--blue-soft);color:var(--blue)}
+  .search{
+    width:min(320px,35vw);
+    display:flex;align-items:center;gap:8px;
+    padding:8px 12px;border:1px solid var(--line);
+    background:#fafbfd;border-radius:10px;color:var(--muted);
+  }
+  .search input{border:0;outline:0;background:transparent;width:100%;color:var(--text);font-size:12px}
+
+  .top-right{
+    display:flex;align-items:center;justify-content:flex-end;gap:10px;
+    padding:0 16px;
+  }
+  .icon-btn{
+    width:34px;height:34px;border-radius:9px;border:1px solid transparent;background:transparent;
+    display:grid;place-items:center;color:#596780;
+  }
+  .icon-btn:hover{background:var(--soft)}
+  .avatar{
+    width:30px;height:30px;border-radius:50%;background:var(--blue);color:white;
+    display:grid;place-items:center;font-size:12px;font-weight:800
+  }
+  .user{font-size:12px;font-weight:650}
+
+  /* Main layout */
+  .body{
+    display:grid;
+    grid-template-columns:var(--sidebar) 1fr var(--rightbar);
+    min-height:0;
+  }
+  .sidebar,.rightbar{
+    background:var(--panel);
+    min-height:0;
+    overflow:auto;
+  }
+  .sidebar{border-right:1px solid var(--line);padding:14px}
+  .rightbar{border-left:1px solid var(--line);padding:14px}
+
+  .import-btn{
+    width:100%;border:0;border-radius:10px;color:white;background:var(--blue);
+    padding:11px 14px;font-weight:750;display:flex;align-items:center;justify-content:space-between;
+    box-shadow:0 6px 14px rgba(47,111,237,.18);
+  }
+  .import-left{display:flex;gap:10px;align-items:center}
+  .nav-list{margin-top:14px;display:flex;flex-direction:column;gap:4px}
+  .nav-item{
+    display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;
+    font-size:12px;color:#43516a;
+  }
+  .nav-item:hover,.nav-item.active{background:var(--soft)}
+  .nav-item .count{margin-left:auto;font-size:10px;color:#8793a7;background:#f1f4f8;border-radius:999px;padding:2px 7px}
+  .section-title{
+    display:flex;align-items:center;justify-content:space-between;
+    margin:18px 2px 7px;color:#7b879c;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+  }
+  .tree{display:flex;flex-direction:column;gap:2px}
+  .tree-row{
+    display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;font-size:11px;color:#4d5a70;
+  }
+  .tree-row:hover{background:#f8f9fb}
+  .tree-row.indent{padding-left:26px}
+  .tree-row.active{background:var(--blue-soft);color:var(--blue);font-weight:700}
+  .tree-dot{width:14px;height:14px;border-radius:4px;background:#edf2fa;border:1px solid #dfe6f0}
+  .sidebar-footer{
+    margin-top:18px;border:1px solid var(--line);border-radius:11px;padding:11px;background:#fbfcfe
+  }
+  .storage-label{font-size:10px;color:var(--muted)}
+  .storage-bar{height:6px;border-radius:999px;background:#e9edf3;margin:8px 0;overflow:hidden}
+  .storage-fill{height:100%;width:24%;background:var(--blue);border-radius:999px}
+  .storage-row{display:flex;justify-content:space-between;font-size:10px;color:#6d7990}
+
+  /* Workspace */
+  .workspace{
+    min-width:0;min-height:0;overflow:auto;background:#fff;
+  }
+  .workspace-inner{
+    max-width:1120px;margin:0 auto;padding:18px 28px 50px;
+  }
+  .doc-top{
+    display:flex;align-items:center;justify-content:space-between;gap:18px;margin-bottom:14px
+  }
+  .doc-meta{font-size:10px;color:var(--muted);line-height:1.5;text-align:right}
+  .actions{display:flex;align-items:center;gap:8px}
+  .btn{
+    border:1px solid var(--line);background:white;color:#42516a;
+    border-radius:9px;padding:8px 11px;font-size:11px;font-weight:700;
+    display:inline-flex;align-items:center;gap:7px;
+  }
+  .btn:hover{background:#f7f9fc}
+  .btn.primary{background:#20283a;color:white;border-color:#20283a}
+  .tags{display:flex;flex-wrap:wrap;gap:7px;margin:8px 0 22px}
+  .tag{padding:5px 9px;border-radius:999px;background:#edf4ff;color:#2f6fed;font-size:10px;font-weight:700}
+  .tag.teal{background:var(--teal-soft);color:#1e8d83}
+  .tag.violet{background:var(--violet-soft);color:#6a50db}
+  .tag.add{background:white;color:#77849a;border:1px solid var(--line)}
+  h1{font-size:28px;line-height:1.2;margin:0 0 22px;letter-spacing:-.02em}
+  h2{font-size:17px;margin:28px 0 12px}
+  p{font-size:13px;line-height:1.8;color:#47556d;margin:8px 0}
+  .lead{
+    border-left:3px solid var(--blue);
+    background:linear-gradient(90deg,#eef5ff,#f8fbff);
+    padding:12px 14px;border-radius:8px;color:#315483;font-size:12px;margin:14px 0 24px
+  }
+
+  .number-list{display:flex;flex-direction:column;gap:9px;margin:12px 0 24px}
+  .number-row{display:flex;align-items:flex-start;gap:10px;font-size:12px;line-height:1.55;color:#47556d}
+  .num{
+    width:22px;height:22px;flex:0 0 22px;border-radius:50%;
+    display:grid;place-items:center;background:var(--blue);color:white;font-size:10px;font-weight:800
+  }
+
+  .flow{
+    display:grid;grid-template-columns:repeat(5,1fr);gap:18px;align-items:center;margin:18px 0 28px;
+  }
+  .flow-card{
+    position:relative;border:1px solid var(--line);border-radius:11px;padding:13px 12px;background:#fff;min-height:76px
+  }
+  .flow-card:not(:last-child)::after{
+    content:"→";position:absolute;right:-17px;top:28px;color:#9ba6b9;font-size:16px;font-weight:700
+  }
+  .flow-card.blue{background:#f1f6ff;border-color:#cfe0ff}
+  .flow-card.teal{background:#f0fbf9;border-color:#cbeee9}
+  .flow-card.violet{background:#f7f3ff;border-color:#ddd2ff}
+  .flow-card.orange{background:#fff8ed;border-color:#f6dbad}
+  .flow-card.red{background:#fff4f5;border-color:#f4c9cf}
+  .flow-title{font-size:11px;font-weight:800;margin-bottom:4px}
+  .flow-sub{font-size:10px;color:#748097;line-height:1.4}
+  .tech-list{margin:8px 0 0;padding-left:20px;color:#47556d;font-size:12px;line-height:1.7}
+
+  /* Right bar */
+  .panel{
+    border:1px solid var(--line);border-radius:12px;background:#fff;margin-bottom:12px;
+    box-shadow:0 3px 14px rgba(30,42,60,.03)
+  }
+  .panel-head{display:flex;justify-content:space-between;align-items:center;padding:11px 12px;border-bottom:1px solid #f0f2f5}
+  .panel-title{font-size:12px;font-weight:800}
+  .panel-body{padding:12px}
+  .info-grid{display:grid;grid-template-columns:72px 1fr;gap:8px 10px;font-size:10px}
+  .label{color:#8a95a8}
+  .value{color:#3e4b62}
+  .small-tags{display:flex;flex-wrap:wrap;gap:5px}
+  .small-tag{font-size:9px;padding:4px 7px;border-radius:999px;background:#eef4ff;color:#2f6fed}
+  .small-tag.teal{background:var(--teal-soft);color:#218f85}
+  .small-tag.violet{background:var(--violet-soft);color:#6a50db}
+
+  .class-row{display:grid;grid-template-columns:64px 1fr;gap:8px;margin-bottom:8px;font-size:10px}
+  .class-key{color:#8a95a8}
+  .confidence{font-size:9px;color:#15846f;background:#e9f8f4;padding:3px 6px;border-radius:999px}
+
+  .graph-wrap{height:150px;position:relative}
+  .graph-wrap svg{width:100%;height:100%}
+  .node-label{font-size:9px;fill:#536079}
+  .node-center{font-size:9px;fill:white;font-weight:700}
+  .timeline{display:flex;flex-direction:column;gap:11px}
+  .time-row{display:grid;grid-template-columns:10px 1fr;gap:8px}
+  .dot{width:8px;height:8px;border-radius:50%;background:var(--blue);margin-top:3px}
+  .time-main{font-size:10px;color:#526078}
+  .time-sub{font-size:9px;color:#919bad;margin-top:2px}
+  .stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .stat{border:1px solid var(--line);border-radius:9px;padding:9px;background:#fafbfd}
+  .stat-num{font-size:16px;font-weight:800}
+  .stat-label{font-size:9px;color:#8a95a8;margin-top:3px}
+
+  /* Modals / toast */
+  .modal-backdrop{
+    position:fixed;inset:0;background:rgba(16,24,40,.35);display:none;align-items:center;justify-content:center;z-index:50;
+  }
+  .modal-backdrop.show{display:flex}
+  .modal{
+    width:min(820px,88vw);max-height:84vh;overflow:auto;background:white;border-radius:16px;box-shadow:0 24px 70px rgba(0,0,0,.18);
+  }
+  .modal-head{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line)}
+  .scan{
+    margin:18px auto;width:88%;height:480px;border-radius:10px;border:1px solid #d8d1bf;
+    background:
+      linear-gradient(rgba(82,91,103,.12) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(82,91,103,.12) 1px,transparent 1px),
+      #f1ead7;
+    background-size:22px 22px;
+    position:relative;overflow:hidden;
+  }
+  .scribble{position:absolute;color:#535963;font-family:Georgia,serif;font-style:italic;opacity:.9}
+  .scribble.s1{left:10%;top:12%;font-size:18px;transform:rotate(-3deg)}
+  .scribble.s2{left:16%;top:25%;font-size:15px;transform:rotate(2deg)}
+  .scribble.s3{left:48%;top:42%;font-size:17px;transform:rotate(-2deg)}
+  .scribble.s4{left:22%;top:60%;font-size:16px;transform:rotate(3deg)}
+  .toast{
+    position:fixed;right:24px;bottom:24px;background:#172033;color:white;border-radius:10px;
+    padding:11px 14px;font-size:11px;opacity:0;transform:translateY(8px);pointer-events:none;transition:.22s;z-index:60
+  }
+  .toast.show{opacity:1;transform:translateY(0)}
+  .kbd{font-size:9px;border:1px solid var(--line-strong);border-bottom-width:2px;border-radius:5px;padding:2px 5px;color:#8a95a8;background:white}
+
+  /* Responsive */
+  @media (max-width:1180px){
+    :root{--sidebar:210px;--rightbar:290px}
+    .flow{grid-template-columns:1fr 1fr}
+    .flow-card:not(:last-child)::after{display:none}
+  }
+  @media (max-width:960px){
+    :root{--sidebar:190px;--rightbar:0px}
+    .rightbar,.top-right{display:none}
+    .topbar,.body{grid-template-columns:var(--sidebar) 1fr}
+    .top-center{grid-column:2}
+    .search{display:none}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">N</div>
+      <div class="brand-text">
+        <div class="brand-title">Note Compiler</div>
+        <div class="brand-sub">让手写笔记，成为可复用的知识</div>
+      </div>
+    </div>
+
+    <div class="top-center">
+      <nav class="tabs">
+        <button class="tab active">工作台</button>
+        <button class="tab">知识图谱</button>
+        <button class="tab">时间轴</button>
+        <button class="tab">数据看板</button>
+        <button class="tab">Obsidian 同步</button>
+      </nav>
+      <div class="search">
+        <span>⌕</span>
+        <input id="searchInput" placeholder="搜索笔记、标签或内容…" />
+        <span class="kbd">⌘ K</span>
+      </div>
+    </div>
+
+    <div class="top-right">
+      <button class="icon-btn" title="通知">♢</button>
+      <div class="avatar">Z</div>
+      <div class="user">Zhang</div>
+      <button class="icon-btn">⌄</button>
+    </div>
+  </header>
+
+  <main class="body">
+    <aside class="sidebar">
+      <button class="import-btn" id="importBtn">
+        <span class="import-left"><span>＋</span><span>导入笔记</span></span><span>⌄</span>
+      </button>
+
+      <div class="nav-list">
+        <div class="nav-item"><span>▱</span><span>Inbox</span><span class="count">8</span></div>
+        <div class="nav-item active"><span>▤</span><span>全部笔记</span><span class="count">124</span></div>
+        <div class="nav-item"><span>◷</span><span>最近使用</span></div>
+        <div class="nav-item"><span>☆</span><span>星标</span></div>
+      </div>
+
+      <div class="section-title"><span>我的知识库</span><span>⌃</span></div>
+      <div class="tree">
+        <div class="tree-row"><span>⌄</span><span class="tree-dot"></span><span>研究项目</span></div>
+        <div class="tree-row indent"><span class="tree-dot"></span><span>AI & LLM</span><span class="count">12</span></div>
+        <div class="tree-row indent"><span class="tree-dot"></span><span>知识管理</span><span class="count">8</span></div>
+        <div class="tree-row indent active"><span class="tree-dot"></span><span>产品设计</span><span class="count">6</span></div>
+
+        <div class="tree-row"><span>⌄</span><span class="tree-dot"></span><span>课程学习</span></div>
+        <div class="tree-row indent"><span class="tree-dot"></span><span>CS 计算机基础</span><span class="count">15</span></div>
+        <div class="tree-row indent"><span class="tree-dot"></span><span>数据科学</span><span class="count">9</span></div>
+
+        <div class="tree-row"><span>›</span><span class="tree-dot"></span><span>灵感收集</span><span class="count">7</span></div>
+        <div class="tree-row"><span>›</span><span class="tree-dot"></span><span>个人笔记</span><span class="count">4</span></div>
+        <div class="tree-row"><span>›</span><span class="tree-dot"></span><span>模板库</span><span class="count">3</span></div>
+        <div class="tree-row"><span>›</span><span class="tree-dot"></span><span>归档</span><span class="count">18</span></div>
+        <div class="tree-row"><span>⌫</span><span>回收站</span></div>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="storage-label">存储空间</div>
+        <div class="storage-bar"><div class="storage-fill"></div></div>
+        <div class="storage-row"><span>2.4 GB / 10 GB</span><span>24%</span></div>
+      </div>
+    </aside>
+
+    <section class="workspace">
+      <div class="workspace-inner">
+        <div class="doc-top">
+          <div class="actions">
+            <button class="btn" id="backBtn">← 返回</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <div class="doc-meta">最后编辑：2026-09-10 09:55<br/>更新于：2026-09-10 14:20</div>
+            <button class="btn" id="rawBtn">▧ 原稿</button>
+            <button class="btn" id="aiBtn">⌁ AI 解析</button>
+            <button class="btn" id="historyBtn">◷ 历史版本</button>
+            <button class="btn">•••</button>
+            <button class="btn">⇧ 导出</button>
+            <button class="btn primary" id="syncBtn">◈ 同步到 Obsidian</button>
+          </div>
+        </div>
+
+        <div class="tags">
+          <span class="tag"># 产品设计</span>
+          <span class="tag teal"># OCR</span>
+          <span class="tag"># Markdown</span>
+          <span class="tag violet"># 知识管理</span>
+          <span class="tag add">＋ 添加标签</span>
+        </div>
+
+        <article id="noteArticle">
+          <h1>手写笔记电子化 - 产品设计 ✎</h1>
+
+          <h2>一、核心设想</h2>
+          <p>
+            将手写笔记、手稿、论文扫描件等非结构化内容，通过 AI 解析为结构化的数字内容，
+            并进一步完成分类、时间组织和知识关联，最终沉淀为可长期复用的知识库。
+          </p>
+          <div class="lead">让手写笔记，成为可搜索、可结构化、可持续积累的知识资产。</div>
+
+          <h2>二、主要功能</h2>
+          <div class="number-list">
+            <div class="number-row"><span class="num">1</span><span><strong>输入：</strong>手写稿、笔记、论文扫描件</span></div>
+            <div class="number-row"><span class="num">2</span><span><strong>解析：</strong>图像预处理 → OCR / 多模态模型</span></div>
+            <div class="number-row"><span class="num">3</span><span><strong>结构化：</strong>转换为 Markdown / CSS / 模板</span></div>
+            <div class="number-row"><span class="num">4</span><span><strong>输出：</strong>Markdown、HTML、PDF（可预览、可导出、自动分类、同步到 Obsidian）</span></div>
+          </div>
+
+          <h2>三、系统流程</h2>
+          <div class="flow">
+            <div class="flow-card blue">
+              <div class="flow-title">原始输入</div>
+              <div class="flow-sub">手写笔记 / 扫描件</div>
+            </div>
+            <div class="flow-card teal">
+              <div class="flow-title">智能解析</div>
+              <div class="flow-sub">OCR / LLM 路由</div>
+            </div>
+            <div class="flow-card violet">
+              <div class="flow-title">结构化内容</div>
+              <div class="flow-sub">Markdown / IR</div>
+            </div>
+            <div class="flow-card orange">
+              <div class="flow-title">知识化处理</div>
+              <div class="flow-sub">分类 / 标签 / 时间戳</div>
+            </div>
+            <div class="flow-card red">
+              <div class="flow-title">知识库</div>
+              <div class="flow-sub">Obsidian / Web</div>
+            </div>
+          </div>
+
+          <h2>四、技术栈（参考）</h2>
+          <ul class="tech-list">
+            <li>LLM / 多模态模型</li>
+            <li>OCR / 图像处理</li>
+            <li>Markdown 解析与模板渲染</li>
+            <li>可视化：图表 / 流程图重建（Mermaid / ECharts / Matplotlib）</li>
+            <li>前端：Web 编辑器 + 实时预览</li>
+            <li>后端：文档处理 / 知识库管理</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+
+    <aside class="rightbar">
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">文档信息</div>
+          <button class="btn" style="padding:5px 8px">编辑</button>
+        </div>
+        <div class="panel-body">
+          <div class="info-grid">
+            <div class="label">标题</div><div class="value">手写笔记电子化 - 产品设计</div>
+            <div class="label">类型</div><div class="value">▣ 手写笔记</div>
+            <div class="label">创建时间</div><div class="value">2026-09-10 09:55</div>
+            <div class="label">更新时间</div><div class="value">2026-09-10 14:20</div>
+            <div class="label">字数</div><div class="value">428</div>
+            <div class="label">标签</div>
+            <div class="small-tags">
+              <span class="small-tag"># 产品设计</span>
+              <span class="small-tag teal"># OCR</span>
+              <span class="small-tag"># 知识管理</span>
+              <span class="small-tag violet">Obsidian</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">自动分类 <span style="color:var(--blue);font-size:10px;margin-left:4px">AI</span></div>
+          <span class="confidence">置信度 92%</span>
+        </div>
+        <div class="panel-body">
+          <div class="class-row"><div class="class-key">分类</div><div>产品设计 → 工具类</div></div>
+          <div class="class-row"><div class="class-key">主题</div><div>知识管理</div></div>
+          <div class="class-row"><div class="class-key">关键词</div><div>Obsidian、OCR、Markdown</div></div>
+          <div class="class-row"><div class="class-key">建议</div><div>归档到「产品设计」目录</div></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div class="panel-title">知识图谱（预览）</div>
+          <button class="btn" style="padding:5px 8px;color:var(--blue)">查看完整图谱 ›</button>
+        </div>
+        <div class="panel-body">
+          <div class="graph-wrap">
+            <svg viewBox="0 0 300 150">
+              <g stroke="#bdd0f8" stroke-width="1.4">
+                <line x1="150" y1="75" x2="65" y2="38"/>
+                <line x1="150" y1="75" x2="236" y2="30"/>
+                <line x1="150" y1="75" x2="245" y2="80"/>
+                <line x1="150" y1="75" x2="224" y2="126"/>
+                <line x1="150" y1="75" x2="80" y2="125"/>
+                <line x1="150" y1="75" x2="52" y2="86"/>
+              </g>
+              <circle cx="150" cy="75" r="26" fill="#2f6fed"/>
+              <text x="150" y="78" text-anchor="middle" class="node-center">笔记电子化</text>
+
+              <circle cx="65" cy="38" r="9" fill="#47b9ab"/><text x="80" y="41" class="node-label">OCR</text>
+              <circle cx="236" cy="30" r="9" fill="#f0a34f"/><text x="249" y="33" class="node-label">Markdown</text>
+              <circle cx="245" cy="80" r="9" fill="#e6b53b"/><text x="258" y="83" class="node-label">知识管理</text>
+              <circle cx="224" cy="126" r="9" fill="#28a99a"/><text x="237" y="129" class="node-label">Obsidian</text>
+              <circle cx="80" cy="125" r="9" fill="#5cc3b3"/><text x="94" y="128" class="node-label">流程重建</text>
+              <circle cx="52" cy="86" r="9" fill="#7b57d8"/><text x="66" y="89" class="node-label">AI</text>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">时间线</div></div>
+          <div class="panel-body">
+            <div class="timeline">
+              <div class="time-row"><span class="dot"></span><div><div class="time-main">14:20</div><div class="time-sub">更新文档内容</div></div></div>
+              <div class="time-row"><span class="dot" style="background:var(--teal)"></span><div><div class="time-main">10:12</div><div class="time-sub">AI 解析完成</div></div></div>
+              <div class="time-row"><span class="dot"></span><div><div class="time-main">09:55</div><div class="time-sub">上传手写笔记</div></div></div>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">数据看板</div></div>
+          <div class="panel-body">
+            <div class="stats">
+              <div class="stat"><div class="stat-num">124</div><div class="stat-label">笔记总数</div></div>
+              <div class="stat"><div class="stat-num">12</div><div class="stat-label">本周新增</div></div>
+              <div class="stat"><div class="stat-num">28</div><div class="stat-label">标签数量</div></div>
+              <div class="stat"><div class="stat-num">2.4G</div><div class="stat-label">存储使用</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+</div>
+
+<div class="modal-backdrop" id="rawModal">
+  <div class="modal">
+    <div class="modal-head">
+      <strong>原始手稿预览</strong>
+      <button class="btn" id="closeRaw">关闭</button>
+    </div>
+    <div class="scan">
+      <div class="scribble s1">笔记 / 手稿电子化 → 智能解析 → 格式化 → 输出</div>
+      <div class="scribble s2">① 输入：手稿、笔记、论文扫描　② 样式：预置模板</div>
+      <div class="scribble s3">LLM 直接？ OCR？ 路由！</div>
+      <div class="scribble s4">Markdown → 时间戳 + 自动分类 + 标签 → Obsidian</div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast">操作完成</div>
+
+<script>
+  const toast = document.getElementById('toast');
+  function showToast(msg){
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(window.__toastTimer);
+    window.__toastTimer = setTimeout(()=>toast.classList.remove('show'), 1800);
+  }
+
+  const rawModal = document.getElementById('rawModal');
+  document.getElementById('rawBtn').onclick = ()=> rawModal.classList.add('show');
+  document.getElementById('closeRaw').onclick = ()=> rawModal.classList.remove('show');
+  rawModal.addEventListener('click', e => { if(e.target === rawModal) rawModal.classList.remove('show'); });
+
+  document.getElementById('aiBtn').onclick = ()=> showToast('AI 解析任务已重新触发');
+  document.getElementById('historyBtn').onclick = ()=> showToast('历史版本：v3 · 2026-09-10 14:20');
+  document.getElementById('syncBtn').onclick = ()=> showToast('已同步到 Obsidian');
+  document.getElementById('importBtn').onclick = ()=> showToast('概念稿：此处打开图片 / PDF 导入面板');
+  document.getElementById('backBtn').onclick = ()=> showToast('返回笔记列表');
+
+  document.querySelectorAll('.tab').forEach(tab=>{
+    tab.addEventListener('click',()=>{
+      document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+      tab.classList.add('active');
+      showToast('切换到：' + tab.textContent);
+    });
+  });
+
+  const searchInput = document.getElementById('searchInput');
+  searchInput.addEventListener('keydown', e=>{
+    if(e.key === 'Enter' && searchInput.value.trim()){
+      showToast('搜索：' + searchInput.value.trim());
+    }
+  });
+
+  document.addEventListener('keydown', e=>{
+    if((e.metaKey || e.ctrlKey) && e.key.toLowerCase()==='k'){
+      e.preventDefault();
+      searchInput.focus();
+    }
+    if(e.key === 'Escape'){
+      rawModal.classList.remove('show');
+      searchInput.blur();
+    }
+  });
+</script>
+</body>
+</html>
