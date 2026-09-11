@@ -30,8 +30,16 @@ uv sync --all-extras
 
 ## 测试
 
+测试按模块/层次/成本用 pytest marker 分类（`tests/taxonomy.py` + `tests/conftest.py` 自动打标，
+`--strict-markers` 已开启），分类详情与模块→测试映射表见 [docs/testing.md](testing.md)。
+
 ```bash
-uv run pytest          # 或 .venv/bin/python -m pytest
+uv run pytest                        # 全量（大版本合并前）
+scripts/run_tests.sh webapp          # 单模块（开发时只跑相关测试）
+scripts/run_tests.sh webapp notes    # 多模块
+scripts/run_tests.sh --unit          # 全部单元测试
+scripts/run_tests.sh --integration   # 全部集成测试
+scripts/run_tests.sh --fast          # 排除 slow
 ```
 
 ## 运行

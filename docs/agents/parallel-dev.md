@@ -51,7 +51,9 @@ ready-for-agent ──指派──▶ claimed ──worker交付──▶ in-rev
 
 Dispatcher 在 worker 的 worktree 内执行：
 
-1. **全量测试套件绿**（当前项目：`pytest`）。
+1. **测试绿**（当前项目：`pytest`；分类与模块级运行见 `docs/testing.md`）。
+   - **单模块交付**：该模块范围测试绿（`scripts/run_tests.sh <module>`）+ 契约触及的邻近模块测试绿（映射表右列）。
+   - **大版本/发布合并前**：全量套件绿（`scripts/run_tests.sh --all`）。
 2. **AC 清单逐项核对**：issue 的每条 Acceptance criterion 须有证据（命令输出、产物路径或测试名）。
 3. **代码审查**：调用 `/code-review`（或等价审查流程）。
 4. **安全底线**：确认 `.env`、密钥、凭证未出现在任何提交中。
