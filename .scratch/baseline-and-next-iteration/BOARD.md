@@ -8,7 +8,7 @@
 ## 发布与执行状态
 
 - 已发布：12（12=测试分类，维护者 2026-09-12 指令）；已认领：10（graph2note-16）；已完成：10；2026-09-12 已合并入本地 main：01(493e6ec)、06(e93e4d7)、04(19a3c9e)、02(1993430)、05(fca91de)、07(9db65c1)、03(c108aab)、12(df9546c)、黑图修复(c6f8c52)、08(847334f)、09(ba5671a)。01–09 + 12 handoff 已收集。未 push。
-- 2026-09-12 PDF track 接力：08/09 已合并；10 由 graph2note-16 开工（关键词检索 + 页级命中跳转，不含向量），11 依赖 10。
+- 2026-09-12 PDF track 接力：08/09 已合并；10 由 graph2note-16 交付（in-review，关键词检索 + 页级命中跳转，不含向量），11 依赖 10。
 - 2026-09-11 调度：01→graph2note-10、04→graph2note-13、06→graph2note-11、08→graph2note-12 并行启动（04/06/08 在 03 归档前提前启动，已与 03 领地隔离）；reviewer=graph2note-14。
 - 所有 issue 的 `ready-for-agent` 表示需求已准备好，不表示阻塞依赖已完成。
 - 当前可立即开始：**01**。本次只发布，不认领或启动实现。
@@ -30,7 +30,7 @@
 | [07 展示 Obsidian 增量变化与冲突结果](issues/07-obsidian-incremental-conflict-report.md) | Obsidian | [06](issues/06-web-obsidian-vault-export.md) | merged (9db65c1) |
 | [08 上传 PDF 并逐页解析入库](issues/08-pdf-upload-parse-library.md) | PDF | [03](issues/03-clean-baseline-release.md) | merged (847334f) |
 | [09 PDF 批任务中断恢复与失败页重试](issues/09-pdf-job-recovery-retry.md) | PDF | [08](issues/08-pdf-upload-parse-library.md) | merged (ba5671a) |
-| [10 搜索 PDF 内容并跳转命中原页](issues/10-pdf-content-search.md) | PDF | [08](issues/08-pdf-upload-parse-library.md) | claimed (graph2note-16) |
+| [10 搜索 PDF 内容并跳转命中原页](issues/10-pdf-content-search.md) | PDF | [08](issues/08-pdf-upload-parse-library.md) | in-review (graph2note-16) |
 | [11 基于 PDF 内容问答并提供页级引用](issues/11-pdf-grounded-question-answering.md) | PDF | [10](issues/10-pdf-content-search.md) | ready-for-agent |
 | [12 测试整理分类与模块级测试运行](issues/12-test-taxonomy-scoped-runs.md) | 开发工具 | 无 | merged (df9546c) |
 
