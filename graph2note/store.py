@@ -113,8 +113,14 @@ class DocumentStore(ABC):
     def save_document(self, *, document_id, title, source_job_id, model,
                       markdown, ir_json, original_path, original_ext,
                       preprocessed_path, preprocessed_raw_path, assets_dir,
-                      timing_json, metadata=None) -> dict:
-        """Commit a successful parse as the latest version of a record."""
+                      timing_json, metadata=None, source_pdf=None, pdf_id=None,
+                      page_index=None, page_number=None) -> dict:
+        """Commit a successful parse as the latest version of a record.
+
+        ``source_pdf`` / ``pdf_id`` / ``page_index`` / ``page_number`` carry the
+        PDF provenance (issue 08) so a page document can be traced back to its
+        page in the original PDF, and the mapping survives a reload.
+        """
 
     @abstractmethod
     def save_edits(self, document_id: str, markdown: str) -> dict | None:
@@ -272,7 +278,8 @@ class SessionDocumentStore(DocumentStore):
     def save_document(self, *, document_id, title, source_job_id, model,
                       markdown, ir_json, original_path, original_ext,
                       preprocessed_path, preprocessed_raw_path, assets_dir,
-                      timing_json, pg_hash="", metadata=None) -> dict:
+                      timing_json, pg_hash="", metadata=None, source_pdf=None,
+                      pdf_id=None, page_index=None, page_number=None) -> dict:
         now = _now()
         rec = self._docs.get(document_id)
         version_id = f"v{int(time.time() * 1000)}-{len(rec.get('versions')) if rec else 0}"
@@ -289,6 +296,10 @@ class SessionDocumentStore(DocumentStore):
                 "versions": [],
                 "tags": [],
             }
+        rec["source_pdf"] = source_pdf
+        rec["pdf_id"] = pdf_id
+        rec["page_index"] = page_index
+        rec["page_number"] = page_number
         rec["updated_at"] = now
         rec["current_markdown"] = markdown
         rec["current_hash"] = pg_hash  # issue 13: perceptual hash of the page
@@ -719,7 +730,8 @@ class FileDocumentStore(SessionDocumentStore):
     def save_document(self, *, document_id, title, source_job_id, model,
                       markdown, ir_json, original_path, original_ext,
                       preprocessed_path, preprocessed_raw_path, assets_dir,
-                      timing_json, pg_hash="", metadata=None) -> dict:
+                      timing_json, pg_hash="", metadata=None, source_pdf=None,
+                      pdf_id=None, page_index=None, page_number=None) -> dict:
         document_id = _safe(document_id)
         base = self._doc_dir(document_id)
         base.mkdir(parents=True, exist_ok=True)
@@ -760,6 +772,10 @@ class FileDocumentStore(SessionDocumentStore):
         rec.setdefault("tags", [])
         registry = self._load_collection_registry()
         apply_topic_defaults(rec, registry)
+        rec["source_pdf"] = source_pdf
+        rec["pdf_id"] = pdf_id
+        rec["page_index"] = page_index
+        rec["page_number"] = page_number
         rec["latest_version"] = version_id
         rec["current_hash"] = pg_hash
         versions = rec.setdefault("versions", [])

@@ -59,6 +59,7 @@ from .store import (
 )
 from . import config
 from . import pipeline
+from . import pdflib
 
 DEFAULT_MODEL = os.environ.get("GRAPH2NOTE_MODEL", "glm-5.3-flash")
 MAX_SIZE = 10 * 1024 * 1024  # 10 MB (FR-015)
@@ -66,6 +67,21 @@ ALLOWED_EXT = {".jpg", ".jpeg", ".png"}
 # Server-side single page budget (FR-025 target P95 <= 60s; allow slack for
 # the gateway + a retry).  On expiry the job fails with a clear "timeout".
 JOB_TIMEOUT = int(os.environ.get("GRAPH2NOTE_JOB_TIMEOUT", "180"))
+# A PDF job parses many pages; give it a per-page budget worth of wall time.
+PDF_JOB_TIMEOUT = int(
+    os.environ.get("GRAPH2NOTE_PDF_JOB_TIMEOUT", str(JOB_TIMEOUT * 20))
+)
+
+
+def _pdf_error_status(kind: str) -> int:
+    return {
+        "wrong_type": 415,
+        "too_large": 413,
+        "too_many_pages": 422,
+        "encrypted": 422,
+        "corrupt": 400,
+        "unreadable": 503,
+    }.get(kind, 400)
 
 
 # ---------------------------------------------------------------------------
@@ -150,6 +166,45 @@ class JobRunner:
                     job.error = f"解析失败：{exc}"
                     job.error_kind = "failed"
                     job._cancelled = True
+
+    def trigger_pdf(self, job: pdflib.PdfJob, data: bytes) -> None:
+        threading.Thread(target=self._wrapper_pdf, args=(job, data), daemon=True).start()
+
+    def _wrapper_pdf(self, job: pdflib.PdfJob, data: bytes) -> None:
+        fut = self._executor.submit(self._run_pdf, job, data)
+        try:
+            fut.result(timeout=PDF_JOB_TIMEOUT)
+        except concurrent.futures.TimeoutError:
+            with job.lock:
+                if job.status == "processing" and not job._cancelled:
+                    job.status = "failed"
+                    job.error = f"PDF 处理超时（超过 {PDF_JOB_TIMEOUT} 秒）。"
+                    job.error_kind = "timeout"
+                    job._cancelled = True
+            pdflib.save_job(job)
+        except Exception as exc:  # split/commit raised before per-page handling
+            with job.lock:
+                if not job._cancelled and job.status == "processing":
+                    job.status = "failed"
+                    job.error = f"PDF 处理失败：{exc}"
+                    job.error_kind = "failed"
+                    job._cancelled = True
+            pdflib.save_job(job)
+
+    def _run_pdf(self, job: pdflib.PdfJob, data: bytes) -> None:
+        app = self.app
+        store = app.state.store
+        try:
+            pdflib.process_pdf(
+                job,
+                pdf_bytes=data,
+                store=store,
+                router_factory=app.state.router_factory,
+                dedup_threshold=app.state.dedup_threshold,
+                max_retries=app.state.max_retries,
+            )
+        finally:
+            pdflib.save_job(job)
 
     def _run_parse(self, job: Job) -> None:
         app = self.app
@@ -326,6 +381,9 @@ def create_app(
         "error": None,
     }
     app.state.vault_export_lock = threading.Lock()
+    # issue 08: PDF upload jobs, keyed by stable content hash (AC2).
+    app.state.pdf_jobs: dict[str, pdflib.PdfJob] = {}
+    app.state.pdf_jobs_lock = threading.Lock()
 
     def _get_job(job_id: str) -> Job:
         with app.state.jobs_lock:
@@ -922,6 +980,99 @@ def create_app(
     @app.get("/api/vault/export")
     def vault_export_status():
         return app.state.vault_export
+    # ---- PDF upload -> split -> parse -> library (issue 08) ------------------
+
+    def _get_pdf_job(pdf_id: str) -> pdflib.PdfJob:
+        with app.state.pdf_jobs_lock:
+            job = app.state.pdf_jobs.get(pdf_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail="PDF 任务不存在或会话已清空。")
+        return job
+
+    @app.post("/api/pdf")
+    async def pdf_upload(file: UploadFile = File(...)):
+        data = await file.read()
+        filename = file.filename or "upload.pdf"
+        # validate synchronously so every rejectable condition (type/size/page
+        # count/encrypted/corrupt) returns an actionable 4xx before any async work
+        try:
+            total_pages = pdflib.validate_pdf(data, filename)
+        except pdflib.PdfError as exc:
+            raise HTTPException(
+                status_code=_pdf_error_status(exc.kind), detail=str(exc)) from exc
+
+        pdf_id = pdflib.stable_pdf_id(data)
+        with app.state.pdf_jobs_lock:
+            job = app.state.pdf_jobs.get(pdf_id)
+            if job is None:
+                job = pdflib.PdfJob(pdf_id=pdf_id, filename=filename,
+                                    model=model, total_pages=total_pages)
+                app.state.pdf_jobs[pdf_id] = job
+
+        # stable pdf identity: a re-upload of the same bytes reuses the job.
+        should_trigger = False
+        with job.lock:
+            job.total_pages = total_pages
+            if job.status == "done":
+                return {"pdf_id": pdf_id, "status": "done",
+                        "total_pages": total_pages}
+            if job.status not in ("queued", "processing"):
+                job.status = "queued"
+                job.error = None
+                job.error_kind = None
+                job._cancelled = False
+                should_trigger = True
+            elif job.status == "queued":
+                should_trigger = True
+        if should_trigger:
+            app.state.runner.trigger_pdf(job, data)
+        return {"pdf_id": pdf_id, "status": job.status, "total_pages": total_pages}
+
+    @app.get("/api/pdf/{pdf_id}")
+    def pdf_status(pdf_id: str):
+        return _get_pdf_job(pdf_id).public()
+
+    @app.get("/api/pdf/{pdf_id}/original")
+    def pdf_original(pdf_id: str):
+        job = _get_pdf_job(pdf_id)
+        p = pdflib.original_pdf_path(app.state.store, pdf_id)
+        if not p.is_file():
+            raise HTTPException(status_code=404, detail="原 PDF 缺失。")
+        return FileResponse(p, media_type="application/pdf",
+                            filename=Path(job.filename).name)
+
+    @app.get("/api/pdf/{pdf_id}/page/{page_index}")
+    def pdf_page(pdf_id: str, page_index: int):
+        job = _get_pdf_job(pdf_id)
+        if page_index < 0 or page_index >= job.total_pages:
+            raise HTTPException(status_code=404, detail="页码超出范围。")
+        try:
+            png = pdflib.render_pdf_page(app.state.store, pdf_id, page_index)
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail="原 PDF 缺失。") from None
+        except IndexError:
+            raise HTTPException(status_code=404, detail="页码超出范围。") from None
+        except Exception:
+            raise HTTPException(status_code=500, detail="无法渲染该页。") from None
+        return Response(content=png, media_type="image/png")
+
+    @app.get("/api/documents/{document_id}/source-page")
+    def document_source_page(document_id: str):
+        """Open the original PDF page a page-document came from (AC2)."""
+        rec = _get_document(document_id)
+        pdf_id = rec.get("pdf_id")
+        page_index = rec.get("page_index")
+        if not pdf_id or page_index is None:
+            raise HTTPException(status_code=404, detail="该文档无 PDF 来源映射。")
+        try:
+            png = pdflib.render_pdf_page(app.state.store, pdf_id, int(page_index))
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail="原 PDF 缺失。") from None
+        except IndexError:
+            raise HTTPException(status_code=404, detail="页码超出范围。") from None
+        except Exception:
+            raise HTTPException(status_code=500, detail="无法渲染该页。") from None
+        return Response(content=png, media_type="image/png")
 
     # ---- static frontend ------------------------------------------------------
 
@@ -1048,4 +1199,5 @@ __all__ = [
     "MAX_SIZE",
     "ALLOWED_EXT",
     "JOB_TIMEOUT",
+    "PDF_JOB_TIMEOUT",
 ]

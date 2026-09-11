@@ -223,8 +223,20 @@
       <p class="upload-sub">解析后自动存入本地文档库；可继续校对编辑</p>
       <button id="pick-file" class="btn primary">选择图片</button>
       <input id="file-input" type="file" accept=".jpg,.jpeg,.png" hidden />
+      <button id="pick-pdf" class="btn">上传 PDF（逐页解析入库）</button>
+      <input id="pdf-input" type="file" accept=".pdf" hidden />
       <p class="upload-sub" id="upload-hint"></p>
     </div>
+  </section>
+
+  <!-- PDF job status state (issue 08) -->
+  <section id="pdf-zone" class="library-zone hidden">
+    <div class="library-head">
+      <h2>PDF 逐页解析</h2>
+      <span class="dim" id="pdf-filename"></span>
+    </div>
+    <div id="pdf-list" class="pdf-list"></div>
+    <p class="upload-sub" id="pdf-summary"></p>
   </section>
 
   <!-- Working state: spinner + status -->
