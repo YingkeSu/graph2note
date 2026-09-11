@@ -22,7 +22,7 @@
 |---|---|---|---|
 | [01 恢复可复现的 Python 安装与运行基线](issues/01-reproducible-python-baseline.md) | 基线 | 无 | merged (493e6ec) |
 | [02 统一文档库配置并验收 macOS 应用](issues/02-shared-library-macos-app.md) | 基线 | [01](issues/01-reproducible-python-baseline.md) | merged (1993430) |
-| [03 归档已有工作并形成干净基线](issues/03-clean-baseline-release.md) | 基线 | [01](issues/01-reproducible-python-baseline.md)、[02](issues/02-shared-library-macos-app.md) | claimed (graph2note-10，02 合并后接力) |
+| [03 归档已有工作并形成干净基线](issues/03-clean-baseline-release.md) | 基线 | [01](issues/01-reproducible-python-baseline.md)、[02](issues/02-shared-library-macos-app.md) | in-review（graph2note-10；证据见 [BASELINE.md](BASELINE.md)） |
 | [04 建立 UI 截图视觉验收命令](issues/04-ui-visual-qa-command.md) | 开发工具 | [03](issues/03-clean-baseline-release.md) | merged (19a3c9e) |
 | [05 建立原稿与产出对照视觉验收命令](issues/05-content-visual-qa-command.md) | 开发工具 | [04](issues/04-ui-visual-qa-command.md) | merged (fca91de) |
 | [06 从 Web 导出 Obsidian Vault](issues/06-web-obsidian-vault-export.md) | Obsidian | [03](issues/03-clean-baseline-release.md) | merged (e93e4d7) |
