@@ -1,6 +1,6 @@
 # 基于 PDF 内容问答并提供页级引用
 
-Status: in-review
+Status: merged
 
 来源：[已确认拆分草案](../ISSUE-DRAFT.md)；[现状与需求检查](../ASSESSMENT.md)。
 
@@ -26,3 +26,5 @@ Status: in-review
 
 - 2026-09-12 认领：graph2note-16（10 合并入 main 后接力），分支 `ao/graph2note-16/pdf-grounded-qa`。
 - 2026-09-12 graph2note-16 交付：`pdfqa` 单轮问答（issue 10 排名 OR 检索 + 注入式文本模型 seam + 引用只接受本次检索集 + 无证据/超时/不可用明确状态 + 有界与 usage 记录），`POST /api/pdf/ask`，检索区提问框与答案/引用渲染。新增 10 项离线测试（`tests/test_pdf_qa.py`）。`-m "webapp or ingest or meta"` 107 passed；全量 480 passed。AO Browser panel 实机确认 UI 元素 + 真实 API 请求返回 `answered/citations=[1,2]`，并抽取 `renderPdfAnswer` 验证渲染输出。详见 `handoffs/11-pdf-grounded-question-answering.md`。
+- 2026-09-12 复核通过（无整改项）并合并入 main（a0fd436）。验收：10 项离线 stub 测试、引用校验与失败状态正确、注入按数据处理、删除后来源一致。
+- **本轮迭代收官**：baseline-and-next-iteration 全部 11 项 issue（01–11）+ 12（测试分类）均已交付并合并入本地 main（未 push）。
