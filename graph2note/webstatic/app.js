@@ -107,8 +107,14 @@ const el = {
   navGraph: $("#nav-graph"),
   navDashboard: $("#nav-dashboard"),
   navSettings: $("#nav-settings"),
+  navVaultExport: $("#nav-vault-export"),
   navUpload: $("#nav-upload"),
   modelLabel: $("#model-label"),
+  vaultExportZone: $("#vault-export-zone"),
+  vaultExportForm: $("#vault-export-form"),
+  vaultExportDir: $("#vault-export-dir"),
+  btnVaultExport: $("#btn-vault-export"),
+  vaultExportStatus: $("#vault-export-status"),
 };
 
 /* ---------- helpers ---------- */
@@ -176,6 +182,7 @@ function parseHash() {
     return { name: "library", collection: decodeURIComponent(parts.slice(2).join("/")) };
   }
   if (parts[0] === "upload") return { name: "upload" };
+  if (parts[0] === "vault-export") return { name: "vault-export" };
   return { name: "library" };
 }
 
@@ -190,6 +197,7 @@ function render() {
   else if (r.name === "timeline") { state.timelineGroup = r.group; renderTimeline(r.group); }
   else if (r.name === "graph") { renderGraph(); }
   else if (r.name === "dashboard") { renderDashboard(); }
+  else if (r.name === "vault-export") { renderVaultExport(); }
   else {
     state.libraryTag = r.tag || null;
     state.libraryTopic = r.topic || null;
@@ -208,7 +216,7 @@ function render() {
 }
 
 function hideAll() {
-  [el.libraryZone, el.inboxZone, el.settingsZone, el.timelineZone, el.graphZone, el.dashboardZone, el.uploadZone, el.workingZone, el.workZone]
+  [el.libraryZone, el.inboxZone, el.settingsZone, el.timelineZone, el.graphZone, el.dashboardZone, el.uploadZone, el.workingZone, el.workZone, el.vaultExportZone]
     .forEach((n) => n.classList.add("hidden"));
 }
 
@@ -430,6 +438,97 @@ async function checkLlmHealth() {
   } catch (e) { showToast("检测 LLM 通道失败：" + e.message, "err"); }
   el.llmHealthButton.disabled = false;
   el.llmHealthButton.textContent = "检测可用性";
+}
+
+/* ---------- Obsidian vault export (one-way) ---------- */
+
+let vaultPollTimer = null;
+
+const VAULT_REPORT_LABELS = {
+  added: "新增", updated: "更新", unchanged: "无变化",
+  conflicts: "冲突（用户修改已保留）", deleted: "删除", kept_user: "保留的用户文件",
+};
+
+function vaultReportLines(report) {
+  if (!report) return [];
+  return Object.keys(VAULT_REPORT_LABELS).filter((key) => report[key] && report[key].length)
+    .map((key) => `${VAULT_REPORT_LABELS[key]}：${report[key].length} 项`);
+}
+
+function showVaultStatus(text, detail) {
+  el.vaultExportStatus.innerHTML = "";
+  const line = document.createElement("div");
+  line.textContent = text;
+  el.vaultExportStatus.appendChild(line);
+  if (detail) {
+    const d = document.createElement("div");
+    d.className = "dim";
+    d.textContent = detail;
+    el.vaultExportStatus.appendChild(d);
+  }
+}
+
+function renderVaultResult(st) {
+  if (st.status === "done") {
+    const summary = vaultReportLines(st.report).join(" · ") || "无变化";
+    el.vaultExportStatus.classList.add("ok");
+    showVaultStatus(`导出完成：${st.exported_documents} 份文档 → ${st.vault_root}`, summary);
+    showToast("已导出 Obsidian Vault", "ok");
+  } else if (st.status === "failed") {
+    el.vaultExportStatus.classList.add("err");
+    showVaultStatus("导出失败", st.error || "未知错误");
+    showToast("导出失败：" + (st.error || ""), "err");
+  }
+}
+
+function scheduleVaultPoll() {
+  clearInterval(vaultPollTimer);
+  vaultPollTimer = setInterval(async () => {
+    let st;
+    try { st = await api("/api/vault/export"); }
+    catch (e) { clearInterval(vaultPollTimer); return; }
+    if (st.status !== "running") {
+      clearInterval(vaultPollTimer);
+      renderVaultResult(st);
+    }
+  }, POLL_MS);
+}
+
+async function renderVaultExport() {
+  el.vaultExportZone.classList.remove("hidden");
+  try {
+    const st = await api("/api/vault/export");
+    if (st && st.status === "running") {
+      showVaultStatus("导出进行中…", st.target_dir || "");
+      scheduleVaultPoll();
+    } else if (st && (st.status === "done" || st.status === "failed")) {
+      renderVaultResult(st);
+    }
+  } catch (e) { /* idle state is fine */ }
+}
+
+async function startVaultExport() {
+  const dir = el.vaultExportDir.value.trim();
+  if (!dir) { showToast("请填写目标目录路径", "err"); return; }
+  el.btnVaultExport.disabled = true;
+  showVaultStatus("正在导出…", dir);
+  try {
+    const r = await api("/api/vault/export", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ target_dir: dir }),
+    });
+    if (r.status === "empty") {
+      showVaultStatus("文档库为空，没有可导出的文档。", "");
+    } else {
+      scheduleVaultPoll();
+    }
+  } catch (e) {
+    el.vaultExportStatus.classList.add("err");
+    showVaultStatus("导出失败", e.message);
+  } finally {
+    el.btnVaultExport.disabled = false;
+  }
 }
 
 /* ---------- timeline (read-only view model) ---------- */
@@ -1152,7 +1251,12 @@ el.navTimeline.onclick = () => go("#timeline/day");
 el.navGraph.onclick = () => go("#graph");
 el.navDashboard.onclick = () => go("#dashboard");
 el.navSettings.onclick = () => go("#settings");
+el.navVaultExport.onclick = () => go("#vault-export");
 el.navUpload.onclick = () => go("#upload");
+el.vaultExportForm.addEventListener("submit", (event) => {
+  event.preventDefault();
+  startVaultExport();
+});
 el.timelineGroup.addEventListener("change", () => go(`#timeline/${el.timelineGroup.value}`));
 el.llmSaveButton.addEventListener("click", saveLlmSettings);
 el.llmHealthButton.addEventListener("click", checkLlmHealth);

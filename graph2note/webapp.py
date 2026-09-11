@@ -312,6 +312,17 @@ def create_app(
     # issue 13: near-dup merge threshold (hamming distance on page pHash)
     app.state.dedup_threshold = dedup_threshold
     app.state.price_table = load_price_table() if price_table is None else price_table
+    # baseline issue 06: single-flight Obsidian vault export state (one-way).
+    app.state.vault_export = {
+        "status": "idle",          # idle|running|done|failed
+        "target_dir": None,
+        "started_at": None,
+        "report": None,            # incremental report (added/updated/.../kept_user)
+        "vault_root": None,
+        "exported_documents": 0,
+        "error": None,
+    }
+    app.state.vault_export_lock = threading.Lock()
 
     def _get_job(job_id: str) -> Job:
         with app.state.jobs_lock:
@@ -815,6 +826,79 @@ def create_app(
             headers={"Content-Disposition": f"attachment; filename={_safe_filename(doc_id)}.zip"},
         )
 
+    # ---- Obsidian vault export (baseline issue 06) --------------------------
+    # One-way export of the *current* document library into an Obsidian vault
+    # on a server-local target directory (the app binds to 127.0.0.1, so the
+    # browser and the server share the machine).  Reuses the incremental
+    # exporter + rule classification + user-edit protection from
+    # ``graph2note.notes``; it does NOT sync anything back into graph2note.
+
+    def _run_vault_export(target: str) -> None:
+        from .notes.loop import run_incremental_export
+
+        try:
+            report, vault, entries = run_incremental_export(
+                app.state.store, target)
+            app.state.vault_export = {
+                "status": "done",
+                "target_dir": target,
+                "started_at": app.state.vault_export.get("started_at"),
+                "report": report,
+                "vault_root": str(vault.root),
+                "exported_documents": len(entries),
+                "error": None,
+            }
+        except Exception as exc:  # never present a failure as success
+            app.state.vault_export = {
+                "status": "failed",
+                "target_dir": target,
+                "started_at": app.state.vault_export.get("started_at"),
+                "report": None,
+                "vault_root": None,
+                "exported_documents": 0,
+                "error": str(exc),
+            }
+
+    @app.post("/api/vault/export")
+    def vault_export(body: dict | None = None):
+        payload = body or {}
+        target = str(payload.get("target_dir") or "").strip()
+        if not target:
+            raise HTTPException(status_code=422, detail="请填写目标目录路径。")
+
+        with app.state.vault_export_lock:
+            if app.state.vault_export.get("status") == "running":
+                raise HTTPException(status_code=409, detail="导出正在进行中，请稍候。")
+
+            # Empty library is a distinct, non-error state.
+            if not app.state.store.list_documents():
+                return {"status": "empty", "exported_documents": 0,
+                        "message": "文档库为空，没有可导出的文档。"}
+
+            try:
+                out_path = _ensure_writable_dir(target)
+            except (OSError, ValueError) as exc:
+                raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+            app.state.vault_export = {
+                "status": "running",
+                "target_dir": str(out_path),
+                "started_at": time.time(),
+                "report": None,
+                "vault_root": None,
+                "exported_documents": 0,
+                "error": None,
+            }
+
+        threading.Thread(target=_run_vault_export, args=(str(out_path),),
+                         daemon=True).start()
+        return {"status": "running", "target_dir": str(out_path),
+                "exported_documents": 0}
+
+    @app.get("/api/vault/export")
+    def vault_export_status():
+        return app.state.vault_export
+
     # ---- static frontend ------------------------------------------------------
 
     static_dir = Path(__file__).parent / "webstatic"
@@ -831,6 +915,22 @@ def create_app(
 def _safe_filename(name: str) -> str:
     s = re.sub(r"[^A-Za-z0-9._\-\u4e00-\u9fff]", "-", name or "doc")
     return s or "doc"
+
+
+def _ensure_writable_dir(target: str) -> Path:
+    """Create the vault target dir and prove it is writable (probe write)."""
+    path = Path(target).expanduser()
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise OSError(f"目标目录不可用：{exc}") from exc
+    probe = path / ".__graph2note_probe"
+    try:
+        probe.write_text("ok", encoding="utf-8")
+        probe.unlink()
+    except OSError as exc:
+        raise OSError(f"目标目录不可写：{exc}") from exc
+    return path
 
 
 def _looks_like_image(path: Path) -> bool:
