@@ -14,6 +14,7 @@ const state = {
   busy: false,
   pollTimer: null,
   jobId: null,
+  pdfId: null,
   libraryCollection: null,
   libraryFilter: "all",
   libraryTag: null,
@@ -121,6 +122,7 @@ const el = {
   pdfList: $("#pdf-list"),
   pdfFilename: $("#pdf-filename"),
   pdfSummary: $("#pdf-summary"),
+  pdfRetry: $("#pdf-retry"),
 };
 
 /* ---------- helpers ---------- */
@@ -1321,6 +1323,7 @@ el.fileInput.addEventListener("change", (e) => acceptFile(e.target.files[0]));
 const PDF_STATUS_LABEL = {
   pending: "待处理", processing: "解析中", success: "成功",
   failed: "失败", blank: "空白页", duplicate: "重复页",
+  interrupted: "已中断",
 };
 
 function acceptPdf(file) {
@@ -1354,25 +1357,55 @@ async function startPdfUpload(file) {
 }
 
 function pollPdf(pdfId) {
+  state.pdfId = pdfId;
   hideAll();
   el.pdfZone.classList.remove("hidden");
   el.pdfList.innerHTML = "";
   clearInterval(state.pollTimer);
-  state.pollTimer = setInterval(async () => {
-    let job;
-    try { job = await api(`/api/pdf/${pdfId}`); }
-    catch (e) { clearInterval(state.pollTimer); showToast("查询 PDF 任务失败：" + e.message, "err"); go("#library"); return; }
-    el.pdfFilename.textContent = job.filename || "";
-    el.pdfSummary.textContent = job.status === "done"
-      ? `共 ${job.total_pages} 页 · ${job.counts.success} 成功 / ${job.counts.failed} 失败 / ${job.counts.blank} 空白 / ${job.counts.duplicate} 重复`
-      : (job.error || `正在逐页解析… ${job.total_pages} 页`);
-    renderPdfPages(job);
-    if (job.status !== "queued" && job.status !== "processing") {
-      clearInterval(state.pollTimer);
-      state.busy = false; setBusy(false);
-      if (job.status !== "done") showToast(job.error || "PDF 处理失败。", "err");
-    }
-  }, POLL_MS);
+  const tick = async () => {
+      let job;
+      try { job = await api(`/api/pdf/${pdfId}`); }
+      catch (e) { clearInterval(state.pollTimer); showToast("查询 PDF 任务失败：" + e.message, "err"); go("#library"); return; }
+      el.pdfFilename.textContent = job.filename || "";
+      renderPdfSummary(job);
+      renderPdfPages(job);
+      const running = job.status === "queued" || job.status === "processing";
+      // issue 09: show retry only when there is unfinished/retryable work
+      const canRetry = job.retryable || job.exhausted || job.status === "interrupted";
+      el.pdfRetry.classList.toggle("hidden", !canRetry);
+      el.pdfRetry.disabled = !!job.running;
+      if (!running) {
+        clearInterval(state.pollTimer);
+        state.busy = false; setBusy(false);
+        if (job.status !== "done") showToast(job.error || "PDF 处理未完成。", "err");
+      }
+  };
+  tick();
+  state.pollTimer = setInterval(tick, POLL_MS);
+}
+
+function pdfCountsText(job) {
+  const c = job.counts || {};
+  return `共 ${job.total_pages} 页 · ${c.success || 0} 成功 / ${c.failed || 0} 失败 / ${c.blank || 0} 空白 / ${c.duplicate || 0} 重复`;
+}
+
+function renderPdfSummary(job) {
+  const running = job.status === "queued" || job.status === "processing";
+  if (running) {
+    const done = (job.counts && (job.counts.success || 0)) || 0;
+    el.pdfSummary.textContent = `正在逐页解析… ${done}/${job.total_pages} 页已完成`;
+    return;
+  }
+  let text = pdfCountsText(job);
+  const retryable = (job.pages || []).filter((p) => p.retryable).length;
+  if (job.status === "interrupted") {
+    text += ` · 已中断，${retryable} 页可重试`;
+  } else if (job.exhausted) {
+    text += ` · 有页面已达 ${job.max_page_attempts} 次尝试上限，已停止重试`;
+  } else if (retryable) {
+    text += ` · ${retryable} 页可重试`;
+  }
+  el.pdfSummary.textContent = text;
 }
 
 function renderPdfPages(job) {
@@ -1384,16 +1417,38 @@ function renderPdfPages(job) {
     const link = p.document_id
       ? `<a href="#doc/${encodeURIComponent(p.document_id)}">第 ${p.page_index + 1} 页</a>`
       : `<span>第 ${p.page_index + 1} 页</span>`;
-    const note = p.status === "duplicate"
-      ? `（与第 ${(p.merged_into || 0) + 1} 页重复）`
-      : (p.error ? `（${esc(p.error)}）` : "");
+    let note = "";
+    if (p.status === "duplicate") {
+      note = `（与第 ${(p.merged_into || 0) + 1} 页重复）`;
+    } else if (p.status === "failed") {
+      const tries = p.attempts ? `已尝试 ${p.attempts}/${job.max_page_attempts} 次` : "";
+      const err = p.error ? esc(p.error) : "";
+      const detail = [tries, err].filter(Boolean).join("：");
+      note = detail ? `（${detail}）` : "";
+    } else if (p.error) {
+      note = `（${esc(p.error)}）`;
+    }
     row.innerHTML = `<span class="pdf-page">${link}</span>${badge}<span class="dim">${note}</span>`;
     el.pdfList.appendChild(row);
   }
 }
 
+async function retryPdf(pdfId) {
+  clearInterval(state.pollTimer);
+  try {
+    const r = await api(`/api/pdf/${pdfId}/retry`, { method: "POST" });
+    if (!r.triggered) showToast(r.message || "没有可重试的页面。", "");
+  } catch (e) {
+    showToast("重试失败：" + e.message, "err");
+  }
+  pollPdf(pdfId);
+}
+
 el.pickPdf.onclick = () => el.pdfInput.click();
 el.pdfInput.addEventListener("change", (e) => acceptPdf(e.target.files[0]));
+el.pdfRetry.addEventListener("click", () => {
+  if (state.pdfId) retryPdf(state.pdfId);
+});
 
 ["dragenter", "dragover"].forEach((ev) =>
   el.uploadCard.addEventListener(ev, (e) => { e.preventDefault(); el.uploadCard.classList.add("drag"); }));
