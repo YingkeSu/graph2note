@@ -1,6 +1,6 @@
 # 归档已有工作并形成干净基线
 
-Status: ready-for-agent
+Status: in-review
 
 来源：[已确认拆分草案](../ISSUE-DRAFT.md)；[现状与需求检查](../ASSESSMENT.md)。
 
