@@ -7,7 +7,7 @@
 
 ## 发布与执行状态
 
-- 已发布：12（12=测试分类，维护者 2026-09-12 指令）；已认领：2；已完成：6；2026-09-12 已合并入本地 main：01(493e6ec)、06(e93e4d7)、04(19a3c9e)、02(1993430)、05(fca91de)、07(9db65c1)、黑图修复(c6f8c52)。01–06 handoff 已收集（32fe1d3），07 handoff 随 07 合并收集。未 push。
+- 已发布：12（12=测试分类，维护者 2026-09-12 指令）；已认领：1；已完成：8；2026-09-12 已合并入本地 main：01(493e6ec)、06(e93e4d7)、04(19a3c9e)、02(1993430)、05(fca91de)、07(9db65c1)、03(c108aab)、12(df9546c)、黑图修复(c6f8c52)。01–07 + 03 + 12 handoff 已收集。未 push。
 - 2026-09-11 调度：01→graph2note-10、04→graph2note-13、06→graph2note-11、08→graph2note-12 并行启动（04/06/08 在 03 归档前提前启动，已与 03 领地隔离）；reviewer=graph2note-14。
 - 所有 issue 的 `ready-for-agent` 表示需求已准备好，不表示阻塞依赖已完成。
 - 当前可立即开始：**01**。本次只发布，不认领或启动实现。
@@ -22,7 +22,7 @@
 |---|---|---|---|
 | [01 恢复可复现的 Python 安装与运行基线](issues/01-reproducible-python-baseline.md) | 基线 | 无 | merged (493e6ec) |
 | [02 统一文档库配置并验收 macOS 应用](issues/02-shared-library-macos-app.md) | 基线 | [01](issues/01-reproducible-python-baseline.md) | merged (1993430) |
-| [03 归档已有工作并形成干净基线](issues/03-clean-baseline-release.md) | 基线 | [01](issues/01-reproducible-python-baseline.md)、[02](issues/02-shared-library-macos-app.md) | in-review（graph2note-10；证据见 [BASELINE.md](BASELINE.md)） |
+| [03 归档已有工作并形成干净基线](issues/03-clean-baseline-release.md) | 基线 | [01](issues/01-reproducible-python-baseline.md)、[02](issues/02-shared-library-macos-app.md) | merged (c108aab) |
 | [04 建立 UI 截图视觉验收命令](issues/04-ui-visual-qa-command.md) | 开发工具 | [03](issues/03-clean-baseline-release.md) | merged (19a3c9e) |
 | [05 建立原稿与产出对照视觉验收命令](issues/05-content-visual-qa-command.md) | 开发工具 | [04](issues/04-ui-visual-qa-command.md) | merged (fca91de) |
 | [06 从 Web 导出 Obsidian Vault](issues/06-web-obsidian-vault-export.md) | Obsidian | [03](issues/03-clean-baseline-release.md) | merged (e93e4d7) |
@@ -31,6 +31,6 @@
 | [09 PDF 批任务中断恢复与失败页重试](issues/09-pdf-job-recovery-retry.md) | PDF | [08](issues/08-pdf-upload-parse-library.md) | ready-for-agent |
 | [10 搜索 PDF 内容并跳转命中原页](issues/10-pdf-content-search.md) | PDF | [08](issues/08-pdf-upload-parse-library.md) | ready-for-agent |
 | [11 基于 PDF 内容问答并提供页级引用](issues/11-pdf-grounded-question-answering.md) | PDF | [10](issues/10-pdf-content-search.md) | ready-for-agent |
-| [12 测试整理分类与模块级测试运行](issues/12-test-taxonomy-scoped-runs.md) | 开发工具 | 无 | claimed (graph2note-13) |
+| [12 测试整理分类与模块级测试运行](issues/12-test-taxonomy-scoped-runs.md) | 开发工具 | 无 | merged (df9546c) |
 
 > 侧任务（非 issue）：黑图修复（graph2note-15，bebc1b5）——perspective homography 求解错系统导致所有透视扫描输出全黑；已随 c6f8c52 合并，含 handoff `fix-black-preprocess.md`（内含 40 篇重解析清单）。2026-09-12。
