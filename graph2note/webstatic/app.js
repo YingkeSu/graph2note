@@ -15,6 +15,8 @@ const state = {
   pollTimer: null,
   jobId: null,
   pdfId: null,
+  searchActive: false,
+  searchQuery: "",
   libraryCollection: null,
   libraryFilter: "all",
   libraryTag: null,
@@ -123,6 +125,12 @@ const el = {
   pdfFilename: $("#pdf-filename"),
   pdfSummary: $("#pdf-summary"),
   pdfRetry: $("#pdf-retry"),
+  pdfSearchForm: $("#pdf-search-form"),
+  pdfSearchInput: $("#pdf-search-input"),
+  pdfSearchScope: $("#pdf-search-scope"),
+  pdfSearchStatus: $("#pdf-search-status"),
+  pdfSearchResults: $("#pdf-search-results"),
+  pdfSearchClear: $("#pdf-search-clear"),
 };
 
 /* ---------- helpers ---------- */
@@ -234,6 +242,7 @@ window.addEventListener("hashchange", render);
 
 async function renderLibrary() {
   el.libraryZone.classList.remove("hidden");
+  resetPdfSearchUI();
   el.libraryGrid.innerHTML = "";
   let docs = [];
   const params = new URLSearchParams();
@@ -266,6 +275,7 @@ async function renderLibrary() {
   }
   await renderCollectionNavigation();
   await renderTagVocabulary();
+  await loadPdfScopeOptions();
   // lazy-load thumbnails
   requestAnimationFrame(() => {
     el.libraryGrid.querySelectorAll("img[data-src]").forEach((img) => {
@@ -290,6 +300,110 @@ function filterLibraryDocuments(docs) {
     return state.libraryFilter === "today" ? day === today : day >= lower && day <= today;
   });
 }
+
+/* ---------- PDF content search (issue 10) ---------- */
+
+function escapeRe(s) {
+  return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function pdfScopeLabel(j) {
+  const c = j.counts || {};
+  const total = j.total_pages || 0;
+  if (j.status === "done") return `${j.filename}（已入库 ${c.success || 0}/${total} 页）`;
+  if (j.status === "interrupted") return `${j.filename}（已中断，${c.pending || 0} 页待续）`;
+  if (j.status === "failed") return `${j.filename}（处理失败）`;
+  return `${j.filename}（导入中 ${c.success || 0}/${total} 页）`;
+}
+
+async function loadPdfScopeOptions() {
+  let jobs = [];
+  try { jobs = await api("/api/pdf"); } catch (_) { jobs = []; }
+  const current = el.pdfSearchScope.value;
+  el.pdfSearchScope.innerHTML = `<option value="">全部已导入 PDF</option>`;
+  for (const j of jobs) {
+    const opt = document.createElement("option");
+    opt.value = j.pdf_id;
+    opt.textContent = pdfScopeLabel(j);
+    el.pdfSearchScope.appendChild(opt);
+  }
+  if ([...el.pdfSearchScope.options].some((o) => o.value === current))
+    el.pdfSearchScope.value = current;
+}
+
+function showSearchResults() {
+  el.pdfSearchResults.classList.remove("hidden");
+  el.libraryGrid.classList.add("hidden");
+  el.libraryEmpty.classList.add("hidden");
+}
+
+function resetPdfSearchUI() {
+  if (!el.pdfSearchResults) return;
+  state.searchActive = false;
+  state.searchQuery = "";
+  el.pdfSearchResults.classList.add("hidden");
+  el.pdfSearchResults.innerHTML = "";
+  el.pdfSearchStatus.textContent = "";
+  el.libraryGrid.classList.remove("hidden");
+}
+
+function highlightSnippet(snippet, query) {
+  const html = esc(snippet || "");
+  if (!query) return html;
+  return html.replace(new RegExp(escapeRe(query), "gi"), (m) => `<mark>${m}</mark>`);
+}
+
+function renderSearchHits(hits, query) {
+  el.pdfSearchResults.innerHTML = "";
+  for (const h of hits) {
+    const card = document.createElement("div");
+    card.className = "search-hit";
+    const page = h.page_number ? `第 ${h.page_number} 页` : `第 ${h.page_index + 1} 页`;
+    card.innerHTML = `
+      <div class="search-hit-head">
+        <a class="search-hit-title" href="#doc/${encodeURIComponent(h.document_id)}">${esc(h.title || h.document_id)}</a>
+        <span class="search-hit-page dim">${page} · 原页序 ${h.page_index + 1}</span>
+      </div>
+      <div class="search-hit-snippet">${highlightSnippet(h.snippet, query)}</div>
+      <div class="search-hit-links">
+        <a href="#doc/${encodeURIComponent(h.document_id)}">打开校对文档</a>
+        <a href="${h.source_page_url}" target="_blank" rel="noopener">查看原 PDF 页</a>
+      </div>`;
+    el.pdfSearchResults.appendChild(card);
+  }
+}
+
+async function runPdfSearch() {
+  const q = (el.pdfSearchInput.value || "").trim();
+  state.searchQuery = q;
+  state.searchActive = !!q;
+  if (!q) { resetPdfSearchUI(); return; }
+  el.pdfSearchStatus.textContent = "检索中…";
+  el.pdfSearchResults.innerHTML = "";
+  const params = new URLSearchParams({ q });
+  if (el.pdfSearchScope.value) params.set("pdf_id", el.pdfSearchScope.value);
+  let r;
+  try { r = await api(`/api/search/pdf?${params.toString()}`); }
+  catch (e) { el.pdfSearchStatus.textContent = "搜索失败：" + e.message; return; }
+  showSearchResults();
+  el.pdfSearchStatus.textContent = r.total
+    ? `命中 ${r.total} 条 · 检索范围 ${r.indexed_documents} 页`
+    : (r.message || "没有匹配的内容。");
+  renderSearchHits(r.hits || [], q);
+}
+
+el.pdfSearchForm.addEventListener("submit", (e) => {
+  e.preventDefault();
+  runPdfSearch();
+});
+el.pdfSearchClear.addEventListener("click", () => {
+  el.pdfSearchInput.value = "";
+  el.pdfSearchScope.value = "";
+  resetPdfSearchUI();
+});
+el.pdfSearchScope.addEventListener("change", () => {
+  if (state.searchActive || (el.pdfSearchInput.value || "").trim()) runPdfSearch();
+});
 
 /* ---------- Inbox (read-only projection) ---------- */
 
