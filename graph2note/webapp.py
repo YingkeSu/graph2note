@@ -57,6 +57,7 @@ from .store import (
     FileDocumentStore,
     SessionDocumentStore,
 )
+from . import config
 from . import pipeline
 
 DEFAULT_MODEL = os.environ.get("GRAPH2NOTE_MODEL", "glm-5.3-flash")
@@ -289,16 +290,16 @@ def create_app(
     an offline (golden/cache) router; when None, the real pipeline router with a
     VLM gateway is used.  ``document_store`` is the issue-07 persistence seam.
     """
-    storage_dir = storage_dir or os.environ.get("GRAPH2NOTE_STORAGE", "./.g2n-storage")
+    storage_dir = config.ensure_storage_dir(config.resolve_storage_dir(storage_dir))
     store = document_store or FileDocumentStore(storage_dir)
-    settings_path = os.environ.get("GRAPH2NOTE_SETTINGS_FILE") or str(
-        Path(storage_dir) / "llm-settings.json"
-    )
+    settings_path = config.resolve_settings_file(storage_dir)
     settings = llm_settings or LLMSettingsStore(settings_path)
     configure_settings_path(settings.path)
 
     app = FastAPI(title="graph2note", docs_url=None, redoc_url=None)
     app.state.store = store
+    app.state.storage_dir = str(storage_dir)
+    app.state.settings_path = str(settings_path)
     app.state.jobs: dict[str, Job] = {}
     app.state.jobs_lock = threading.Lock()
     app.state.model_override = model
@@ -562,6 +563,11 @@ def create_app(
         return build_stats(records, now=now, price_table=app.state.price_table)
 
     # ---- LLM provider/model settings (issue 16) ----------------------------
+
+    @app.get("/api/config")
+    def config_get():
+        """Effective runtime config: support/storage/settings locations."""
+        return config.describe(app.state.storage_dir)
 
     @app.get("/api/llm/settings")
     def llm_settings_get():

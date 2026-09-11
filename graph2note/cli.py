@@ -209,23 +209,27 @@ def build_notes_export_parser() -> argparse.ArgumentParser:
         "-o", "--output", type=Path, help="vault output directory"
     )
     p.add_argument(
-        "--storage", default=os.environ.get("GRAPH2NOTE_STORAGE", "storage"),
-        help="document library storage dir (default %%default)",
+        "--storage", default=None,
+        help="document library storage dir (default: GRAPH2NOTE_STORAGE or "
+             "<support>/storage)",
     )
     return p
 
 
 def _cmd_notes_export(args) -> int:
+    from . import config
     from .notes.loop import run_incremental_export
     from .store import FileDocumentStore
 
     out_dir = args.output or Path("notes-export")
-    store = FileDocumentStore(str(args.storage))
+    storage = config.ensure_storage_dir(config.resolve_storage_dir(args.storage))
+    store = FileDocumentStore(str(storage))
     try:
         report, vault, entries = run_incremental_export(store, out_dir)
     except Exception as exc:  # includes VaultExportError (dead link)
         print(f"notes-export failed: {exc}", file=sys.stderr)
         return 1
+    print(f"storage={storage}")
     print(f"{'documents='}{len(entries)}")
     for label in ("added", "updated", "deleted", "conflicts", "kept_user"):
         items = report[label]
@@ -238,11 +242,39 @@ def _cmd_notes_export(args) -> int:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+
+
+def build_config_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="graph2note config",
+        description="Show the effective runtime config (support/storage/settings paths).",
+    )
+    p.add_argument("--json", action="store_true", help="emit JSON")
+    return p
+
+
+def _cmd_config(args) -> int:
+    import json as _json
+    from . import config as _cfg
+
+    info = _cfg.describe()
+    if args.json:
+        print(_json.dumps(info, ensure_ascii=False, indent=2))
+    else:
+        for key, value in info.items():
+            print(f"{key}={value}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     if argv and argv[0] == "parse":
         args = build_parse_parser().parse_args(argv[1:])
         return _cmd_parse(args)
+    if argv and argv[0] == "config":
+        args = build_config_parser().parse_args(argv[1:])
+        return _cmd_config(args)
     if argv and argv[0] == "verify":
         from .verify import cli as _vcli
         args = _vcli.build_verify_parser().parse_args(argv[1:])
