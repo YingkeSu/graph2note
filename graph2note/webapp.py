@@ -61,6 +61,7 @@ from . import config
 from . import pipeline
 from . import pdflib
 from . import pdfsearch
+from . import pdfqa
 
 DEFAULT_MODEL = os.environ.get("GRAPH2NOTE_MODEL", "glm-5.3-flash")
 MAX_SIZE = 10 * 1024 * 1024  # 10 MB (FR-015)
@@ -352,6 +353,12 @@ def create_app(
     pdf_max_page_attempts: int | None = None,
     pdf_page_timeout: int | None = None,
     pdf_workers: int | None = None,
+    pdf_answerer=None,
+    pdf_qa_model: str | None = None,
+    pdf_qa_provider: str | None = None,
+    pdf_qa_session: str | None = None,
+    pdf_qa_timeout: int | None = None,
+    pdf_qa_max_attempts: int | None = None,
 ) -> FastAPI:
     """Build the FastAPI app.
 
@@ -402,6 +409,14 @@ def create_app(
     app.state.pdf_max_page_attempts = pdf_max_page_attempts or pdflib.MAX_PAGE_ATTEMPTS
     app.state.pdf_page_timeout = pdf_page_timeout or pdflib.PAGE_TIMEOUT
     app.state.pdf_workers = pdf_workers or pdflib.PDF_WORKERS
+    # issue 11: injectable text-model seam for grounded PDF Q&A (offline tests
+    # pass a stub; production leaves None and uses the configured provider).
+    app.state.pdf_answerer = pdf_answerer
+    app.state.pdf_qa_model = pdf_qa_model
+    app.state.pdf_qa_provider = pdf_qa_provider
+    app.state.pdf_qa_session = pdf_qa_session
+    app.state.pdf_qa_timeout = pdf_qa_timeout or pdfqa.ANSWER_TIMEOUT
+    app.state.pdf_qa_max_attempts = pdf_qa_max_attempts or pdfqa.MAX_ATTEMPTS
     for _persisted in pdflib.load_jobs(store):
         pdflib.save_job(_persisted)  # persist the reconciled 'interrupted' state
         app.state.pdf_jobs[_persisted.pdf_id] = _persisted
@@ -1181,6 +1196,30 @@ def create_app(
             "built_at": index.get("built_at"),
             "fingerprint": index.get("fingerprint"),
         }
+
+    # ---- PDF grounded Q&A (issue 11) ----------------------------------------
+
+    @app.post("/api/pdf/ask")
+    def pdf_ask(body: dict | None = None):
+        """Single-turn grounded question answering over parsed PDF content."""
+        payload = body or {}
+        question = str(payload.get("question") or "").strip()
+        pdf_id = payload.get("pdf_id") or None
+        try:
+            answer = pdfqa.answer_question(
+                app.state.store,
+                question,
+                pdf_id=pdf_id,
+                answerer=app.state.pdf_answerer,
+                model=app.state.pdf_qa_model,
+                provider=app.state.pdf_qa_provider,
+                session=app.state.pdf_qa_session,
+                timeout=app.state.pdf_qa_timeout,
+                max_attempts=app.state.pdf_qa_max_attempts,
+            )
+        except pdfqa.QaError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        return answer.public()
 
     # ---- static frontend ------------------------------------------------------
 

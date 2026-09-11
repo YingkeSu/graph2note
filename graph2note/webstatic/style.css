@@ -433,3 +433,18 @@ body {
 .search-hit-snippet mark { background: #fff2a8; color: inherit; padding: 0 2px; border-radius: 3px; }
 .search-hit-links { display: flex; gap: 14px; font-size: 13px; }
 .search-hit-links a { color: var(--accent); text-decoration: none; }
+
+/* PDF grounded Q&A (issue 11) */
+.pdf-qa { margin-top: 12px; max-width: 900px; }
+.pdf-qa-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.pdf-qa-form input[type="text"] { flex: 1 1 360px; min-width: 240px; padding: 8px 12px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: inherit; }
+.pdf-qa-result { margin-top: 10px; background: var(--panel); border: 1px solid var(--line);
+  border-radius: 10px; padding: 12px 14px; }
+.pdf-qa-answer { line-height: 1.6; }
+.pdf-qa-citations { margin-top: 10px; }
+.pdf-qa-citations ol { margin: 6px 0 0 18px; padding: 0; }
+.pdf-qa-citations li { margin: 4px 0; }
+.pdf-qa-citations a { color: var(--accent); text-decoration: none; }
+.pdf-qa-warn { margin-top: 10px; padding: 8px 10px; border-radius: 8px;
+  background: #fff7e6; border: 1px solid #f0dcae; color: #9a6700; font-size: 13px; }
