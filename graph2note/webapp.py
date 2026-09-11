@@ -316,11 +316,13 @@ def create_app(
     # baseline issue 06: single-flight Obsidian vault export state (one-way).
     app.state.vault_export = {
         "status": "idle",          # idle|running|done|failed
+        "task_id": None,           # unique per run (report never mixes tasks)
         "target_dir": None,
         "started_at": None,
-        "report": None,            # incremental report (added/updated/.../kept_user)
+        "report": None,            # enriched incremental report (see _enrich_export_report)
         "vault_root": None,
         "exported_documents": 0,
+        "partial": False,          # failed after writing some files
         "error": None,
     }
     app.state.vault_export_lock = threading.Lock()
@@ -839,29 +841,36 @@ def create_app(
     # exporter + rule classification + user-edit protection from
     # ``graph2note.notes``; it does NOT sync anything back into graph2note.
 
-    def _run_vault_export(target: str) -> None:
+    def _run_vault_export(target: str, task_id: str) -> None:
         from .notes.loop import run_incremental_export
 
+        before = _dir_fingerprint(Path(target))
         try:
             report, vault, entries = run_incremental_export(
                 app.state.store, target)
             app.state.vault_export = {
                 "status": "done",
+                "task_id": task_id,
                 "target_dir": target,
                 "started_at": app.state.vault_export.get("started_at"),
-                "report": report,
+                "report": _enrich_export_report(report, vault, task_id),
                 "vault_root": str(vault.root),
                 "exported_documents": len(entries),
+                "partial": False,
                 "error": None,
             }
         except Exception as exc:  # never present a failure as success
             app.state.vault_export = {
                 "status": "failed",
+                "task_id": task_id,
                 "target_dir": target,
                 "started_at": app.state.vault_export.get("started_at"),
                 "report": None,
                 "vault_root": None,
                 "exported_documents": 0,
+                # a failure after some files were written is a partial export,
+                # never a clean success
+                "partial": _dir_fingerprint(Path(target)) != before,
                 "error": str(exc),
             }
 
@@ -876,8 +885,14 @@ def create_app(
             if app.state.vault_export.get("status") == "running":
                 raise HTTPException(status_code=409, detail="导出正在进行中，请稍候。")
 
-            # Empty library is a distinct, non-error state.
+            # Empty library is a distinct, non-error state.  Clear any stale
+            # report so GET never serves a previous run's result as current.
             if not app.state.store.list_documents():
+                app.state.vault_export = {
+                    "status": "idle", "task_id": None, "target_dir": None,
+                    "started_at": None, "report": None, "vault_root": None,
+                    "exported_documents": 0, "partial": False, "error": None,
+                }
                 return {"status": "empty", "exported_documents": 0,
                         "message": "文档库为空，没有可导出的文档。"}
 
@@ -886,20 +901,23 @@ def create_app(
             except (OSError, ValueError) as exc:
                 raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+            task_id = uuid.uuid4().hex[:12]
             app.state.vault_export = {
                 "status": "running",
+                "task_id": task_id,
                 "target_dir": str(out_path),
                 "started_at": time.time(),
                 "report": None,
                 "vault_root": None,
                 "exported_documents": 0,
+                "partial": False,
                 "error": None,
             }
 
-        threading.Thread(target=_run_vault_export, args=(str(out_path),),
+        threading.Thread(target=_run_vault_export, args=(str(out_path), task_id),
                          daemon=True).start()
-        return {"status": "running", "target_dir": str(out_path),
-                "exported_documents": 0}
+        return {"status": "running", "task_id": task_id,
+                "target_dir": str(out_path), "exported_documents": 0}
 
     @app.get("/api/vault/export")
     def vault_export_status():
@@ -937,6 +955,62 @@ def _ensure_writable_dir(target: str) -> Path:
     except OSError as exc:
         raise OSError(f"目标目录不可写：{exc}") from exc
     return path
+
+
+def _dir_fingerprint(root: Path) -> str:
+    """Coarse snapshot of a dir's files (relative path + size), to detect
+    whether a failed export already wrote/overwrote some files (partial)."""
+    if not root.is_dir():
+        return ""
+    parts = []
+    for p in sorted(root.rglob("*")):
+        if p.is_file():
+            try:
+                parts.append(f"{p.relative_to(root)}:{p.stat().st_size}")
+            except OSError:
+                continue
+    return "\n".join(parts)
+
+
+def _vault_user_files(root: Path, managed: set[str]) -> list[str]:
+    """Files under notes/mocs/collections that the exporter does not manage
+    (user-created or user-renamed files that the export preserved in place)."""
+    out: list[str] = []
+    for top in ("notes", "mocs", "collections"):
+        d = root / top
+        if not d.is_dir():
+            continue
+        for p in sorted(d.rglob("*")):
+            if p.is_file():
+                rel = str(p.relative_to(root))
+                if rel not in managed:
+                    out.append(rel)
+    return out
+
+
+def _enrich_export_report(report: dict, vault, task_id: str) -> dict:
+    """Turn the raw incremental report into a UI-ready report.
+
+    ``conflicts`` becomes ``[{managed, backup}]`` with full vault-relative
+    paths (the raw report only carries the backup *filename*); ``user_files``
+    lists preserved user-created/renamed files so they are locatable.
+    """
+    conflicts = []
+    for rel in report.get("conflicts", []):
+        backup_name = (report.get("conflict_backups") or {}).get(rel, "")
+        backup_rel = str(Path(rel).parent / backup_name) if backup_name else ""
+        conflicts.append({"managed": rel, "backup": backup_rel})
+    return {
+        "task_id": task_id,
+        "exported_at": report.get("exported_at"),
+        "added": report.get("added", []),
+        "updated": report.get("updated", []),
+        "deleted": report.get("deleted", []),
+        "unchanged": report.get("unchanged", []),
+        "conflicts": conflicts,
+        "kept_user": report.get("kept_user", []),
+        "user_files": _vault_user_files(vault.root, set(vault.all_files)),
+    }
 
 
 def _looks_like_image(path: Path) -> bool:

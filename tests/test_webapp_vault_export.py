@@ -32,11 +32,14 @@ HERE = Path(__file__).parent
 VALID = (HERE / "golden" / "valid-ir.golden.json").read_text(encoding="utf-8")
 
 
-def _make_png(w=600, h=420, text="Vault 导出测试标题"):
+def _make_png(w=600, h=420, text="Vault 导出测试标题", block=None):
     from PIL import Image, ImageDraw, ImageFont
 
     im = Image.new("RGB", (w, h), (255, 255, 255))
     d = ImageDraw.Draw(im)
+    if block is not None:
+        # a large dark block makes two pages perceptually distinct (pHash)
+        d.rectangle(block, fill=(15, 15, 15))
     try:
         font = ImageFont.load_default(size=26)
     except TypeError:
@@ -87,10 +90,13 @@ def _wait_vault(client, timeout=30):
     raise AssertionError("vault export did not finish in time")
 
 
-def _seed_one_document(client):
-    """Upload + parse one document so the library is non-empty; return job doc."""
+def _seed_one_document(client, text="Vault 导出测试标题", filename="note.png", block=None):
+    """Upload + parse one document so the library is non-empty; return job doc.
+
+    ``text``/``filename``/``block`` vary the page bytes + title so two calls
+    yield two distinct documents (no near-duplicate merge)."""
     r = client.post("/api/parse",
-                    files={"file": ("note.png", _make_png(), "image/png")})
+                    files={"file": (filename, _make_png(text=text, block=block), "image/png")})
     assert r.status_code == 200, r.text
     doc = _wait_done(client, r.json()["job_id"])
     assert doc["status"] == "done"
@@ -215,3 +221,169 @@ def test_vault_export_ui_present(tmp_path, monkeypatch):
     assert "vault-export-zone" in page
     appjs = client.get("/static/app.js").text
     assert "startVaultExport" in appjs
+
+
+# ---------------------------------------------------------------------------
+# baseline issue 07: incremental change + conflict report surfaced by the Web
+# ---------------------------------------------------------------------------
+
+def _export(client, target):
+    client.post("/api/vault/export", json={"target_dir": str(target)})
+    return _wait_vault(client)
+
+
+def _note_md(target):
+    notes = list((target / "notes").glob("*/note.md"))
+    assert notes, "expected at least one note.md in the vault"
+    return notes[0]
+
+
+def test_report_first_export_task_id_and_added(tmp_path, monkeypatch):
+    monkeypatch.setenv("GRAPH2NOTE_STORAGE", str(tmp_path / "store"))
+    client = TestClient(_app())
+    _seed_one_document(client)
+    target = tmp_path / "vault"
+    st = _export(client, target)
+    assert st["status"] == "done"
+    assert st["task_id"] and st["report"]["task_id"] == st["task_id"]
+    assert st["report"]["added"], "first export adds all files"
+    assert st["report"]["conflicts"] == []
+    assert st["report"]["deleted"] == []
+
+
+def test_report_no_change_reprun_zero_write(tmp_path, monkeypatch):
+    monkeypatch.setenv("GRAPH2NOTE_STORAGE", str(tmp_path / "store"))
+    client = TestClient(_app())
+    _seed_one_document(client)
+    target = tmp_path / "vault"
+    assert _export(client, target)["status"] == "done"
+
+    mtimes = {str(p.relative_to(target)): p.stat().st_mtime
+              for p in target.rglob("*") if p.is_file()}
+    st = _export(client, target)
+    assert st["status"] == "done"
+    assert st["report"]["added"] == [] and st["report"]["updated"] == []
+    assert st["report"]["unchanged"]
+    for p in target.rglob("*"):
+        if p.is_file():
+            assert mtimes[str(p.relative_to(target))] == p.stat().st_mtime, \
+                f"no-change re-run must not rewrite {p}"
+
+
+def test_report_content_change_marks_updated(tmp_path, monkeypatch):
+    monkeypatch.setenv("GRAPH2NOTE_STORAGE", str(tmp_path / "store"))
+    client = TestClient(_app())
+    doc = _seed_one_document(client)
+    target = tmp_path / "vault"
+    _export(client, target)
+
+    rec = client.app.state.store.save_edits(doc["document_id"], "# 修改后\n\n新的正文内容。")
+    assert rec is not None
+    st = _export(client, target)
+    assert st["status"] == "done"
+    assert st["report"]["updated"], "content change should mark files updated"
+    assert "新的正文内容" in _note_md(target).read_text(encoding="utf-8")
+
+
+def test_report_metadata_change_marks_updated(tmp_path, monkeypatch):
+    monkeypatch.setenv("GRAPH2NOTE_STORAGE", str(tmp_path / "store"))
+    client = TestClient(_app())
+    doc = _seed_one_document(client)
+    target = tmp_path / "vault"
+    _export(client, target)
+
+    client.app.state.store.set_tags(doc["document_id"], ["课程", "重点"])
+    st = _export(client, target)
+    assert st["status"] == "done"
+    assert st["report"]["updated"]
+    note = _note_md(target).read_text(encoding="utf-8")
+    assert "课程" in note and "重点" in note
+
+
+def test_report_delete_document_marks_deleted(tmp_path, monkeypatch):
+    monkeypatch.setenv("GRAPH2NOTE_STORAGE", str(tmp_path / "store"))
+    client = TestClient(_app())
+    _seed_one_document(client, text="第一份文档", filename="first.png", block=(0, 0, 300, 420))
+    doc2 = _seed_one_document(client, text="第二份文档", filename="second.png", block=(300, 0, 600, 420))
+    target = tmp_path / "vault"
+    _export(client, target)
+
+    assert client.app.state.store.delete_document(doc2["document_id"])
+    st = _export(client, target)
+    assert st["status"] == "done"
+    assert st["report"]["deleted"], "deleted document's files should be listed"
+    assert any(p.endswith("note.md") for p in st["report"]["deleted"])
+    assert st["exported_documents"] == 1
+    assert len(list((target / "notes").glob("*/note.md"))) == 1
+
+
+def test_report_user_edit_conflict_locatable(tmp_path, monkeypatch):
+    monkeypatch.setenv("GRAPH2NOTE_STORAGE", str(tmp_path / "store"))
+    client = TestClient(_app())
+    _seed_one_document(client)
+    target = tmp_path / "vault"
+    _export(client, target)
+
+    note = _note_md(target)
+    note.write_text(note.read_text(encoding="utf-8") + "\n\n用户手工追加的内容\n", encoding="utf-8")
+    st = _export(client, target)
+    assert st["status"] == "done"
+    conflicts = st["report"]["conflicts"]
+    assert conflicts, "user-edited note should be reported as a conflict"
+    c = conflicts[0]
+    assert c["managed"].endswith("note.md")
+    assert "user-" in c["backup"]
+    assert (target / c["managed"]).is_file()
+    assert (target / c["backup"]).is_file()
+    assert "用户手工追加的内容" not in (target / c["managed"]).read_text(encoding="utf-8")
+    assert "用户手工追加的内容" in (target / c["backup"]).read_text(encoding="utf-8")
+
+
+def test_report_user_rename_preserved_and_locatable(tmp_path, monkeypatch):
+    monkeypatch.setenv("GRAPH2NOTE_STORAGE", str(tmp_path / "store"))
+    client = TestClient(_app())
+    _seed_one_document(client)
+    target = tmp_path / "vault"
+    _export(client, target)
+
+    note = _note_md(target)
+    renamed = note.parent / "My Essay.md"
+    note.rename(renamed)
+    st = _export(client, target)
+    assert st["status"] == "done"
+    assert any(p.endswith("note.md") for p in st["report"]["added"])
+    user_files = st["report"]["user_files"]
+    assert any(p.endswith("My Essay.md") for p in user_files), user_files
+    assert renamed.is_file()
+
+
+def test_report_failure_partial_vs_clean(tmp_path, monkeypatch):
+    import graph2note.notes.loop as loop_module
+
+    # partial: fake writes a file into the vault, then raises
+    monkeypatch.setenv("GRAPH2NOTE_STORAGE", str(tmp_path / "store"))
+    client = TestClient(_app())
+    _seed_one_document(client)
+    target = tmp_path / "vault"
+
+    def boom_partial(store, out_dir, **kw):
+        (Path(out_dir) / "notes").mkdir(parents=True, exist_ok=True)
+        (Path(out_dir) / "notes" / "partial.txt").write_text("x", encoding="utf-8")
+        raise RuntimeError("dead link")
+
+    monkeypatch.setattr(loop_module, "run_incremental_export", boom_partial)
+    st = _export(client, target)
+    assert st["status"] == "failed" and st["partial"] is True
+
+    # clean: fake raises without writing anything
+    monkeypatch.setenv("GRAPH2NOTE_STORAGE", str(tmp_path / "store2"))
+    client2 = TestClient(_app())
+    _seed_one_document(client2)
+    target2 = tmp_path / "vault2"
+
+    def boom_clean(store, out_dir, **kw):
+        raise RuntimeError("boom")
+
+    monkeypatch.setattr(loop_module, "run_incremental_export", boom_clean)
+    st2 = _export(client2, target2)
+    assert st2["status"] == "failed" and st2["partial"] is False
