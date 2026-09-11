@@ -221,6 +221,23 @@ body {
   color: var(--muted); font-size: 12px; }
 .llm-health-item strong { color: var(--ink); min-width: 80px; }
 
+/* Obsidian vault export (one-way) */
+.vault-export-zone { flex: 1; overflow: auto; padding: 22px 26px 36px; max-width: 720px; }
+.vault-export-head { display: flex; align-items: flex-start; gap: 18px; margin-bottom: 18px; }
+.vault-export-head h2 { margin: 0; font-size: 20px; }
+.vault-export-head p { margin: 5px 0 0; font-size: 13px; }
+.vault-export-form { display: flex; flex-direction: column; gap: 9px;
+  padding: 16px 18px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
+.vault-export-label { font-size: 12px; color: var(--muted); }
+.vault-export-row { display: flex; gap: 9px; }
+.vault-export-input { flex: 1; min-height: 34px; border: 1px solid var(--line); border-radius: 6px;
+  padding: 6px 9px; background: var(--panel); color: var(--ink); font-size: 13px; }
+.vault-export-status { margin-top: 16px; font-size: 13px; padding: 11px 13px;
+  border: 1px dashed var(--line); border-radius: 8px; line-height: 1.6; }
+.vault-export-status.ok { border-style: solid; border-color: var(--ok); color: #166534; background: #f0fdf4; }
+.vault-export-status.err { border-style: solid; border-color: var(--danger); color: #b91c1c; background: #fef2f2; }
+.vault-export-status .dim { font-size: 12px; }
+
 /* Timeline (issue 04) */
 .timeline-zone { flex: 1; overflow: auto; padding: 22px 26px 36px; }
 .timeline-head { display: flex; align-items: flex-start; justify-content: space-between;

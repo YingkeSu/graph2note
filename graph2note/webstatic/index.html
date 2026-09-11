@@ -27,6 +27,7 @@
     <button class="btn small" id="nav-graph" title="知识图谱">知识图谱</button>
     <button class="btn small" id="nav-dashboard" title="数据看板">数据看板</button>
     <button class="btn small" id="nav-settings" title="LLM 设置">LLM 设置</button>
+    <button class="btn small" id="nav-vault-export" title="导出 Obsidian Vault">导出 Vault</button>
     <button class="btn small primary" id="nav-upload" title="解析新手稿">新解析</button>
     <span class="spacer"></span>
     <!-- P1 placeholder: template selector (not implemented). -->
@@ -162,6 +163,26 @@
     <div id="graph-scroll" class="graph-scroll">
       <svg id="graph-canvas" class="graph-canvas" role="img" aria-label="文档关系图谱"></svg>
     </div>
+  </section>
+
+  <!-- Obsidian vault export (one-way) -->
+  <section id="vault-export-zone" class="vault-export-zone hidden">
+    <div class="vault-export-head">
+      <div>
+        <h2>导出 Obsidian Vault</h2>
+        <p class="dim">把当前文档库完整导出为 Obsidian Vault（Markdown、原稿、附件、主题 MOC、集合与元数据）。这是单向导出，不会把 Vault 里的修改同步回 graph2note。</p>
+      </div>
+    </div>
+    <form id="vault-export-form" class="vault-export-form">
+      <label class="vault-export-label" for="vault-export-dir">目标目录（本机绝对路径）</label>
+      <div class="vault-export-row">
+        <input id="vault-export-dir" type="text" class="vault-export-input"
+               placeholder="例如 /Users/you/Obsidian/MyVault" spellcheck="false" />
+        <button id="btn-vault-export" class="btn primary" type="submit">导出到 Vault</button>
+      </div>
+      <p class="dim">导出后会按需只写入变化的文件；你在 Vault 中手工改过的文件会被保留为备份（不覆盖、不删除）。</p>
+    </form>
+    <div id="vault-export-status" class="vault-export-status dim">尚未导出。</div>
   </section>
 
   <!-- Read-only telemetry Dashboard (issue 06) -->

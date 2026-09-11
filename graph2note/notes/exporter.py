@@ -341,8 +341,15 @@ def collect_refs(markdown: str) -> list[str]:
 
 
 def _safe_name(s: str) -> str:
-    """Sanitize a name for use as a filename, keeping Unicode word chars."""
-    s = re.sub(r"[^\w.]+?", "_", str(s), flags=re.UNICODE).strip("_")
+    """Sanitize a name for use as a filename, keeping Unicode word chars.
+
+    ``-`` is kept because the renderer's deterministic asset paths
+    (``assets/<doc>-diagram-<n>.png``) and other filenames use hyphens; mangle
+    only characters that are not filename-safe (whitespace / path separators
+    etc.).  The note body references attachments by their original names, so
+    sanitizing here must not rename ``-`` or the link would dead-link.
+    """
+    s = re.sub(r"[^\w.-]+", "_", str(s), flags=re.UNICODE).strip("_")
     return s or "untitled"
 
 
