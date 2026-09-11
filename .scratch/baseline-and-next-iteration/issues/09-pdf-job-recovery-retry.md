@@ -1,6 +1,6 @@
 # PDF 批任务中断恢复与失败页重试
 
-Status: in-review
+Status: merged
 
 来源：[已确认拆分草案](../ISSUE-DRAFT.md)；[现状与需求检查](../ASSESSMENT.md)。
 
@@ -26,3 +26,4 @@ Status: in-review
 
 - 2026-09-12 认领：graph2note-16（08 合并入 main 后接力），分支 `ao/graph2note-16/pdf-job-recovery-retry`。
 - 2026-09-12 graph2note-16 交付：逐页 checkpoint 落盘 + `interrupted` 识别恢复 + `POST /api/pdf/{id}/retry` 仅重试失败/未完成页 + 幂等提交识别 + 次数/超时/并发上限 + 单飞。新增 9 项离线故障注入测试（`tests/test_pdf_job_recovery.py`）。`-m "webapp or ingest or meta"` 91 passed；全量 `OPENCODE_API_KEY=dummy uv run pytest` 464 passed。详见 `handoffs/09-pdf-job-recovery-retry.md`。
+- 2026-09-12 复核通过并合并入 main（ba5671a）。验收：9 项故障注入测试背书，恢复/重试正确性确认，幂等无误，无整改项。
