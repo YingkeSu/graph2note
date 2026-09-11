@@ -10,12 +10,23 @@ requires-python = ">=3.12"
 dependencies = ["pydantic>=2.0", "Pillow>=10.0"]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "reportlab>=4.0,<5"]  # reportlab: gold 复核 PDF 合集生成（eval/gold_review.py --pdf）
+# 开发/测试：pytest + FastAPI TestClient 的 httpx + gold 复核 PDF 合集生成
+dev = ["pytest>=8.0", "reportlab>=4.0,<5", "httpx>=0.27"]
 # imaging/raster deps for the parse pipeline (preprocess, downscaled VLM input)
 vision = ["Pillow>=9", "numpy>=1.24"]
 pdf = ["pymupdf>=1.24"]  # scanned-PDF page splitting (issue 09 ingest)
 # local single-user Web app (issue 06): FastAPI + uvicorn + multipart uploads
 web = ["fastapi>=0.110", "uvicorn>=0.29", "python-multipart>=0.0.9"]
+# deterministic diagram/flow rendering (issue 05): graphviz dot preferred,
+# matplotlib pure-Python fallback
+diagram = ["graphviz>=0.20", "matplotlib>=3.5"]
+# 一键安装全部可选依赖（开发/测试 + 运行全能力）
+all = [
+    "pytest>=8.0", "reportlab>=4.0,<5", "httpx>=0.27",
+    "Pillow>=9", "numpy>=1.24", "pymupdf>=1.24",
+    "fastapi>=0.110", "uvicorn>=0.29", "python-multipart>=0.0.9",
+    "graphviz>=0.20", "matplotlib>=3.5",
+]
 
 [project.scripts]
 graph2note = "graph2note.cli:main"
@@ -25,7 +36,9 @@ packages = [
     "graph2note",
     "graph2note.diagrams",
     "graph2note.ingest",
+    "graph2note.notes",
     "graph2note.verify",
+    "eval",
 ]
 
 [tool.setuptools.package-data]
