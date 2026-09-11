@@ -1,0 +1,20 @@
+{
+  "documents": 1,
+  "first_added": [
+    "notes/qa-demo/note.md",
+    "notes/qa-demo/source.png",
+    "collections/杂项/qa-demo.md",
+    "mocs/杂项.md"
+  ],
+  "second_changes": {
+    "added": [],
+    "updated": [],
+    "deleted": [],
+    "conflicts": []
+  },
+  "third_conflicts": [
+    "notes/qa-demo/note.md"
+  ],
+  "user_edit_preserved": true,
+  "vault_path": "/tmp/graph2note-obsidian-smoke-20260911/vault"
+}

@@ -1,0 +1,85 @@
+[
+  {
+    "case": "ui",
+    "provider": "kimi",
+    "requested_model": "kimi-k2.6",
+    "max_tokens": 1400,
+    "timeout_seconds": 45,
+    "retries": 0,
+    "status": "ok",
+    "actual_model": "kimi-k2.6",
+    "usage": {
+      "prompt_tokens": 1980,
+      "completion_tokens": 299,
+      "total_tokens": 2279,
+      "cached_tokens": 6,
+      "completion_tokens_details": {
+        "reasoning_tokens": 1
+      },
+      "prompt_tokens_details": {
+        "cached_tokens": 6
+      }
+    },
+    "finish_reason": "stop",
+    "review": {
+      "observations": [
+        "顶部导航栏包含 graph2note logo、文档库、Inbox、时间轴、知识图谱、数据看板、LLM 设置、新解析按钮，右侧有模板选择器（显示'简洁 Markdown（默认）'且置灰禁用）",
+        "主标题为'本地文档库'，下方分为集合区域（左）和快捷入口区域（右）",
+        "集合区域显示'暂无集合'，提供'新建集合'输入框和'添加'按钮",
+        "快捷入口包含'今日新增、本周新增、最近编辑、全部 Library'四个筛选链接",
+        "标签词表区域显示'暂无标签，打开文档后可添加'，提供'新增标签'输入框和'添加'按钮",
+        "空状态区域居中显示文件夹图标和引导文案'还没有文档。点「新解析」上传一张手稿图片开始。'",
+        "整体布局在 1440px 宽度下各元素分布正常，无明显的文字截断或重叠现象"
+      ],
+      "issues": [],
+      "limitations": [
+        "无法验证输入框的交互状态（focus、hover、error 等）",
+        "无法判断'新解析'按钮点击后的上传流程是否正常",
+        "无法确认模板选择器禁用状态是否有相应的 tooltip 提示",
+        "无法验证快捷入口筛选功能在空状态下的点击反馈"
+      ]
+    },
+    "elapsed_seconds": 9.7
+  },
+  {
+    "case": "content",
+    "provider": "kimi",
+    "requested_model": "kimi-k2.6",
+    "max_tokens": 1400,
+    "timeout_seconds": 45,
+    "retries": 0,
+    "status": "ok",
+    "actual_model": "kimi-k2.6",
+    "usage": {
+      "prompt_tokens": 640,
+      "completion_tokens": 119,
+      "total_tokens": 759,
+      "cached_tokens": 6,
+      "completion_tokens_details": {
+        "reasoning_tokens": 1
+      },
+      "prompt_tokens_details": {
+        "cached_tokens": 6
+      }
+    },
+    "finish_reason": "stop",
+    "review": {
+      "issues": [
+        {
+          "kind": "text_mismatch",
+          "source_evidence": "第二行文本为 ALPHA -> BETA",
+          "output_evidence": "候选Markdown第二行为 ALPHA -> GAMMA",
+          "suggestion": "将 GAMMA 改为 BETA"
+        },
+        {
+          "kind": "formula_mismatch",
+          "source_evidence": "第三行为 E = m c^2（指数为2）",
+          "output_evidence": "候选Markdown为 $E = m c^3$（指数为3）",
+          "suggestion": "将 c^3 改为 c^2，即 $E = m c^2$"
+        }
+      ],
+      "limitations": []
+    },
+    "elapsed_seconds": 3.96
+  }
+]

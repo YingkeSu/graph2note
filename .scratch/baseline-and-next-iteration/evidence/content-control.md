@@ -1,0 +1,5 @@
+# VISION QA FIXTURE
+
+ALPHA -> GAMMA
+
+$E = m c^3$
