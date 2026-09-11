@@ -36,7 +36,8 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_ingest_hash": "ingest",
     "test_ingest_missing": "ingest",
     "test_ingest_pdf": "ingest",
-    "test_pdf_upload": "ingest",  # issue 08 在途（新文件）；合并后生效
+    "test_pdf_upload": "ingest",  # issue 08（新文件）
+    "test_pdf_job_recovery": "ingest",  # issue 09 在途（新文件）
     # 双模型交叉验证
     "test_verify_diff": "verify",
     "test_verify_engine": "verify",

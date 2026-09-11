@@ -167,31 +167,41 @@ class JobRunner:
                     job.error_kind = "failed"
                     job._cancelled = True
 
-    def trigger_pdf(self, job: pdflib.PdfJob, data: bytes) -> None:
+    def trigger_pdf(self, job: pdflib.PdfJob, data: bytes | None = None) -> bool:
+        """Start/resume one PDF job; False if it is already running (single-flight)."""
+        with job.lock:
+            if job._running:
+                return False
+            job._running = True
         threading.Thread(target=self._wrapper_pdf, args=(job, data), daemon=True).start()
+        return True
 
-    def _wrapper_pdf(self, job: pdflib.PdfJob, data: bytes) -> None:
-        fut = self._executor.submit(self._run_pdf, job, data)
+    def _wrapper_pdf(self, job: pdflib.PdfJob, data: bytes | None = None) -> None:
         try:
-            fut.result(timeout=PDF_JOB_TIMEOUT)
-        except concurrent.futures.TimeoutError:
+            fut = self._executor.submit(self._run_pdf, job, data)
+            try:
+                fut.result(timeout=PDF_JOB_TIMEOUT)
+            except concurrent.futures.TimeoutError:
+                with job.lock:
+                    if job.status == "processing" and not job._cancelled:
+                        job.status = "failed"
+                        job.error = f"PDF 处理超时（超过 {PDF_JOB_TIMEOUT} 秒）。"
+                        job.error_kind = "timeout"
+                        job._cancelled = True
+                pdflib.save_job(job)
+            except Exception as exc:  # split/commit raised before per-page handling
+                with job.lock:
+                    if not job._cancelled and job.status == "processing":
+                        job.status = "failed"
+                        job.error = f"PDF 处理失败：{exc}"
+                        job.error_kind = "failed"
+                        job._cancelled = True
+                pdflib.save_job(job)
+        finally:
             with job.lock:
-                if job.status == "processing" and not job._cancelled:
-                    job.status = "failed"
-                    job.error = f"PDF 处理超时（超过 {PDF_JOB_TIMEOUT} 秒）。"
-                    job.error_kind = "timeout"
-                    job._cancelled = True
-            pdflib.save_job(job)
-        except Exception as exc:  # split/commit raised before per-page handling
-            with job.lock:
-                if not job._cancelled and job.status == "processing":
-                    job.status = "failed"
-                    job.error = f"PDF 处理失败：{exc}"
-                    job.error_kind = "failed"
-                    job._cancelled = True
-            pdflib.save_job(job)
+                job._running = False
 
-    def _run_pdf(self, job: pdflib.PdfJob, data: bytes) -> None:
+    def _run_pdf(self, job: pdflib.PdfJob, data: bytes | None = None) -> None:
         app = self.app
         store = app.state.store
         try:
@@ -338,6 +348,9 @@ def create_app(
     price_table: dict | None = None,
     llm_settings: LLMSettingsStore | None = None,
     llm_probe=None,
+    pdf_max_page_attempts: int | None = None,
+    pdf_page_timeout: int | None = None,
+    pdf_workers: int | None = None,
 ) -> FastAPI:
     """Build the FastAPI app.
 
@@ -382,8 +395,15 @@ def create_app(
     }
     app.state.vault_export_lock = threading.Lock()
     # issue 08: PDF upload jobs, keyed by stable content hash (AC2).
+    # issue 09: explicit, persisted per-page bounds for PDF batch jobs (AC4).
     app.state.pdf_jobs: dict[str, pdflib.PdfJob] = {}
     app.state.pdf_jobs_lock = threading.Lock()
+    app.state.pdf_max_page_attempts = pdf_max_page_attempts or pdflib.MAX_PAGE_ATTEMPTS
+    app.state.pdf_page_timeout = pdf_page_timeout or pdflib.PAGE_TIMEOUT
+    app.state.pdf_workers = pdf_workers or pdflib.PDF_WORKERS
+    for _persisted in pdflib.load_jobs(store):
+        pdflib.save_job(_persisted)  # persist the reconciled 'interrupted' state
+        app.state.pdf_jobs[_persisted.pdf_id] = _persisted
 
     def _get_job(job_id: str) -> Job:
         with app.state.jobs_lock:
@@ -983,10 +1003,35 @@ def create_app(
     # ---- PDF upload -> split -> parse -> library (issue 08) ------------------
 
     def _get_pdf_job(pdf_id: str) -> pdflib.PdfJob:
+        job = _get_or_load_pdf_job(pdf_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail="PDF 任务不存在。")
+        return job
+
+    def _get_or_load_pdf_job(pdf_id: str) -> pdflib.PdfJob | None:
+        """Memory first, then the durable job.json (issue 09 AC1).
+
+        A job loaded from disk has no live worker, so an in-flight status is
+        reconciled to 'interrupted' before it is returned.
+        """
         with app.state.pdf_jobs_lock:
             job = app.state.pdf_jobs.get(pdf_id)
+        if job is not None:
+            return job
+        try:
+            work_dir = pdflib.pdf_dir(app.state.store, pdf_id)
+        except RuntimeError:
+            return None
+        job = pdflib.load_job(work_dir)
         if job is None:
-            raise HTTPException(status_code=404, detail="PDF 任务不存在或会话已清空。")
+            return None
+        job.mark_interrupted()
+        pdflib.save_job(job)
+        with app.state.pdf_jobs_lock:
+            existing = app.state.pdf_jobs.get(pdf_id)
+            if existing is not None:
+                return existing
+            app.state.pdf_jobs[pdf_id] = job
         return job
 
     @app.post("/api/pdf")
@@ -1002,31 +1047,67 @@ def create_app(
                 status_code=_pdf_error_status(exc.kind), detail=str(exc)) from exc
 
         pdf_id = pdflib.stable_pdf_id(data)
-        with app.state.pdf_jobs_lock:
-            job = app.state.pdf_jobs.get(pdf_id)
-            if job is None:
-                job = pdflib.PdfJob(pdf_id=pdf_id, filename=filename,
-                                    model=model, total_pages=total_pages)
+        job = _get_or_load_pdf_job(pdf_id)
+        if job is None:
+            job = pdflib.PdfJob(
+                pdf_id=pdf_id, filename=filename, model=model,
+                total_pages=total_pages,
+                max_page_attempts=app.state.pdf_max_page_attempts,
+                page_timeout=app.state.pdf_page_timeout,
+                workers=app.state.pdf_workers,
+            )
+            with app.state.pdf_jobs_lock:
                 app.state.pdf_jobs[pdf_id] = job
 
-        # stable pdf identity: a re-upload of the same bytes reuses the job.
-        should_trigger = False
+        # stable pdf identity: a re-upload of the same bytes reuses the job and
+        # only resumes pages that are not yet successful (idempotent; AC2/AC3).
         with job.lock:
             job.total_pages = total_pages
-            if job.status == "done":
-                return {"pdf_id": pdf_id, "status": "done",
-                        "total_pages": total_pages}
-            if job.status not in ("queued", "processing"):
-                job.status = "queued"
-                job.error = None
-                job.error_kind = None
-                job._cancelled = False
-                should_trigger = True
-            elif job.status == "queued":
-                should_trigger = True
-        if should_trigger:
-            app.state.runner.trigger_pdf(job, data)
-        return {"pdf_id": pdf_id, "status": job.status, "total_pages": total_pages}
+        retryable = job.retryable_page_indexes()
+        if job.pages and not retryable and job.status == "done":
+            return {"pdf_id": pdf_id, "status": "done",
+                    "total_pages": total_pages,
+                    "retryable": False, "retryable_pages": []}
+        with job.lock:
+            job.status = "queued"
+            job.error = None
+            job.error_kind = None
+            job._cancelled = False
+        triggered = app.state.runner.trigger_pdf(job, data)
+        return {"pdf_id": pdf_id, "status": job.status, "total_pages": total_pages,
+                "retryable": bool(retryable), "retryable_pages": retryable,
+                "triggered": triggered}
+
+    @app.post("/api/pdf/{pdf_id}/retry")
+    def pdf_retry(pdf_id: str):
+        """Retry only the failed/incomplete pages of an existing job (AC2/AC4)."""
+        job = _get_pdf_job(pdf_id)
+        original = pdflib.original_pdf_path(app.state.store, pdf_id)
+        if not original.is_file():
+            raise HTTPException(status_code=404, detail="原 PDF 缺失，无法重试。")
+        retryable = job.retryable_page_indexes()
+        if job.pages and not retryable and job.status == "done":
+            exhausted = job.exhausted_page_indexes()
+            msg = "没有可重试的页面。"
+            if exhausted:
+                msg = (f"{len(exhausted)} 页已达 {job.attempts_cap()} 次尝试上限，"
+                       f"已停止自动重试。")
+            return {"pdf_id": pdf_id, "status": job.status, "triggered": False,
+                    "retryable_pages": [], "exhausted_pages": exhausted,
+                    "message": msg}
+        with job.lock:
+            if job._running:
+                return {"pdf_id": pdf_id, "status": job.status, "triggered": False,
+                        "retryable_pages": retryable,
+                        "message": "任务正在处理中，请稍候。"}
+            job.status = "queued"
+            job.error = None
+            job.error_kind = None
+            job._cancelled = False
+        triggered = app.state.runner.trigger_pdf(job, original.read_bytes())
+        return {"pdf_id": pdf_id, "status": job.status, "triggered": triggered,
+                "retryable_pages": retryable,
+                "max_page_attempts": job.attempts_cap()}
 
     @app.get("/api/pdf/{pdf_id}")
     def pdf_status(pdf_id: str):

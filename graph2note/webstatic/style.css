@@ -415,3 +415,4 @@ body {
 .pdf-badge.st-blank { background: #f3f4f6; color: var(--muted); }
 .pdf-badge.st-duplicate { background: #fff7e6; color: #9a6700; border-color: #f0dcae; }
 .pdf-badge.st-processing { background: #eaf2fd; color: #1f6feb; border-color: #b9d4f7; }
+.pdf-badge.st-interrupted { background: #fdf1e3; color: #b45309; border-color: #f0d3a8; }
