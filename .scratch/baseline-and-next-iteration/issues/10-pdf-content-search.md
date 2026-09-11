@@ -21,3 +21,7 @@ Status: ready-for-agent
 ## Blocked by
 
 - [08 — pdf-upload-parse-library](08-pdf-upload-parse-library.md)
+
+## Comments
+
+- 2026-09-12 认领：graph2note-16（08 合并入 main 后接力），分支 `ao/graph2note-16/pdf-content-search`。
