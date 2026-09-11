@@ -1,0 +1,25 @@
+{
+  "observations": [
+    "页面含顶部标题区与底部操作区，标题区出现明显文字重叠",
+    "底部操作按钮的文字被容器下缘裁掉一半"
+  ],
+  "issues": [
+    {
+      "severity": "high",
+      "evidence": "顶部标题区两行文字叠在一起，第二行遮挡第一行后半段",
+      "region": "顶部标题区域",
+      "uncertainty": "low",
+      "suggestion": "增加行高或调整标题字号，避免重叠"
+    },
+    {
+      "severity": "medium",
+      "evidence": "底部操作按钮文字被容器下缘裁掉一半",
+      "region": "底部",
+      "uncertainty": "medium",
+      "suggestion": "给底部容器增加内边距或允许换行"
+    }
+  ],
+  "limitations": [
+    "无法确认点击交互是否正常"
+  ]
+}

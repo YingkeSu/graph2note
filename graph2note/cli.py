@@ -250,6 +250,10 @@ def main(argv: list[str] | None = None) -> int:
     if argv and argv[0] == "notes-export":
         args = build_notes_export_parser().parse_args(argv[1:])
         return _cmd_notes_export(args)
+    if argv and argv[0] == "visual-qa":
+        from . import visualqa
+        args = visualqa.build_visualqa_parser().parse_args(argv[1:])
+        return visualqa.cmd_visualqa(args)
     args = build_compile_parser().parse_args(argv)
     return _cmd_compile(args)
 
