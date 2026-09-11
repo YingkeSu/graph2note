@@ -16,6 +16,8 @@ vision = ["Pillow>=9", "numpy>=1.24"]
 pdf = ["pymupdf>=1.24"]  # scanned-PDF page splitting (issue 09 ingest)
 # local single-user Web app (issue 06): FastAPI + uvicorn + multipart uploads
 web = ["fastapi>=0.110", "uvicorn>=0.29", "python-multipart>=0.0.9"]
+# macOS desktop bundle: native WebView window + PyInstaller app packaging
+macos = ["numpy>=1.24", "pywebview>=5.4", "pyinstaller>=6.0"]
 
 [project.scripts]
 graph2note = "graph2note.cli:main"
