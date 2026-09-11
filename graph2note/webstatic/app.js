@@ -115,6 +115,12 @@ const el = {
   vaultExportDir: $("#vault-export-dir"),
   btnVaultExport: $("#btn-vault-export"),
   vaultExportStatus: $("#vault-export-status"),
+  pickPdf: $("#pick-pdf"),
+  pdfInput: $("#pdf-input"),
+  pdfZone: $("#pdf-zone"),
+  pdfList: $("#pdf-list"),
+  pdfFilename: $("#pdf-filename"),
+  pdfSummary: $("#pdf-summary"),
 };
 
 /* ---------- helpers ---------- */
@@ -216,7 +222,7 @@ function render() {
 }
 
 function hideAll() {
-  [el.libraryZone, el.inboxZone, el.settingsZone, el.timelineZone, el.graphZone, el.dashboardZone, el.uploadZone, el.workingZone, el.workZone, el.vaultExportZone]
+  [el.libraryZone, el.inboxZone, el.settingsZone, el.timelineZone, el.graphZone, el.dashboardZone, el.uploadZone, el.workingZone, el.workZone, el.vaultExportZone, el.pdfZone]
     .forEach((n) => n.classList.add("hidden"));
 }
 
@@ -1309,6 +1315,86 @@ el.llmHealthButton.addEventListener("click", checkLlmHealth);
 
 el.pickFile.onclick = () => el.fileInput.click();
 el.fileInput.addEventListener("change", (e) => acceptFile(e.target.files[0]));
+
+/* ---------- PDF upload (issue 08) ---------- */
+
+const PDF_STATUS_LABEL = {
+  pending: "待处理", processing: "解析中", success: "成功",
+  failed: "失败", blank: "空白页", duplicate: "重复页",
+};
+
+function acceptPdf(file) {
+  if (!file) return;
+  if (!/\.pdf$/i.test(file.name)) {
+    el.uploadHint.textContent = "不支持的文件类型：请上传 PDF。"; return;
+  }
+  if (file.size > 50 * 1024 * 1024) {
+    el.uploadHint.textContent = `文件 ${(file.size / 1048576).toFixed(1)}MB 超过 50MB 上限。`;
+    return;
+  }
+  el.uploadHint.textContent = "";
+  startPdfUpload(file);
+}
+
+async function startPdfUpload(file) {
+  if (state.busy) return;
+  state.busy = true; setBusy(true);
+  showWorking("正在上传 PDF…", file.name);
+  try {
+    const r = await api("/api/pdf", {
+      method: "POST",
+      body: (() => { const f = new FormData(); f.append("file", file); return f; })(),
+    });
+    pollPdf(r.pdf_id);
+  } catch (e) {
+    state.busy = false; setBusy(false);
+    renderUpload();
+    el.uploadHint.textContent = e.message;
+  }
+}
+
+function pollPdf(pdfId) {
+  hideAll();
+  el.pdfZone.classList.remove("hidden");
+  el.pdfList.innerHTML = "";
+  clearInterval(state.pollTimer);
+  state.pollTimer = setInterval(async () => {
+    let job;
+    try { job = await api(`/api/pdf/${pdfId}`); }
+    catch (e) { clearInterval(state.pollTimer); showToast("查询 PDF 任务失败：" + e.message, "err"); go("#library"); return; }
+    el.pdfFilename.textContent = job.filename || "";
+    el.pdfSummary.textContent = job.status === "done"
+      ? `共 ${job.total_pages} 页 · ${job.counts.success} 成功 / ${job.counts.failed} 失败 / ${job.counts.blank} 空白 / ${job.counts.duplicate} 重复`
+      : (job.error || `正在逐页解析… ${job.total_pages} 页`);
+    renderPdfPages(job);
+    if (job.status !== "queued" && job.status !== "processing") {
+      clearInterval(state.pollTimer);
+      state.busy = false; setBusy(false);
+      if (job.status !== "done") showToast(job.error || "PDF 处理失败。", "err");
+    }
+  }, POLL_MS);
+}
+
+function renderPdfPages(job) {
+  el.pdfList.innerHTML = "";
+  for (const p of (job.pages || [])) {
+    const row = document.createElement("div");
+    row.className = "pdf-row";
+    const badge = `<span class="pdf-badge st-${p.status}">${PDF_STATUS_LABEL[p.status] || p.status}</span>`;
+    const link = p.document_id
+      ? `<a href="#doc/${encodeURIComponent(p.document_id)}">第 ${p.page_index + 1} 页</a>`
+      : `<span>第 ${p.page_index + 1} 页</span>`;
+    const note = p.status === "duplicate"
+      ? `（与第 ${(p.merged_into || 0) + 1} 页重复）`
+      : (p.error ? `（${esc(p.error)}）` : "");
+    row.innerHTML = `<span class="pdf-page">${link}</span>${badge}<span class="dim">${note}</span>`;
+    el.pdfList.appendChild(row);
+  }
+}
+
+el.pickPdf.onclick = () => el.pdfInput.click();
+el.pdfInput.addEventListener("change", (e) => acceptPdf(e.target.files[0]));
+
 ["dragenter", "dragover"].forEach((ev) =>
   el.uploadCard.addEventListener(ev, (e) => { e.preventDefault(); el.uploadCard.classList.add("drag"); }));
 ["dragleave", "drop"].forEach((ev) =>
