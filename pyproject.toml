@@ -50,4 +50,30 @@ graph2note = ["webstatic/*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "-q"
+addopts = "-q --strict-markers"
+markers = [
+    # 模块归属（issue 12；每测试文件一个，见 tests/taxonomy.py）
+    "ir: Document IR schema 与校验",
+    "render: 确定性 Markdown 渲染",
+    "preprocess: 图像预处理（方向/透视/裁剪/对比度）",
+    "pipeline: 解析管线装配（preprocess->router->vlm->render）",
+    "ingest: PDF 拆页/去重/缺页预警",
+    "verify: 双模型交叉验证",
+    "webapp: 本地单用户 Web 应用",
+    "notes: Obsidian 导出/分类/MOC",
+    "workspace: knowledge-workspace（collections/graph/inbox/metadata/tags/timeline/telemetry）",
+    "visualqa: 视觉 QA 开发工具（UI/内容）",
+    "eval: 评估 harness 与网关传输层",
+    "diagrams: diagram/flow 确定性渲染",
+    "config: 运行配置 / LLM 设置",
+    "store: 文档库持久化",
+    "cli: CLI 入口",
+    "meta: 测试基础设施自身（分类元测试）",
+    # 层次
+    "unit: 单模块纯逻辑测试",
+    "integration: 跨模块/全链/Web/CLI 测试",
+    # 成本
+    "slow: 较重（TestClient 全链/全链装配/图渲染）",
+    "live_llm: 需真实 LLM 调用（仅手动显式运行，CI 不跑）",
+    "gui: 需 GUI/浏览器（仅手动）",
+]
