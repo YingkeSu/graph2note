@@ -716,7 +716,6 @@ def call_ir(
             # Existing offline fixtures replace load_api_key with a zero-arg callable.
             return load_api_key()
 
-    key = _key_for(provider)
     sess = session if session is not None else resolve_session(model)
     ir_model = ir_model or ir_channel["model"]
     ir_provider = ir_channel["provider"]
@@ -729,6 +728,10 @@ def call_ir(
             meta = dict(rec.get("meta") or {})
             meta["cached"] = True
             return rec.get("content", ""), meta
+
+    # API key is only required when actually reaching the gateway; a cache hit
+    # above must stay fully offline (no key, no session lookup).
+    key = _key_for(provider)
 
     # stage-1：VLM -> 非空 Markdown（eval 已验证对真实扫描页稳定非空）
     markdown, m1 = _transcribe_markdown(
