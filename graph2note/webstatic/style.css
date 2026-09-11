@@ -237,6 +237,14 @@ body {
 .vault-export-status.ok { border-style: solid; border-color: var(--ok); color: #166534; background: #f0fdf4; }
 .vault-export-status.err { border-style: solid; border-color: var(--danger); color: #b91c1c; background: #fef2f2; }
 .vault-export-status .dim { font-size: 12px; }
+.vault-export-status code { font-size: 11px; color: var(--ink); word-break: break-all; }
+.vault-conflicts { margin: 10px 0; padding: 9px 11px; border: 1px solid var(--danger);
+  border-radius: 7px; background: #fff7f7; color: #b91c1c; font-size: 12px; }
+.vault-conflicts ul { margin: 7px 0 0; padding-left: 18px; display: flex; flex-direction: column; gap: 6px; }
+.vault-files { margin: 6px 0; font-size: 12px; }
+.vault-files summary { cursor: pointer; color: var(--ink); }
+.vault-files ul { margin: 5px 0 0; padding-left: 18px; color: var(--muted); max-height: 180px; overflow: auto; }
+.vault-files li { word-break: break-all; }
 
 /* Timeline (issue 04) */
 .timeline-zone { flex: 1; overflow: auto; padding: 22px 26px 36px; }
