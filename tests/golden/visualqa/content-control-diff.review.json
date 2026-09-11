@@ -1,0 +1,17 @@
+{
+  "issues": [
+    {
+      "kind": "text_mismatch",
+      "source_evidence": "第二行文本为 ALPHA -> BETA",
+      "output_evidence": "候选Markdown第二行为 ALPHA -> GAMMA",
+      "suggestion": "将 GAMMA 改为 BETA"
+    },
+    {
+      "kind": "formula_mismatch",
+      "source_evidence": "第三行为 E = m c^2（指数为2）",
+      "output_evidence": "候选Markdown为 $E = m c^3$（指数为3）",
+      "suggestion": "将 c^3 改为 c^2，即 $E = m c^2$"
+    }
+  ],
+  "limitations": []
+}

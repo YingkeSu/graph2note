@@ -145,3 +145,75 @@ def test_cli_ui_budget_flags_plumbed(tmp_path):
     assert rc == 0
     assert seen["payload"]["max_tokens"] == 999
     assert seen["timeout"] == 12.5
+
+
+def test_cli_ui_prompt_version_override(tmp_path):
+    args = _ui_args(tmp_path, "--prompt-version", "custom-v9")
+    rc = cmd_visualqa(args, call_fn=lambda *a, **k: _body())
+    assert rc == 0
+    report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
+    assert report["prompt_version"] == "custom-v9"
+
+
+def _content_args(tmp_path, *extra):
+    src = _make_png(tmp_path / "source.png")
+    cand = tmp_path / "cand.md"
+    cand.write_text("# 状态空间模形\n", encoding="utf-8")
+    argv = ["content", "--source", str(src), "--candidate", str(cand),
+            "-o", str(tmp_path / "report.json"), *[str(x) for x in extra]]
+    return build_visualqa_parser().parse_args(argv)
+
+
+def test_cli_content_complete_writes_report(tmp_path):
+    args = _content_args(tmp_path)
+    body = {"model": "kimi-k2.6",
+            "choices": [{"message": {"content": '{"issues": [], "limitations": []}'},
+                         "finish_reason": "stop"}],
+            "usage": {"total_tokens": 10}}
+    rc = cmd_visualqa(args, call_fn=lambda *a, **k: body)
+    assert rc == 0
+    report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
+    assert report["mode"] == "content"
+    assert report["status"] == "complete"
+    assert report["verdict"] == "no_issues_found"
+
+
+def test_cli_content_replay_offline(tmp_path):
+    src = _make_png(tmp_path / "source.png")
+    spec = visualqa.ContentSpec()
+    rec = tmp_path / "rec.json"
+    body = {"model": "kimi-k2.6",
+            "choices": [{"message": {"content": '{"issues": [], "limitations": []}'},
+                         "finish_reason": "stop"}],
+            "usage": {"total_tokens": 10}}
+    visualqa.check_content(str(src), "candidate", spec=spec, save_raw_path=rec,
+                           call_fn=lambda *a, **k: body)
+    argv = ["content", "--replay", str(rec), "-o", str(tmp_path / "report.json")]
+    args = build_visualqa_parser().parse_args(argv)
+    rc = cmd_visualqa(args, call_fn=lambda *a, **k: (_ for _ in ()).throw(AssertionError("offline")))
+    assert rc == 0
+    report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
+    assert report["mode"] == "content"
+    assert report["replay"]["from_record"] is True
+
+
+def test_cli_content_requires_source(tmp_path, capsys):
+    cand = tmp_path / "cand.md"
+    cand.write_text("x\n", encoding="utf-8")
+    argv = ["content", "--candidate", str(cand), "-o", str(tmp_path / "r.json")]
+    args = build_visualqa_parser().parse_args(argv)
+    rc = cmd_visualqa(args)
+    assert rc == 2
+    assert "--source" in capsys.readouterr().err
+
+
+def test_cli_content_prompt_version_override(tmp_path):
+    args = _content_args(tmp_path, "--prompt-version", "content-v2")
+    body = {"model": "kimi-k2.6",
+            "choices": [{"message": {"content": '{"issues": [], "limitations": []}'},
+                         "finish_reason": "stop"}],
+            "usage": {"total_tokens": 10}}
+    rc = cmd_visualqa(args, call_fn=lambda *a, **k: body)
+    assert rc == 0
+    report = json.loads((tmp_path / "report.json").read_text(encoding="utf-8"))
+    assert report["prompt_version"] == "content-v2"
