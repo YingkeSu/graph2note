@@ -13,6 +13,10 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
+# graph2note.config is a pure resolution module (no gateway/network), safe to
+# import before loading .env so the support dir honors GRAPH2NOTE_APP_SUPPORT.
+from graph2note import config as g2n_config
+
 
 APP_NAME = "Graph2Note"
 HOST = "127.0.0.1"
@@ -26,12 +30,7 @@ def _bundle_resources() -> Path:
 
 
 def _support_dir() -> Path:
-    configured = os.environ.get("GRAPH2NOTE_APP_SUPPORT", "").strip()
-    path = (
-        Path(configured).expanduser()
-        if configured
-        else Path.home() / "Library" / "Application Support" / APP_NAME
-    )
+    path = g2n_config.support_dir()
     path.mkdir(parents=True, exist_ok=True)
     return path
 
@@ -65,7 +64,8 @@ def _load_runtime_config(resources: Path, support: Path) -> None:
         if candidate.is_file():
             _read_env_file(candidate)
             break
-    os.environ.setdefault("GRAPH2NOTE_STORAGE", str(support / "storage"))
+    # storage resolves via graph2note.config (GRAPH2NOTE_STORAGE > <support>/storage);
+    # keep the app's canonical settings location so existing configs stay visible.
     os.environ.setdefault("GRAPH2NOTE_SETTINGS_FILE", str(support / "llm-settings.json"))
 
 
@@ -105,7 +105,9 @@ def main() -> int:
     from graph2note.webapp import create_app
 
     port = _free_port()
-    app = create_app(storage_dir=os.environ["GRAPH2NOTE_STORAGE"])
+    app = create_app()
+    logging.info("storage=%s settings=%s",
+                 app.state.storage_dir, app.state.settings_path)
     config = uvicorn.Config(
         app,
         host=HOST,
