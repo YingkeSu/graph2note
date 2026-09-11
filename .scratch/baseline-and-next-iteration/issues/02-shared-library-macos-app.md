@@ -1,6 +1,6 @@
 # 统一文档库配置并验收 macOS 应用
 
-Status: ready-for-agent
+Status: merged
 
 来源：[已确认拆分草案](../ISSUE-DRAFT.md)；[现状与需求检查](../ASSESSMENT.md)。
 

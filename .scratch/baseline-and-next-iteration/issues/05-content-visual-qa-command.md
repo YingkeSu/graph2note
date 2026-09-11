@@ -1,6 +1,6 @@
 # 建立原稿与产出对照视觉验收命令
 
-Status: ready-for-agent
+Status: merged
 
 来源：[已确认拆分草案](../ISSUE-DRAFT.md)；[现状与需求检查](../ASSESSMENT.md)。
 

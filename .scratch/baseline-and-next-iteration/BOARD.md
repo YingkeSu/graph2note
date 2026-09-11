@@ -7,7 +7,7 @@
 
 ## 发布与执行状态
 
-- 已发布：11；已认领：4；已完成：0；验收通过待合并：4（01/06/04/08，2026-09-12 用户批准合并入本地 main）。
+- 已发布：11；已认领：3；已完成：5；2026-09-12 已合并入本地 main：01(493e6ec)、06(e93e4d7)、04(19a3c9e)、02(1993430)、05(fca91de)；在途归档 commit：macos 打包/Kimi 网关/PRD/baseline 文档 + 01–06 handoff 收集。未 push。
 - 2026-09-11 调度：01→graph2note-10、04→graph2note-13、06→graph2note-11、08→graph2note-12 并行启动（04/06/08 在 03 归档前提前启动，已与 03 领地隔离）；reviewer=graph2note-14。
 - 所有 issue 的 `ready-for-agent` 表示需求已准备好，不表示阻塞依赖已完成。
 - 当前可立即开始：**01**。本次只发布，不认领或启动实现。
@@ -20,13 +20,13 @@
 
 | Issue | 类别 | Blocked by | Status |
 |---|---|---|---|
-| [01 恢复可复现的 Python 安装与运行基线](issues/01-reproducible-python-baseline.md) | 基线 | 无 | merging（验收通过 8121fda；graph2note-10 执行合并） |
-| [02 统一文档库配置并验收 macOS 应用](issues/02-shared-library-macos-app.md) | 基线 | [01](issues/01-reproducible-python-baseline.md) | ready-for-agent |
-| [03 归档已有工作并形成干净基线](issues/03-clean-baseline-release.md) | 基线 | [01](issues/01-reproducible-python-baseline.md)、[02](issues/02-shared-library-macos-app.md) | ready-for-agent |
-| [04 建立 UI 截图视觉验收命令](issues/04-ui-visual-qa-command.md) | 开发工具 | [03](issues/03-clean-baseline-release.md) | merging（验收通过 f118f79） |
-| [05 建立原稿与产出对照视觉验收命令](issues/05-content-visual-qa-command.md) | 开发工具 | [04](issues/04-ui-visual-qa-command.md) | ready-for-agent |
-| [06 从 Web 导出 Obsidian Vault](issues/06-web-obsidian-vault-export.md) | Obsidian | [03](issues/03-clean-baseline-release.md) | merging（验收通过 130d986） |
-| [07 展示 Obsidian 增量变化与冲突结果](issues/07-obsidian-incremental-conflict-report.md) | Obsidian | [06](issues/06-web-obsidian-vault-export.md) | ready-for-agent |
+| [01 恢复可复现的 Python 安装与运行基线](issues/01-reproducible-python-baseline.md) | 基线 | 无 | merged (493e6ec) |
+| [02 统一文档库配置并验收 macOS 应用](issues/02-shared-library-macos-app.md) | 基线 | [01](issues/01-reproducible-python-baseline.md) | merged (1993430) |
+| [03 归档已有工作并形成干净基线](issues/03-clean-baseline-release.md) | 基线 | [01](issues/01-reproducible-python-baseline.md)、[02](issues/02-shared-library-macos-app.md) | claimed (graph2note-10，02 合并后接力) |
+| [04 建立 UI 截图视觉验收命令](issues/04-ui-visual-qa-command.md) | 开发工具 | [03](issues/03-clean-baseline-release.md) | merged (19a3c9e) |
+| [05 建立原稿与产出对照视觉验收命令](issues/05-content-visual-qa-command.md) | 开发工具 | [04](issues/04-ui-visual-qa-command.md) | merged (fca91de) |
+| [06 从 Web 导出 Obsidian Vault](issues/06-web-obsidian-vault-export.md) | Obsidian | [03](issues/03-clean-baseline-release.md) | merged (e93e4d7) |
+| [07 展示 Obsidian 增量变化与冲突结果](issues/07-obsidian-incremental-conflict-report.md) | Obsidian | [06](issues/06-web-obsidian-vault-export.md) | claimed（验收打回 1 项：.scratch 误提交，worker 修正中） |
 | [08 上传 PDF 并逐页解析入库](issues/08-pdf-upload-parse-library.md) | PDF | [03](issues/03-clean-baseline-release.md) | rebase 中（验收通过 49915f4；graph2note-12 rebase 到 6caaef9 后合并） |
 | [09 PDF 批任务中断恢复与失败页重试](issues/09-pdf-job-recovery-retry.md) | PDF | [08](issues/08-pdf-upload-parse-library.md) | ready-for-agent |
 | [10 搜索 PDF 内容并跳转命中原页](issues/10-pdf-content-search.md) | PDF | [08](issues/08-pdf-upload-parse-library.md) | ready-for-agent |
