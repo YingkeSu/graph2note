@@ -1,6 +1,6 @@
 # 搜索 PDF 内容并跳转命中原页
 
-Status: in-review
+Status: merged
 
 来源：[已确认拆分草案](../ISSUE-DRAFT.md)；[现状与需求检查](../ASSESSMENT.md)。
 
@@ -26,3 +26,4 @@ Status: in-review
 
 - 2026-09-12 认领：graph2note-16（08 合并入 main 后接力），分支 `ao/graph2note-16/pdf-content-search`。
 - 2026-09-12 graph2note-16 交付：`pdfsearch` 本地关键词索引（CJK 二元组 + 英文词，含内容哈希新鲜度指纹，持久化于 `search/`）+ `GET /api/search/pdf`、`POST /api/search/pdf/reindex`、`GET /api/pdf` + 文档库搜索框/范围/命中卡片与原页跳转。新增 6 项离线测试（`tests/test_pdf_search.py`）。`-m "webapp or ingest or meta"` 97 passed；全量 470 passed。AO Browser panel 实机验证搜索渲染（命中 2 条/原页序正确）。详见 `handoffs/10-pdf-content-search.md`。
+- 2026-09-12 复核通过并合并入 main（d716590）。验收：6 项离线测试、CJK 二元组检索正确、页级映射准确、索引一致性含 content_hash 校验，无整改项。
