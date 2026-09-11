@@ -37,7 +37,8 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_ingest_missing": "ingest",
     "test_ingest_pdf": "ingest",
     "test_pdf_upload": "ingest",  # issue 08（新文件）
-    "test_pdf_job_recovery": "ingest",  # issue 09 在途（新文件）
+    "test_pdf_job_recovery": "ingest",  # issue 09（新文件）
+    "test_pdf_search": "webapp",  # issue 10（新文件）
     # 双模型交叉验证
     "test_verify_diff": "verify",
     "test_verify_engine": "verify",

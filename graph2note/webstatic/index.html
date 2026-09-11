@@ -43,6 +43,17 @@
       <span class="dim" id="library-count"></span>
       <span class="dim" id="library-filter-label"></span>
     </div>
+    <section id="pdf-search" class="pdf-search" aria-label="PDF 内容搜索">
+      <form id="pdf-search-form" class="pdf-search-form">
+        <input id="pdf-search-input" type="search" autocomplete="off"
+               placeholder="搜索已解析 PDF 内容（中文 / English / 混排）" />
+        <select id="pdf-search-scope"><option value="">全部已导入 PDF</option></select>
+        <button class="btn primary" type="submit">搜索</button>
+        <button class="btn small" id="pdf-search-clear" type="button">清除</button>
+      </form>
+      <div id="pdf-search-status" class="dim"></div>
+    </section>
+    <div id="pdf-search-results" class="pdf-search-results hidden"></div>
     <section id="workspace-navigation" class="workspace-navigation" aria-label="工作台导航">
       <div class="workspace-nav-column">
         <div class="workspace-nav-head">

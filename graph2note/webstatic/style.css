@@ -416,3 +416,20 @@ body {
 .pdf-badge.st-duplicate { background: #fff7e6; color: #9a6700; border-color: #f0dcae; }
 .pdf-badge.st-processing { background: #eaf2fd; color: #1f6feb; border-color: #b9d4f7; }
 .pdf-badge.st-interrupted { background: #fdf1e3; color: #b45309; border-color: #f0d3a8; }
+
+/* PDF content search (issue 10) */
+.pdf-search { margin: 4px 0 14px; }
+.pdf-search-form { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; max-width: 900px; }
+.pdf-search-form input[type="search"] { flex: 1 1 320px; min-width: 220px; padding: 8px 12px;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: inherit; }
+.pdf-search-form select { padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--panel); color: inherit; max-width: 320px; }
+.pdf-search-results { display: flex; flex-direction: column; gap: 10px; max-width: 900px; }
+.search-hit { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; }
+.search-hit-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.search-hit-title { font-weight: 600; color: var(--accent); text-decoration: none; }
+.search-hit-page { font-size: 12px; }
+.search-hit-snippet { margin: 6px 0; line-height: 1.5; }
+.search-hit-snippet mark { background: #fff2a8; color: inherit; padding: 0 2px; border-radius: 3px; }
+.search-hit-links { display: flex; gap: 14px; font-size: 13px; }
+.search-hit-links a { color: var(--accent); text-decoration: none; }

@@ -300,6 +300,19 @@ class PdfJob:
                 "workers": self.workers or PDF_WORKERS,
             }
 
+    def summary(self) -> dict:
+        """Lightweight job view for list/scope pickers (no per-page payload)."""
+        with self.lock:
+            return {
+                "pdf_id": self.pdf_id,
+                "filename": self.filename,
+                "status": self.status,
+                "total_pages": self.total_pages,
+                "counts": self.counts(),
+                "running": self._running,
+                "interrupted": self.status == "interrupted",
+            }
+
     def to_dict(self) -> dict:
         with self.lock:
             return {

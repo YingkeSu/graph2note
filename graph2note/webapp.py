@@ -60,6 +60,7 @@ from .store import (
 from . import config
 from . import pipeline
 from . import pdflib
+from . import pdfsearch
 
 DEFAULT_MODEL = os.environ.get("GRAPH2NOTE_MODEL", "glm-5.3-flash")
 MAX_SIZE = 10 * 1024 * 1024  # 10 MB (FR-015)
@@ -1154,6 +1155,32 @@ def create_app(
         except Exception:
             raise HTTPException(status_code=500, detail="无法渲染该页。") from None
         return Response(content=png, media_type="image/png")
+
+    # ---- PDF content search -> original page (issue 10) ----------------------
+
+    @app.get("/api/pdf")
+    def pdf_list():
+        """Imported PDFs + per-page counts (scope picker for search)."""
+        with app.state.pdf_jobs_lock:
+            jobs = list(app.state.pdf_jobs.values())
+        jobs.sort(key=lambda j: (j.filename or "", j.pdf_id))
+        return [j.summary() for j in jobs]
+
+    @app.get("/api/search/pdf")
+    def pdf_search(q: str = "", pdf_id: str | None = None, limit: int = 50):
+        """Keyword search over parsed PDF pages; scope = one PDF or all (AC1)."""
+        return pdfsearch.search(app.state.store, q, pdf_id=pdf_id or None,
+                                limit=limit)
+
+    @app.post("/api/search/pdf/reindex")
+    def pdf_search_reindex():
+        """Rebuild the keyword index from the current library (AC4)."""
+        index = pdfsearch.build_index(app.state.store, persist=True)
+        return {
+            "indexed_documents": len(index.get("documents", {})),
+            "built_at": index.get("built_at"),
+            "fingerprint": index.get("fingerprint"),
+        }
 
     # ---- static frontend ------------------------------------------------------
 
