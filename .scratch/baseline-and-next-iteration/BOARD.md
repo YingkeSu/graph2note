@@ -8,7 +8,7 @@
 ## 发布与执行状态
 
 - 已发布：12（12=测试分类，维护者 2026-09-12 指令）；已认领：11（graph2note-16）；已完成：11；2026-09-12 已合并入本地 main：01(493e6ec)、06(e93e4d7)、04(19a3c9e)、02(1993430)、05(fca91de)、07(9db65c1)、03(c108aab)、12(df9546c)、黑图修复(c6f8c52)、08(847334f)、09(ba5671a)、10(d716590)。01–10 + 12 handoff 已收集。未 push。
-- 2026-09-12 PDF track 冲刺：08/09/10 已合并；11 由 graph2note-16 开工（单轮问答 + 页级引用，基于 10 的关键词检索，首版无向量检索）。
+- 2026-09-12 PDF track 冲刺：08/09/10 已合并；11 由 graph2note-16 交付（in-review，单轮问答 + 页级引用，基于 10 的关键词检索，首版无向量检索）。
 - 2026-09-11 调度：01→graph2note-10、04→graph2note-13、06→graph2note-11、08→graph2note-12 并行启动（04/06/08 在 03 归档前提前启动，已与 03 领地隔离）；reviewer=graph2note-14。
 - 所有 issue 的 `ready-for-agent` 表示需求已准备好，不表示阻塞依赖已完成。
 - 当前可立即开始：**01**。本次只发布，不认领或启动实现。
@@ -31,7 +31,7 @@
 | [08 上传 PDF 并逐页解析入库](issues/08-pdf-upload-parse-library.md) | PDF | [03](issues/03-clean-baseline-release.md) | merged (847334f) |
 | [09 PDF 批任务中断恢复与失败页重试](issues/09-pdf-job-recovery-retry.md) | PDF | [08](issues/08-pdf-upload-parse-library.md) | merged (ba5671a) |
 | [10 搜索 PDF 内容并跳转命中原页](issues/10-pdf-content-search.md) | PDF | [08](issues/08-pdf-upload-parse-library.md) | merged (d716590) |
-| [11 基于 PDF 内容问答并提供页级引用](issues/11-pdf-grounded-question-answering.md) | PDF | [10](issues/10-pdf-content-search.md) | claimed (graph2note-16) |
+| [11 基于 PDF 内容问答并提供页级引用](issues/11-pdf-grounded-question-answering.md) | PDF | [10](issues/10-pdf-content-search.md) | in-review (graph2note-16) |
 | [12 测试整理分类与模块级测试运行](issues/12-test-taxonomy-scoped-runs.md) | 开发工具 | 无 | merged (df9546c) |
 
 > 侧任务（非 issue）：黑图修复（graph2note-15，bebc1b5）——perspective homography 求解错系统导致所有透视扫描输出全黑；已随 c6f8c52 合并，含 handoff `fix-black-preprocess.md`（内含 40 篇重解析清单）。2026-09-12。

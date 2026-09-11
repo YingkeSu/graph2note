@@ -246,8 +246,12 @@ def get_index(store, *, force: bool = False) -> dict:
 
 
 def search(store, query: str, *, pdf_id: str | None = None,
-           limit: int = DEFAULT_LIMIT) -> dict:
+           limit: int = DEFAULT_LIMIT, match: str = "all") -> dict:
     """Keyword search over parsed PDF pages, optionally scoped to one PDF (AC1).
+
+    ``match="all"`` (default) requires every token (search box).  ``match="any"``
+    ranks by matched-token frequency instead, which suits natural-language
+    questions (issue 11 retrieval).
 
     Returns ``{query, tokens, pdf_id, total, hits, indexed_documents, message}``.
     A hit carries the source PDF identity, the *original page order*
@@ -274,7 +278,12 @@ def search(store, query: str, *, pdf_id: str | None = None,
     )
 
     candidate_sets = [set(postings.get(t, {})) for t in tokens]
-    ids = set.intersection(*candidate_sets) if candidate_sets else set()
+    if not candidate_sets:
+        ids: set[str] = set()
+    elif match == "any":
+        ids = set().union(*candidate_sets)          # ranked OR (questions)
+    else:
+        ids = set.intersection(*candidate_sets)     # strict AND (search box)
     if pdf_id:
         ids = {i for i in ids if documents.get(i, {}).get("pdf_id") == pdf_id}
 

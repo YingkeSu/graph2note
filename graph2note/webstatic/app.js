@@ -131,6 +131,10 @@ const el = {
   pdfSearchStatus: $("#pdf-search-status"),
   pdfSearchResults: $("#pdf-search-results"),
   pdfSearchClear: $("#pdf-search-clear"),
+  pdfQaForm: $("#pdf-qa-form"),
+  pdfQaInput: $("#pdf-qa-input"),
+  pdfQaStatus: $("#pdf-qa-status"),
+  pdfQaResult: $("#pdf-qa-result"),
 };
 
 /* ---------- helpers ---------- */
@@ -345,6 +349,11 @@ function resetPdfSearchUI() {
   el.pdfSearchResults.innerHTML = "";
   el.pdfSearchStatus.textContent = "";
   el.libraryGrid.classList.remove("hidden");
+  if (el.pdfQaResult) {
+    el.pdfQaResult.classList.add("hidden");
+    el.pdfQaResult.innerHTML = "";
+    el.pdfQaStatus.textContent = "";
+  }
 }
 
 function highlightSnippet(snippet, query) {
@@ -404,6 +413,65 @@ el.pdfSearchClear.addEventListener("click", () => {
 el.pdfSearchScope.addEventListener("change", () => {
   if (state.searchActive || (el.pdfSearchInput.value || "").trim()) runPdfSearch();
 });
+
+/* ---------- PDF grounded Q&A (issue 11) ---------- */
+
+function renderPdfAnswer(r) {
+  const parts = [];
+  if (r.answer) {
+    parts.push(`<div class="pdf-qa-answer">${esc(r.answer).replace(/\n/g, "<br>")}</div>`);
+  } else if (r.message) {
+    parts.push(`<div class="pdf-qa-answer dim">${esc(r.message)}</div>`);
+  }
+  if (r.citations && r.citations.length) {
+    const items = r.citations.map((c) => {
+      const page = c.page_number ? `第 ${c.page_number} 页` : `第 ${c.page_index + 1} 页`;
+      return `<li><a href="#doc/${encodeURIComponent(c.document_id)}">${esc(c.label)} ${esc(c.title || c.document_id)}</a>`
+        + ` <span class="dim">${page} · 原页序 ${c.page_index + 1}</span>`
+        + ` <a href="${c.source_page_url}" target="_blank" rel="noopener">查看原 PDF 页</a></li>`;
+    }).join("");
+    parts.push(`<div class="pdf-qa-citations"><div class="dim">引用来源</div><ol>${items}</ol></div>`);
+  }
+  const warn = [];
+  if (r.untrusted_citations && r.untrusted_citations.length)
+    warn.push(`模型给出的无效引用已忽略：${r.untrusted_citations.map((x) => esc(x)).join("、")}`);
+  for (const w of (r.warnings || [])) warn.push(esc(w));
+  if (warn.length) parts.push(`<div class="pdf-qa-warn">${warn.join("<br>")}</div>`);
+  return parts.join("");
+}
+
+async function askPdf() {
+  const q = (el.pdfQaInput.value || "").trim();
+  if (!q) { el.pdfQaStatus.textContent = "请输入问题。"; return; }
+  el.pdfQaStatus.textContent = "检索并生成中…";
+  el.pdfQaResult.classList.add("hidden");
+  el.pdfQaResult.innerHTML = "";
+  const payload = { question: q };
+  if (el.pdfSearchScope.value) payload.pdf_id = el.pdfSearchScope.value;
+  let r;
+  try {
+    r = await api("/api/pdf/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+  } catch (e) {
+    el.pdfQaStatus.textContent = "提问失败：" + e.message;
+    return;
+  }
+  const labels = {
+    answered: r.grounded ? "已生成（含页级引用）" : "已生成（未引用来源）",
+    insufficient_evidence: "证据不足",
+    timeout: "生成超时",
+    model_unavailable: "模型不可用",
+  };
+  el.pdfQaStatus.textContent = `${labels[r.status] || r.status} · 检索 ${r.retrieved} 条`
+    + (r.model ? ` · ${r.model}` : "");
+  el.pdfQaResult.innerHTML = renderPdfAnswer(r);
+  el.pdfQaResult.classList.remove("hidden");
+}
+
+el.pdfQaForm.addEventListener("submit", (e) => { e.preventDefault(); askPdf(); });
 
 /* ---------- Inbox (read-only projection) ---------- */
 

@@ -52,6 +52,15 @@
         <button class="btn small" id="pdf-search-clear" type="button">清除</button>
       </form>
       <div id="pdf-search-status" class="dim"></div>
+      <div class="pdf-qa">
+        <form id="pdf-qa-form" class="pdf-qa-form">
+          <input id="pdf-qa-input" type="text" autocomplete="off"
+                 placeholder="就上方检索范围提问（单轮问答，答案附页级引用）" />
+          <button class="btn" type="submit">提问</button>
+        </form>
+        <div id="pdf-qa-status" class="dim"></div>
+        <div id="pdf-qa-result" class="pdf-qa-result hidden"></div>
+      </div>
     </section>
     <div id="pdf-search-results" class="pdf-search-results hidden"></div>
     <section id="workspace-navigation" class="workspace-navigation" aria-label="工作台导航">
