@@ -248,18 +248,26 @@ def _document_quad(np, gray) -> "object | None":
 
 def _homography(np, src, dst):
     """Return the 3x3 homography H (row-major numpy) mapping src -> dst."""
-    # Solve H*src_i = dst_i (up to scale) via the standard SVD/finite method.
+    # Standard DLT with the scale fixed by H22 = 1: each point pair contributes
+    # two rows to the *non-homogeneous* system A h = b.  (Taking the SVD null
+    # vector of A instead would solve A h = 0, which is a different problem —
+    # for 4 non-degenerate pairs A is full rank, so the "null vector" is just
+    # the least-significant singular direction and yields a garbage mapping
+    # that warps every pixel off-canvas.)
     n = src.shape[0]
     A = []
+    b = []
     for i in range(n):
         x, y = src[i]
         u, v = dst[i]
         A.append([x, y, 1, 0, 0, 0, -u * x, -u * y])
+        b.append(u)
         A.append([0, 0, 0, x, y, 1, -v * x, -v * y])
+        b.append(v)
     A = np.asarray(A, dtype=float)
-    # H is the null-space of A -> last column of V from SVD (smallest singular vec).
-    _, _, Vt = np.linalg.svd(A)
-    h = Vt[-1]  # 8 unknowns (scale fixed: H22 = 1)
+    b = np.asarray(b, dtype=float)
+    # Exact solve for 4 pairs (8x8), least-squares for redundant points.
+    h, *_ = np.linalg.lstsq(A, b, rcond=None)
     H = np.array(
         [[h[0], h[1], h[2]], [h[3], h[4], h[5]], [h[6], h[7], 1.0]], dtype=float
     )
@@ -289,7 +297,9 @@ def correct_perspective(img, quad) -> "object":
         Hi[2, 2] = 1.0
     Hi /= Hi[2, 2]
     coeffs = tuple(float(v) for v in Hi[:2, :].ravel()) + tuple(float(v) for v in Hi[2, :2])
-    return img.transform((sw, sh), Image.PERSPECTIVE, coeffs, resample=Image.BICUBIC)
+    fill = (255, 255, 255) if img.mode == "RGB" else 255
+    return img.transform((sw, sh), Image.PERSPECTIVE, coeffs,
+                         resample=Image.BICUBIC, fillcolor=fill)
 
 
 def detect_perspective_quad(img) -> "object | None":
@@ -302,6 +312,22 @@ def detect_perspective_quad(img) -> "object | None":
     sx, sy = img.size[0] / nw, img.size[1] / nh
     quad = quad_small * [sx, sy]
     return quad
+
+
+def _warp_retains_content(np, before, after) -> bool:
+    """Reject warps that collapsed the page to a near-uniform canvas.
+
+    A bad homography maps the content off-canvas, leaving an all-black (or
+    all-white) rectangle that downstream stages cannot recover from.  Compare
+    grayscale stddev before/after: a structured input must keep a structured
+    output.  Uniform inputs (blank pages) are always accepted.
+    """
+    g_before, _, _ = _gray_scaled(before, target_width=400)
+    std_before = float(g_before.std())
+    if std_before < 8.0:
+        return True
+    g_after, _, _ = _gray_scaled(after, target_width=400)
+    return float(g_after.std()) >= max(4.0, 0.2 * std_before)
 
 
 def _crop_content(np, gray):
@@ -393,9 +419,11 @@ def preprocess_image(
     persp_path = None
     if quad is not None:
         try:
-            persp = correct_perspective(deskewed, quad)
-            perspective_applied = True
-            persp_path = stage(persp, "perspective")
+            warped = correct_perspective(deskewed, quad)
+            if _warp_retains_content(np, deskewed, warped):
+                persp = warped
+                perspective_applied = True
+                persp_path = stage(persp, "perspective")
         except Exception:
             persp = deskewed
 
