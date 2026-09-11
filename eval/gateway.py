@@ -1,8 +1,9 @@
-"""LLM 网关传输层：默认 opencode go 网关，可切 DeepSeek 官方 API。
+"""LLM 网关传输层：Kimi 官方 API / DeepSeek 官方 API 可选，opencode go 网关存档。
 
-opencode 接入见 docs/llm/opencode-go.md；DeepSeek 备援见 docs/llm/deepseek.md。
-2026-09-10 起支持 ``GRAPH2NOTE_GATEWAY=opencode|deepseek`` 切换（opencode 暂不可用期间的
-备援通道），base URL / 认证 key / session 头 / 模型名映射收敛在 post_gateway 单点处理。
+Kimi 接入见 docs/llm/kimi.md（如缺省可参照 deepseek.md 结构补充）；
+DeepSeek 备援见 docs/llm/deepseek.md；opencode 历史接入见 docs/llm/opencode-go.md。
+2026-09-10 起支持 ``GRAPH2NOTE_GATEWAY=opencode|deepseek`` 切换；2026-09-11 opencode key
+退役，新增 kimi 通道，base URL / 认证 key / session 头 / 模型名映射收敛在 post_gateway 单点处理。
 
 按诊断报告（reports/latency-diagnosis.md）落地提速修复：
 - R1(P0) 每模型固定已验证直出 session；记录 reasoning_tokens，超阈值告警，支持换 session。
@@ -26,8 +27,8 @@ import time
 import urllib.error
 import urllib.request
 
-# ---------- 网关选择（2026-09-10：opencode 暂不可用，DeepSeek 官方 API 备援） ----------
-# GRAPH2NOTE_GATEWAY=opencode（默认/历史主通道）| deepseek（https://api.deepseek.com）。
+# ---------- 网关选择（2026-09-11：opencode 退役，Kimi 官方 API + DeepSeek 官方 API 双通道） ----------
+# GRAPH2NOTE_GATEWAY=opencode（历史主通道，key 已删除，仅存档）| deepseek | kimi。
 # 所有调用方（parse/IR/diagram/eval/verify/gold_draft）沿用 opencode 时代模型名，
 # post_gateway 负责端点、认证、session 头与模型名翻译——单一 choke point。
 GATEWAYS = {
@@ -67,8 +68,30 @@ GATEWAYS = {
             "classify": "deepseek-v4-flash",
         },
     },
+    # 2026-09-11 实测 /models（新 key）：kimi-k2.6 / kimi-k2.7-code / kimi-k2.7-code-highspeed /
+    # kimi-k3，全部 supports_image_in=true；kimi-k3 另有 1M 上下文且 thinking-only（默认 effort=max，
+    # 实测直出正常但 reasoning 开销高于 k2.6，故视觉直出热路径默认 k2.6）。
+    # k2.7-code 系列为代码特化，与手稿数字化用途不符，不入列。
+    "kimi": {
+        "label": "Kimi API",
+        "base": "https://api.moonshot.cn/v1",
+        "key_env": "KIMI_API_KEY",
+        "session_header": None,  # 无会话语义；重试策略中的「换 session」退化为仅换参
+        "models": {
+            "parse_visual": ["kimi-k2.6", "kimi-k3"],
+            "ir_text": ["kimi-k3", "kimi-k2.6"],
+            "diagram": ["kimi-k2.6", "kimi-k3"],
+            "classify": ["kimi-k3", "kimi-k2.6"],
+        },
+        "defaults": {
+            "parse_visual": "kimi-k2.6",
+            "ir_text": "kimi-k3",
+            "diagram": "kimi-k2.6",
+            "classify": "kimi-k3",
+        },
+    },
 }
-# deepseek 网关模型名翻译（实测 2026-09-10：/models 仅 deepseek-flash 与 deepseek-v4-pro；
+# deepseek 网关模型名翻译（实测 2026-09-11 复核：/models 仍仅 deepseek-flash 与 deepseek-v4-pro；
 # deepseek-v4-flash-vision-exp 是官方文档化视觉别名，响应 model 字段回显为 deepseek-flash，
 # 两个名字等价，映射到显式别名便于对账文档）。
 DEEPSEEK_MODEL_MAP = {

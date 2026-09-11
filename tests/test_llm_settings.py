@@ -29,7 +29,7 @@ def test_settings_snapshot_lists_registered_channels_without_credentials(tmp_pat
     snapshot = store.snapshot()
 
     assert tuple(snapshot["purposes"]) == MODEL_PURPOSES
-    assert {item["id"] for item in snapshot["providers"]} == {"opencode", "deepseek"}
+    assert {item["id"] for item in snapshot["providers"]} == {"opencode", "deepseek", "kimi"}
     assert snapshot["channels"]["parse_visual"]["provider"] == "opencode"
     assert snapshot["channels"]["parse_visual"]["model"] == "glm-5.3-flash"
     for provider in snapshot["providers"]:
