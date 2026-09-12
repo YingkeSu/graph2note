@@ -331,95 +331,140 @@
           <p id="working-detail" class="dim"></p>
         </section>
 
-        <!-- Three-pane work state -->
+        <!-- Editor workspace (U3).  主轴 = 常驻工具条 + 三栏；标签/集合/时间元数据/
+             待整理/版本信息全部收进右侧可折叠信息侧板（脱离纵向主轴）；自动保存指示与
+             warnings 固定在工具条，不被编辑器滚动带走；大图查看器为覆盖层。 -->
         <section id="work-zone" class="work-zone hidden">
-          <div class="panes">
-            <div class="pane pane-image">
-              <div class="pane-head">原图（预处理后）
-                <button class="btn small" id="btn-repic" title="重新加载预处理图">↻</button>
-              </div>
-              <div class="pane-body image-body"><img id="original-img" alt="原图" /></div>
-            </div>
-            <div class="pane pane-md">
-              <div class="pane-head">可编辑 Markdown
-                <span class="dim" id="save-indicator"></span>
-              </div>
-              <textarea id="md-editor" class="md-editor" spellcheck="false"
-                        placeholder="解析完成后，可在此直接编辑 Markdown（自动保存）…"></textarea>
-            </div>
-            <div class="pane pane-preview">
-              <div class="pane-head">实时渲染预览</div>
-              <div id="preview" class="preview"></div>
-            </div>
-          </div>
-
-          <!-- P1 placeholders for issue 09 / issue 10 markers (not implemented). -->
-          <div class="markers">
+          <div class="doc-toolbar" id="doc-toolbar">
+            <button class="btn small icon-btn" id="doc-panel-toggle" type="button"
+                    aria-controls="doc-side-panel" aria-expanded="false"
+                    title="信息侧板（⌘/）">信息</button>
+            <span id="status-text" class="dim doc-toolbar-status"></span>
+            <span id="warnings" class="warnings" role="status" aria-live="polite"></span>
+            <!-- P1 placeholders for issue 09 / issue 10 markers (not implemented). -->
             <span id="marker-cv" class="marker ph hidden" title="issue 10：交叉验证分歧标记（P1 占位）">⚖ 交叉验证占位</span>
             <span id="marker-page" class="marker ph hidden" title="issue 09：缺页/重复版本提示（P1 占位）">📑 缺页/版本占位</span>
+            <span class="spacer"></span>
+            <span id="save-indicator" class="save-indicator" role="status" aria-live="polite"></span>
+            <div class="doc-toolbar-actions">
+              <button id="btn-reparse" class="btn small">重新解析</button>
+              <button id="btn-copy" class="btn small">复制</button>
+              <button id="btn-download" class="btn small primary">下载 .md + 附件</button>
+              <button id="btn-delete" class="btn small danger">删除文档</button>
+            </div>
           </div>
 
-          <div class="statusbar" id="statusbar">
-            <span id="status-text" class="dim"></span>
-            <span id="warnings" class="warnings"></span>
-            <span class="spacer"></span>
-            <span class="dim" id="version-info"></span>
+          <div class="doc-main" id="doc-main">
+            <div class="panes">
+              <div class="pane pane-image">
+                <div class="pane-head">原图（预处理后）
+                  <span class="pane-head-actions">
+                    <button class="btn small" id="btn-zoom-image" type="button"
+                            title="大图查看（点击原图也可）">⤢ 大图</button>
+                    <button class="btn small" id="btn-repic" type="button"
+                            title="重新加载预处理图">↻</button>
+                  </span>
+                </div>
+                <div class="pane-body image-body">
+                  <img id="original-img" alt="原图" tabindex="0" role="button"
+                       title="点击进入大图查看" />
+                </div>
+              </div>
+              <div class="pane pane-md">
+                <div class="pane-head">可编辑 Markdown</div>
+                <textarea id="md-editor" class="md-editor" spellcheck="false"
+                          placeholder="解析完成后，可在此直接编辑 Markdown（自动保存）…"></textarea>
+              </div>
+              <div class="pane pane-preview">
+                <div class="pane-head">实时渲染预览</div>
+                <div id="preview" class="preview"></div>
+              </div>
+            </div>
+
+            <!-- 信息侧板：默认收起；覆盖在预览右缘之上，不占三栏高度。 -->
+            <aside id="doc-side-panel" class="doc-side-panel hidden" aria-label="文档信息侧板">
+              <div class="doc-side-panel-head">
+                <h3>文档信息</h3>
+                <button class="btn small icon-btn" id="doc-panel-close" type="button"
+                        title="收起（⌘/）">✕</button>
+              </div>
+              <div class="doc-side-scroll">
+                <section id="document-tags" class="doc-side-section" aria-label="文档标签">
+                  <div class="document-tags-head">
+                    <span>文档标签</span>
+                  </div>
+                  <form id="document-tag-form" class="tag-create-form">
+                    <input id="document-tag-input" type="text" placeholder="添加标签" />
+                    <button class="btn small" type="submit">添加</button>
+                  </form>
+                  <div id="document-tag-list" class="document-tag-list"></div>
+                </section>
+
+                <section id="document-collections" class="doc-side-section" aria-label="文档集合">
+                  <div class="document-tags-head">
+                    <span>所属集合</span>
+                  </div>
+                  <form id="document-collection-form" class="tag-create-form">
+                    <select id="document-collection-select"><option value="">选择集合</option></select>
+                    <button class="btn small" type="submit">加入</button>
+                  </form>
+                  <div id="document-collection-list" class="document-tag-list"></div>
+                </section>
+
+                <section id="metadata-panel" class="doc-side-section metadata-panel" aria-label="文档时间元数据">
+                  <div class="metadata-head">
+                    <span>时间元数据</span>
+                    <span class="metadata-head-actions">
+                      <label class="metadata-pending"><input id="metadata-needs-organization" type="checkbox" /> 待整理</label>
+                      <span id="metadata-save" class="dim"></span>
+                    </span>
+                  </div>
+                  <div class="metadata-grid">
+                    <label class="metadata-field editable">手稿日期
+                      <input id="metadata-document-time" type="date" />
+                      <span class="dim">可手工纠正，保存后优先于自动推断</span>
+                    </label>
+                    <div class="metadata-field">拍摄时间
+                      <span id="metadata-capture-time" class="metadata-value"></span>
+                    </div>
+                    <div class="metadata-field">导入时间
+                      <span id="metadata-import-time" class="metadata-value"></span>
+                    </div>
+                    <div class="metadata-field">修改时间
+                      <span id="metadata-modified-time" class="metadata-value"></span>
+                    </div>
+                  </div>
+                  <div id="metadata-evidence" class="metadata-evidence dim"></div>
+                </section>
+
+                <!-- 版本信息（S3 版本对比视图的挂载点，见 handoff）。 -->
+                <section id="version-panel" class="doc-side-section" aria-label="版本信息">
+                  <div class="doc-side-head">
+                    <span>版本</span>
+                    <span id="version-info" class="dim"></span>
+                  </div>
+                  <div id="version-list" class="version-list"></div>
+                  <p class="dim version-hint">版本对比视图（S3）将在此侧板内挂载。</p>
+                </section>
+              </div>
+            </aside>
           </div>
 
-          <section id="document-tags" class="document-tags" aria-label="文档标签">
-            <div class="document-tags-head">
-              <span>文档标签</span>
-              <form id="document-tag-form" class="tag-create-form">
-                <input id="document-tag-input" type="text" placeholder="添加标签" />
-                <button class="btn small" type="submit">添加</button>
-              </form>
+          <!-- 大图查看器：滚轮缩放 / 按钮缩放 / 拖拽平移 / 适应窗口 / Esc 退出。 -->
+          <div id="image-viewer" class="image-viewer hidden" role="dialog" aria-modal="true"
+               aria-label="原图查看器">
+            <div class="image-viewer-toolbar">
+              <button id="viewer-zoom-out" class="btn small" type="button" title="缩小">−</button>
+              <span id="viewer-zoom-label" class="viewer-zoom-label">100%</span>
+              <button id="viewer-zoom-in" class="btn small" type="button" title="放大">＋</button>
+              <button id="viewer-fit" class="btn small" type="button" title="适应窗口">适应窗口</button>
+              <span class="spacer"></span>
+              <span class="dim" id="viewer-hint">滚轮缩放 · 拖拽平移 · Esc 退出</span>
+              <button id="viewer-close" class="btn small" type="button">退出（Esc）</button>
             </div>
-            <div id="document-tag-list" class="document-tag-list"></div>
-          </section>
-
-          <section id="document-collections" class="document-tags" aria-label="文档集合">
-            <div class="document-tags-head">
-              <span>所属集合</span>
-              <form id="document-collection-form" class="tag-create-form">
-                <select id="document-collection-select"><option value="">选择集合</option></select>
-                <button class="btn small" type="submit">加入</button>
-              </form>
+            <div class="image-viewer-stage" id="image-viewer-stage">
+              <img id="image-viewer-img" alt="原图大图" draggable="false" />
             </div>
-            <div id="document-collection-list" class="document-tag-list"></div>
-          </section>
-
-          <section id="metadata-panel" class="metadata-panel" aria-label="文档时间元数据">
-            <div class="metadata-head">
-              <span>时间元数据</span>
-              <span class="metadata-head-actions">
-                <label class="metadata-pending"><input id="metadata-needs-organization" type="checkbox" /> 待整理</label>
-                <span id="metadata-save" class="dim"></span>
-              </span>
-            </div>
-            <div class="metadata-grid">
-              <label class="metadata-field editable">手稿日期
-                <input id="metadata-document-time" type="date" />
-                <span class="dim">可手工纠正，保存后优先于自动推断</span>
-              </label>
-              <div class="metadata-field">拍摄时间
-                <span id="metadata-capture-time" class="metadata-value"></span>
-              </div>
-              <div class="metadata-field">导入时间
-                <span id="metadata-import-time" class="metadata-value"></span>
-              </div>
-              <div class="metadata-field">修改时间
-                <span id="metadata-modified-time" class="metadata-value"></span>
-              </div>
-            </div>
-            <div id="metadata-evidence" class="metadata-evidence dim"></div>
-          </section>
-
-          <div class="actions">
-            <button id="btn-reparse" class="btn">重新解析</button>
-            <button id="btn-copy" class="btn">复制到剪贴板</button>
-            <button id="btn-download" class="btn primary">下载 .md + 附件</button>
-            <span class="spacer"></span>
-            <button id="btn-delete" class="btn danger">删除文档</button>
           </div>
         </section>
       </main>
