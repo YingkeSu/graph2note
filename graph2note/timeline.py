@@ -9,6 +9,11 @@ from typing import Any, Iterable
 
 GROUPINGS = ("day", "week")
 
+# Source-page extensions treated as a single uploaded image (U5 source icon).
+_IMAGE_EXTENSIONS = frozenset({
+    ".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".tif", ".tiff", ".heic",
+})
+
 
 def _value_and_slot(record: dict[str, Any], field: str) -> tuple[str | None, dict[str, Any]]:
     metadata = record.get("metadata") if isinstance(record.get("metadata"), dict) else {}
@@ -67,20 +72,67 @@ def _topics(record: dict[str, Any], scheme: Any = None) -> list[str]:
     return list(dict.fromkeys(result))
 
 
+def _source_info(record: dict[str, Any]) -> tuple[str, str]:
+    """Classify an entry's source page for the timeline source icon.
+
+    The timeline is read-only: this only reads fields the document record
+    already carries and never touches the filesystem.
+    """
+
+    if record.get("source_pdf") or record.get("pdf_id"):
+        return "pdf", "PDF 页面"
+    extension = str(record.get("original_ext") or "").lower()
+    if extension in _IMAGE_EXTENSIONS:
+        return "image", "图片上传"
+    return "document", "文档"
+
+
+def _thumbnail_url(record: dict[str, Any], document_id: str) -> str | None:
+    """Read-only preview URL (added U5 field; existing fields untouched).
+
+    The API handler may resolve the URL against the filesystem and pass it in
+    as ``thumbnail_url`` (so a missing preprocessed page falls back to the
+    original); when called directly this projection trusts the declared store
+    paths and stays a pure function.  Prefers the preprocessed page.
+    """
+
+    if not document_id:
+        return None
+    if "thumbnail_url" in record:
+        value = record.get("thumbnail_url")
+        return str(value) if value else None
+    quoted = quote(document_id, safe="")
+    latest = record.get("latest") if isinstance(record.get("latest"), dict) else {}
+    if latest.get("preprocessed_path"):
+        return f"/api/documents/{quoted}/preprocessed"
+    if record.get("original_path"):
+        return f"/api/documents/{quoted}/original"
+    return None
+
+
 def _item(record: dict[str, Any], effective: dict[str, Any] | None, scheme: Any) -> dict[str, Any]:
     document_id = str(record.get("document_id") or "")
     day = _date_key(effective["value"] if effective else None)
+    topics = _topics(record, scheme)
+    tags = [str(tag) for tag in (record.get("tags") or []) if str(tag)]
+    source_kind, source_label = _source_info(record)
     return {
         "document_id": document_id,
         "title": record.get("title") or document_id,
         "date": day.isoformat() if day else None,
         "effective_time": effective,
-        "topics": _topics(record, scheme),
-        "tags": list(record.get("tags") or []),
+        "topics": topics,
+        "tags": tags,
         "collections": list(record.get("collections") or []),
         "updated_at": record.get("updated_at") or "",
         "route": f"#doc/{quote(document_id, safe='')}" if document_id else "#library",
         "document_url": f"/api/documents/{quote(document_id, safe='')}" if document_id else None,
+        # U5 additions (append-only; existing fields above keep their semantics).
+        "thumbnail_url": _thumbnail_url(record, document_id),
+        "source_kind": source_kind,
+        "source_label": source_label,
+        "tag_count": len(tags),
+        "topic_count": len(topics),
     }
 
 
@@ -113,6 +165,32 @@ def _topic_aggregates(items: list[dict[str, Any]]) -> list[dict[str, Any]]:
         {"topic": topic, "count": len(grouped[topic]), "document_ids": grouped[topic]}
         for topic in order
     ]
+
+
+def _monthly_density(groups: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Mini density overview: documents per calendar month (U5 bonus).
+
+    ``group_key`` points at the first group in that month so the density bar
+    can jump straight to it without re-deriving the grouping in the browser.
+    """
+
+    order: list[str] = []
+    by_month: dict[str, dict[str, Any]] = {}
+    for group in groups:
+        month = group["start_date"][:7]
+        entry = by_month.get(month)
+        if entry is None:
+            entry = {
+                "month": month,
+                "label": month,
+                "count": 0,
+                "group_key": group["key"],
+                "start_date": group["start_date"],
+            }
+            by_month[month] = entry
+            order.append(month)
+        entry["count"] += group["count"]
+    return [by_month[month] for month in order]
 
 
 def _adjacent_topic_runs(items: list[dict[str, Any]], group_key: str) -> list[dict[str, Any]]:
@@ -178,13 +256,25 @@ def build_timeline(
         by_key[key]["items"].append(item)
 
     groups = []
+    previous_last: date | None = None
     for key in group_order:
         group = by_key[key]
         group["count"] = len(group["items"])
+        group["first_date"] = group["items"][0]["date"]
+        group["last_date"] = group["items"][-1]["date"]
+        first_day = _date_key(group["first_date"])
+        if previous_last is None or first_day is None:
+            group["gap_days"] = None
+        else:
+            # Days between the previous group's last document and this group's
+            # first one (0 when the two groups touch).
+            group["gap_days"] = max(0, (first_day - previous_last).days - 1)
+        previous_last = _date_key(group["last_date"]) or previous_last
         group["topic_aggregates"] = _topic_aggregates(group["items"])
         group["adjacent_topic_runs"] = _adjacent_topic_runs(group["items"], key)
         groups.append(group)
 
+    density = _monthly_density(groups)
     return {
         "group_by": group_by,
         "groups": groups,
@@ -192,6 +282,8 @@ def build_timeline(
         "undated_count": len(undated),
         "total": sum(group["count"] for group in groups) + len(undated),
         "has_undated": bool(undated),
+        "density": density,
+        "density_max": max((entry["count"] for entry in density), default=0),
     }
 
 

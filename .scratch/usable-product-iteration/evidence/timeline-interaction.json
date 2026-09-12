@@ -1,0 +1,14 @@
+{
+  "bandsBefore": 3,
+  "activeBefore": 0,
+  "expanded": "true",
+  "toggleLabel": "收起",
+  "activeAfterExpand": 2,
+  "activeAfterCollapse": 0,
+  "jumped": {
+    "key": "2026-01-05",
+    "before": 232,
+    "after": 61,
+    "moved": true
+  }
+}

@@ -211,6 +211,7 @@
               </select>
             </label>
           </div>
+          <div id="timeline-density" class="timeline-density" role="group" aria-label="月度文档密度"></div>
           <div id="timeline-empty" class="timeline-empty hidden">
             <div class="empty-icon">◷</div>
             <p>还没有可展示的文档。</p>
@@ -222,7 +223,8 @@
               <h3>无可用日期</h3>
               <span class="dim" id="timeline-undated-count"></span>
             </div>
-            <div id="timeline-undated-items" class="timeline-items"></div>
+            <p class="timeline-undated-reason dim">这些文档没有可用的文档时间、拍摄时间或导入时间，无法定位到时间轴，因此回退显示在尾部。</p>
+            <ol id="timeline-undated-items" class="timeline-items"></ol>
           </section>
         </section>
 

@@ -1,0 +1,80 @@
+{
+  "url": "http://127.0.0.1:8766/?v=1789186359#timeline/day",
+  "metrics": {
+    "groupBy": "day",
+    "groups": 38,
+    "items": 45,
+    "ticks": 0,
+    "runBands": 0,
+    "runsExpanded": 0,
+    "gapMarkers": 0,
+    "gapLabels": [],
+    "densityBars": 0,
+    "sourceIcons": 0,
+    "tagCounts": 0,
+    "titleText": 45,
+    "thumbsTotal": 0,
+    "thumbsWithSrc": 0,
+    "thumbsDeferred": 0,
+    "thumbsInViewport": 0,
+    "trunkWidth": "auto",
+    "trunkBackground": "none",
+    "undatedVisible": true,
+    "undatedCount": "2 份",
+    "emptyVisible": false,
+    "firstItems": [
+      "2026-01-05 2026-01-05 笔记 01 inferred 数学 数学 ›",
+      "2026-01-05 2026-01-05 笔记 02 inferred 数学 数学 ›",
+      "2026-01-06 2026-01-06 笔记 03 inferred 数学 数学 ›"
+    ],
+    "horizontalOverflow": false,
+    "bodyHeight": 913
+  },
+  "errors": [
+    "log: Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "log: Failed to load resource: the server responded with a status of 404 (Not Found)"
+  ],
+  "requests": {
+    "total": 32,
+    "methods": [
+      "GET"
+    ],
+    "imageRequests": 0,
+    "thumbnailRequests": 0,
+    "nonGet": [],
+    "endpoints": [
+      "/",
+      "/api/timeline",
+      "/favicon.ico",
+      "/npm/katex@0.16.9/dist/contrib/auto-render.min.js",
+      "/npm/katex@0.16.9/dist/katex.min.css",
+      "/npm/katex@0.16.9/dist/katex.min.js",
+      "/npm/marked@4.3.0/marked.min.js",
+      "/static/app.js",
+      "/static/assets.js",
+      "/static/evolution.js",
+      "/static/js/api.js",
+      "/static/js/ask_core.js",
+      "/static/js/jobs.js",
+      "/static/js/router.js",
+      "/static/js/state.js",
+      "/static/js/ui.js",
+      "/static/js/utils.js",
+      "/static/js/views/ask.js",
+      "/static/js/views/dashboard.js",
+      "/static/js/views/document.js",
+      "/static/js/views/graph.js",
+      "/static/js/views/inbox.js",
+      "/static/js/views/library.js",
+      "/static/js/views/pdf.js",
+      "/static/js/views/repair.js",
+      "/static/js/views/settings.js",
+      "/static/js/views/tags.js",
+      "/static/js/views/timeline.js",
+      "/static/js/views/upload.js",
+      "/static/js/views/vault.js",
+      "/static/repair.js",
+      "/static/style.css"
+    ]
+  }
+}
