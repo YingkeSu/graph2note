@@ -1,6 +1,6 @@
 # A1：解析结果自动打标签（识别→标签闭环）
 
-Status: ready-for-agent
+Status: merged
 Labels: track-assistant
 
 ## What to build

@@ -5,7 +5,7 @@
 
 ## 发布与执行状态
 
-- 已发布：15（R1、U1–U5、P1–P3、S1–S3、A1–A3）。已认领：3（S1、P1、R1）。已完成：3（S1、P1、R1）。已合并：3（S1，merge `582aa61`；P1，merge `e682e3f`；R1，merge `e1281d8`）。
+- 已发布：15（R1、U1–U5、P1–P3、S1–S3、A1–A3）。已认领：4（S1、P1、R1、A1）。已完成：4（S1、P1、R1、A1）。已合并：4（S1，merge `582aa61`；P1，merge `e682e3f`；R1，merge `e1281d8`；A1，merge `6fe379e`）。
 - 全部 issue `ready-for-agent` = 需求已就绪，**不表示阻塞依赖已完成**；依赖以各 issue Blocked by 为准。
 - 第一波（无阻塞，可立即并行派）：**R1、U1、P1、S1、A1、A2、A3**。
 - 第二波：U2/U3/U4/U5（待 U1）、P2（待 U1+P1）、P3（待 P1，建议待 U1）、S2（待 S1）。
@@ -30,7 +30,7 @@
 | [S1 IR 块级 diff 引擎](issues/S1-ir-block-diff.md) | Semantic | 无 | merged (582aa61) |
 | [S2 演进锚定（版本链+pHash）](issues/S2-evolution-anchoring.md) | Semantic | [S1](issues/S1-ir-block-diff.md) | open |
 | [S3 版本对比视图](issues/S3-version-diff-ui.md) | Semantic | [S1](issues/S1-ir-block-diff.md)、[U3](issues/U3-editor-workspace.md) | open |
-| [A1 解析结果自动打标签](issues/A1-auto-tag-from-recognition.md) | 助理 | 无 | open |
+| [A1 解析结果自动打标签](issues/A1-auto-tag-from-recognition.md) | 助理 | 无 | merged (`6fe379e`) |
 | [A2 每周小结](issues/A2-weekly-digest.md) | 助理 | 无 | open |
 | [A3 自定义 LLM API](issues/A3-custom-llm-provider.md) | LLM | 无 | open |
 
