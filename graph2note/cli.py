@@ -445,6 +445,76 @@ def run_tags_backfill(args) -> int:
     return 0
 
 
+def build_digest_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="graph2note digest",
+        description=(
+            "Generate a weekly digest (Markdown summary over a time-ranged slice "
+            "of the library). Repeat requests reuse the fingerprint cache; "
+            "--force regenerates."
+        ),
+    )
+    p.add_argument("--week", choices=("this", "last"), default=None,
+                   help="shortcut for 本周 (this) / 上周 (last)")
+    p.add_argument("--from", dest="from_date", default=None,
+                   help="custom range start date (YYYY-MM-DD)")
+    p.add_argument("--to", dest="to_date", default=None,
+                   help="custom range end date (YYYY-MM-DD)")
+    p.add_argument("--force", action="store_true",
+                   help="ignore the fingerprint cache and regenerate")
+    p.add_argument("--storage", default=None,
+                   help="document library storage dir (default: GRAPH2NOTE_STORAGE or "
+                        "<support>/storage)")
+    p.add_argument("--json", action="store_true", help="emit the full result as JSON")
+    return p
+
+
+def _cmd_digest(args) -> int:
+    import json
+
+    from . import config as _cfg
+    from . import digest as _digest
+    from .store import FileDocumentStore
+
+    storage = _cfg.ensure_storage_dir(_cfg.resolve_storage_dir(args.storage))
+    if args.week:
+        kind = "this_week" if args.week == "this" else "last_week"
+        from_, to = None, None
+    elif args.from_date or args.to_date:
+        kind, from_, to = "custom", args.from_date, args.to_date
+    else:
+        kind, from_, to = "this_week", None, None
+    try:
+        range_spec = _digest.resolve_range(kind, from_=from_, to=to)
+    except _digest.RangeError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+
+    store = FileDocumentStore(str(storage))
+    records = []
+    for summary in store.list_documents():
+        record = store.get_document(summary["document_id"])
+        if record is not None:
+            records.append(record)
+    result = _digest.generate_digest(records, range_spec, storage_dir=storage, force=args.force)
+
+    if args.json:
+        print(json.dumps(result, ensure_ascii=False, indent=2))
+        return 0
+    if result["status"] == "empty":
+        print(result["message"])
+        return 0
+    if result["status"] == "error":
+        print(f"digest failed: {result['message']}", file=sys.stderr)
+        return 1
+    meta = result["digest"] or {}
+    state = "cached" if result["cached"] else "generated"
+    print(f"{state} {meta.get('digest_id')} · {result['range']['label']} · "
+          f"{len(result['documents'])} 篇 · {meta.get('model')}")
+    print(f"wrote {_digest.digests_dir(storage) / (str(meta.get('digest_id')) + '.md')}")
+    return 0
+
+
 def build_config_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="graph2note config",
@@ -482,6 +552,9 @@ def main(argv: list[str] | None = None) -> int:
     if argv and argv[0] == "notes-export":
         args = build_notes_export_parser().parse_args(argv[1:])
         return _cmd_notes_export(args)
+    if argv and argv[0] == "digest":
+        args = build_digest_parser().parse_args(argv[1:])
+        return _cmd_digest(args)
     if argv and argv[0] == "diff":
         from .semantic import cli as _dcli
         args = _dcli.build_diff_parser().parse_args(argv[1:])

@@ -438,6 +438,32 @@ body {
 .dashboard-model-meta { color: var(--muted); font-size: 11px; margin-top: 4px; }
 .dashboard-empty { text-align: center; color: var(--muted); padding: 60px 0; }
 .dashboard-empty p { margin: 9px 0 3px; }
+.digest-panel { margin-top: 12px; }
+.digest-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.digest-head p { margin: 4px 0 0; font-size: 12px; }
+.digest-controls { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.digest-controls select, .digest-controls .input-date {
+  padding: 5px 8px; border: 1px solid var(--line); border-radius: 7px;
+  background: var(--bg); color: var(--ink); font-size: 12px;
+}
+.digest-force { display: flex; align-items: center; gap: 4px; color: var(--muted); font-size: 12px; }
+.digest-status { min-height: 16px; margin: 8px 0; font-size: 12px; }
+.digest-body { display: grid; grid-template-columns: 240px minmax(0, 1fr); gap: 12px; }
+.digest-history-wrap { min-width: 0; }
+.digest-history-head { font-size: 12px; margin-bottom: 6px; }
+.digest-history { list-style: none; margin: 0; padding: 0; max-height: 360px; overflow: auto; }
+.digest-history li { margin: 0 0 6px; }
+.digest-item {
+  display: flex; flex-direction: column; gap: 3px; width: 100%; text-align: left;
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--bg); color: var(--ink); cursor: pointer; font-size: 12px;
+}
+.digest-item.selected { border-color: var(--accent-dark); background: var(--panel); }
+.digest-item-range { font-weight: 600; }
+.digest-viewer { min-width: 0; border: 1px solid var(--line); border-radius: 10px; padding: 12px; background: var(--bg); }
+.digest-viewer-meta { font-size: 12px; margin-bottom: 8px; }
+.digest-content { max-height: 480px; overflow: auto; }
+.digest-empty { margin: 20px 0; text-align: center; }
 
 .tag-vocabulary, .document-tags {
   margin: 0 0 16px; padding: 10px 12px; background: var(--panel);
@@ -492,6 +518,7 @@ body {
   .llm-custom-form { grid-template-columns: 1fr; }
   .llm-custom-card { flex-direction: column; align-items: flex-start; }
   .dashboard-periods, .dashboard-columns, .dashboard-columns:last-child { grid-template-columns: 1fr; }
+  .digest-body { grid-template-columns: 1fr; }
   .dashboard-head { flex-direction: column; }
 }
 

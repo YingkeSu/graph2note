@@ -111,25 +111,55 @@ def classify_via_llm(
     return validated
 
 
-def _gateway_text(prompt: str, model: str | None = None, *, provider: str | None = None) -> str:
+def _gateway_text(prompt: str, model: str | None = None, *, provider: str | None = None,
+                  session: str | None = None) -> str:
     """Live provider-aware chat/completions call for a text model."""
+    return _gateway_text_usage(prompt, model, provider=provider, session=session)["text"]
+
+
+_UNSET = object()
+
+
+def _gateway_text_usage(prompt: str, model: str | None = None, *, provider: str | None = None,
+                        session: str | None = None, temperature: float | None = _UNSET,
+                        max_tokens: int | None = None) -> dict:
+    """Like :func:`_gateway_text` but also returns the gateway usage telemetry.
+
+    ``session`` overrides the classify-purpose session (callers that own a
+    distinct purpose, e.g. digests, pass their own id so sessions never contend).
+    ``temperature`` defaults to 0 for backward compatibility; pass ``None`` to
+    omit the field when a model rejects explicit temperatures (e.g. kimi-k3
+    accepts only 1).  ``max_tokens`` defaults to 4096.
+    """
     from eval.gateway import load_api_key, post_gateway
 
     channel = resolve_channel("classify")
     model = model or channel["model"]
     provider = provider or channel["provider"]
+    session = session or os.environ.get("GRAPH2NOTE_CLASSIFY_SESSION", DEFAULT_SESSION)
     key = load_api_key(provider)
+    payload = {
+        "model": model,
+        "max_tokens": int(max_tokens or 4096),
+        "messages": [{"role": "user", "content": prompt}],
+    }
+    if temperature is _UNSET:
+        payload["temperature"] = 0
+    elif temperature is not None:
+        payload["temperature"] = temperature
     body = post_gateway(
-        {
-            "model": model,
-            "max_tokens": 4096,
-            "temperature": 0,
-            "messages": [{"role": "user", "content": prompt}],
-        },
+        payload,
         provider=provider,
         api_key=key,
-        session=os.environ.get("GRAPH2NOTE_CLASSIFY_SESSION", DEFAULT_SESSION),
+        session=session,
         timeout=180,
         user_agent="graph2note-classify/0.2",
     )
-    return body["choices"][0]["message"]["content"]
+    message = (body.get("choices") or [{}])[0].get("message") or {}
+    return {
+        "text": message.get("content") or "",
+        "usage": body.get("usage") or {},
+        "model": model,
+        "provider": provider,
+        "session": session,
+    }

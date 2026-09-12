@@ -227,8 +227,11 @@ function ensureMarkedPrepared() {
   window.marked.use({ renderer });
 }
 
-export function renderPreview(md) {
-  const out = el.preview;
+/* Render Markdown into any container (document preview + A2 digest viewer).
+   Kept as one shared helper so the digest keeps the exact same marked/KaTeX
+   pipeline as the editor preview. */
+export function renderMarkdownInto(out, md) {
+  if (!out) return;
   out.innerHTML = "";
   try {
     if (!window.marked && window.__mdMissing) {
@@ -253,6 +256,10 @@ export function renderPreview(md) {
   } catch (e) {
     out.innerHTML = `<div class="preview-error">⚠ 预览渲染失败：${esc(e.message)}</div>`;
   }
+}
+
+export function renderPreview(md) {
+  renderMarkdownInto(el.preview, md);
 }
 
 let previewDebounce = null;

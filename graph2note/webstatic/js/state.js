@@ -22,6 +22,7 @@ export const state = {
   libraryTag: null,
   libraryTopic: null,
   timelineGroup: "day",
+  digestId: null,      // A2: selected weekly digest id
   llmSettings: null,
 };
 
@@ -70,6 +71,20 @@ export const el = {
   dashboardModels: $("#dashboard-models"),
   dashboardDay: $("#dashboard-day"),
   dashboardMonth: $("#dashboard-month"),
+  // A2 每周小结（数据看板区块）
+  digestPanel: $("#digest-panel"),
+  digestRange: $("#digest-range"),
+  digestFrom: $("#digest-from"),
+  digestFromSep: $("#digest-from-sep"),
+  digestTo: $("#digest-to"),
+  digestForce: $("#digest-force"),
+  digestGenerate: $("#digest-generate"),
+  digestStatus: $("#digest-status"),
+  digestHistory: $("#digest-history"),
+  digestViewer: $("#digest-viewer"),
+  digestViewerMeta: $("#digest-viewer-meta"),
+  digestViewerContent: $("#digest-viewer-content"),
+  digestEmpty: $("#digest-empty"),
   timelineGroups: $("#timeline-groups"),
   timelineEmpty: $("#timeline-empty"),
   timelineUndated: $("#timeline-undated"),

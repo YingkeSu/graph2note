@@ -297,6 +297,40 @@
               <section class="dashboard-panel"><h3>按月 token 用量</h3><div id="dashboard-month"></div></section>
             </div>
           </div>
+
+          <!-- Weekly digest (issue A2): on-demand Markdown summary over a date range. -->
+          <section id="digest-panel" class="dashboard-panel digest-panel" aria-label="每周小结">
+            <div class="digest-head">
+              <div>
+                <h3>每周小结</h3>
+                <p class="dim">按选定范围汇总范围内材料；同范围重复请求会复用缓存，不重复调用模型。</p>
+              </div>
+              <div class="digest-controls">
+                <select id="digest-range" aria-label="小结范围">
+                  <option value="this_week">本周</option>
+                  <option value="last_week">上周</option>
+                  <option value="custom">自定义</option>
+                </select>
+                <input id="digest-from" class="input-date hidden" type="date" aria-label="起始日期" />
+                <span id="digest-from-sep" class="dim hidden">至</span>
+                <input id="digest-to" class="input-date hidden" type="date" aria-label="结束日期" />
+                <label class="digest-force"><input id="digest-force" type="checkbox" /> 强制重新生成</label>
+                <button id="digest-generate" class="btn small primary" type="button">生成小结</button>
+              </div>
+            </div>
+            <p id="digest-status" class="dim digest-status"></p>
+            <div class="digest-body">
+              <div class="digest-history-wrap">
+                <div class="digest-history-head dim">历史小结</div>
+                <ul id="digest-history" class="digest-history"></ul>
+              </div>
+              <div id="digest-viewer" class="digest-viewer">
+                <div id="digest-viewer-meta" class="dim digest-viewer-meta"></div>
+                <div id="digest-viewer-content" class="digest-content preview"></div>
+                <p id="digest-empty" class="digest-empty dim">该范围内没有材料。</p>
+              </div>
+            </div>
+          </section>
         </section>
 
         <!-- Upload / intro state -->

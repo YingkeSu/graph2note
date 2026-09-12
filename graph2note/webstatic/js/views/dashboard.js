@@ -1,12 +1,13 @@
-/* graph2note — read-only local telemetry dashboard (U1 relocation; A2 will add
-   the weekly-digest block, not this issue). */
+/* graph2note — read-only local telemetry dashboard (U1 relocation; A2 adds the
+   weekly-digest block here, inside the dashboard zone). */
 "use strict";
 
-import { el } from "../state.js";
+import { el, state } from "../state.js";
 import { api } from "../api.js";
 import { esc } from "../utils.js";
 import { registerView } from "../router.js";
 import { showToast } from "../ui.js";
+import { renderMarkdownInto } from "./document.js";
 
 function dashboardValue(value, digits = 0) {
   if (value == null) return "不可用";
@@ -48,6 +49,7 @@ function renderDashboardModels(items, currency) {
 
 async function renderDashboard() {
   el.dashboardZone.classList.remove("hidden");
+  void renderDigestPanel();
   el.dashboardEmpty.classList.add("hidden");
   el.dashboardContent.classList.remove("hidden");
   try {
@@ -80,3 +82,149 @@ async function renderDashboard() {
 }
 
 registerView("dashboard", renderDashboard);
+
+/* ---------- Weekly digest (issue A2) ---------- */
+
+function digestRangeLabel(meta) {
+  const range = (meta && meta.range) || {};
+  return range.label || `${range.from || "?"} ~ ${range.to || "?"}`;
+}
+
+function updateDigestCustomFields() {
+  const custom = el.digestRange && el.digestRange.value === "custom";
+  [el.digestFrom, el.digestTo, el.digestFromSep].forEach((node) => {
+    if (node) node.classList.toggle("hidden", !custom);
+  });
+}
+
+function setDigestEmpty(message) {
+  if (!el.digestEmpty) return;
+  el.digestEmpty.textContent = message || "该范围内没有材料。";
+  el.digestEmpty.classList.remove("hidden");
+  el.digestViewerContent.classList.add("hidden");
+}
+
+function renderDigestHistory(metas) {
+  if (!el.digestHistory) return;
+  if (!metas.length) {
+    el.digestHistory.innerHTML = `<li class="dim">还没有生成过小结。</li>`;
+    return;
+  }
+  el.digestHistory.innerHTML = metas.map((meta) => {
+    const usage = meta.usage || {};
+    const tokens = usage.total_tokens != null ? `${usage.total_tokens} tokens` : "token 不可用";
+    const selected = state.digestId === meta.digest_id ? "selected" : "";
+    return `<li><button type="button" class="digest-item ${selected}" data-digest-id="${esc(meta.digest_id)}">
+      <span class="digest-item-range">${esc(digestRangeLabel(meta))}</span>
+      <span class="dim">${esc(meta.created_at || "")} · ${meta.document_count || 0} 篇 · ${esc(meta.model || "未知模型")} · ${esc(tokens)}</span>
+    </button></li>`;
+  }).join("");
+  el.digestHistory.querySelectorAll("button.digest-item[data-digest-id]").forEach((button) => {
+    button.addEventListener("click", () => openDigest(button.dataset.digestId));
+  });
+}
+
+async function loadDigestHistory() {
+  if (!el.digestHistory) return [];
+  try {
+    const payload = await api("/api/digests");
+    const metas = payload.digests || [];
+    renderDigestHistory(metas);
+    return metas;
+  } catch (e) {
+    el.digestHistory.innerHTML = `<li class="dim">历史小结加载失败。</li>`;
+    return [];
+  }
+}
+
+function showDigestMarkdown(meta, markdown) {
+  let sources = "";
+  if (meta && meta.document_ids && meta.document_ids.length) {
+    const ids = meta.document_ids;
+    sources = ids.length > 5
+      ? ` · 来源：${ids.slice(0, 5).join("、")} 等 ${ids.length} 篇`
+      : ` · 来源：${ids.join("、")}`;
+  }
+  el.digestViewerMeta.textContent = meta
+    ? `${digestRangeLabel(meta)} · ${meta.document_count || 0} 篇 · 指纹 ${String(meta.fingerprint || "").slice(0, 12)}`
+      + sources
+    : "";
+  if (markdown) {
+    el.digestEmpty.classList.add("hidden");
+    el.digestViewerContent.classList.remove("hidden");
+    renderMarkdownInto(el.digestViewerContent, markdown);
+  } else {
+    el.digestViewerContent.classList.add("hidden");
+    el.digestViewerContent.innerHTML = "";
+    el.digestEmpty.classList.remove("hidden");
+  }
+}
+
+async function openDigest(digestId) {
+  if (!digestId) return;
+  state.digestId = digestId;
+  el.digestStatus.textContent = "读取小结…";
+  try {
+    const payload = await api(`/api/digests/${encodeURIComponent(digestId)}`);
+    showDigestMarkdown(payload.meta || null, payload.markdown || "");
+    el.digestStatus.textContent = "";
+    await loadDigestHistory();
+  } catch (e) {
+    el.digestStatus.textContent = "读取失败：" + e.message;
+  }
+}
+
+async function generateDigest() {
+  const payload = {
+    range: el.digestRange.value,
+    force: !!(el.digestForce && el.digestForce.checked),
+  };
+  if (el.digestRange.value === "custom") {
+    payload.from = el.digestFrom.value;
+    payload.to = el.digestTo.value;
+  }
+  el.digestGenerate.disabled = true;
+  el.digestStatus.textContent = "生成中…（同一指纹会直接复用缓存）";
+  try {
+    const r = await api("/api/digests", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (r.status === "empty") {
+      state.digestId = null;
+      showDigestMarkdown(
+        { range: r.range, document_count: 0, fingerprint: r.fingerprint, document_ids: [] },
+        "",
+      );
+      setDigestEmpty(r.message || "该范围内没有材料。");
+      el.digestStatus.textContent = r.message || "该范围内没有材料。";
+    } else {
+      state.digestId = r.digest ? r.digest.digest_id : null;
+      showDigestMarkdown(r.digest || null, r.markdown || "");
+      el.digestStatus.textContent = r.cached ? "命中缓存，未重新调用模型。" : "已生成并保存。";
+    }
+    await loadDigestHistory();
+  } catch (e) {
+    el.digestStatus.textContent = "生成失败：" + e.message;
+  } finally {
+    el.digestGenerate.disabled = false;
+  }
+}
+
+async function renderDigestPanel() {
+  if (!el.digestPanel) return;
+  updateDigestCustomFields();
+  const metas = await loadDigestHistory();
+  if (metas.length && !state.digestId) {
+    await openDigest(metas[0].digest_id);
+  } else if (!metas.length) {
+    showDigestMarkdown(null, "");
+    setDigestEmpty("还没有生成过小结。选择范围后点「生成小结」。");
+  }
+}
+
+if (el.digestRange) {
+  el.digestRange.addEventListener("change", updateDigestCustomFields);
+  el.digestGenerate.addEventListener("click", generateDigest);
+}

@@ -60,6 +60,7 @@ from .store import (
 )
 from . import config
 from . import evolution
+from . import digest
 from . import pipeline
 from . import pdflib
 from . import pdfsearch
@@ -430,6 +431,7 @@ def create_app(
     auto_tag_model: str | None = None,
     auto_tag_provider: str | None = None,
     auto_tag_max_chars: int = autotag.DEFAULT_MAX_CHARS,
+    digest_planner=None,
 ) -> FastAPI:
     """Build the FastAPI app.
 
@@ -512,6 +514,9 @@ def create_app(
             max_chars=auto_tag_max_chars,
         )
     app.state.auto_tag_inferrer = auto_tag_inferrer
+    # issue A2: injectable text-model seam for weekly digests (offline tests pass
+    # a recorded golden planner; production leaves None and uses the gateway).
+    app.state.digest_planner = digest_planner
     for _persisted in pdflib.load_jobs(store):
         pdflib.save_job(_persisted)  # persist the reconciled 'interrupted' state
         app.state.pdf_jobs[_persisted.pdf_id] = _persisted
@@ -760,7 +765,60 @@ def create_app(
             record = store.get_document(summary["document_id"])
             if record is not None:
                 records.append(record)
-        return build_stats(records, now=now, price_table=app.state.price_table)
+        return build_stats(
+            records,
+            now=now,
+            price_table=app.state.price_table,
+            digest_records=digest.list_digests(app.state.storage_dir),
+        )
+
+    # ---- weekly digests (issue A2) -----------------------------------------
+
+    def _all_records() -> list[dict]:
+        records = []
+        for summary in store.list_documents():
+            record = store.get_document(summary["document_id"])
+            if record is not None:
+                records.append(record)
+        return records
+
+    @app.post("/api/digests")
+    def digest_create(body: dict | None = None):
+        """Generate (or fingerprint-cache reuse) one weekly digest."""
+        payload = body or {}
+        spec = payload.get("range") or payload.get("kind") or "this_week"
+        if isinstance(spec, dict):
+            kind = spec.get("kind") or spec.get("range") or "custom"
+            from_ = payload.get("from") or spec.get("from") or spec.get("start")
+            to = payload.get("to") or spec.get("to") or spec.get("end")
+        else:
+            kind, from_, to = spec, payload.get("from"), payload.get("to")
+        try:
+            range_spec = digest.resolve_range(kind, from_=from_, to=to)
+        except digest.RangeError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        result = digest.generate_digest(
+            _all_records(),
+            range_spec,
+            storage_dir=app.state.storage_dir,
+            planner=app.state.digest_planner,
+            force=bool(payload.get("force")),
+        )
+        if result["status"] == "error":
+            raise HTTPException(status_code=502, detail=result["message"]) from None
+        return result
+
+    @app.get("/api/digests")
+    def digest_list():
+        metas = digest.list_digests(app.state.storage_dir)
+        return {"digests": metas, "total": len(metas)}
+
+    @app.get("/api/digests/{digest_id}")
+    def digest_get(digest_id: str):
+        stored = digest.load_digest(app.state.storage_dir, digest_id)
+        if stored is None:
+            raise HTTPException(status_code=404, detail="小结不存在。")
+        return {"meta": stored["meta"], "markdown": stored["markdown"]}
 
     # ---- LLM provider/model settings (issue 16) ----------------------------
 
