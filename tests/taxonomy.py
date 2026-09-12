@@ -49,6 +49,7 @@ FILE_TO_MODULE: dict[str, str] = {
     # 本地单用户 Web 应用
     "test_webapp": "webapp",
     "test_webapp_layout": "webapp",  # U1（新文件）
+    "test_webapp_editor_workspace": "webapp",  # U3（新文件）
     "test_webapp_vault_export": "webapp",  # issue 07 在途会修改内容；只读参考
     "test_repair": "webapp",  # R1 黑图修复闭环（CLI + API + Web）
     "test_documents": "webapp",

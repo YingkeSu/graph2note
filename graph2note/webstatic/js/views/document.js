@@ -1,6 +1,16 @@
-/* graph2note — three-pane document view: load, metadata, tags/collections,
-   autosave, live preview and document actions (U1 relocation; U3 will reshape
-   the workspace internals). */
+/* graph2note — document editor workspace (U3).
+
+   Layout: a permanent toolbar (autosave indicator + warnings + document
+   actions) above the three-pane axis; tags / collections / time metadata /
+   needs-organization / version info live in a collapsible right-hand side
+   panel; a full-screen image viewer (zoom / pan / fit) opens from the
+   original-image pane for image uploads and PDF source pages alike.
+
+   Behaviour is unchanged from the pre-U3 three-pane view: every side-panel
+   form still drives the same API and updates the same shared state.  The A1
+   auto/manual tag provenance (「自动」badge, one-click promote, remove) is
+   preserved verbatim — only its container moved.
+*/
 "use strict";
 
 import { el, state, setBusy } from "../state.js";
@@ -13,6 +23,8 @@ import { pollJob } from "../jobs.js";
 /* ---------- document (three-pane) ---------- */
 
 async function renderDocument(id) {
+  closeImageViewer();
+  toggleSidePanel(false);            // 默认收起：编辑 Markdown 时零干扰
   el.workZone.classList.remove("hidden");
   setBusy(true);
   try {
@@ -24,8 +36,7 @@ async function renderDocument(id) {
     renderPreview(doc.current_markdown || "");
     setDocImage(id);
     el.modelLabel.textContent = "模型：" + (doc.latest && doc.latest.model) || "";
-    el.versionInfo.textContent = doc.versions && doc.versions.length > 1
-      ? `第 ${doc.versions.length} 版（历史 ${doc.versions.length - 1} 版留存）` : "第 1 版";
+    renderVersions(doc);
     el.warnings.textContent = "";
     renderDocumentTags(doc.tags, doc.tag_provenance);
     await renderDocumentCollections(doc.collections);
@@ -40,7 +51,7 @@ async function renderDocument(id) {
   }
 }
 
-function renderDocumentRoute(route) {
+export function renderDocumentRoute(route) {
   state.docId = route.id;
   renderDocument(route.id);
 }
@@ -51,6 +62,34 @@ function setDocImage(id) {
     el.originalImg.src = `/api/documents/${encodeURIComponent(id)}/original`;
   };
 }
+
+/* ---------- version info (side panel; S3 version-diff mount point) ---------- */
+
+/* Renders the read-only version index into ``#version-info`` + ``#version-list``.
+   The version mechanism is untouched; S3 mounts its compare UI inside
+   ``#version-panel`` (see handoff for the API contract). */
+export function renderVersions(doc) {
+  const versions = (doc && doc.versions) || [];
+  if (el.versionInfo) {
+    el.versionInfo.textContent = versions.length > 1
+      ? `第 ${versions.length} 版（历史 ${versions.length - 1} 版留存）` : "第 1 版";
+  }
+  if (!el.versionList) return;
+  const latestId = doc && doc.latest_version;
+  el.versionList.innerHTML = versions.length
+    ? versions.slice().reverse().map((v, index) => {
+      const isCurrent = (latestId && v.version_id === latestId) || (!latestId && index === 0);
+      const prov = v.provenance ? `<span class="version-prov">${esc(v.provenance)}</span>` : "";
+      return `<div class="version-item${isCurrent ? " current" : ""}" data-version-id="${esc(v.version_id)}">
+        <span class="version-badge">${isCurrent ? "当前" : "历史"}</span>
+        <span class="version-time dim">${esc(displayTime(v.created_at))}</span>
+        <span class="version-model dim">${esc(v.model || "")}</span>${prov}
+      </div>`;
+    }).join("")
+    : `<span class="dim">暂无版本记录</span>`;
+}
+
+/* ---------- metadata ---------- */
 
 function renderMetadata(metadata) {
   const m = metadata || {};
@@ -99,7 +138,7 @@ async function saveDocumentMetadata() {
   }
 }
 
-/* ---------- document tags / collections ---------- */
+/* ---------- document tags / collections (A1 provenance preserved) ---------- */
 
 function renderDocumentTags(tags, provenance) {
   if (!el.documentTagList) return;
@@ -130,7 +169,7 @@ function applyTagResult(result) {
   renderDocumentTags(state.doc.tags, state.doc.tag_provenance);
 }
 
-async function removeDocumentTag(tag) {
+export async function removeDocumentTag(tag) {
   if (!state.docId) return;
   try {
     const result = await api(`/api/documents/${encodeURIComponent(state.docId)}/tags/${encodeURIComponent(tag)}`, { method: "DELETE" });
@@ -138,7 +177,7 @@ async function removeDocumentTag(tag) {
   } catch (e) { showToast("移除标签失败：" + e.message, "err"); }
 }
 
-async function promoteDocumentTag(tag) {
+export async function promoteDocumentTag(tag) {
   if (!state.docId) return;
   try {
     const result = await api(`/api/documents/${encodeURIComponent(state.docId)}/tags/${encodeURIComponent(tag)}`, {
@@ -151,7 +190,7 @@ async function promoteDocumentTag(tag) {
   } catch (e) { showToast("保留标签失败：" + e.message, "err"); }
 }
 
-async function addDocumentTag(tag) {
+export async function addDocumentTag(tag) {
   if (!state.docId) return;
   try {
     const result = await api(`/api/documents/${encodeURIComponent(state.docId)}/tags/manual`, {
@@ -180,7 +219,7 @@ async function renderDocumentCollections(collectionIds) {
   });
 }
 
-async function updateDocumentCollections(collectionIds) {
+export async function updateDocumentCollections(collectionIds) {
   if (!state.docId) return;
   try {
     const result = await api(`/api/documents/${encodeURIComponent(state.docId)}/collections`, {
@@ -190,6 +229,21 @@ async function updateDocumentCollections(collectionIds) {
     if (state.doc) state.doc.collections = result.collections;
     await renderDocumentCollections(result.collections);
   } catch (e) { showToast("文档集合保存失败：" + e.message, "err"); }
+}
+
+/* ---------- collapsible info side panel ---------- */
+
+export function isSidePanelOpen() {
+  return Boolean(el.docSidePanel && !el.docSidePanel.classList.contains("hidden"));
+}
+
+/* ``force`` true = open, false = close, undefined = toggle. */
+export function toggleSidePanel(force) {
+  if (!el.docSidePanel) return isSidePanelOpen();
+  const collapse = force === undefined ? isSidePanelOpen() : !force;
+  el.docSidePanel.classList.toggle("hidden", collapse);
+  if (el.docPanelToggle) el.docPanelToggle.setAttribute("aria-expanded", String(!collapse));
+  return !collapse;
 }
 
 /* ---------- editable markdown + autosave + live preview ---------- */
@@ -276,7 +330,9 @@ function scheduleSave() {
   saveTimer = setTimeout(() => autosave(el.mdEditor.value), SAVE_MS);
 }
 
-async function autosave(markdown) {
+/* Shared markdown save.  ``explicit`` (⌘S) is the same request as autosave,
+   with a distinct "已保存（⌘S）" confirmation. */
+async function saveMarkdown(markdown, explicit = false) {
   if (!state.docId) return;
   try {
     await api(`/api/documents/${encodeURIComponent(state.docId)}/markdown`, {
@@ -284,11 +340,25 @@ async function autosave(markdown) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ markdown }),
     });
-    el.saveIndicator.textContent = "已保存 " + new Date().toLocaleTimeString();
+    if (state.doc) state.doc.current_markdown = markdown;
+    el.saveIndicator.textContent = "已保存 " + new Date().toLocaleTimeString()
+      + (explicit ? "（⌘S）" : "");
   } catch (e) {
     el.saveIndicator.textContent = "保存失败";
     showToast("编辑保存失败：" + e.message, "err");
   }
+}
+
+function autosave(markdown) {
+  return saveMarkdown(markdown, false);
+}
+
+/* ⌘S: flush the debounced autosave immediately and save explicitly. */
+export function explicitSave() {
+  if (!state.docId) return Promise.resolve();
+  clearTimeout(saveTimer);
+  el.saveIndicator.textContent = "保存中…";
+  return saveMarkdown(el.mdEditor.value, true);
 }
 
 /* Flush a pending autosave on unload (registered by app.js entry). */
@@ -298,6 +368,192 @@ export function flushAutosave() {
     void autosave(el.mdEditor.value);
   }
 }
+
+/* ---------- large image viewer (image upload + PDF source page) ---------- */
+
+const VIEWER_MIN = 0.1;
+const VIEWER_MAX = 8;
+const VIEWER_STEP = 1.25;
+
+const viewer = { scale: 1, x: 0, y: 0, dragging: false, sx: 0, sy: 0, ox: 0, oy: 0 };
+
+const clampScale = (value) => Math.max(VIEWER_MIN, Math.min(VIEWER_MAX, value));
+
+function hasPdfSource(doc) {
+  return Boolean(doc && doc.pdf_id != null && doc.page_index != null);
+}
+
+/* Full-resolution source for the viewer: the PDF source page when the document
+   came from a PDF (``/api/pdf/{id}/page/{n}`` via the document endpoint), else
+   the enhanced preprocessed manuscript (falling back to the raw original). */
+export function viewerSource() {
+  if (!state.docId) return "";
+  const id = encodeURIComponent(state.docId);
+  if (hasPdfSource(state.doc)) return `/api/documents/${id}/source-page`;
+  return `/api/documents/${id}/preprocessed`;
+}
+
+function applyViewerTransform() {
+  viewer.scale = clampScale(viewer.scale);
+  if (el.imageViewerImg) {
+    el.imageViewerImg.style.transform =
+      `translate(${viewer.x}px, ${viewer.y}px) scale(${viewer.scale})`;
+    el.imageViewerImg.style.transformOrigin = "0 0";
+  }
+  if (el.viewerZoomLabel) {
+    el.viewerZoomLabel.textContent = Math.round(viewer.scale * 100) + "%";
+  }
+}
+
+export function fitImageViewer() {
+  if (!el.imageViewerImg || !el.imageViewerStage) return;
+  const natW = el.imageViewerImg.naturalWidth || 0;
+  const natH = el.imageViewerImg.naturalHeight || 0;
+  const boxW = el.imageViewerStage.clientWidth || 0;
+  const boxH = el.imageViewerStage.clientHeight || 0;
+  if (natW && natH && boxW && boxH) {
+    viewer.scale = clampScale(Math.min(boxW / natW, boxH / natH));
+    viewer.x = Math.max(0, (boxW - natW * viewer.scale) / 2);
+    viewer.y = Math.max(0, (boxH - natH * viewer.scale) / 2);
+  } else {
+    viewer.scale = 1;
+    viewer.x = 0;
+    viewer.y = 0;
+  }
+  applyViewerTransform();
+}
+
+/* Zoom by ``factor`` keeping the point under (clientX, clientY) fixed. */
+export function zoomImageViewer(factor, clientX, clientY) {
+  if (!el.imageViewer || el.imageViewer.classList.contains("hidden")) return viewer.scale;
+  const stage = el.imageViewerStage;
+  const box = stage && stage.getBoundingClientRect
+    ? stage.getBoundingClientRect() : { left: 0, top: 0, width: 0, height: 0 };
+  const px = (clientX == null ? box.left + box.width / 2 : clientX) - (box.left || 0);
+  const py = (clientY == null ? box.top + box.height / 2 : clientY) - (box.top || 0);
+  const previous = viewer.scale;
+  const next = clampScale(previous * factor);
+  if (previous > 0) {
+    viewer.x = px - (px - viewer.x) * (next / previous);
+    viewer.y = py - (py - viewer.y) * (next / previous);
+  }
+  viewer.scale = next;
+  applyViewerTransform();
+  return viewer.scale;
+}
+
+export function openImageViewer() {
+  if (!state.docId || !el.imageViewer) return;
+  const src = viewerSource();
+  if (!src) return;
+  if (el.imageViewerImg) {
+    delete el.imageViewerImg.dataset.fallback;
+    el.imageViewerImg.onerror = () => {
+      const fallback = `/api/documents/${encodeURIComponent(state.docId)}/original`;
+      if (!el.imageViewerImg.dataset.fallback) {
+        el.imageViewerImg.dataset.fallback = "1";
+        el.imageViewerImg.src = fallback;
+      }
+    };
+    el.imageViewerImg.src = src;
+    el.imageViewerImg.style.transform = "";
+    if (el.imageViewerImg.complete && el.imageViewerImg.naturalWidth) {
+      fitImageViewer();
+    } else {
+      el.imageViewerImg.addEventListener("load", fitImageViewer, { once: true });
+    }
+  }
+  viewer.scale = 1; viewer.x = 0; viewer.y = 0;
+  el.imageViewer.classList.remove("hidden");
+  el.imageViewer.setAttribute("aria-hidden", "false");
+  if (el.viewerClose) el.viewerClose.focus();
+}
+
+export function closeImageViewer() {
+  if (!el.imageViewer) return;
+  viewer.dragging = false;
+  el.imageViewer.classList.add("hidden");
+  el.imageViewer.setAttribute("aria-hidden", "true");
+}
+
+export function isImageViewerOpen() {
+  return Boolean(el.imageViewer && !el.imageViewer.classList.contains("hidden"));
+}
+
+function onViewerWheel(event) {
+  event.preventDefault();
+  zoomImageViewer(event.deltaY < 0 ? 1.15 : 1 / 1.15, event.clientX, event.clientY);
+}
+
+function onStagePointerDown(event) {
+  if (!isImageViewerOpen()) return;
+  viewer.dragging = true;
+  viewer.sx = event.clientX;
+  viewer.sy = event.clientY;
+  viewer.ox = viewer.x;
+  viewer.oy = viewer.y;
+  if (el.imageViewerStage && el.imageViewerStage.setPointerCapture && event.pointerId != null) {
+    try { el.imageViewerStage.setPointerCapture(event.pointerId); } catch (_) { /* ignore */ }
+  }
+  if (el.imageViewerImg) el.imageViewerImg.classList.add("dragging");
+  event.preventDefault && event.preventDefault();
+}
+
+function onStagePointerMove(event) {
+  if (!viewer.dragging) return;
+  viewer.x = viewer.ox + (event.clientX - viewer.sx);
+  viewer.y = viewer.oy + (event.clientY - viewer.sy);
+  applyViewerTransform();
+  event.preventDefault && event.preventDefault();
+}
+
+function onStagePointerUp() {
+  viewer.dragging = false;
+  if (el.imageViewerImg) el.imageViewerImg.classList.remove("dragging");
+}
+
+/* ---------- keyboard shortcuts ---------- */
+
+/* True when focus is in a text field: ⌘/ and Esc must not hijack typing
+   (⌘S is exempt — it always saves). */
+export function isTextInputFocused() {
+  const active = document.activeElement;
+  if (!active) return false;
+  const tag = (active.tagName || "").toLowerCase();
+  return tag === "input" || tag === "textarea" || tag === "select"
+    || active.isContentEditable === true;
+}
+
+export function handleEditorShortcut(event) {
+  const key = (event.key || "").toLowerCase();
+  const mod = event.metaKey || event.ctrlKey;
+  if (mod && key === "s") {
+    event.preventDefault();
+    void explicitSave();
+    return true;
+  }
+  if (mod && event.key === "/") {
+    if (isTextInputFocused()) return false;
+    event.preventDefault();
+    toggleSidePanel();
+    return true;
+  }
+  if (event.key === "Escape") {
+    // The viewer is the topmost layer: Esc always returns to the editor.
+    if (isImageViewerOpen()) {
+      event.preventDefault();
+      closeImageViewer();
+      return true;
+    }
+    if (!isTextInputFocused() && isSidePanelOpen()) {
+      toggleSidePanel(false);
+      return true;
+    }
+  }
+  return false;
+}
+
+document.addEventListener("keydown", handleEditorShortcut);
 
 /* ---------- actions ---------- */
 
@@ -359,6 +615,31 @@ el.btnDelete.onclick = async () => {
 };
 
 el.btnRepic.onclick = () => state.docId && setDocImage(state.docId);
+
+/* ---------- side-panel + viewer wiring ---------- */
+
+if (el.docPanelToggle) el.docPanelToggle.addEventListener("click", () => toggleSidePanel());
+if (el.docPanelClose) el.docPanelClose.addEventListener("click", () => toggleSidePanel(false));
+if (el.btnZoomImage) el.btnZoomImage.addEventListener("click", openImageViewer);
+if (el.originalImg) {
+  el.originalImg.addEventListener("click", openImageViewer);
+  el.originalImg.addEventListener("keydown", (event) => {
+    if (event.key === "Enter" || event.key === " ") { event.preventDefault(); openImageViewer(); }
+  });
+}
+if (el.viewerClose) el.viewerClose.addEventListener("click", closeImageViewer);
+if (el.viewerFit) el.viewerFit.addEventListener("click", () => fitImageViewer());
+if (el.viewerZoomIn) el.viewerZoomIn.addEventListener("click", () => zoomImageViewer(VIEWER_STEP));
+if (el.viewerZoomOut) el.viewerZoomOut.addEventListener("click", () => zoomImageViewer(1 / VIEWER_STEP));
+if (el.imageViewerStage) {
+  el.imageViewerStage.addEventListener("wheel", onViewerWheel, { passive: false });
+  el.imageViewerStage.addEventListener("pointerdown", onStagePointerDown);
+  el.imageViewerStage.addEventListener("pointermove", onStagePointerMove);
+  el.imageViewerStage.addEventListener("pointerup", onStagePointerUp);
+  el.imageViewerStage.addEventListener("pointercancel", onStagePointerUp);
+}
+
+/* ---------- form wiring (unchanged API contracts) ---------- */
 
 el.documentTagForm.addEventListener("submit", (event) => {
   event.preventDefault();
