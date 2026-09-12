@@ -64,10 +64,59 @@ from .tags import (
     merge_vocabulary_tags,
     new_vocabulary,
     rename_vocabulary_tag,
+    resolve_tag,
     validate_tag_inference,
     vocabulary_entries,
 )
 from .telemetry import normalize_telemetry
+
+MANUAL_TAG_PROVENANCE = "manual"
+AUTO_TAG_PROVENANCE = "auto"
+
+
+def ensure_tag_provenance(record: dict) -> dict[str, str]:
+    """Return a tag->provenance map aligned with ``record['tags']``.
+
+    Legacy records (and tags added before A1) have no provenance entry and are
+    treated as ``manual``: the conservative default, since only tags the auto
+    pipeline explicitly added carry the ``auto`` marker.
+    """
+
+    tags = list(record.get("tags") or [])
+    raw = record.get("tag_provenance")
+    provenance = dict(raw) if isinstance(raw, dict) else {}
+    for key in list(provenance):
+        if key not in tags:
+            provenance.pop(key, None)
+    for tag in tags:
+        provenance.setdefault(tag, MANUAL_TAG_PROVENANCE)
+    record["tags"] = tags
+    record["tag_provenance"] = provenance
+    return provenance
+
+
+def _merge_tag_provenance(
+    record: dict,
+    added: list[str],
+    provenance: str,
+) -> dict[str, str]:
+    """Append ``added`` tags to a record, keeping the stronger provenance.
+
+    An existing ``manual`` tag never gets downgraded by a later auto pass (the
+    user's explicit choice wins); a tag that only ever came from auto stays
+    ``auto`` unless the user promotes it.
+    """
+
+    current = ensure_tag_provenance(record)
+    tags = record["tags"]
+    for tag in added:
+        if tag not in tags:
+            tags.append(tag)
+        if current.get(tag) != MANUAL_TAG_PROVENANCE or provenance == MANUAL_TAG_PROVENANCE:
+            current[tag] = provenance
+    record["tags"] = tags
+    record["tag_provenance"] = current
+    return current
 
 
 def _safe(name: str) -> str:
@@ -144,7 +193,31 @@ class DocumentStore(ABC):
 
     @abstractmethod
     def add_auto_tags(self, document_id: str, raw_tags) -> dict | None:
-        """Validate and append recorded auto-tag output."""
+        """Validate and append recorded auto-tag output (provenance=auto)."""
+
+    @abstractmethod
+    def add_manual_tags(self, document_id: str, raw_tags) -> dict | None:
+        """Append user-entered tags (provenance=manual)."""
+
+    @abstractmethod
+    def promote_tag(self, document_id: str, tag: str) -> dict | None:
+        """Mark one existing tag as manual (user kept an auto suggestion)."""
+
+    @abstractmethod
+    def remove_tag(self, document_id: str, tag: str) -> dict | None:
+        """Remove one tag without dropping it from the vocabulary."""
+
+    @abstractmethod
+    def tag_vocabulary(self) -> dict:
+        """Current normalized vocabulary (canonical names + aliases)."""
+
+    @abstractmethod
+    def add_tag_alias(self, tag: str, alias: str) -> list[dict]:
+        """Attach one alias to an existing canonical tag."""
+
+    @abstractmethod
+    def set_auto_tag_meta(self, document_id: str, payload: dict) -> dict | None:
+        """Persist the last auto-tag inference result/telemetry on a record."""
 
     @abstractmethod
     def rename_tag(self, source: str, target: str) -> list[dict]:
@@ -245,7 +318,7 @@ class SessionDocumentStore(DocumentStore):
                 original_path=record.get("original_path"),
                 markdown=record.get("current_markdown"),
             )
-            record.setdefault("tags", [])
+            ensure_tag_provenance(record)
             apply_topic_defaults(record, self._collection_registry)
             items.append({
                 k: record[k] for k in ("document_id", "title", "created_at",
@@ -266,7 +339,7 @@ class SessionDocumentStore(DocumentStore):
             original_path=record.get("original_path"),
             markdown=record.get("current_markdown"),
         )
-        record.setdefault("tags", [])
+        ensure_tag_provenance(record)
         for version in record.get("versions") or []:
             if isinstance(version, dict) and "telemetry" not in version:
                 version["telemetry"] = normalize_telemetry(
@@ -383,6 +456,7 @@ class SessionDocumentStore(DocumentStore):
             return None
         normalized, _ = canonicalize_tags(self._tag_vocab, tags)
         rec["tags"] = normalized
+        rec["tag_provenance"] = {tag: MANUAL_TAG_PROVENANCE for tag in normalized}
         self._docs[document_id] = rec
         return rec
 
@@ -393,11 +467,77 @@ class SessionDocumentStore(DocumentStore):
         rec = self._docs.get(document_id)
         if rec is None:
             return None
-        return self.set_tags(document_id, list(rec.get("tags") or []) + tags)
+        normalized, _ = canonicalize_tags(self._tag_vocab, tags)
+        _merge_tag_provenance(rec, normalized, AUTO_TAG_PROVENANCE)
+        self._docs[document_id] = rec
+        return rec
+
+    def add_manual_tags(self, document_id: str, raw_tags) -> dict | None:
+        rec = self._docs.get(document_id)
+        if rec is None:
+            return None
+        if isinstance(raw_tags, str):
+            raw_tags = [raw_tags]
+        if raw_tags is None:
+            raw_tags = []
+        if not isinstance(raw_tags, list):
+            raise TagError("tags 必须是数组")
+        normalized, _ = canonicalize_tags(self._tag_vocab, raw_tags)
+        _merge_tag_provenance(rec, normalized, MANUAL_TAG_PROVENANCE)
+        self._docs[document_id] = rec
+        return rec
+
+    def promote_tag(self, document_id: str, tag: str) -> dict | None:
+        rec = self._docs.get(document_id)
+        if rec is None:
+            return None
+        canonical = resolve_tag(self._tag_vocab, tag)
+        ensure_tag_provenance(rec)
+        if canonical not in rec["tags"]:
+            raise TagError(f"文档没有标签：{canonical}")
+        rec["tag_provenance"][canonical] = MANUAL_TAG_PROVENANCE
+        self._docs[document_id] = rec
+        return rec
+
+    def remove_tag(self, document_id: str, tag: str) -> dict | None:
+        rec = self._docs.get(document_id)
+        if rec is None:
+            return None
+        try:
+            canonical = resolve_tag(self._tag_vocab, tag)
+        except TagError:
+            canonical = tag
+        rec["tags"] = [item for item in (rec.get("tags") or []) if item != canonical]
+        ensure_tag_provenance(rec)
+        self._docs[document_id] = rec
+        return rec
+
+    def tag_vocabulary(self) -> dict:
+        return json.loads(json.dumps(self._tag_vocab, ensure_ascii=False))
+
+    def add_tag_alias(self, tag: str, alias: str) -> list[dict]:
+        canonical = resolve_tag(self._tag_vocab, tag)
+        text = str(alias or "").strip()
+        if text and text != canonical:
+            entry = self._tag_vocab.setdefault("tags", {}).setdefault(canonical, {"aliases": []})
+            aliases = entry.setdefault("aliases", [])
+            if text not in aliases:
+                aliases.append(text)
+        return self.list_tags()
+
+    def set_auto_tag_meta(self, document_id: str, payload: dict) -> dict | None:
+        rec = self._docs.get(document_id)
+        if rec is None:
+            return None
+        rec["auto_tag"] = dict(payload)
+        self._docs[document_id] = rec
+        return rec
 
     def rename_tag(self, source: str, target: str) -> list[dict]:
         records = list(self._docs.values())
         rename_vocabulary_tag(self._tag_vocab, records, source, target)
+        for record in records:
+            ensure_tag_provenance(record)
         return self.list_tags()
 
     def merge_tags(self, source: str, target: str) -> list[dict]:
@@ -663,7 +803,7 @@ class FileDocumentStore(SessionDocumentStore):
         if before != json.dumps(registry, ensure_ascii=False, sort_keys=True):
             self._save_collection_registry(registry)
         rec = dict(rec)  # shallow copy
-        rec.setdefault("tags", [])
+        ensure_tag_provenance(rec)
         base = self._doc_dir(document_id)
         rec["document_id"] = document_id
         original = self._find_original(base)
@@ -849,8 +989,15 @@ class FileDocumentStore(SessionDocumentStore):
         changed = False
         for record in records:
             normalized, tags_changed = canonicalize_tags(vocabulary, record.get("tags") or [])
+            before_prov = json.dumps(record.get("tag_provenance") or {}, ensure_ascii=False, sort_keys=True)
+            record_changed = False
             if tags_changed or normalized != record.get("tags"):
                 record["tags"] = normalized
+                record_changed = True
+            ensure_tag_provenance(record)
+            if before_prov != json.dumps(record.get("tag_provenance") or {}, ensure_ascii=False, sort_keys=True):
+                record_changed = True
+            if record_changed and record.get("document_id"):
                 self._write_tag_record(record)
                 changed = True
             for tag in normalized:
@@ -871,6 +1018,7 @@ class FileDocumentStore(SessionDocumentStore):
         vocabulary = self._load_tag_vocab()
         normalized, _ = canonicalize_tags(vocabulary, tags)
         record["tags"] = normalized
+        record["tag_provenance"] = {tag: MANUAL_TAG_PROVENANCE for tag in normalized}
         self._write_tag_record(record)
         self._save_tag_vocab(vocabulary)
         return self.get_document(document_id)
@@ -882,13 +1030,86 @@ class FileDocumentStore(SessionDocumentStore):
         record = self._load_record_with_metadata(document_id)
         if record is None:
             return None
-        return self.set_tags(document_id, list(record.get("tags") or []) + tags)
+        vocabulary = self._load_tag_vocab()
+        normalized, _ = canonicalize_tags(vocabulary, tags)
+        _merge_tag_provenance(record, normalized, AUTO_TAG_PROVENANCE)
+        self._write_tag_record(record)
+        self._save_tag_vocab(vocabulary)
+        return self.get_document(document_id)
+
+    def add_manual_tags(self, document_id: str, raw_tags) -> dict | None:
+        record = self._load_record_with_metadata(document_id)
+        if record is None:
+            return None
+        if isinstance(raw_tags, str):
+            raw_tags = [raw_tags]
+        if raw_tags is None:
+            raw_tags = []
+        if not isinstance(raw_tags, list):
+            raise TagError("tags 必须是数组")
+        vocabulary = self._load_tag_vocab()
+        normalized, _ = canonicalize_tags(vocabulary, raw_tags)
+        _merge_tag_provenance(record, normalized, MANUAL_TAG_PROVENANCE)
+        self._write_tag_record(record)
+        self._save_tag_vocab(vocabulary)
+        return self.get_document(document_id)
+
+    def promote_tag(self, document_id: str, tag: str) -> dict | None:
+        record = self._load_record_with_metadata(document_id)
+        if record is None:
+            return None
+        vocabulary = self._load_tag_vocab()
+        canonical = resolve_tag(vocabulary, tag)
+        ensure_tag_provenance(record)
+        if canonical not in record["tags"]:
+            raise TagError(f"文档没有标签：{canonical}")
+        record["tag_provenance"][canonical] = MANUAL_TAG_PROVENANCE
+        self._write_tag_record(record)
+        return self.get_document(document_id)
+
+    def remove_tag(self, document_id: str, tag: str) -> dict | None:
+        record = self._load_record_with_metadata(document_id)
+        if record is None:
+            return None
+        vocabulary = self._load_tag_vocab()
+        try:
+            canonical = resolve_tag(vocabulary, tag)
+        except TagError:
+            canonical = tag
+        record["tags"] = [item for item in (record.get("tags") or []) if item != canonical]
+        ensure_tag_provenance(record)
+        self._write_tag_record(record)
+        return self.get_document(document_id)
+
+    def tag_vocabulary(self) -> dict:
+        return self._load_tag_vocab()
+
+    def add_tag_alias(self, tag: str, alias: str) -> list[dict]:
+        vocabulary = self._load_tag_vocab()
+        canonical = resolve_tag(vocabulary, tag)
+        text = str(alias or "").strip()
+        if text and text != canonical:
+            entry = vocabulary.setdefault("tags", {}).setdefault(canonical, {"aliases": []})
+            aliases = entry.setdefault("aliases", [])
+            if text not in aliases:
+                aliases.append(text)
+            self._save_tag_vocab(vocabulary)
+        return self.list_tags()
+
+    def set_auto_tag_meta(self, document_id: str, payload: dict) -> dict | None:
+        record = self._load_record_with_metadata(document_id)
+        if record is None:
+            return None
+        record["auto_tag"] = dict(payload)
+        self._write_tag_record(record)
+        return self.get_document(document_id)
 
     def rename_tag(self, source: str, target: str) -> list[dict]:
         vocabulary = self._load_tag_vocab()
         records = self._all_tag_records()
         rename_vocabulary_tag(vocabulary, records, source, target)
         for record in records:
+            ensure_tag_provenance(record)
             self._write_tag_record(record)
         self._save_tag_vocab(vocabulary)
         return self.list_tags()
@@ -898,6 +1119,7 @@ class FileDocumentStore(SessionDocumentStore):
         records = self._all_tag_records()
         merge_vocabulary_tags(vocabulary, records, source, target)
         for record in records:
+            ensure_tag_provenance(record)
             self._write_tag_record(record)
         self._save_tag_vocab(vocabulary)
         return self.list_tags()

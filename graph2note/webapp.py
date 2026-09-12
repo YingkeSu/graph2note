@@ -52,6 +52,7 @@ from .llm_settings import (
 from .tags import TagError
 from .telemetry import build_stats, load_price_table
 from .timeline import GROUPINGS, build_timeline
+from . import autotag
 from .store import (
     DocumentStore,
     FileDocumentStore,
@@ -89,6 +90,25 @@ def _pdf_error_status(kind: str) -> int:
 # ---------------------------------------------------------------------------
 # Job state
 # ---------------------------------------------------------------------------
+
+
+def _tag_payload(record: dict | None) -> dict:
+    """Document tags with per-tag provenance for the API contract."""
+
+    record = record or {}
+    tags = list(record.get("tags") or [])
+    provenance = record.get("tag_provenance")
+    provenance = provenance if isinstance(provenance, dict) else {}
+    detail = [
+        {"tag": tag, "provenance": provenance.get(tag, "manual")}
+        for tag in tags
+    ]
+    return {
+        "document_id": record.get("document_id"),
+        "tags": tags,
+        "tag_provenance": {item["tag"]: item["provenance"] for item in detail},
+        "tags_detail": detail,
+    }
 
 
 @dataclass
@@ -214,6 +234,7 @@ class JobRunner:
                 router_factory=app.state.router_factory,
                 dedup_threshold=app.state.dedup_threshold,
                 max_retries=app.state.max_retries,
+                auto_tag_inferrer=getattr(app.state, "auto_tag_inferrer", None),
             )
         finally:
             pdflib.save_job(job)
@@ -326,6 +347,13 @@ class JobRunner:
             pg_hash=pg_hash,
             metadata=metadata,
         )
+        # A1: single post-ingest auto-tag hook.  Runs before the job is marked
+        # done so a poller that sees 'done' can rely on the tags being present;
+        # an inference failure is recorded as a warning and never blocks.
+        autotag.after_ingest(
+            store, document_id, result.markdown,
+            inferrer=getattr(app.state, "auto_tag_inferrer", None),
+        )
         # the record is durable NOW; only then present the job as done so a
         # poller can rely on the document existing with its final id(s)
         with job.lock:
@@ -359,12 +387,23 @@ def create_app(
     pdf_qa_session: str | None = None,
     pdf_qa_timeout: int | None = None,
     pdf_qa_max_attempts: int | None = None,
+    auto_tag_inferrer=None,
+    auto_tag: bool = False,
+    auto_tag_model: str | None = None,
+    auto_tag_provider: str | None = None,
+    auto_tag_max_chars: int = autotag.DEFAULT_MAX_CHARS,
 ) -> FastAPI:
     """Build the FastAPI app.
 
     ``router_factory(image_path, model) -> RecognitionRouter`` lets tests inject
     an offline (golden/cache) router; when None, the real pipeline router with a
     VLM gateway is used.  ``document_store`` is the issue-07 persistence seam.
+
+    ``auto_tag_inferrer`` is the A1 post-ingest tag seam: pass a
+    :class:`graph2note.autotag.TagInferrer` (or a bare planner callable) to
+    enable offline auto-tagging.  ``auto_tag=True`` builds the live classify
+    planner; the default (``False``) keeps ingest LLM-free so tests stay
+    offline.  Production enables it from ``macos/launcher.py``.
     """
     storage_dir = config.ensure_storage_dir(config.resolve_storage_dir(storage_dir))
     store = document_store or FileDocumentStore(storage_dir)
@@ -417,6 +456,18 @@ def create_app(
     app.state.pdf_qa_session = pdf_qa_session
     app.state.pdf_qa_timeout = pdf_qa_timeout or pdfqa.ANSWER_TIMEOUT
     app.state.pdf_qa_max_attempts = pdf_qa_max_attempts or pdfqa.MAX_ATTEMPTS
+    # A1: single post-ingest auto-tag hook (single image + PDF page commits).
+    if auto_tag_inferrer is None and auto_tag:
+        channel = settings.resolve("classify")
+        provider = auto_tag_provider or channel["provider"]
+        model = auto_tag_model or channel["model"]
+        auto_tag_inferrer = autotag.TagInferrer(
+            planner=autotag.live_planner(provider=provider, model=model),
+            model=model,
+            provider=provider,
+            max_chars=auto_tag_max_chars,
+        )
+    app.state.auto_tag_inferrer = auto_tag_inferrer
     for _persisted in pdflib.load_jobs(store):
         pdflib.save_job(_persisted)  # persist the reconciled 'interrupted' state
         app.state.pdf_jobs[_persisted.pdf_id] = _persisted
@@ -559,6 +610,8 @@ def create_app(
         rec = store.get_document(document_id)
         if rec is None:
             raise HTTPException(status_code=404, detail="文档不存在或已被删除。")
+        rec = dict(rec)
+        rec["tags_detail"] = _tag_payload(rec)["tags_detail"]
         return rec
 
     @app.get("/api/documents")
@@ -798,7 +851,7 @@ def create_app(
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         if rec is None:
             raise HTTPException(status_code=404, detail="文档不存在或已被删除。")
-        return {"document_id": document_id, "tags": rec.get("tags", [])}
+        return _tag_payload(rec)
 
     @app.post("/api/documents/{document_id}/tags")
     def document_add_auto_tags(document_id: str, body: dict | None = None):
@@ -812,17 +865,42 @@ def create_app(
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         if rec is None:
             raise HTTPException(status_code=404, detail="文档不存在或已被删除。")
-        return {"document_id": document_id, "tags": rec.get("tags", [])}
+        return _tag_payload(rec)
+
+    @app.post("/api/documents/{document_id}/tags/manual")
+    def document_add_manual_tags(document_id: str, body: dict | None = None):
+        payload = body or {}
+        raw_tags = payload.get("tags", payload.get("tag", []))
+        try:
+            rec = store.add_manual_tags(document_id, raw_tags)
+        except (TagError, TypeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        if rec is None:
+            raise HTTPException(status_code=404, detail="文档不存在或已被删除。")
+        return _tag_payload(rec)
+
+    @app.patch("/api/documents/{document_id}/tags/{tag}")
+    def document_update_tag(document_id: str, tag: str, body: dict | None = None):
+        payload = body or {}
+        if payload.get("provenance") != "manual":
+            raise HTTPException(status_code=422, detail="provenance 只能是 manual。")
+        try:
+            rec = store.promote_tag(document_id, tag)
+        except (TagError, TypeError, ValueError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        if rec is None:
+            raise HTTPException(status_code=404, detail="文档不存在或已被删除。")
+        return _tag_payload(rec)
 
     @app.delete("/api/documents/{document_id}/tags/{tag}")
     def document_remove_tag(document_id: str, tag: str):
-        rec = _get_document(document_id)
-        kept = [item for item in (rec.get("tags") or []) if item != tag]
         try:
-            updated = store.set_tags(document_id, kept)
+            updated = store.remove_tag(document_id, tag)
         except (TagError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
-        return {"document_id": document_id, "tags": updated.get("tags", [])}
+        if updated is None:
+            raise HTTPException(status_code=404, detail="文档不存在或已被删除。")
+        return _tag_payload(updated)
 
     @app.put("/api/documents/{document_id}/collections")
     def document_set_collections(document_id: str, body: dict | None = None):

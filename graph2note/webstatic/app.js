@@ -1064,28 +1064,66 @@ async function renderTagVocabulary() {
   });
 }
 
-function renderDocumentTags(tags) {
+function renderDocumentTags(tags, provenance) {
   if (!el.documentTagList) return;
   const values = tags || [];
-  el.documentTagList.innerHTML = values.length ? values.map((tag) => `
-    <span class="document-tag">#${esc(tag)}<button type="button" data-remove-tag="${esc(tag)}" aria-label="移除 ${esc(tag)}">×</button></span>`).join("")
+  const prov = provenance || {};
+  el.documentTagList.innerHTML = values.length ? values.map((tag) => {
+    const isAuto = (prov[tag] || "manual") === "auto";
+    const badge = isAuto
+      ? `<span class="tag-auto-badge" title="识别结果自动打标">自动</span>` : "";
+    const keep = isAuto
+      ? `<button type="button" class="tag-promote" data-promote-tag="${esc(tag)}" title="保留为手工标签" aria-label="保留 ${esc(tag)} 为手工标签">✓</button>` : "";
+    return `<span class="document-tag${isAuto ? " auto" : ""}" data-tag="${esc(tag)}">#${esc(tag)}${badge}${keep}<button type="button" data-remove-tag="${esc(tag)}" aria-label="移除 ${esc(tag)}">×</button></span>`;
+  }).join("")
     : `<span class="dim">暂无标签</span>`;
   el.documentTagList.querySelectorAll("button[data-remove-tag]").forEach((button) => {
-    button.addEventListener("click", () => updateDocumentTags(values.filter((tag) => tag !== button.dataset.removeTag)));
+    button.addEventListener("click", () => removeDocumentTag(button.dataset.removeTag));
+  });
+  el.documentTagList.querySelectorAll("button[data-promote-tag]").forEach((button) => {
+    button.addEventListener("click", () => promoteDocumentTag(button.dataset.promoteTag));
   });
 }
 
-async function updateDocumentTags(tags) {
+function applyTagResult(result) {
+  if (!state.doc) return;
+  state.doc.tags = result.tags || [];
+  state.doc.tag_provenance = result.tag_provenance || {};
+  state.doc.tags_detail = result.tags_detail || [];
+  renderDocumentTags(state.doc.tags, state.doc.tag_provenance);
+}
+
+async function removeDocumentTag(tag) {
   if (!state.docId) return;
   try {
-    const result = await api(`/api/documents/${encodeURIComponent(state.docId)}/tags`, {
-      method: "PUT",
+    const result = await api(`/api/documents/${encodeURIComponent(state.docId)}/tags/${encodeURIComponent(tag)}`, { method: "DELETE" });
+    applyTagResult(result);
+  } catch (e) { showToast("移除标签失败：" + e.message, "err"); }
+}
+
+async function promoteDocumentTag(tag) {
+  if (!state.docId) return;
+  try {
+    const result = await api(`/api/documents/${encodeURIComponent(state.docId)}/tags/${encodeURIComponent(tag)}`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ tags }),
+      body: JSON.stringify({ provenance: "manual" }),
     });
-    if (state.doc) state.doc.tags = result.tags;
-    renderDocumentTags(result.tags);
-  } catch (e) { showToast("文档标签保存失败：" + e.message, "err"); }
+    applyTagResult(result);
+    showToast("已保留为手工标签", "ok");
+  } catch (e) { showToast("保留标签失败：" + e.message, "err"); }
+}
+
+async function addDocumentTag(tag) {
+  if (!state.docId) return;
+  try {
+    const result = await api(`/api/documents/${encodeURIComponent(state.docId)}/tags/manual`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tag }),
+    });
+    applyTagResult(result);
+  } catch (e) { showToast("添加标签失败：" + e.message, "err"); }
 }
 
 async function renderDocumentCollections(collectionIds) {
@@ -1204,7 +1242,7 @@ async function renderDocument(id) {
     el.versionInfo.textContent = doc.versions && doc.versions.length > 1
       ? `第 ${doc.versions.length} 版（历史 ${doc.versions.length - 1} 版留存）` : "第 1 版";
     el.warnings.textContent = "";
-    renderDocumentTags(doc.tags);
+    renderDocumentTags(doc.tags, doc.tag_provenance);
     await renderDocumentCollections(doc.collections);
     renderMetadata(doc.metadata);
     el.statusText.textContent = doc.current_markdown && doc.current_markdown.trim()
@@ -1454,7 +1492,7 @@ el.documentTagForm.addEventListener("submit", (event) => {
   const value = el.documentTagInput.value.trim();
   if (!value || !state.doc) return;
   el.documentTagInput.value = "";
-  updateDocumentTags([...(state.doc.tags || []), value]);
+  addDocumentTag(value);
 });
 el.documentCollectionForm.addEventListener("submit", (event) => {
   event.preventDefault();

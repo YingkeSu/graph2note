@@ -40,6 +40,7 @@ from pathlib import Path
 from .ingest import split_pdf, cluster_pages, pdf_available
 from .ingest.model import Page
 from .ir import dumps_ir
+from . import autotag
 from . import pipeline
 
 # Limits (AC4: explicit file type / size / page-count limits).  PDFs are a
@@ -562,6 +563,7 @@ def _run_attempts(
     preprocess: bool,
     workers: int,
     page_timeout: int,
+    auto_tag_inferrer=None,
 ) -> None:
     """Parse the retryable pages with bounded concurrency, timeout and attempts."""
     to_parse = [p for p in pages if p.page_index in set(job.retryable_page_indexes())]
@@ -611,6 +613,11 @@ def _run_attempts(
             pdf_id=job.pdf_id,
             page_index=idx,
             page_number=page.page_number,
+        )
+        # A1: PDF page commit runs the same post-ingest auto-tag hook as the
+        # single-image path.  Inference failure is recorded, never blocking.
+        autotag.after_ingest(
+            store, doc_id, result.markdown, inferrer=auto_tag_inferrer,
         )
         return {"status": "success", "document_id": doc_id, "title": title,
                 "markdown_len": len(result.markdown or "")}
@@ -703,6 +710,7 @@ def process_pdf(
     workers: int | None = None,
     page_timeout: int | None = None,
     max_page_attempts: int | None = None,
+    auto_tag_inferrer=None,
 ) -> PdfJob:
     """Run/resume the chain: split -> cluster -> parse -> commit, updating ``job``.
 
@@ -794,6 +802,7 @@ def process_pdf(
         job, pages, work_dir=work_dir, store=store,
         router_factory=router_factory, preprocess=preprocess,
         workers=workers, page_timeout=page_timeout,
+        auto_tag_inferrer=auto_tag_inferrer,
     )
 
     # 4) finalise: 'done' even with per-page failures (issue 08 AC4); exhausted

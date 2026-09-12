@@ -245,6 +245,93 @@ def _cmd_notes_export(args) -> int:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# tags backfill — auto-tag the existing library under an explicit budget (A1)
+# ---------------------------------------------------------------------------
+
+
+def build_tags_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="graph2note tags",
+        description="Tag vocabulary utilities (usable-product-iteration A1).",
+    )
+    sub = p.add_subparsers(dest="tags_command", required=True)
+
+    b = sub.add_parser(
+        "backfill",
+        description=(
+            "Infer auto tags for documents that never completed an auto-tag "
+            "pass.  Default is a dry-run budget report; pass --yes to execute."
+        ),
+    )
+    mode = b.add_mutually_exclusive_group()
+    mode.add_argument("--dry-run", action="store_true",
+                      help="report pending documents + estimated calls only (default)")
+    mode.add_argument("--yes", action="store_true",
+                      help="execute the inference calls (real LLM usage)")
+    b.add_argument("--storage", default=None,
+                   help="document library storage dir (default: GRAPH2NOTE_STORAGE)")
+    b.add_argument("--limit", type=int, default=None,
+                   help="cap the number of documents processed this run")
+    b.add_argument("--max-chars", type=int, default=None,
+                   help="markdown truncation budget per inference")
+    b.add_argument("--model", default=None, help="text model override for inference")
+    b.add_argument("--provider", default=None, help="provider override for inference")
+    b.add_argument("--json", action="store_true", help="emit the report as JSON")
+    return p
+
+
+def run_tags_backfill(args) -> int:
+    from . import autotag, config
+    from .store import FileDocumentStore
+
+    storage = config.ensure_storage_dir(config.resolve_storage_dir(args.storage))
+    store = FileDocumentStore(str(storage))
+    max_chars = args.max_chars or autotag.DEFAULT_MAX_CHARS
+    dry_run = not args.yes
+
+    if dry_run:
+        report = autotag.backfill(
+            store, dry_run=True, limit=args.limit, max_chars=max_chars,
+        )
+    else:
+        from .llm_settings import resolve_channel
+
+        channel = resolve_channel("classify")
+        provider = args.provider or channel["provider"]
+        model = args.model or channel["model"]
+        inferrer = autotag.TagInferrer(
+            planner=autotag.live_planner(provider=provider, model=model),
+            model=model,
+            provider=provider,
+            max_chars=max_chars,
+        )
+        report = autotag.backfill(
+            store, inferrer=inferrer, dry_run=False, limit=args.limit,
+            max_chars=max_chars,
+        )
+
+    report["storage"] = str(storage)
+    if args.json:
+        import json as _json
+
+        print(_json.dumps(report, ensure_ascii=False, indent=2))
+        return 0
+    print(f"storage={storage}")
+    if dry_run:
+        print(f"dry-run: 待回填文档 {report['pending']} 篇，预估推断调用 "
+              f"{report['estimated_calls']} 次（每篇 1 次）")
+        print("核对后请加 --yes 执行；可用 --limit 控制单次预算。")
+        return 0
+    print(f"backfill: 处理 {report['processed']} 篇（成功 {report['succeeded']}，"
+          f"失败 {report['failed']}），token 合计 {report['total_tokens']}")
+    for item in report["documents"]:
+        tags = "、".join(item.get("tags") or []) or "（无）"
+        warning = f" warning={item['warning']}" if item.get("warning") else ""
+        print(f"- {item['document_id']} [{item['status']}] {tags}{warning}")
+    return 0
+
+
 def build_config_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="graph2note config",
@@ -282,6 +369,9 @@ def main(argv: list[str] | None = None) -> int:
     if argv and argv[0] == "notes-export":
         args = build_notes_export_parser().parse_args(argv[1:])
         return _cmd_notes_export(args)
+    if argv and argv[0] == "tags":
+        args = build_tags_parser().parse_args(argv[1:])
+        return run_tags_backfill(args)
     if argv and argv[0] == "visual-qa":
         from . import visualqa
         args = visualqa.build_visualqa_parser().parse_args(argv[1:])
