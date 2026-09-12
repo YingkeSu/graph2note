@@ -1,6 +1,6 @@
 # S3：版本对比视图（编辑器内）
 
-Status: ready-for-agent
+Status: merged
 Labels: track-semantic
 
 ## What to build
