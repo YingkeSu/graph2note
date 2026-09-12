@@ -204,6 +204,11 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 .llm-custom-form input, .llm-custom-form textarea { font-size: 14px; }
 .llm-status, .llm-channel-label .dim { font-size: 12px; }
 .llm-custom-card { overflow-wrap: anywhere; }
+.vault-export-form { border-top: 2px solid var(--ink); padding: 28px; background: var(--panel); }
+.vault-export-label { margin-bottom: 12px; font-size: 14px; }
+.vault-export-input { min-width: 0; font-size: 14px; }
+.vault-export-status { overflow-wrap: anywhere; border-radius: 5px; }
+
 @media (hover: none) { .doc-card .doc-card-actions { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0s !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
