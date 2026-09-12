@@ -50,10 +50,11 @@ from .llm_settings import (
     configure_settings_path,
     probe_channel,
 )
-from .tags import TagError
+from .tags import TagError, resolve_tag
 from .telemetry import build_stats, load_price_table
 from .timeline import GROUPINGS, build_timeline
 from . import autotag
+from . import tagorg
 from .store import (
     DocumentStore,
     FileDocumentStore,
@@ -516,6 +517,7 @@ def create_app(
     auto_tag_provider: str | None = None,
     auto_tag_max_chars: int = autotag.DEFAULT_MAX_CHARS,
     digest_planner=None,
+    tag_organize_planner=None,
 ) -> FastAPI:
     """Build the FastAPI app.
 
@@ -601,6 +603,10 @@ def create_app(
     # issue A2: injectable text-model seam for weekly digests (offline tests pass
     # a recorded golden planner; production leaves None and uses the gateway).
     app.state.digest_planner = digest_planner
+    # auto-organization issue 01: injectable planner for tag governance + an
+    # in-process cache of the last proposed plan (review -> apply loop).
+    app.state.tag_organize_planner = tag_organize_planner
+    app.state.tag_organize_cache: dict[str, dict] = {}
     for _persisted in pdflib.load_jobs(store):
         pdflib.save_job(_persisted)  # persist the reconciled 'interrupted' state
         app.state.pdf_jobs[_persisted.pdf_id] = _persisted
@@ -1124,6 +1130,149 @@ def create_app(
         except (TagError, TypeError, ValueError) as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         return {"tags": tags}
+
+    # ---- tag governance: LLM plan -> review -> deterministic apply -----------
+    # (auto-organization issue 01; additive endpoints, existing contracts stay)
+
+    @app.get("/api/tags/groups")
+    def tags_groups():
+        """Vocabulary rendered as v2 theme groups + the ungrouped remainder."""
+
+        vocabulary = store.tag_vocabulary()
+        entries = store.list_tags()
+        by_tag = {item["tag"]: item for item in entries}
+        raw_groups = vocabulary.get("groups") if isinstance(vocabulary, dict) else None
+        groups = []
+        assigned: set[str] = set()
+        for name in sorted((raw_groups or {}), key=str.casefold):
+            details = raw_groups.get(name) or {}
+            members = []
+            for tag in details.get("tags") or []:
+                try:
+                    canonical = resolve_tag(vocabulary, tag)
+                except TagError:
+                    continue
+                if canonical in assigned:
+                    continue
+                assigned.add(canonical)
+                entry = by_tag.get(canonical) or {"tag": canonical, "aliases": [], "count": 0}
+                members.append({
+                    "tag": canonical,
+                    "count": entry.get("count", 0),
+                    "aliases": entry.get("aliases", []),
+                })
+            groups.append({"name": name, "size": len(members), "tags": members})
+        ungrouped = [
+            {"tag": item["tag"], "count": item["count"], "aliases": item["aliases"]}
+            for item in entries if item["tag"] not in assigned
+        ]
+        return {"groups": groups, "ungrouped": ungrouped}
+
+    @app.post("/api/tags/organize/plan")
+    def tags_organize_plan(body: dict | None = None):
+        """Infer + validate a governance plan; cached for the review/apply step."""
+
+        payload = body or {}
+        provider = payload.get("provider")
+        model = payload.get("model")
+        planner = app.state.tag_organize_planner
+        if planner is None:
+            planner = tagorg.live_planner(provider=provider, model=model)
+        vocabulary = store.tag_vocabulary()
+        counts = {item["tag"]: item["count"] for item in store.list_tags()}
+        created_at = datetime.now().isoformat(timespec="seconds")
+        try:
+            result = tagorg.infer_governance(
+                vocabulary, counts, planner=planner, model=model,
+            )
+        except Exception as exc:  # transport/planner failure -> 502 (no key leak)
+            tagorg.record_governance_event(store, {
+                "kind": "plan", "created_at": created_at, "status": "error",
+                "error": str(exc)[:300], "model": model, "provider": provider,
+                "usage": {}, "total_tokens": 0,
+            })
+            raise HTTPException(
+                status_code=502, detail=f"治理方案生成失败：{exc}",
+            ) from exc
+        tagorg.record_governance_event(store, {
+            "kind": "plan", "created_at": created_at,
+            "status": "ok" if result.plan is not None else "invalid",
+            "warning": result.warning, "model": model, "provider": provider,
+            "usage": result.usage,
+            "total_tokens": int(result.usage.get("total_tokens") or 0),
+        })
+        if result.plan is None:
+            raise HTTPException(
+                status_code=502, detail=f"治理方案生成失败：{result.warning}",
+            )
+        plan_id = uuid.uuid4().hex[:12]
+        app.state.tag_organize_cache[plan_id] = {
+            "plan": result.plan.model_dump(),
+            "fingerprint": tagorg.vocabulary_fingerprint(vocabulary),
+            "created_at": created_at,
+            "usage": result.usage,
+            "model": model,
+            "provider": provider,
+            "applied": False,
+        }
+        summary = tagorg.plan_summary(result.plan, counts)
+        return {
+            "plan_id": plan_id,
+            "created_at": created_at,
+            "model": model,
+            "provider": provider,
+            "estimated_calls": 1,
+            "budget": tagorg.estimate_budget(result.prompt),
+            "usage": result.usage,
+            "vocabulary_size": len(counts),
+            **summary,
+        }
+
+    @app.post("/api/tags/organize/apply")
+    def tags_organize_apply(body: dict | None = None):
+        """Apply an accepted subset of a cached plan (idempotent)."""
+
+        payload = body or {}
+        plan_id = payload.get("plan_id")
+        cached = app.state.tag_organize_cache.get(plan_id) if plan_id else None
+        if cached is None:
+            raise HTTPException(
+                status_code=404, detail="治理方案不存在或已过期，请重新生成。")
+        vocabulary = store.tag_vocabulary()
+        if tagorg.vocabulary_fingerprint(vocabulary) != cached["fingerprint"]:
+            raise HTTPException(
+                status_code=409,
+                detail="词表已变化（标签可能已被并发改名），请重新生成方案。",
+            )
+        plan = tagorg.TagGovernancePlan.model_validate(cached["plan"])
+        accepted = payload.get("accepted")
+        # A first apply must still resolve every accepted merge; after the apply
+        # the same submission is a no-op (sources already merged) -> idempotent.
+        if not cached.get("applied"):
+            try:
+                tagorg.ensure_accepted_resolvable(vocabulary, plan, accepted)
+            except tagorg.TagGovernanceError as exc:
+                raise HTTPException(status_code=409, detail=str(exc)) from exc
+        records = store.tag_records()
+        report = tagorg.apply_governance_plan(vocabulary, records, plan, accepted=accepted)
+        store.save_tag_vocabulary(vocabulary)
+        store.save_tag_records(records)
+        cached["fingerprint"] = tagorg.vocabulary_fingerprint(vocabulary)
+        cached["applied"] = True
+        tagorg.record_governance_event(store, {
+            "kind": "apply",
+            "created_at": datetime.now().isoformat(timespec="seconds"),
+            "plan_id": plan_id,
+            "status": "ok",
+            "model": cached.get("model"),
+            "provider": cached.get("provider"),
+            "usage": cached.get("usage") or {},
+            "total_tokens": int((cached.get("usage") or {}).get("total_tokens") or 0),
+            "merged": report.get("merged"),
+            "labels_before": report.get("labels_before"),
+            "labels_after": report.get("labels_after"),
+        })
+        return {"plan_id": plan_id, "report": report, "structure": tags_groups()}
 
     # ---- collections + workspace navigation (issue 03) ---------------------
 

@@ -391,6 +391,25 @@ def build_tags_parser() -> argparse.ArgumentParser:
     b.add_argument("--model", default=None, help="text model override for inference")
     b.add_argument("--provider", default=None, help="provider override for inference")
     b.add_argument("--json", action="store_true", help="emit the report as JSON")
+
+    o = sub.add_parser(
+        "organize",
+        description=(
+            "Audit the whole tag vocabulary with the text model -> a validated "
+            "governance plan (synonym merges + theme groups).  Default is a "
+            "dry-run summary; pass --yes to apply it deterministically."
+        ),
+    )
+    omode = o.add_mutually_exclusive_group()
+    omode.add_argument("--dry-run", action="store_true",
+                       help="infer the plan and report its size + budget (default)")
+    omode.add_argument("--yes", action="store_true",
+                       help="execute the merges + groups (real LLM usage)")
+    o.add_argument("--storage", default=None,
+                   help="document library storage dir (default: GRAPH2NOTE_STORAGE)")
+    o.add_argument("--model", default=None, help="text model override for inference")
+    o.add_argument("--provider", default=None, help="provider override for inference")
+    o.add_argument("--json", action="store_true", help="emit the report as JSON")
     return p
 
 
@@ -442,6 +461,122 @@ def run_tags_backfill(args) -> int:
         tags = "、".join(item.get("tags") or []) or "（无）"
         warning = f" warning={item['warning']}" if item.get("warning") else ""
         print(f"- {item['document_id']} [{item['status']}] {tags}{warning}")
+    return 0
+
+
+def run_tags_organize(args) -> int:
+    """``tags organize``: LLM plan -> validated review -> deterministic apply."""
+
+    import json as _json
+    from datetime import datetime
+
+    from . import config, tagorg
+    from .store import FileDocumentStore
+
+    storage = config.ensure_storage_dir(config.resolve_storage_dir(args.storage))
+    store = FileDocumentStore(str(storage))
+    dry_run = not args.yes
+    vocabulary = store.tag_vocabulary()
+    entries = store.list_tags()
+    counts = {item["tag"]: item["count"] for item in entries}
+    provider = args.provider
+    model = args.model
+    planner = tagorg.live_planner(provider=provider, model=model)
+    created_at = datetime.now().isoformat(timespec="seconds")
+
+    try:
+        result = tagorg.infer_governance(vocabulary, counts, planner=planner, model=model)
+    except Exception as exc:
+        report = {
+            "dry_run": dry_run, "storage": str(storage), "status": "error",
+            "error": str(exc), "estimated_calls": 1, "calls": 0,
+        }
+        tagorg.record_governance_event(store, {
+            "kind": "plan", "created_at": created_at, "status": "error",
+            "error": str(exc)[:300], "model": model, "provider": provider,
+            "usage": {}, "total_tokens": 0,
+        })
+        if args.json:
+            print(_json.dumps(report, ensure_ascii=False, indent=2))
+        else:
+            print(f"storage={storage}")
+            print(f"治理方案生成失败：{exc}")
+        return 1
+
+    summary = tagorg.plan_summary(result.plan or tagorg.TagGovernancePlan(), counts)
+    budget = tagorg.estimate_budget(result.prompt)
+    report = {
+        "dry_run": dry_run,
+        "storage": str(storage),
+        "status": "ok" if result.plan is not None else "invalid",
+        "warning": result.warning,
+        "estimated_calls": budget["calls"],
+        "calls": 0 if dry_run else 1,
+        "budget": budget,
+        "usage": result.usage,
+        "total_tokens": int(result.usage.get("total_tokens") or 0),
+        "vocabulary_size": len(counts),
+        **summary,
+    }
+    tagorg.record_governance_event(store, {
+        "kind": "plan", "created_at": created_at,
+        "status": report["status"], "warning": result.warning,
+        "model": model, "provider": provider,
+        "usage": result.usage, "total_tokens": report["total_tokens"],
+    })
+
+    if result.plan is None:
+        if args.json:
+            print(_json.dumps(report, ensure_ascii=False, indent=2))
+        else:
+            print(f"storage={storage}")
+            print(f"治理方案被拒：{result.warning}")
+        return 1
+
+    if dry_run:
+        if args.json:
+            print(_json.dumps(report, ensure_ascii=False, indent=2))
+            return 0
+        print(f"storage={storage}")
+        print(f"dry-run: 词表 {report['vocabulary_size']} 个标签；方案合并 "
+              f"{report['merge_count']} 对、分组 {report['group_count']} 组")
+        for merge in report["merges"][:20]:
+            print(f"  - {merge['source']} → {merge['target']}  "
+                  f"（{merge['source_count']} → {merge['target_count']} 份）"
+                  f"{(' · ' + merge['reason']) if merge['reason'] else ''}")
+        if report["merge_count"] > 20:
+            print(f"  … 其余 {report['merge_count'] - 20} 对省略")
+        for group in report["groups"]:
+            names = "、".join(item["tag"] for item in group["tags"])
+            print(f"  # {group['name']}（{group['size']}）: {names}")
+        print(f"预估 LLM 调用 {report['estimated_calls']} 次，"
+              f"prompt {budget['prompt_chars']} 字符（约 {budget['estimated_prompt_tokens']} tokens），"
+              f"输出上限 {budget['max_output_tokens']} tokens")
+        print("核对后请加 --yes 执行；本次未写入词表。")
+        return 0
+
+    records = store.tag_records()
+    applied = tagorg.apply_governance_plan(vocabulary, records, result.plan)
+    store.save_tag_vocabulary(vocabulary)
+    store.save_tag_records(records)
+    report["applied"] = applied
+    tagorg.record_governance_event(store, {
+        "kind": "apply", "created_at": created_at, "status": "ok",
+        "model": model, "provider": provider,
+        "usage": result.usage, "total_tokens": report["total_tokens"],
+        "merged": applied.get("merged"),
+        "labels_before": applied.get("labels_before"),
+        "labels_after": applied.get("labels_after"),
+    })
+    if args.json:
+        print(_json.dumps(report, ensure_ascii=False, indent=2))
+        return 0
+    print(f"storage={storage}")
+    print(f"organize: 合并 {applied['merged']} 对（跳过 {len(applied['skipped_merges'])} 对），"
+          f"标签 {applied['labels_before']} → {applied['labels_after']}，"
+          f"分组 {len(applied['groups'])} 组，token 合计 {report['total_tokens']}")
+    for group in applied["groups"]:
+        print(f"  # {group['name']}: {'、'.join(group['tags'])}")
     return 0
 
 
@@ -564,6 +699,8 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_repair(args)
     if argv and argv[0] == "tags":
         args = build_tags_parser().parse_args(argv[1:])
+        if getattr(args, "tags_command", None) == "organize":
+            return run_tags_organize(args)
         return run_tags_backfill(args)
     if argv and argv[0] == "visual-qa":
         from . import visualqa
