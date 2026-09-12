@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>graph2note — 手稿电子化</title>
   <link rel="stylesheet" href="/static/style.css" />
+  <link rel="stylesheet" href="/static/reading.css" />
   <!-- Client-side preview: marked (markdown) + KaTeX (math).  CDN is used for a
        zero-build local tool; a fallback keeps the editor usable if the CDN is
        unreachable (preview-only degradation, never touches the editor). -->
@@ -19,9 +20,11 @@
           onerror="window.__katexMissing=1"></script>
 </head>
 <body>
+  <a class="skip-link" href="#content">跳到内容</a>
   <div class="app-shell" id="app-shell">
     <!-- ============ 左侧栏：视图导航 + 集合树 + 次级入口 ============ -->
     <aside class="sidebar" id="app-sidebar" aria-label="主导航">
+      <div class="sidebar-wordmark">graph2note<small>本地知识库</small></div>
       <nav class="sidebar-nav" id="sidebar-nav" aria-label="视图导航">
         <button class="nav-item" id="nav-library" data-view="library" data-route="#library" title="文档库">文档库</button>
         <button class="nav-item" id="nav-timeline" data-view="timeline" data-route="#timeline/day" title="时间轴">时间轴</button>
@@ -37,7 +40,7 @@
           <h3>集合</h3>
         </div>
         <form id="collection-create-form" class="tag-create-form">
-          <input id="collection-create-input" type="text" placeholder="新建集合" />
+          <input id="collection-create-input" aria-label="新建集合名称" type="text" placeholder="新建集合" />
           <button class="btn small" type="submit">添加</button>
         </form>
         <div id="collection-tree" class="collection-tree"></div>
@@ -54,7 +57,7 @@
       <!-- ============ 顶栏（≤4 项：折叠/品牌/搜索/新解析） ============ -->
       <header class="topbar">
         <button class="btn small icon-btn" id="sidebar-toggle" type="button"
-                aria-controls="app-sidebar" aria-expanded="true" title="折叠侧栏">☰</button>
+                aria-controls="app-sidebar" aria-expanded="true" title="折叠侧栏" aria-label="折叠侧栏">☰</button>
         <a class="brand" href="#library">graph2note</a>
         <form class="global-search" id="global-search-form" role="search">
           <input id="global-search-input" type="search" autocomplete="off" spellcheck="false"
@@ -66,7 +69,7 @@
       </header>
 
       <!-- ============ 内容区：按视图切换 ============ -->
-      <main class="content" id="content">
+      <main class="content" id="content" tabindex="-1">
         <!-- Library list state (home).  U1: 只保留文档网格为主，集合树/词表/
              PDF 搜索迁出（集合树 -> 侧栏，词表 -> #tags，搜索/问答 -> #pdf-search）。 -->
         <section id="library-zone" class="library-zone">

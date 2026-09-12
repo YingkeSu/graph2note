@@ -17,6 +17,33 @@ export function showToast(msg, kind = "") {
   showToast._t = setTimeout(() => el.toast.classList.add("hidden"), kind === "err" ? 6000 : 3000);
 }
 
+/* Persistent, retryable loading errors. Messages are inserted as text, never HTML. */
+export function clearViewError(zone) {
+  const previous = zone && zone.querySelector(".view-error");
+  if (previous) previous.remove();
+}
+
+export function showViewError(zone, message, retry) {
+  if (!zone) return;
+  clearViewError(zone);
+  const panel = document.createElement("div");
+  panel.className = "view-error";
+  panel.setAttribute("role", "alert");
+  const text = document.createElement("span");
+  text.textContent = message;
+  const button = document.createElement("button");
+  button.className = "btn small";
+  button.type = "button";
+  button.textContent = "重新加载";
+  button.addEventListener("click", () => {
+    // The loading function clears this panel. Keep focus in the current view.
+    document.getElementById("content").focus({ preventScroll: true });
+    retry();
+  });
+  panel.append(text, button);
+  zone.prepend(panel);
+}
+
 /* ---------- active nav highlight ---------- */
 
 /* doc views belong to the Library section; upload has no sidebar item. */
@@ -38,7 +65,11 @@ export function syncNav(routeName) {
 const SIDEBAR_KEY = "graph2note.sidebar-collapsed";
 
 function readCollapsed() {
-  try { return localStorage.getItem(SIDEBAR_KEY) === "1"; } catch (_) { return false; }
+  try {
+    const saved = localStorage.getItem(SIDEBAR_KEY);
+    if (saved !== null) return saved === "1";
+  } catch (_) { /* use the viewport default */ }
+  return typeof window.matchMedia === "function" && window.matchMedia("(max-width: 900px)").matches;
 }
 
 function applyCollapsed(collapsed) {
@@ -46,6 +77,7 @@ function applyCollapsed(collapsed) {
   if (el.sidebarToggle) {
     el.sidebarToggle.setAttribute("aria-expanded", String(!collapsed));
     el.sidebarToggle.title = collapsed ? "展开侧栏" : "折叠侧栏";
+    el.sidebarToggle.setAttribute("aria-label", el.sidebarToggle.title);
   }
   try { localStorage.setItem(SIDEBAR_KEY, collapsed ? "1" : "0"); } catch (_) { /* ignore */ }
 }
@@ -123,6 +155,12 @@ function wireCollectionCreate() {
 export function wireShell() {
   applyCollapsed(readCollapsed());
   onRender((route) => syncNav(route.name));
+  const skipLink = document.querySelector(".skip-link");
+  if (skipLink) skipLink.addEventListener("click", (event) => {
+    // Keep the active hash route: #content is a focus target, not a view.
+    event.preventDefault();
+    document.getElementById("content").focus();
+  });
   if (el.sidebarToggle) {
     el.sidebarToggle.addEventListener("click", () => {
       applyCollapsed(!el.appShell.classList.contains("sidebar-collapsed"));

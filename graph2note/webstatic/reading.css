@@ -1,0 +1,93 @@
+/* Paper reading room — direction B, approved 2026-09-12.
+   Layout stays in style.css; this layer owns reading tokens and responsive
+   refinements. Diagram relationship colours keep their distinct semantics. */
+:root {
+  color-scheme: light;
+  --bg: #fcfaf6;
+  --panel: #fffefa;
+  --ink: #302d29;
+  --muted: #69615a;
+  --line: #ddd8cf;
+  --accent: #a44633;
+  --accent-dark: #873724;
+  --accent-soft: #f1e3dc;
+  --sidebar: #eeeae2;
+  --surface: #f5f1ea;
+  --danger: #b52c29;
+  --ok: #28734b;
+  --display: Georgia, "Songti SC", "STSong", serif;
+}
+body { font-size: 14px; line-height: 1.6; }
+button, input, textarea, select { font-family: inherit; }
+button, .btn { touch-action: manipulation; }
+button, .btn, select { min-height: 34px; }
+button:focus-visible, a:focus-visible, input:focus-visible,
+select:focus-visible, textarea:focus-visible, summary:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 3px;
+}
+p { text-wrap: pretty; }
+input, select, textarea { accent-color: var(--accent); }
+input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
+.btn { border-radius: 6px; font-size: 14px; white-space: nowrap; }
+.btn.small { padding: 6px 10px; font-size: 12px; }
+.btn.primary { background: var(--accent); border-color: var(--accent); }
+.btn.primary:hover { background: var(--accent-dark); }
+.btn:disabled { cursor: not-allowed; }
+.btn:not(.primary):not(.danger):hover { background: var(--surface); }
+.skip-link { position: fixed; left: 16px; top: -80px; z-index: 100;
+  padding: 10px 16px; background: var(--panel); color: var(--accent-dark); }
+.skip-link:focus { top: 12px; }
+
+/* Shared shell: quiet navigation, persistent search, a single primary action. */
+.sidebar { width: 216px; flex-basis: 216px; padding: 26px 16px 18px;
+  gap: 26px; background: var(--sidebar); }
+.sidebar-wordmark { padding: 0 10px; font: 700 25px/1.3 var(--display); letter-spacing: -1px; }
+.sidebar-wordmark small { display: block; margin-top: 10px; font: 12px/1.5 -apple-system, "PingFang SC", sans-serif;
+  color: var(--muted); letter-spacing: 2px; }
+.nav-item { padding: 10px 12px; border-radius: 5px; line-height: 1.5; }
+.nav-item:hover { background: #e5e0d7; color: var(--ink); }
+.nav-item.active { background: var(--accent-soft); color: var(--accent-dark); }
+.sidebar-collections { gap: 12px; padding-top: 20px; }
+.sidebar-section-head h3 { font-size: 12px; letter-spacing: 1px; }
+.sidebar-secondary { gap: 3px; padding-top: 16px; }
+.sidebar .tag-create-form button { flex-shrink: 0; }
+.sidebar .tag-create-form input { background: var(--panel); font-size: 12px; }
+.sidebar .collection-tree-item { border: 0; padding: 6px 0; flex-wrap: wrap; gap: 4px; }
+.sidebar .collection-tree-actions { margin-left: auto; }
+.collection-tree-item.selected { background: var(--accent-soft); }
+.topbar { min-height: 76px; padding: 16px 30px; gap: 16px; flex-shrink: 0; }
+.topbar .brand { display: none; font: 700 22px var(--display); letter-spacing: -1px; white-space: nowrap; }
+.sidebar-collapsed .topbar .brand { display: block; }
+.topbar .icon-btn, #nav-upload { flex-shrink: 0; }
+.topbar .icon-btn { background: transparent; border-color: transparent; }
+.global-search { flex: 1 1 320px; min-width: 0; max-width: 520px; }
+.global-search input { background: var(--surface); font-size: 14px; border-color: transparent; min-height: 40px; }
+.topbar .ph { max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; opacity: 1; }
+.topbar .spacer { min-width: 0; }
+#nav-upload { min-height: 40px; padding-inline: 18px; }
+
+/* Page typography: title and action occupy separate visual levels. */
+:is(.library-zone,.timeline-zone,.graph-zone,.dashboard-zone,.inbox-zone,.tags-zone,.ask-zone,.settings-zone,.vault-export-zone) {
+  padding: 30px 34px 36px; min-width: 0;
+}
+:is(.library-head,.timeline-head,.graph-head,.dashboard-head,.inbox-head,.tags-head,.ask-head,.settings-head,.vault-export-head) {
+  gap: 18px; margin-bottom: 24px;
+}
+:is(.library-head,.timeline-head,.graph-head,.dashboard-head,.inbox-head,.tags-head,.ask-head,.settings-head,.vault-export-head) h2 {
+  font: 600 30px/1.35 var(--display); margin: 0; letter-spacing: -.5px;
+}
+:is(.timeline-head,.graph-head,.dashboard-head,.inbox-head,.tags-head,.ask-head,.settings-head,.vault-export-head) p {
+  font-size: 14px; line-height: 1.7; max-width: 720px; margin: 8px 0 0;
+}
+:is(.timeline-head,.graph-head,.dashboard-head,.inbox-head,.tags-head,.ask-head,.settings-head) > div { min-width: 0; }
+.page-kicker { margin: 0 0 8px; color: var(--muted); font-size: 12px; letter-spacing: 1.5px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0s !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
+}
+/* Feedback pass: keep failed data distinct from an empty library. */
+.view-error { display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  flex-wrap: wrap; flex-shrink: 0; padding: 16px 20px; margin-bottom: 20px;
+  border: 1px solid #dca9a0; border-radius: 6px; background: #fff1ec; color: #873724; }
+.view-error span { overflow-wrap: anywhere; min-width: 0; }
+.btn.primary:hover:not(:disabled) { color: #fff; }
