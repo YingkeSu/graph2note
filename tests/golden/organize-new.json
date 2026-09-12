@@ -1,0 +1,10 @@
+{
+  "topics": ["控制理论"],
+  "assignments": {"控制理论": ["doc-a", "doc-b", "doc-c"]},
+  "summaries": {
+    "doc-a": "传递函数与系统建模",
+    "doc-b": "闭环极点与稳定性",
+    "doc-c": "劳斯判据与根轨迹"
+  },
+  "version": 1
+}

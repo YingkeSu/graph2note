@@ -55,6 +55,7 @@ from .telemetry import build_stats, load_price_table
 from .timeline import GROUPINGS, build_timeline
 from . import autotag
 from . import tagorg
+from . import collection_organize
 from .store import (
     DocumentStore,
     FileDocumentStore,
@@ -519,6 +520,7 @@ def create_app(
     auto_tag_max_chars: int = autotag.DEFAULT_MAX_CHARS,
     digest_planner=None,
     tag_organize_planner=None,
+    organize_planner=None,
 ) -> FastAPI:
     """Build the FastAPI app.
 
@@ -608,6 +610,10 @@ def create_app(
     # in-process cache of the last proposed plan (review -> apply loop).
     app.state.tag_organize_planner = tag_organize_planner
     app.state.tag_organize_cache: dict[str, dict] = {}
+    # auto-organization issue 02: injectable library-classification planner
+    # (offline tests pass a recorded golden planner; production leaves None and
+    # the module builds the live gateway planner on demand).
+    app.state.organize_planner = organize_planner
     for _persisted in pdflib.load_jobs(store):
         pdflib.save_job(_persisted)  # persist the reconciled 'interrupted' state
         app.state.pdf_jobs[_persisted.pdf_id] = _persisted
@@ -1307,6 +1313,38 @@ def create_app(
         if not deleted:
             raise HTTPException(status_code=404, detail="集合不存在。")
         return {"deleted": True, "collection_id": collection_id}
+
+    # ---- auto-organization: collection suggestions (issue 02) ----------------
+
+    @app.get("/api/collections/suggestions")
+    def collection_suggestions():
+        return collection_organize.suggestions_for_store(store)
+
+    @app.post("/api/collections/suggestions")
+    def collection_suggestions_generate(body: dict | None = None):
+        payload = body or {}
+        try:
+            return collection_organize.generate_suggestions(
+                store,
+                planner=app.state.organize_planner,
+                force=bool(payload.get("force")),
+                dry_run=True,
+            )
+        except ValueError as exc:  # includes SchemeError: illegal scheme refused
+            raise HTTPException(
+                status_code=422, detail=f"归类方案非法，已拒绝：{exc}"
+            ) from exc
+
+    @app.post("/api/collections/suggestions/apply")
+    def collection_suggestions_apply(body: dict | None = None):
+        payload = body or {}
+        accept = payload.get("accept")
+        reject = payload.get("reject")
+        if accept is not None and not isinstance(accept, list):
+            raise HTTPException(status_code=422, detail="accept 必须是 document_id 列表。")
+        if reject is not None and not isinstance(reject, list):
+            raise HTTPException(status_code=422, detail="reject 必须是 document_id 列表。")
+        return collection_organize.apply_suggestions(store, accept=accept, reject=reject)
 
     @app.put("/api/documents/{document_id}/metadata")
     @app.patch("/api/documents/{document_id}/metadata")

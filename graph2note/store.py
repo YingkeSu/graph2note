@@ -646,6 +646,8 @@ class SessionDocumentStore(DocumentStore):
         for record in self._docs.values():
             record["manual_collections"] = [target_id if cid == collection_id else cid
                                              for cid in (record.get("manual_collections") or [])]
+            record["auto_collections"] = [target_id if cid == collection_id else cid
+                                           for cid in (record.get("auto_collections") or [])]
             record["collections"] = [target_id if cid == collection_id else cid
                                       for cid in (record.get("collections") or [])]
             apply_topic_defaults(record, self._collection_registry)
@@ -669,6 +671,30 @@ class SessionDocumentStore(DocumentStore):
         if record is None:
             return None
         set_manual_memberships(record, collection_ids, self._collection_registry)
+        self._docs[document_id] = record
+        return record
+
+    def add_auto_collections(self, document_id: str, collection_names: list[str]) -> dict | None:
+        """Add machine-owned (auto) collection memberships to one record.
+
+        Auto memberships live in ``record['auto_collections']`` and are unioned
+        into ``record['collections']`` by :func:`apply_topic_defaults`; they are
+        never written to ``manual_collections`` (which the auto-organization
+        classifier must not touch).  Adding an already-present collection is a
+        no-op, so repeated application is idempotent.  A missing collection is
+        created in the registry under its deterministic slug.
+        """
+
+        record = self._docs.get(document_id)
+        if record is None:
+            return None
+        auto = list(record.get("auto_collections") or [])
+        for name in collection_names or []:
+            cid, _ = ensure_collection(self._collection_registry, name)
+            if cid not in auto:
+                auto.append(cid)
+        record["auto_collections"] = auto
+        apply_topic_defaults(record, self._collection_registry)
         self._docs[document_id] = record
         return record
 
@@ -1338,6 +1364,8 @@ class FileDocumentStore(SessionDocumentStore):
         for record in self._all_collection_records():
             record["manual_collections"] = [target_id if cid == collection_id else cid
                                              for cid in (record.get("manual_collections") or [])]
+            record["auto_collections"] = [target_id if cid == collection_id else cid
+                                           for cid in (record.get("auto_collections") or [])]
             record["collections"] = [target_id if cid == collection_id else cid
                                       for cid in (record.get("collections") or [])]
             apply_topic_defaults(record, registry)
@@ -1366,6 +1394,24 @@ class FileDocumentStore(SessionDocumentStore):
             return None
         registry = self._load_collection_registry()
         set_manual_memberships(record, collection_ids, registry)
+        self._write_tag_record(record)
+        self._save_collection_registry(registry)
+        return self.get_document(document_id)
+
+    def add_auto_collections(self, document_id: str, collection_names: list[str]) -> dict | None:
+        """Disk-backed auto memberships (see :meth:`SessionDocumentStore.add_auto_collections`)."""
+
+        record = self._load_record_with_metadata(document_id)
+        if record is None:
+            return None
+        registry = self._load_collection_registry()
+        auto = list(record.get("auto_collections") or [])
+        for name in collection_names or []:
+            cid, _ = ensure_collection(registry, name)
+            if cid not in auto:
+                auto.append(cid)
+        record["auto_collections"] = auto
+        apply_topic_defaults(record, registry)
         self._write_tag_record(record)
         self._save_collection_registry(registry)
         return self.get_document(document_id)

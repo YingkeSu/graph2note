@@ -1,0 +1,9 @@
+{
+  "topics": ["控制理论"],
+  "assignments": {"控制理论": ["doc-a", "doc-ghost"]},
+  "summaries": {
+    "doc-a": "传递函数与系统建模",
+    "doc-ghost": "不存在的文档"
+  },
+  "version": 1
+}

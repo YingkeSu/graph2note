@@ -88,6 +88,19 @@ def _topics_for_record(record: dict[str, Any], scheme: Any) -> list[str]:
     return _unique(topics)
 
 
+def _collection_memberships(record: dict[str, Any]) -> list[str]:
+    """Collection ids a record belongs to for graph projection.
+
+    Manual memberships plus auto-organization assignments (issue 02);
+    topic-derived collections stay out of the graph as before.
+    """
+
+    return _unique(
+        list(record.get("manual_collections") or [])
+        + list(record.get("auto_collections") or [])
+    )
+
+
 def _manual_relation_specs(record: dict[str, Any]) -> list[tuple[str, str]]:
     """Read persisted manual links and the public manual collection seam."""
 
@@ -189,7 +202,7 @@ def build_graph(
         names = record.get("collection_names") or {}
         if not isinstance(names, dict):
             names = {}
-        for collection_id in _unique(record.get("manual_collections") or []):
+        for collection_id in _collection_memberships(record):
             add_node("collection", collection_id, names.get(collection_id, collection_id))
 
     edges: dict[tuple[str, str, str], dict[str, Any]] = {}
@@ -223,7 +236,7 @@ def build_graph(
         names = record.get("collection_names") or {}
         if not isinstance(names, dict):
             names = {}
-        for collection_id in _unique(record.get("manual_collections") or []):
+        for collection_id in _collection_memberships(record):
             add_edge(document_node, _node_id("collection", collection_id), "manual",
                      document_id=document_id, collection_id=collection_id,
                      collection=names.get(collection_id, collection_id))
@@ -327,7 +340,7 @@ def _collection_filters(usable: list[dict[str, Any]]) -> list[dict[str, Any]]:
         record_names = record.get("collection_names") or {}
         if not isinstance(record_names, dict):
             record_names = {}
-        for collection_id in _unique(record.get("manual_collections") or []):
+        for collection_id in _collection_memberships(record):
             names.setdefault(collection_id, str(record_names.get(collection_id, collection_id)))
             counts[collection_id] = counts.get(collection_id, 0) + 1
     return [
