@@ -95,8 +95,15 @@ function renderConversation() {
   if (el.askEmpty) el.askEmpty.classList.toggle("hidden", turns.length > 0);
   if (el.pdfQaHistory) {
     const last = el.pdfQaHistory.lastElementChild;
-    if (last && typeof last.scrollIntoView === "function") {
-      last.scrollIntoView({ block: "end" });
+    const conversation = document.getElementById("ask-conversation");
+    if (last && conversation) {
+      // Scroll the conversation, never the application shell or its toolbar.
+      conversation.scrollTop = conversation.scrollHeight;
+      if (window.matchMedia("(max-width: 900px)").matches) {
+        const zone = el.askZone;
+        const bottom = last.getBoundingClientRect().bottom - zone.getBoundingClientRect().top + zone.scrollTop;
+        zone.scrollTo({ top: Math.max(0, bottom - zone.clientHeight + 100) });
+      }
     }
   }
 }

@@ -33,12 +33,12 @@ export function topicColor(topic) {
 export function sourceIcon(item) {
   const kind = (item && item.source_kind) || ((item && item.source_pdf) ? "pdf" : "image");
   if (kind === "pdf") {
-    return { kind: "pdf", icon: "📄", label: (item && item.source_label) || "PDF 页面" };
+    return { kind: "pdf", icon: "PDF", label: (item && item.source_label) || "PDF 页面" };
   }
   if (kind === "document") {
-    return { kind: "document", icon: "📝", label: (item && item.source_label) || "文档" };
+    return { kind: "document", icon: "文档", label: (item && item.source_label) || "文档" };
   }
-  return { kind: "image", icon: "🖼", label: (item && item.source_label) || "图片上传" };
+  return { kind: "image", icon: "图片", label: (item && item.source_label) || "图片上传" };
 }
 
 /** "间隔 12 天" marker between two non-touching groups (empty when adjacent). */

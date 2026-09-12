@@ -10,7 +10,7 @@ import { el, state } from "../state.js";
 import { api } from "../api.js";
 import { esc } from "../utils.js";
 import { go, registerView } from "../router.js";
-import { showToast } from "../ui.js";
+import { showViewError, clearViewError, showToast } from "../ui.js";
 import {
   createThumbnailLoader,
   densityBarsHtml,
@@ -42,16 +42,21 @@ function scrollToGroup(groupKey) {
   if (!groupKey || !el.timelineGroups) return;
   const safe = String(groupKey).replace(/["\\]/g, "");
   const target = el.timelineGroups.querySelector(`.timeline-group[data-group-key="${safe}"]`);
-  if (target && target.scrollIntoView) target.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (target) {
+    const top = target.getBoundingClientRect().top - el.timelineZone.getBoundingClientRect().top + el.timelineZone.scrollTop;
+    el.timelineZone.scrollTo({ top, behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  }
 }
 
 async function renderTimeline(groupBy) {
+  clearViewError(el.timelineZone);
   el.timelineZone.classList.remove("hidden");
   el.timelineGroup.value = groupBy;
   el.timelineGroups.innerHTML = "";
   el.timelineUndatedItems.innerHTML = "";
   el.timelineUndated.classList.add("hidden");
   el.timelineEmpty.classList.add("hidden");
+  el.timelineEmpty.querySelector("p").textContent = "还没有可展示的文档。";
   if (el.timelineDensity) el.timelineDensity.innerHTML = "";
   try {
     const timeline = await loadTimeline(api, groupBy);
@@ -75,9 +80,8 @@ async function renderTimeline(groupBy) {
     }
     installThumbnailLazyLoading(el.timelineZone);
   } catch (e) {
-    el.timelineEmpty.classList.remove("hidden");
-    el.timelineEmpty.querySelector("p").textContent = "时间轴加载失败。";
-    showToast("加载时间轴失败：" + e.message, "err");
+    el.timelineEmpty.classList.add("hidden");
+    showViewError(el.timelineZone, "加载时间轴失败：" + e.message, () => renderTimeline(groupBy));
   }
 }
 

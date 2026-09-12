@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>graph2note — 手稿电子化</title>
   <link rel="stylesheet" href="/static/style.css" />
+  <link rel="stylesheet" href="/static/reading.css" />
   <!-- Client-side preview: marked (markdown) + KaTeX (math).  CDN is used for a
        zero-build local tool; a fallback keeps the editor usable if the CDN is
        unreachable (preview-only degradation, never touches the editor). -->
@@ -19,15 +20,17 @@
           onerror="window.__katexMissing=1"></script>
 </head>
 <body>
+  <a class="skip-link" href="#content">跳到内容</a>
   <div class="app-shell" id="app-shell">
     <!-- ============ 左侧栏：视图导航 + 集合树 + 次级入口 ============ -->
     <aside class="sidebar" id="app-sidebar" aria-label="主导航">
+      <div class="sidebar-wordmark">graph2note<small>本地知识库</small></div>
       <nav class="sidebar-nav" id="sidebar-nav" aria-label="视图导航">
         <button class="nav-item" id="nav-library" data-view="library" data-route="#library" title="文档库">文档库</button>
         <button class="nav-item" id="nav-timeline" data-view="timeline" data-route="#timeline/day" title="时间轴">时间轴</button>
         <button class="nav-item" id="nav-graph" data-view="graph" data-route="#graph" title="知识图谱">知识图谱</button>
         <button class="nav-item" id="nav-dashboard" data-view="dashboard" data-route="#dashboard" title="数据看板">数据看板</button>
-        <button class="nav-item" id="nav-inbox" data-view="inbox" data-route="#inbox" title="待整理">Inbox</button>
+        <button class="nav-item" id="nav-inbox" data-view="inbox" data-route="#inbox" title="待整理">待整理</button>
         <button class="nav-item" id="nav-tags" data-view="tags" data-route="#tags" title="标签词表">标签词表</button>
         <button class="nav-item" id="nav-ask" data-view="ask" data-route="#ask" title="PDF 问答（对话式，多轮追问）">问答</button>
       </nav>
@@ -37,7 +40,7 @@
           <h3>集合</h3>
         </div>
         <form id="collection-create-form" class="tag-create-form">
-          <input id="collection-create-input" type="text" placeholder="新建集合" />
+          <input id="collection-create-input" aria-label="新建集合名称" type="text" placeholder="新建集合" />
           <button class="btn small" type="submit">添加</button>
         </form>
         <div id="collection-tree" class="collection-tree"></div>
@@ -54,7 +57,7 @@
       <!-- ============ 顶栏（≤4 项：折叠/品牌/搜索/新解析） ============ -->
       <header class="topbar">
         <button class="btn small icon-btn" id="sidebar-toggle" type="button"
-                aria-controls="app-sidebar" aria-expanded="true" title="折叠侧栏">☰</button>
+                aria-controls="app-sidebar" aria-expanded="true" title="折叠侧栏" aria-label="折叠侧栏">☰</button>
         <a class="brand" href="#library">graph2note</a>
         <form class="global-search" id="global-search-form" role="search">
           <input id="global-search-input" type="search" autocomplete="off" spellcheck="false"
@@ -66,7 +69,7 @@
       </header>
 
       <!-- ============ 内容区：按视图切换 ============ -->
-      <main class="content" id="content">
+      <main class="content" id="content" tabindex="-1">
         <!-- Library list state (home).  U1: 只保留文档网格为主，集合树/词表/
              PDF 搜索迁出（集合树 -> 侧栏，词表 -> #tags，搜索/问答 -> #pdf-search）。 -->
         <section id="library-zone" class="library-zone">
@@ -90,7 +93,10 @@
           <div id="library-grid" class="library-grid"></div>
           <div id="library-empty" class="library-empty hidden">
             <div class="empty-icon">🗂</div>
-            <p>还没有文档。点「新解析」上传一张手稿图片开始。</p>
+            <p>你的第一份手稿，从这里开始。</p>
+            <span class="empty-description">上传手稿图片或 PDF，解析后在这里整理、阅读与编辑。</span>
+            <button class="btn primary" type="button" data-route="#upload">上传手稿</button>
+            <button class="btn hidden" type="button" data-route="#library">查看全部文档</button>
           </div>
         </section>
 
@@ -99,10 +105,10 @@
           <div class="tags-head">
             <div>
               <h2>标签词表</h2>
-              <p class="dim">标签的规范化词表与复用入口；重命名 / 合并会作用于全库文档。</p>
+              <p class="dim">统一标签名称，让相同主题更容易找到。重命名和合并会更新全库文档。</p>
             </div>
             <form id="tag-create-form" class="tag-create-form">
-              <input id="tag-create-input" type="text" placeholder="新增标签" />
+              <input id="tag-create-input" aria-label="新增标签名称" type="text" placeholder="新增标签" />
               <button class="btn small" type="submit">添加</button>
             </form>
           </div>
@@ -116,7 +122,7 @@
           <div class="ask-head">
             <div>
               <h2>问答</h2>
-              <p class="dim">就本地已解析 PDF 提问，答案附页级引用（PDF 名 · 页码）；支持多轮追问，会话自动保存。</p>
+              <p class="dim">围绕已解析 PDF 提问，答案附原文页码。支持连续追问，会话自动保存。</p>
             </div>
             <div class="ask-head-actions">
               <label class="ask-scope-label" for="pdf-qa-scope">检索范围
@@ -133,9 +139,9 @@
             <summary>关键词检索（辅助）</summary>
             <section id="pdf-search" class="pdf-search" aria-label="PDF 内容搜索">
               <form id="pdf-search-form" class="pdf-search-form">
-                <input id="pdf-search-input" type="search" autocomplete="off"
+                <input id="pdf-search-input" aria-label="搜索 PDF 内容" type="search" autocomplete="off"
                        placeholder="搜索已解析 PDF 内容（中文 / English / 混排）" />
-                <select id="pdf-search-scope"><option value="">全部已导入 PDF</option></select>
+                <select id="pdf-search-scope" aria-label="搜索范围"><option value="">全部已导入 PDF</option></select>
                 <button class="btn primary" type="submit">搜索</button>
                 <button class="btn small" id="pdf-search-clear" type="button">清除</button>
               </form>
@@ -147,14 +153,14 @@
           <div class="ask-conversation" id="ask-conversation">
             <div id="ask-empty" class="ask-empty hidden">
               <div class="empty-icon">💬</div>
-              <p>还没有对话。就上方检索范围提出第一个问题。</p>
-              <span class="dim">每轮引用独立标注；刷新页面后可以继续追问。</span>
+              <p>从材料中，找到问题的答案。</p>
+              <span class="dim">选择 PDF 范围，在下方输入问题；回答中的引用可返回原文。</span>
             </div>
             <div id="pdf-qa-history" class="ask-messages"></div>
           </div>
 
           <form id="pdf-qa-form" class="ask-composer">
-            <input id="pdf-qa-input" type="text" autocomplete="off"
+            <input id="pdf-qa-input" aria-label="输入 PDF 问题" type="text" autocomplete="off"
                    placeholder="提问（可多轮追问，答案附页级引用）" />
             <button class="btn primary" type="submit">提问</button>
           </form>
@@ -173,14 +179,14 @@
         <section id="inbox-zone" class="inbox-zone hidden">
           <div class="inbox-head">
             <div>
-              <h2>Inbox</h2>
+              <h2>待整理</h2>
               <p class="dim">集中处理无主题、无标签或明确标记为待整理的文档。</p>
             </div>
             <span class="dim">点击条目回到三栏编辑器整理</span>
           </div>
           <div id="inbox-empty" class="inbox-empty hidden">
             <div class="empty-icon">✓</div>
-            <p>Inbox 是空的。</p>
+            <p>已完成基本整理。</p>
             <span class="dim">所有文档都已具备基本归档信息。</span>
           </div>
           <div id="inbox-list" class="inbox-list"></div>
@@ -191,7 +197,7 @@
           <div class="settings-head">
             <div>
               <h2>LLM 设置</h2>
-              <p class="dim">按用途选择已注册供应商与模型；凭证只从本地运行时读取。</p>
+              <p class="dim">为解析、整理和问答选择模型。设置完成后，可检测通道是否可用。</p>
             </div>
             <div class="settings-actions">
               <button id="llm-health-button" class="btn small">检测可用性</button>
@@ -205,8 +211,7 @@
           <div class="llm-custom-zone">
             <div class="settings-subhead">
               <h3>自定义供应商</h3>
-              <p class="dim">任意 OpenAI 兼容端点：请求发往 <code>{Base URL}/chat/completions</code> + Bearer Key，
-                模型名原样透传（不做厂商改写）。API Key 只写不读，仅保存在本机设置文件（已 gitignore）。</p>
+              <p class="dim">连接支持 OpenAI 兼容接口的服务。填写服务地址和模型名称；API Key 仅保存在本机，保存后不会回显。</p>
             </div>
             <form id="llm-custom-form" class="llm-custom-form" autocomplete="off">
               <input id="llm-custom-id" type="hidden" />
@@ -233,7 +238,7 @@
           <div class="timeline-head">
             <div>
               <h2>时间轴</h2>
-              <p class="dim">按有效文档时间回看全部记录；时间轴只读，不会触发重新解析。</p>
+              <p class="dim">沿着时间回看手稿与笔记，按天或按周浏览。</p>
             </div>
             <label class="timeline-group-control">分组
               <select id="timeline-group">
@@ -264,7 +269,7 @@
           <div class="graph-head">
             <div>
               <h2>知识图谱</h2>
-              <p class="dim">图谱只消费现有主题、标签和手工关系，不会触发新的模型调用。滚轮缩放、拖拽平移；双击节点直接导航，单击文档可聚焦邻域。</p>
+              <p class="dim">发现文档之间的联系。单击聚焦相关内容，双击打开；滚轮缩放，拖拽平移。</p>
             </div>
             <div class="graph-legend" aria-label="关系来源图例">
               <span><i class="graph-legend-dot topic"></i>主题</span>
@@ -287,7 +292,7 @@
           </div>
           <div id="graph-filters" class="graph-filters" aria-label="图谱过滤">
             <div class="graph-filter-row">
-              <span class="graph-filter-label">边来源</span>
+              <span class="graph-filter-label">关系来源</span>
               <span id="graph-source-chips" class="graph-chip-group"></span>
             </div>
             <div class="graph-filter-row">
@@ -331,7 +336,7 @@
           <div class="dashboard-head">
             <div>
               <h2>数据看板</h2>
-              <p class="dim">解析节奏、分类分布与本地遥测成本估计。</p>
+              <p class="dim">回看解析进度、知识分布与模型用量。成本按已记录的用量估算。</p>
             </div>
             <span id="dashboard-quality-label" class="dim"></span>
           </div>
@@ -360,7 +365,7 @@
             <div class="digest-head">
               <div>
                 <h3>每周小结</h3>
-                <p class="dim">按选定范围汇总范围内材料；同范围重复请求会复用缓存，不重复调用模型。</p>
+                <p class="dim">汇总一段时间内的材料。同一范围优先使用已有小结。</p>
               </div>
               <div class="digest-controls">
                 <select id="digest-range" aria-label="小结范围">
@@ -393,12 +398,13 @@
         <!-- Upload / intro state -->
         <section id="upload-zone" class="upload-zone hidden">
           <div class="upload-card" id="upload-card">
-            <div class="upload-icon">📄</div>
-            <p class="upload-title">上传手稿图片（JPG / JPEG / PNG，≤10MB）</p>
-            <p class="upload-sub">解析后自动存入本地文档库；可继续校对编辑</p>
+            <p class="page-kicker">手稿 · PDF · 知识</p>
+            <h2 class="upload-title">让手稿成为知识。</h2>
+            <p class="upload-sub">拖入手稿图片，或选择文件。解析后自动存入文档库，可继续校对和编辑。</p>
+            <p class="upload-format">图片支持 JPG / JPEG / PNG，单张不超过 10MB。PDF 不超过 50MB，将逐页解析。</p>
             <button id="pick-file" class="btn primary">选择图片</button>
             <input id="file-input" type="file" accept=".jpg,.jpeg,.png" hidden />
-            <button id="pick-pdf" class="btn">上传 PDF（逐页解析入库）</button>
+            <button id="pick-pdf" class="btn">选择 PDF</button>
             <input id="pdf-input" type="file" accept=".pdf" hidden />
             <p class="upload-sub" id="upload-hint"></p>
           </div>
@@ -453,17 +459,18 @@
                     <button class="btn small" id="btn-zoom-image" type="button"
                             title="大图查看（点击原图也可）">⤢ 大图</button>
                     <button class="btn small" id="btn-repic" type="button"
-                            title="重新加载预处理图">↻</button>
+                            title="重新加载预处理图" aria-label="重新加载原图">↻</button>
                   </span>
                 </div>
                 <div class="pane-body image-body">
                   <img id="original-img" alt="原图" tabindex="0" role="button"
                        title="点击进入大图查看" />
+                  <p id="original-image-hint" class="hidden" role="status">原图暂不可用。可点击右上方重新加载，或重新上传源文件；已保存的文字仍可编辑。</p>
                 </div>
               </div>
               <div class="pane pane-md">
                 <div class="pane-head">可编辑 Markdown</div>
-                <textarea id="md-editor" class="md-editor" spellcheck="false"
+                <textarea id="md-editor" aria-label="编辑 Markdown" class="md-editor" spellcheck="false"
                           placeholder="解析完成后，可在此直接编辑 Markdown（自动保存）…"></textarea>
               </div>
               <div class="pane pane-preview">
@@ -485,7 +492,7 @@
                     <span>文档标签</span>
                   </div>
                   <form id="document-tag-form" class="tag-create-form">
-                    <input id="document-tag-input" type="text" placeholder="添加标签" />
+                    <input id="document-tag-input" aria-label="添加文档标签" type="text" placeholder="添加标签" />
                     <button class="btn small" type="submit">添加</button>
                   </form>
                   <div id="document-tag-list" class="document-tag-list"></div>
@@ -496,7 +503,7 @@
                     <span>所属集合</span>
                   </div>
                   <form id="document-collection-form" class="tag-create-form">
-                    <select id="document-collection-select"><option value="">选择集合</option></select>
+                    <select id="document-collection-select" aria-label="选择文档集合"><option value="">选择集合</option></select>
                     <button class="btn small" type="submit">加入</button>
                   </form>
                   <div id="document-collection-list" class="document-tag-list"></div>

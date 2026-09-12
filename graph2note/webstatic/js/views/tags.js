@@ -12,7 +12,7 @@ import { el } from "../state.js";
 import { api } from "../api.js";
 import { esc } from "../utils.js";
 import { registerView } from "../router.js";
-import { showToast } from "../ui.js";
+import { showViewError, clearViewError, showToast } from "../ui.js";
 
 const ORGANIZE = {
   plan: null,
@@ -139,12 +139,13 @@ function wireVocabularyActions() {
 }
 
 export async function renderTagVocabulary() {
+  clearViewError(el.tagsZone);
   if (!el.tagList) return;
   let structure;
   try {
     structure = await api("/api/tags/groups");
   } catch (e) {
-    showToast("加载标签词表失败：" + e.message, "err");
+    showViewError(el.tagsZone, "加载标签词表失败：" + e.message, renderTagVocabulary);
     return;
   }
   ORGANIZE.plan = null;

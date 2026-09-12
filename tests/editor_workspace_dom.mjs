@@ -130,6 +130,7 @@ const documentShim = {
     return elementCache.get(selector);
   },
   querySelectorAll: () => [],
+  getElementById(id) { return documentShim.querySelector(`#${id}`); },
   addEventListener(type, fn) { documentShim._listeners.push({ type, fn }); },
   dispatch(type, event = {}) {
     const base = { type, preventDefault() {}, stopPropagation() {} };

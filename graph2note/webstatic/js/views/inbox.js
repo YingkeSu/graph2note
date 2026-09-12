@@ -8,7 +8,7 @@ import { el } from "../state.js";
 import { api } from "../api.js";
 import { esc, displayTime } from "../utils.js";
 import { go, registerView } from "../router.js";
-import { showToast } from "../ui.js";
+import { showViewError, clearViewError, showToast } from "../ui.js";
 import {
   MERGE_REASON_LABEL,
   candidateByKey,
@@ -134,6 +134,7 @@ async function rejectMerge(key) {
 }
 
 async function renderInbox() {
+  clearViewError(el.inboxZone);
   el.inboxZone.classList.remove("hidden");
   el.inboxList.innerHTML = "";
   el.inboxEmpty.classList.add("hidden");
@@ -149,9 +150,8 @@ async function renderInbox() {
       });
     }
   } catch (e) {
-    el.inboxEmpty.classList.remove("hidden");
-    el.inboxEmpty.querySelector("p").textContent = "Inbox 加载失败。";
-    showToast("加载 Inbox 失败：" + e.message, "err");
+    el.inboxEmpty.classList.add("hidden");
+    showViewError(el.inboxZone, "待整理列表加载失败：" + e.message, renderInbox);
   }
   await renderMergeSection();
 }

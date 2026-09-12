@@ -24,8 +24,8 @@ export const LAYOUT = {
   tagRadius: 30,
   clusterRadius: 32,
   collectionRadius: 30,
-  labelCharWidth: 11,
-  labelHeight: 14,
+  labelCharWidth: 18,
+  labelHeight: 22,
   labelPadX: 10,
   labelPadY: 3,
   maxLabelChars: 7,
@@ -42,7 +42,7 @@ export const CLUSTER_THRESHOLD = 24;
 
 /* The force-relaxed layout is uniformly compressed to this span before the
    separation pass, which keeps node text readable at the default (fit) zoom. */
-export const TARGET_SPAN = 980;
+export const TARGET_SPAN = 640;
 
 /* Zoom window is expressed as a viewBox scale factor; 1 = fit to viewport. */
 export const MIN_ZOOM = 0.25;
@@ -72,7 +72,7 @@ export function labelWidth(node) {
   return Math.min(chars * LAYOUT.labelCharWidth, 2 * nodeRadius(node) + LAYOUT.labelCharWidth);
 }
 
-/* The node's bounding box in layout units.  Labels render at 11px inside the
+/* The node's bounding box in layout units.  Labels render at 18px inside the
    circle, so for CJK text the glyph run can be taller/wider than the circle
    (`labelCharWidth` is a conservative estimate of one glyph's advance).  The box
    is therefore the union of the circle and the reserved label rectangle — the
