@@ -52,8 +52,11 @@ assert.strictEqual(panel.readPendingAsk(storage), "");
 // ---- 4) the QA destination route is detected from the shell ---------------
 const legacyDoc = { getElementById: () => null };
 const u1Doc = { getElementById: (id) => (id === "pdf-search-zone" ? {} : null) };
+// P2 renamed the zone element to #ask-zone (route #ask, #pdf-search kept as alias)
+const p2Doc = { getElementById: (id) => (id === "ask-zone" ? {} : null) };
 assert.strictEqual(panel.qaRoute(legacyDoc), "#library");
 assert.strictEqual(panel.qaRoute(u1Doc), "#pdf-search");
+assert.strictEqual(panel.qaRoute(p2Doc), "#ask");
 
 // ---- 5) init is a no-op without the panel markup --------------------------
 assert.strictEqual(panel.initSearchPanel({ document: legacyDoc, window: {} }), null);
@@ -163,5 +166,16 @@ api.open("注意力机制");
 api.askAboutResults();
 assert.strictEqual(nodes.get("pdf-qa-input").value, "注意力机制");
 assert.strictEqual(panel.readPendingAsk(sessionStore), "");
+// (c) P2 shell (#ask-zone present): the hand-off lands on the #ask view
+nodes.set("ask-zone", fakeElement("section", "ask-zone"));
+fakeWin.location.hash = "#timeline";
+api.open("贝叶斯滤波");
+api.askAboutResults();
+assert.strictEqual(fakeWin.location.hash, "#ask");
+assert.strictEqual(panel.readPendingAsk(sessionStore), "贝叶斯滤波");
+api.applyPendingAsk();
+assert.strictEqual(nodes.get("pdf-qa-input").value, "贝叶斯滤波");
+assert.strictEqual(panel.readPendingAsk(sessionStore), "");
+assert.ok(panelNode.classList.contains("hidden"));
 
 console.log("search_panel: all assertions passed ✓");

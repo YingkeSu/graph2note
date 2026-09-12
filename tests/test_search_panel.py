@@ -174,6 +174,9 @@ def test_search_panel_js_wires_shortcuts_groups_and_jump_targets():
     assert "graph2note.pendingAsk" in src
     assert '"pdf-qa-input"' in src
     assert "qaRoute" in src
+    # P2 integration: the hand-off targets the first-class #ask view when its
+    # zone element is present (and falls back to the U1/legacy shells).
+    assert '"#ask"' in src and '"ask-zone"' in src
 
 
 # ---------------------------------------------------------------------------

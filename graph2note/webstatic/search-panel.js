@@ -44,9 +44,13 @@ export function clearPendingAsk(storage) {
   try { storage.removeItem(PENDING_ASK_KEY); } catch (_) { /* ignore */ }
 }
 
-/* The Q&A view lives on the legacy Library screen and on the U1 `#pdf-search`
- * route; detect which shell we are on so the prefill lands on the right view. */
+/* The Q&A view lives on P2's first-class `#ask` view, on U1's temporary
+ * `#pdf-search` shell and on the legacy Library screen; detect which shell we
+ * are on so the prefill lands on the view that hosts `#pdf-qa-input`.  P2 kept
+ * `#pdf-search` as an alias route but renamed the zone element to `#ask-zone`,
+ * so the container id — not the route — is what tells the shells apart. */
 export function qaRoute(doc) {
+  if (doc.getElementById("ask-zone")) return "#ask";
   return doc.getElementById("pdf-search-zone") ? "#pdf-search" : "#library";
 }
 
