@@ -1,6 +1,6 @@
 # 03：显著连续笔记的检测与合并（PDF 连续页 / 首尾衔接手稿）
 
-Status: ready-for-agent
+Status: merged
 Labels: track-organization
 
 ## What to build
