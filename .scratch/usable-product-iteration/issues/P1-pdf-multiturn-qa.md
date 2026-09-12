@@ -1,6 +1,6 @@
 # P1：PDF 多轮问答（会话态与上下文）
 
-Status: ready-for-agent
+Status: merged
 Labels: track-pdf-qa
 
 ## What to build

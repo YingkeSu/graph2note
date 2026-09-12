@@ -5,7 +5,7 @@
 
 ## 发布与执行状态
 
-- 已发布：15（R1、U1–U5、P1–P3、S1–S3、A1–A3）。已认领：1（S1）。已完成：1（S1）。已合并：1（S1，merge `582aa61`）。
+- 已发布：15（R1、U1–U5、P1–P3、S1–S3、A1–A3）。已认领：2（S1、P1）。已完成：2（S1、P1）。已合并：2（S1，merge `582aa61`；P1，merge `e682e3f`）。
 - 全部 issue `ready-for-agent` = 需求已就绪，**不表示阻塞依赖已完成**；依赖以各 issue Blocked by 为准。
 - 第一波（无阻塞，可立即并行派）：**R1、U1、P1、S1、A1、A2、A3**。
 - 第二波：U2/U3/U4/U5（待 U1）、P2（待 U1+P1）、P3（待 P1，建议待 U1）、S2（待 S1）。
@@ -24,7 +24,7 @@
 | [U3 编辑器工作区改造](issues/U3-editor-workspace.md) | UX | [U1](issues/U1-global-layout-navigation.md) | open |
 | [U4 知识图谱交互升级](issues/U4-graph-interaction.md) | UX | [U1](issues/U1-global-layout-navigation.md) | open |
 | [U5 时间轴可视化升级](issues/U5-timeline-visual.md) | UX | [U1](issues/U1-global-layout-navigation.md) | open |
-| [P1 PDF 多轮问答](issues/P1-pdf-multiturn-qa.md) | PDF | 无 | open |
+| [P1 PDF 多轮问答](issues/P1-pdf-multiturn-qa.md) | PDF | 无 | merged (e682e3f) |
 | [P2 问答对话式界面与一级入口](issues/P2-qa-conversation-ui.md) | PDF | [U1](issues/U1-global-layout-navigation.md)、[P1](issues/P1-pdf-multiturn-qa.md) | open |
 | [P3 跨文档问答与统一搜索](issues/P3-cross-doc-unified-search.md) | PDF | [P1](issues/P1-pdf-multiturn-qa.md)（建议 U1 后） | open |
 | [S1 IR 块级 diff 引擎](issues/S1-ir-block-diff.md) | Semantic | 无 | merged (582aa61) |
