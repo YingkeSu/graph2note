@@ -1,4 +1,4 @@
-"""Grounded single-turn Q&A over parsed PDF content (issue 11).
+"""Grounded Q&A over parsed PDF content (issue 11 + P1 multi-turn).
 
 Retrieval reuses the issue-10 keyword index (:mod:`graph2note.pdfsearch`) in its
 ranked "any token" mode; the answer is produced by a configured **text** model
@@ -19,6 +19,20 @@ Design guarantees:
 - **Bounded.**  Question length, source count/size, answer tokens, wall-clock
   timeout and attempt count are all explicit; model/provider/usage are recorded
   and no credential is ever echoed (AC4).
+
+P1 adds an optional conversation session (:mod:`graph2note.pdfqa_sessions`):
+
+- Retrieval stays **per-turn** — only the current question determines the tokens
+  and the evidence set.  Earlier turns reach the model as prompt *context* only
+  and are never weighted into retrieval.
+- The last :data:`MAX_CONTEXT_TURNS` turns are replayed into the prompt; older
+  turns are truncated from the prompt but retained in the session record.
+- Citation discipline is unchanged: every citation is validated against the
+  *current* retrieval set, so a page cited in an earlier turn can never be
+  passed off as this turn's evidence.  Historical references are rendered as
+  "前文提到 第N页" in the prompt.
+- Without ``session_id`` the call is exactly the single-turn baseline
+  (backward compatible).
 """
 
 from __future__ import annotations
@@ -30,7 +44,10 @@ import time
 from dataclasses import dataclass, field
 from typing import Callable
 
+from . import pdfqa_sessions
 from . import pdfsearch
+from .pdfqa_sessions import Turn
+from .telemetry import normalize_telemetry
 
 # Explicit bounds (AC4).
 MAX_QUESTION_CHARS = 500
@@ -40,6 +57,12 @@ MAX_ANSWER_TOKENS = 1024
 ANSWER_TIMEOUT = int(os.environ.get("GRAPH2NOTE_PDF_QA_TIMEOUT", "120"))
 MAX_ATTEMPTS = int(os.environ.get("GRAPH2NOTE_PDF_QA_MAX_ATTEMPTS", "2"))
 DEFAULT_SESSION = "graph2note-pdfqa-01"
+
+# P1 multi-turn bounds (re-exported from the session module).
+MAX_CONTEXT_TURNS = pdfqa_sessions.MAX_CONTEXT_TURNS
+MAX_SESSION_TURNS = pdfqa_sessions.MAX_SESSION_TURNS
+MAX_SESSIONS = pdfqa_sessions.MAX_SESSIONS
+SESSION_DIRNAME = pdfqa_sessions.SESSION_DIRNAME
 
 _CITATION_NUM_RE = re.compile(r"\[(\d{1,3})\]")
 _OTHER_MARKER_RE = re.compile(r"\[([^\]\d][^\]]{0,39})\]")
@@ -112,6 +135,13 @@ class Answer:
     grounded: bool = False
     message: str = ""
     elapsed: float = 0.0
+    # P1 multi-turn additions (``None``/empty for a stateless call).
+    session_id: str | None = None
+    turn_index: int | None = None
+    session_context_turns: int = 0
+    session: dict | None = None
+    telemetry: dict = field(default_factory=dict)
+    retrieval: dict = field(default_factory=dict)
 
     def public(self) -> dict:
         return {
@@ -126,16 +156,22 @@ class Answer:
             "provider": self.provider,
             "model": self.model,
             "usage": self.usage,
+            "telemetry": self.telemetry,
             "retrieved": self.retrieved,
             "grounded": self.grounded,
             "message": self.message,
             "elapsed": round(self.elapsed, 3),
+            "session_id": self.session_id,
+            "turn_index": self.turn_index,
+            "session": self.session,
+            "retrieval": self.retrieval,
             "limits": {
                 "max_question_chars": MAX_QUESTION_CHARS,
                 "max_sources": MAX_SOURCES,
                 "max_answer_tokens": MAX_ANSWER_TOKENS,
                 "timeout": ANSWER_TIMEOUT,
                 "max_attempts": MAX_ATTEMPTS,
+                "max_context_turns": MAX_CONTEXT_TURNS,
             },
         }
 
@@ -188,7 +224,49 @@ def _gateway_answer(prompt: str, model: str, *, provider: str | None = None,
 # ---------------------------------------------------------------------------
 
 
-def build_prompt(question: str, sources: list[Source]) -> str:
+def _page_of(turn: Turn) -> dict[int, object]:
+    pages: dict[int, object] = {}
+    for citation in turn.citations or []:
+        try:
+            index = int(citation.get("index"))
+        except (TypeError, ValueError):
+            continue
+        page = citation.get("page_number")
+        if page is None:
+            page = int(citation.get("page_index") or 0) + 1
+        pages[index] = page
+    return pages
+
+
+def render_history_answer(turn: Turn) -> str:
+    """Render one earlier answer for the prompt with history-only citation refs.
+
+    Numeric markers such as ``[1]`` from an earlier turn are rewritten to
+    "（前文提到 第N页）" so the model cannot reuse the previous turn's label as
+    this turn's evidence.  Unknown markers are dropped.
+    """
+    if not turn.answer:
+        return f"（未作答：{turn.status}）"
+    pages = _page_of(turn)
+    replaced = 0
+
+    def _repl(match: re.Match) -> str:
+        nonlocal replaced
+        number = int(match.group(1))
+        if number in pages:
+            replaced += 1
+            return f"（前文提到 第{pages[number]}页）"
+        return ""
+
+    text = _CITATION_NUM_RE.sub(_repl, turn.answer)
+    if pages and not replaced:
+        refs = "、".join(f"第{p}页" for p in dict.fromkeys(pages.values()))
+        text = f"{text}（前文提到：{refs}）"
+    return text
+
+
+def build_prompt(question: str, sources: list[Source],
+                 history: list[Turn] | None = None) -> str:
     lines = [
         "你是文档问答助手。请只根据下面提供的资料回答问题。",
         "规则：",
@@ -196,11 +274,19 @@ def build_prompt(question: str, sources: list[Source]) -> str:
         "2. 如果资料不足以回答，直接说明“资料不足”，不要编造。",
         "3. 引用资料时在相应句子末尾标注来源编号，例如 [1][2]；只能引用下列资料编号。",
         "4. 使用与问题相同的语言，简洁作答，不要输出资料之外的页码或文档编号。",
+        "5. 对话历史仅供理解上下文，不是本轮证据；引用历史内容时必须写明“前文提到”，"
+        "不得把历史页码当作本轮引用编号。本轮引用编号只能来自下面的资料。",
         "",
-        f"问题：{question}",
-        "",
-        "资料：",
     ]
+    if history:
+        lines.append("对话历史（仅供理解上下文，不是本轮证据）：")
+        for turn in history:
+            lines.append(f"第 {turn.index} 轮 问：{turn.question}")
+            lines.append(f"第 {turn.index} 轮 答：{render_history_answer(turn)}")
+        lines.append("")
+    lines.append(f"问题：{question}")
+    lines.append("")
+    lines.append("资料：")
     for s in sources:
         page = s.page_number if s.page_number is not None else s.page_index + 1
         lines.append(f'<source id="{s.index}" page="{page}">')
@@ -307,11 +393,221 @@ def _source_from_hit(index: int, hit: dict, store, query_tokens: list[str]) -> S
     )
 
 
+# ---------------------------------------------------------------------------
+# Session + scope helpers (P1)
+# ---------------------------------------------------------------------------
+
+_DEFAULT_SESSION_STORE: pdfqa_sessions.SessionStore | None = None
+_DEFAULT_SESSION_LOCK = threading.Lock()
+
+
+def _default_session_store() -> pdfqa_sessions.SessionStore:
+    """In-process session store for direct :func:`answer_question` callers."""
+    global _DEFAULT_SESSION_STORE
+    if _DEFAULT_SESSION_STORE is None:
+        with _DEFAULT_SESSION_LOCK:
+            if _DEFAULT_SESSION_STORE is None:
+                _DEFAULT_SESSION_STORE = pdfqa_sessions.SessionStore(root=None)
+    return _DEFAULT_SESSION_STORE
+
+
+def normalize_scope(pdf_id: str | None = None,
+                    pdf_ids: list[str] | str | None = None) -> list[str]:
+    """Normalise the request scope to an ordered list of pdf ids.
+
+    ``[]`` means "all imported PDFs".  ``pdf_ids`` wins over ``pdf_id`` when
+    explicitly provided; the list form is the P3 cross-document scope shape.
+    """
+    values: list = []
+    if pdf_ids is not None:
+        if isinstance(pdf_ids, str):
+            values.append(pdf_ids)
+        elif isinstance(pdf_ids, (list, tuple)):
+            values.extend(pdf_ids)
+        else:
+            raise QaError("invalid", "pdf_ids 需为 PDF id 列表。")
+    elif pdf_id:
+        values.append(pdf_id)
+    scope: list[str] = []
+    for value in values:
+        if value is None:
+            continue
+        text = str(value).strip()
+        if text and text not in scope:
+            scope.append(text)
+    return scope
+
+
+def _retrieval_public(query: str, tokens: list[str], scope: list[str]) -> dict:
+    return {
+        "query": query,
+        "tokens": list(tokens),
+        "scope": list(scope),
+        "match": "any",
+    }
+
+
+def _search_scope(store, query: str, scope: list[str], top_k: int) -> dict:
+    """Per-turn retrieval over the session scope (current question only).
+
+    A single-PDF scope uses the issue-10 index directly.  A multi-PDF scope
+    merges the ranked hits of the selected PDFs (P1 binds the shape; P3 refines
+    cross-document ranking).  No history is ever fed into the query.
+    """
+    if len(scope) <= 1:
+        return pdfsearch.search(store, query, pdf_id=(scope[0] if scope else None),
+                                limit=top_k, match="any")
+    merged = pdfsearch.search(store, query, pdf_id=None,
+                              limit=pdfsearch.MAX_LIMIT, match="any")
+    allowed = set(scope)
+    hits = [h for h in (merged.get("hits") or []) if h.get("pdf_id") in allowed]
+    return {**merged, "pdf_id": None, "hits": hits[:top_k], "total": len(hits)}
+
+
+def _resolve_session(session_id: str | None, scope: list[str],
+                     session_store) -> pdfqa_sessions.QaSession | None:
+    """Join an existing session or open a new one; scope changes are rejected.
+
+    A session is explicitly bound to its retrieval scope.  Switching scope is a
+    new topic and must be an *explicit* new session (a fresh ``session_id``),
+    never an implicit switch on an existing one.
+    """
+    if session_id is None:
+        return None
+    sid = str(session_id).strip()
+    if not sid:
+        return None  # empty id == no session, same as the baseline call
+    if not pdfqa_sessions.is_valid_session_id(sid):
+        raise QaError(
+            "invalid",
+            f"session_id 不合法（不能为空、含空白或斜杠，且不超过 "
+            f"{pdfqa_sessions.SESSION_ID_MAX_CHARS} 字符）。",
+        )
+    store = session_store if session_store is not None else _default_session_store()
+    existing = store.get(sid)
+    if existing is not None:
+        if list(existing.pdf_ids) != list(scope):
+            raise QaError(
+                "scope_conflict",
+                "该会话已绑定其它检索范围；切换范围请新建会话（换用新的 session_id）。",
+            )
+        return existing
+    return store.get_or_create(sid, scope)
+
+
+def _turn_telemetry(usage: dict | None, model: str | None,
+                    provider: str | None, elapsed: float) -> dict:
+    """Normalise one turn's usage through the existing telemetry channel."""
+    raw = dict(usage or {})
+    raw.setdefault("total_seconds", round(float(elapsed or 0.0), 4))
+    telemetry = normalize_telemetry(raw, model=model, provider=provider)
+    telemetry["elapsed"] = round(float(elapsed or 0.0), 4)
+    return telemetry
+
+
+def _persist_turn(sess: pdfqa_sessions.QaSession | None, session_store,
+                  answer: Answer, context_turns: int) -> None:
+    """Record this turn in the session (if any) and attach session metadata."""
+    if not answer.telemetry:
+        answer.telemetry = _turn_telemetry(
+            answer.usage, answer.model, answer.provider, answer.elapsed)
+    if sess is None:
+        return
+    store = session_store if session_store is not None else _default_session_store()
+    # monotonic turn number even after old turns are dropped from the window
+    next_index = (sess.turns[-1].index + 1) if sess.turns else 1
+    turn = pdfqa_sessions.Turn(
+        index=next_index,
+        question=answer.question,
+        answer=answer.answer,
+        status=answer.status,
+        citations=list(answer.citations),
+        untrusted_citations=list(answer.untrusted_citations),
+        retrieved=answer.retrieved,
+        model=answer.model,
+        provider=answer.provider,
+        usage=dict(answer.usage or {}),
+        telemetry=dict(answer.telemetry or {}),
+        elapsed=answer.elapsed,
+        created_at=time.time(),
+    )
+    sess.append(turn)
+    store.save(sess)
+    answer.session_id = sess.session_id
+    answer.turn_index = turn.index
+    answer.session_context_turns = context_turns
+    answer.session = {
+        "session_id": sess.session_id,
+        "scope": sess.scope,
+        "turn_index": turn.index,
+        "turn_count": len(sess.turns),
+        "context_turns": context_turns,
+        "context_limit": MAX_CONTEXT_TURNS,
+        "max_session_turns": MAX_SESSION_TURNS,
+        "telemetry": sess.telemetry(),
+    }
+
+
+# ---------------------------------------------------------------------------
+# Orchestration
+# ---------------------------------------------------------------------------
+
+
+def _call_with_timeout(fn: Callable, timeout: float):
+    box: dict = {}
+
+    def _run() -> None:
+        try:
+            box["value"] = fn()
+        except BaseException as exc:  # noqa: BLE001 - re-raised in caller thread
+            box["error"] = exc
+
+    thread = threading.Thread(target=_run, daemon=True)
+    thread.start()
+    thread.join(timeout)
+    if thread.is_alive():
+        raise TimeoutError(f"answer generation exceeded {timeout}s")
+    if "error" in box:
+        raise box["error"]
+    return box.get("value")
+
+
+def _source_from_hit(index: int, hit: dict, store, query_tokens: list[str]) -> Source:
+    doc_id = hit["document_id"]
+    snippet = hit.get("snippet") or ""
+    try:
+        rec = store.get_document(doc_id)
+    except Exception:
+        rec = None
+    if rec:
+        content = rec.get("current_markdown") or ""
+        tokens = query_tokens or pdfsearch.tokenize(snippet)
+        expanded = pdfsearch.make_snippet(content, tokens, width=SOURCE_CHARS // 2)
+        if expanded:
+            snippet = expanded[:SOURCE_CHARS]
+    return Source(
+        index=index,
+        document_id=doc_id,
+        pdf_id=hit.get("pdf_id"),
+        page_index=int(hit.get("page_index") or 0),
+        page_number=hit.get("page_number"),
+        title=hit.get("title") or doc_id,
+        version_id=hit.get("version_id"),
+        snippet=snippet[:SOURCE_CHARS],
+        review_url=hit.get("review_url") or f"/api/documents/{doc_id}",
+        source_page_url=hit.get("source_page_url") or f"/api/documents/{doc_id}/source-page",
+        pdf_page_url=hit.get("pdf_page_url") or "",
+    )
+
+
 def answer_question(
     store,
     question: str,
     *,
     pdf_id: str | None = None,
+    pdf_ids: list[str] | str | None = None,
+    session_id: str | None = None,
+    session_store=None,
     answerer: Callable | None = None,
     model: str | None = None,
     provider: str | None = None,
@@ -320,7 +616,14 @@ def answer_question(
     timeout: int = ANSWER_TIMEOUT,
     max_attempts: int = MAX_ATTEMPTS,
 ) -> Answer:
-    """Retrieve evidence for ``question`` then generate a cited answer (AC1)."""
+    """Retrieve evidence for ``question`` then generate a cited answer (AC1).
+
+    With ``session_id`` the call joins (or opens) a persisted conversation:
+    retrieval still runs on the *current* question only, the recent turns are
+    replayed into the prompt as non-evidence context, and every citation is
+    validated against the *current* retrieval set.  Without ``session_id`` the
+    behaviour is the single-turn baseline (AC3/bc).
+    """
     started = time.time()
     q = (question or "").strip()
     if not q:
@@ -328,8 +631,13 @@ def answer_question(
     if len(q) > MAX_QUESTION_CHARS:
         raise QaError("too_large", f"问题超过 {MAX_QUESTION_CHARS} 字上限。")
 
+    scope = normalize_scope(pdf_id, pdf_ids)
+    sess = _resolve_session(session_id, scope, session_store)
+    history = sess.context_turns() if sess is not None else []
+    context_count = len(history)
+
     top_k = max(1, min(int(top_k or MAX_SOURCES), MAX_SOURCES))
-    retrieved = pdfsearch.search(store, q, pdf_id=pdf_id, limit=top_k, match="any")
+    retrieved = _search_scope(store, q, scope, top_k)
     hits = retrieved.get("hits") or []
     query_tokens = retrieved.get("tokens") or pdfsearch.tokenize(q)
     sources = [_source_from_hit(i + 1, h, store, query_tokens)
@@ -344,11 +652,15 @@ def answer_question(
         )
 
     def _fail(status: str, message: str, **extra) -> Answer:
-        return Answer(status=status, question=q, sources=sources,
-                      retrieved=len(sources), message=message,
-                      warnings=list(warnings), pdf_id=pdf_id,
-                      provider=provider, model=model,
-                      elapsed=time.time() - started, **extra)
+        answer = Answer(status=status, question=q, sources=sources,
+                        retrieved=len(sources), message=message,
+                        warnings=list(warnings), pdf_id=pdf_id,
+                        provider=provider, model=model,
+                        elapsed=time.time() - started,
+                        retrieval=_retrieval_public(q, query_tokens, scope),
+                        **extra)
+        _persist_turn(sess, session_store, answer, context_count)
+        return answer
 
     if not sources:
         return _fail("insufficient_evidence",
@@ -357,9 +669,11 @@ def answer_question(
     channel = resolve_qa_channel()
     provider = provider or channel.get("provider")
     model = model or channel.get("model")
-    prompt = build_prompt(q, sources)
+    prompt = build_prompt(q, sources, history)
+    # use the resolved provider (request override wins) so an explicit provider
+    # choice is honoured by the live gateway call
     call = answerer or (lambda p, m: _gateway_answer(
-        p, m, provider=channel.get("provider"), session=session, timeout=timeout))
+        p, m, provider=provider, session=session, timeout=timeout))
 
     raw = None
     last_kind = "model_unavailable"
@@ -392,7 +706,7 @@ def answer_question(
     if not citations:
         warnings.append("答案未引用本次检索到的来源，请谨慎核对。")
 
-    return Answer(
+    answer = Answer(
         status="answered",
         question=q,
         answer=text,
@@ -403,20 +717,27 @@ def answer_question(
         provider=provider,
         model=model,
         usage=usage or {},
+        telemetry=_turn_telemetry(usage, model, provider, time.time() - started),
         retrieved=len(sources),
         grounded=bool(citations),
         message="",
         elapsed=time.time() - started,
+        retrieval=_retrieval_public(q, query_tokens, scope),
     )
+    _persist_turn(sess, session_store, answer, context_count)
+    return answer
 
 
 __all__ = [
     "QaError",
     "Source",
     "Answer",
+    "Turn",
     "build_prompt",
+    "render_history_answer",
     "validate_citations",
     "resolve_qa_channel",
+    "normalize_scope",
     "answer_question",
     "MAX_QUESTION_CHARS",
     "MAX_SOURCES",
@@ -424,5 +745,9 @@ __all__ = [
     "MAX_ANSWER_TOKENS",
     "ANSWER_TIMEOUT",
     "MAX_ATTEMPTS",
+    "MAX_CONTEXT_TURNS",
+    "MAX_SESSION_TURNS",
+    "MAX_SESSIONS",
+    "SESSION_DIRNAME",
     "DEFAULT_SESSION",
 ]

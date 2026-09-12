@@ -62,6 +62,7 @@ from . import pipeline
 from . import pdflib
 from . import pdfsearch
 from . import pdfqa
+from . import pdfqa_sessions
 
 DEFAULT_MODEL = os.environ.get("GRAPH2NOTE_MODEL", "glm-5.3-flash")
 MAX_SIZE = 10 * 1024 * 1024  # 10 MB (FR-015)
@@ -359,6 +360,7 @@ def create_app(
     pdf_qa_session: str | None = None,
     pdf_qa_timeout: int | None = None,
     pdf_qa_max_attempts: int | None = None,
+    pdf_session_store: pdfqa_sessions.SessionStore | None = None,
 ) -> FastAPI:
     """Build the FastAPI app.
 
@@ -417,6 +419,12 @@ def create_app(
     app.state.pdf_qa_session = pdf_qa_session
     app.state.pdf_qa_timeout = pdf_qa_timeout or pdfqa.ANSWER_TIMEOUT
     app.state.pdf_qa_max_attempts = pdf_qa_max_attempts or pdfqa.MAX_ATTEMPTS
+    # P1: conversation sessions, persisted under the store root (restart-safe).
+    if pdf_session_store is not None:
+        app.state.pdf_session_store = pdf_session_store
+    else:
+        _session_root = Path(getattr(store, "root", storage_dir)) / pdfqa.SESSION_DIRNAME
+        app.state.pdf_session_store = pdfqa_sessions.SessionStore(_session_root)
     for _persisted in pdflib.load_jobs(store):
         pdflib.save_job(_persisted)  # persist the reconciled 'interrupted' state
         app.state.pdf_jobs[_persisted.pdf_id] = _persisted
@@ -1201,15 +1209,25 @@ def create_app(
 
     @app.post("/api/pdf/ask")
     def pdf_ask(body: dict | None = None):
-        """Single-turn grounded question answering over parsed PDF content."""
+        """Grounded Q&A over parsed PDF content; multi-turn when a session is given.
+
+        Backward compatible single-turn call: omit ``session_id``.  Pass
+        ``pdf_id`` (one PDF) or ``pdf_ids`` (list; P3 scope shape) to bind the
+        retrieval scope.  Session endpoints list/inspect persisted sessions.
+        """
         payload = body or {}
         question = str(payload.get("question") or "").strip()
         pdf_id = payload.get("pdf_id") or None
+        pdf_ids = payload.get("pdf_ids")
+        session_id = payload.get("session_id")
         try:
             answer = pdfqa.answer_question(
                 app.state.store,
                 question,
                 pdf_id=pdf_id,
+                pdf_ids=pdf_ids,
+                session_id=session_id,
+                session_store=app.state.pdf_session_store,
                 answerer=app.state.pdf_answerer,
                 model=app.state.pdf_qa_model,
                 provider=app.state.pdf_qa_provider,
@@ -1218,8 +1236,28 @@ def create_app(
                 max_attempts=app.state.pdf_qa_max_attempts,
             )
         except pdfqa.QaError as exc:
-            raise HTTPException(status_code=422, detail=str(exc)) from exc
+            status_code = 409 if exc.kind == "scope_conflict" else 422
+            raise HTTPException(status_code=status_code, detail=str(exc)) from exc
         return answer.public()
+
+    @app.get("/api/pdf/ask/sessions")
+    def pdf_qa_sessions_list():
+        """Persisted Q&A conversations (P1); consumed by the P2 conversation UI."""
+        store = app.state.pdf_session_store
+        return {
+            "sessions": store.list_sessions(),
+            "capacity": store.max_sessions,
+            "max_context_turns": pdfqa.MAX_CONTEXT_TURNS,
+            "max_session_turns": pdfqa.MAX_SESSION_TURNS,
+        }
+
+    @app.get("/api/pdf/ask/sessions/{session_id}")
+    def pdf_qa_session_get(session_id: str):
+        """One session with its turns and aggregate telemetry."""
+        session = app.state.pdf_session_store.get(session_id)
+        if session is None:
+            raise HTTPException(status_code=404, detail="会话不存在。")
+        return session.public()
 
     # ---- static frontend ------------------------------------------------------
 

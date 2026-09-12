@@ -17,6 +17,9 @@ const state = {
   pdfId: null,
   searchActive: false,
   searchQuery: "",
+  pdfQaSessionId: null,   // P1 multi-turn conversation id
+  pdfQaScopeKey: null,    // scope the current conversation is bound to
+  pdfQaHistory: [],       // [{question, response}] of the current conversation
   libraryCollection: null,
   libraryFilter: "all",
   libraryTag: null,
@@ -133,7 +136,9 @@ const el = {
   pdfSearchClear: $("#pdf-search-clear"),
   pdfQaForm: $("#pdf-qa-form"),
   pdfQaInput: $("#pdf-qa-input"),
+  pdfQaNew: $("#pdf-qa-new"),
   pdfQaStatus: $("#pdf-qa-status"),
+  pdfQaHistory: $("#pdf-qa-history"),
   pdfQaResult: $("#pdf-qa-result"),
 };
 
@@ -350,8 +355,7 @@ function resetPdfSearchUI() {
   el.pdfSearchStatus.textContent = "";
   el.libraryGrid.classList.remove("hidden");
   if (el.pdfQaResult) {
-    el.pdfQaResult.classList.add("hidden");
-    el.pdfQaResult.innerHTML = "";
+    resetPdfQaSession();
     el.pdfQaStatus.textContent = "";
   }
 }
@@ -411,10 +415,68 @@ el.pdfSearchClear.addEventListener("click", () => {
   resetPdfSearchUI();
 });
 el.pdfSearchScope.addEventListener("change", () => {
+  // switching retrieval scope is a new topic: start an explicit new session
+  if (el.pdfQaResult) resetPdfQaSession({ notice: "检索范围已更改，已开启新会话。" });
   if (state.searchActive || (el.pdfSearchInput.value || "").trim()) runPdfSearch();
 });
 
-/* ---------- PDF grounded Q&A (issue 11) ---------- */
+/* ---------- PDF grounded Q&A (issue 11 + P1 multi-turn) ---------- */
+
+function newPdfQaSessionId() {
+  if (window.crypto && typeof crypto.randomUUID === "function")
+    return "qa-" + crypto.randomUUID();
+  return "qa-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
+}
+
+function currentQaScopeKey() {
+  return el.pdfSearchScope ? (el.pdfSearchScope.value || "") : "";
+}
+
+function resetPdfQaSession(opts) {
+  state.pdfQaSessionId = newPdfQaSessionId();
+  state.pdfQaScopeKey = currentQaScopeKey();
+  state.pdfQaHistory = [];
+  if (el.pdfQaHistory) {
+    el.pdfQaHistory.innerHTML = "";
+    el.pdfQaHistory.classList.add("hidden");
+  }
+  if (el.pdfQaResult) {
+    el.pdfQaResult.innerHTML = "";
+    el.pdfQaResult.classList.add("hidden");
+  }
+  if (opts && opts.notice && el.pdfQaStatus) el.pdfQaStatus.textContent = opts.notice;
+}
+
+function historyCitationHtml(c) {
+  const page = c.page_number ? `第 ${c.page_number} 页` : `第 ${c.page_index + 1} 页`;
+  return `<li><span class="pdf-qa-prior">前文提到</span> `
+    + `<a href="#doc/${encodeURIComponent(c.document_id)}">${esc(c.label)} ${esc(c.title || c.document_id)}</a>`
+    + ` <span class="dim">${page} · 原页序 ${c.page_index + 1}</span>`
+    + ` <a href="${c.source_page_url}" target="_blank" rel="noopener">查看原 PDF 页</a></li>`;
+}
+
+function renderPdfQaHistory() {
+  if (!el.pdfQaHistory) return;
+  const prior = state.pdfQaHistory.slice(0, -1);
+  if (!prior.length) {
+    el.pdfQaHistory.innerHTML = "";
+    el.pdfQaHistory.classList.add("hidden");
+    return;
+  }
+  el.pdfQaHistory.innerHTML = prior.map((turn, i) => {
+    const r = turn.response || {};
+    const answer = r.answer
+      ? esc(r.answer).replace(/\n/g, "<br>")
+      : `<span class="dim">${esc(r.message || r.status || "未作答")}</span>`;
+    const cits = (r.citations && r.citations.length)
+      ? `<ol class="pdf-qa-history-citations">${r.citations.map(historyCitationHtml).join("")}</ol>`
+      : "";
+    return `<div class="pdf-qa-turn">`
+      + `<div class="pdf-qa-turn-q">第 ${i + 1} 轮 · ${esc(turn.question)}</div>`
+      + `<div class="pdf-qa-turn-a">${answer}</div>${cits}</div>`;
+  }).join("");
+  el.pdfQaHistory.classList.remove("hidden");
+}
 
 function renderPdfAnswer(r) {
   const parts = [];
@@ -443,10 +505,12 @@ function renderPdfAnswer(r) {
 async function askPdf() {
   const q = (el.pdfQaInput.value || "").trim();
   if (!q) { el.pdfQaStatus.textContent = "请输入问题。"; return; }
+  if (!state.pdfQaSessionId || state.pdfQaScopeKey !== currentQaScopeKey())
+    resetPdfQaSession();
   el.pdfQaStatus.textContent = "检索并生成中…";
   el.pdfQaResult.classList.add("hidden");
   el.pdfQaResult.innerHTML = "";
-  const payload = { question: q };
+  const payload = { question: q, session_id: state.pdfQaSessionId };
   if (el.pdfSearchScope.value) payload.pdf_id = el.pdfSearchScope.value;
   let r;
   try {
@@ -456,6 +520,8 @@ async function askPdf() {
       body: JSON.stringify(payload),
     });
   } catch (e) {
+    // a scope conflict means the caller must start an explicit new session
+    if (String(e.message || "").includes("新建会话")) resetPdfQaSession();
     el.pdfQaStatus.textContent = "提问失败：" + e.message;
     return;
   }
@@ -465,13 +531,23 @@ async function askPdf() {
     timeout: "生成超时",
     model_unavailable: "模型不可用",
   };
-  el.pdfQaStatus.textContent = `${labels[r.status] || r.status} · 检索 ${r.retrieved} 条`
+  const turn = (r.session && r.session.turn_index) || (state.pdfQaHistory.length + 1);
+  el.pdfQaStatus.textContent = `第 ${turn} 轮 · ${labels[r.status] || r.status}`
+    + ` · 检索 ${r.retrieved} 条`
     + (r.model ? ` · ${r.model}` : "");
   el.pdfQaResult.innerHTML = renderPdfAnswer(r);
   el.pdfQaResult.classList.remove("hidden");
+  state.pdfQaHistory.push({ question: q, response: r });
+  renderPdfQaHistory();
+  el.pdfQaInput.value = "";
 }
 
 el.pdfQaForm.addEventListener("submit", (e) => { e.preventDefault(); askPdf(); });
+if (el.pdfQaNew) {
+  el.pdfQaNew.addEventListener("click", () => {
+    resetPdfQaSession({ notice: "已开启新会话（上下文已清空）。" });
+  });
+}
 
 /* ---------- Inbox (read-only projection) ---------- */
 
