@@ -5,85 +5,60 @@ The index is built **only** from library documents that carry PDF provenance
 no embeddings, no vector store — and is deliberately scope-aware so a query can
 target one imported PDF or every imported PDF.
 
-Consistency with the library is guaranteed by a cheap *fingerprint* over the
-document list (id + ``updated_at`` + latest version id): adding, editing,
-re-parsing or deleting a document changes the fingerprint, so the next search
-rebuilds the index and can never return a hit for deleted or stale content
-(issue 10 AC4).  The index is persisted under ``<storage>/search/pdf-index.json``
-so it survives a restart and can always be rebuilt from the library (AC4).
+The tokenisation / snippet / inverted-index / persistence primitives live in the
+shared engine :mod:`graph2note.searchlib` (P3), which the unified document+PDF
+search reuses.  This module keeps its historical public API and its
+content-only indexing semantics.
 
-Tokenisation supports Chinese, English and mixed queries: ASCII runs are
-lower-cased word tokens; CJK runs are indexed as character bigrams (a run of
-length 1 as the single character).  A query is an AND over its distinct tokens.
-No model/LLM call is ever made here.
+Consistency with the library is guaranteed by a cheap *fingerprint* over the
+document list (id + ``updated_at`` + latest version id + current markdown hash):
+adding, editing, re-parsing or deleting a document changes the fingerprint, so
+the next search rebuilds the index and can never return a hit for deleted or
+stale content (issue 10 AC4).  The index is persisted under
+``<storage>/search/pdf-index.json`` so it survives a restart and can always be
+rebuilt from the library (AC4).
+
+A query is an AND over its distinct tokens (``match="all"``) or a ranked OR for
+natural-language questions (``match="any"``).  No model/LLM call is ever made
+here.
 """
 
 from __future__ import annotations
 
-import hashlib
-import json
-import re
 import threading
 import time
-from pathlib import Path
 
-INDEX_VERSION = 1
-SNIPPET_WIDTH = 72
-DEFAULT_LIMIT = 50
-MAX_LIMIT = 200
+from . import searchlib
+from .searchlib import (
+    DEFAULT_LIMIT,
+    INDEX_VERSION,
+    MAX_LIMIT,
+    SNIPPET_WIDTH,
+    tokenize,
+)
+from .searchlib import content_hash as _content_hash
+from .searchlib import make_snippet
 
-_ASCII_RE = re.compile(r"[A-Za-z0-9_]+")
-_CJK_RE = re.compile(r"[\u3400-\u4dbf\u4e00-\u9fff\uf900-\ufaff]+")
+__all__ = [
+    "INDEX_VERSION",
+    "DEFAULT_LIMIT",
+    "MAX_LIMIT",
+    "SNIPPET_WIDTH",
+    "tokenize",
+    "make_snippet",
+    "store_fingerprint",
+    "index_path",
+    "build_index",
+    "load_index",
+    "get_index",
+    "search",
+]
+
+INDEX_FILENAME = "pdf-index.json"
+INDEX_KIND = "pdf"
 
 _index_lock = threading.Lock()
 _mem_cache: dict[str, dict] = {}
-
-
-# ---------------------------------------------------------------------------
-# Tokenisation + text helpers
-# ---------------------------------------------------------------------------
-
-
-def tokenize(text: str) -> list[str]:
-    """Tokenise mixed Chinese/English text into keyword tokens (AC2).
-
-    - ASCII word runs -> lower-cased word tokens (``State`` -> ``state``).
-    - CJK runs -> character bigrams; a single CJK character stays itself.
-    """
-    text = text or ""
-    tokens: list[str] = []
-    for m in _ASCII_RE.finditer(text):
-        tokens.append(m.group(0).lower())
-    for m in _CJK_RE.finditer(text):
-        run = m.group(0)
-        if len(run) == 1:
-            tokens.append(run)
-        else:
-            tokens.extend(run[i:i + 2] for i in range(len(run) - 1))
-    return tokens
-
-
-def make_snippet(content: str, tokens: list[str], width: int = SNIPPET_WIDTH) -> str:
-    """Return a short window around the earliest token occurrence (AC1)."""
-    if not content:
-        return ""
-    low = content.lower()
-    pos = -1
-    for t in tokens:
-        p = low.find(t.lower())
-        if p != -1 and (pos == -1 or p < pos):
-            pos = p
-    if pos == -1:
-        return content[: width * 2].replace("\n", " ").strip()
-    start = max(0, pos - width)
-    end = min(len(content), pos + width)
-    prefix = "…" if start > 0 else ""
-    suffix = "…" if end < len(content) else ""
-    return (prefix + content[start:end].replace("\n", " ").strip() + suffix)
-
-
-def _content_hash(content: str) -> str:
-    return hashlib.sha256((content or "").encode("utf-8")).hexdigest()[:16]
 
 
 # ---------------------------------------------------------------------------
@@ -128,12 +103,30 @@ def _snapshot(store) -> tuple[str, list[dict]]:
                 "title": rec.get("title") or doc_id,
                 "version_id": rec.get("latest_version") or last or None,
                 "updated_at": updated,
+                "pdf_name": _pdf_name(rec),
                 "content": content,
                 "content_hash": chash,
             })
-    parts.sort()
-    fingerprint = hashlib.sha256("\x1e".join(parts).encode("utf-8")).hexdigest()[:24]
-    return fingerprint, docs
+    return searchlib.fingerprint(parts), docs
+
+
+def _pdf_name(rec: dict) -> str | None:
+    """Human-readable PDF name for a page document, when it can be derived.
+
+    Uploaded PDFs store the internal ``original.pdf`` path, whose basename is
+    not useful; page titles (``<stem> · 第N页``) carry the human name, so the
+    stem before the separator is the best store-only fallback.
+    """
+    title = str(rec.get("title") or "")
+    for sep in (" · 第", "·第"):
+        if sep in title:
+            return title.split(sep, 1)[0].strip() or None
+    source = rec.get("source_pdf")
+    if source:
+        name = str(source).rsplit("/", 1)[-1]
+        if name and name != "original.pdf":
+            return name
+    return None
 
 
 def store_fingerprint(store) -> str:
@@ -141,33 +134,25 @@ def store_fingerprint(store) -> str:
     return _snapshot(store)[0]
 
 
-def index_path(store) -> Path:
-    root = getattr(store, "root", None)
-    if root is None:
-        raise RuntimeError("document store has no filesystem root")
-    return Path(root) / "search" / "pdf-index.json"
+def index_path(store):
+    return searchlib.index_path_for(store, INDEX_FILENAME)
 
 
 def _index_from_docs(fingerprint: str, docs: list[dict]) -> dict:
-    postings: dict[str, dict[str, int]] = {}
-    lengths: dict[str, int] = {}
+    entries = [{"key": d["document_id"], "text": d["content"]} for d in docs]
+    postings, lengths = searchlib.build_inverted(entries)
     documents: dict[str, dict] = {}
     for d in docs:
-        doc_id = d["document_id"]
-        tokens = tokenize(d["content"])
-        lengths[doc_id] = len(tokens)
-        documents[doc_id] = {
+        documents[d["document_id"]] = {
             "pdf_id": d["pdf_id"],
             "page_index": d["page_index"],
             "page_number": d["page_number"],
             "title": d["title"],
             "version_id": d["version_id"],
             "updated_at": d["updated_at"],
+            "pdf_name": d["pdf_name"],
             "content_hash": d["content_hash"],
         }
-        for t in tokens:
-            bucket = postings.setdefault(t, {})
-            bucket[doc_id] = bucket.get(doc_id, 0) + 1
     return {
         "version": INDEX_VERSION,
         "built_at": time.time(),
@@ -183,12 +168,7 @@ def build_index(store, *, persist: bool = True) -> dict:
     fingerprint, docs = _snapshot(store)
     index = _index_from_docs(fingerprint, docs)
     if persist:
-        try:
-            p = index_path(store)
-            p.parent.mkdir(parents=True, exist_ok=True)
-            p.write_text(json.dumps(index, ensure_ascii=False), encoding="utf-8")
-        except OSError:
-            pass  # an unwritable cache dir must never break search
+        searchlib.write_index(index_path(store), index)
     return index
 
 
@@ -198,20 +178,12 @@ def load_index(store) -> dict | None:
         p = index_path(store)
     except RuntimeError:
         return None
-    if not p.is_file():
-        return None
-    try:
-        index = json.loads(p.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    if index.get("version") != INDEX_VERSION:
-        return None
-    return index
+    return searchlib.read_index(p)
 
 
 def _cache_key(store) -> str:
     root = getattr(store, "root", None)
-    return f"{type(store).__name__}:{root}"
+    return f"{INDEX_KIND}:{type(store).__name__}:{root}"
 
 
 def get_index(store, *, force: bool = False) -> dict:
@@ -229,12 +201,7 @@ def get_index(store, *, force: bool = False) -> dict:
                 _mem_cache[key] = persisted
             return persisted
     index = _index_from_docs(fingerprint, docs)
-    try:
-        p = index_path(store)
-        p.parent.mkdir(parents=True, exist_ok=True)
-        p.write_text(json.dumps(index, ensure_ascii=False), encoding="utf-8")
-    except OSError:
-        pass
+    searchlib.write_index(index_path(store), index)
     with _index_lock:
         _mem_cache[key] = index
     return index
@@ -277,13 +244,7 @@ def search(store, query: str, *, pdf_id: str | None = None,
         if not pdf_id or d.get("pdf_id") == pdf_id
     )
 
-    candidate_sets = [set(postings.get(t, {})) for t in tokens]
-    if not candidate_sets:
-        ids: set[str] = set()
-    elif match == "any":
-        ids = set().union(*candidate_sets)          # ranked OR (questions)
-    else:
-        ids = set.intersection(*candidate_sets)     # strict AND (search box)
+    ids = searchlib.match_keys(postings, tokens, match)
     if pdf_id:
         ids = {i for i in ids if documents.get(i, {}).get("pdf_id") == pdf_id}
 
@@ -298,11 +259,12 @@ def search(store, query: str, *, pdf_id: str | None = None,
         if _content_hash(rec.get("current_markdown") or "") != meta.get("content_hash"):
             continue
         content = rec.get("current_markdown") or ""
-        score = sum(postings.get(t, {}).get(doc_id, 0) for t in tokens)
+        score = searchlib.score_of(postings, doc_id, tokens)
         page_index = int(meta.get("page_index", rec.get("page_index")))
         hits.append({
             "document_id": doc_id,
             "pdf_id": meta.get("pdf_id") or rec.get("pdf_id"),
+            "pdf_name": meta.get("pdf_name") or _pdf_name(rec),
             "page_index": page_index,
             "page_number": meta.get("page_number", rec.get("page_number")),
             "title": meta.get("title") or rec.get("title"),
@@ -343,18 +305,3 @@ def search(store, query: str, *, pdf_id: str | None = None,
         "indexed_documents": indexed_in_scope,
         "message": message,
     }
-
-
-__all__ = [
-    "INDEX_VERSION",
-    "DEFAULT_LIMIT",
-    "MAX_LIMIT",
-    "tokenize",
-    "make_snippet",
-    "store_fingerprint",
-    "index_path",
-    "build_index",
-    "load_index",
-    "get_index",
-    "search",
-]

@@ -64,6 +64,7 @@ from . import pdflib
 from . import pdfsearch
 from . import pdfqa
 from . import pdfqa_sessions
+from . import unifiedsearch
 from . import repair as repairlib
 
 DEFAULT_MODEL = os.environ.get("GRAPH2NOTE_MODEL", "glm-5.3-flash")
@@ -1325,6 +1326,52 @@ def create_app(
             "fingerprint": index.get("fingerprint"),
         }
 
+    # ---- Unified document + PDF search (P3) ---------------------------------
+
+    def _pdf_name_map() -> dict:
+        """Human-readable uploaded-PDF names, keyed by pdf_id (P3 citations).
+
+        In-memory jobs win; durable ``job.json`` files fill in jobs created by
+        an earlier app instance over the same store.
+        """
+        names: dict = {}
+        try:
+            for job in pdflib.load_jobs(app.state.store, mark_interrupted=False):
+                if job.pdf_id and job.filename:
+                    names[job.pdf_id] = Path(job.filename).name
+        except Exception:
+            pass
+        with app.state.pdf_jobs_lock:
+            jobs = list(app.state.pdf_jobs.values())
+        for job in jobs:
+            if job.pdf_id and job.filename:
+                names[job.pdf_id] = Path(job.filename).name
+        return names
+
+    @app.get("/api/search")
+    def unified_search(q: str = "", limit: int = 50, kind: str | None = None,
+                       pdf_id: str | None = None):
+        """Unified search over document Markdown and parsed PDF pages (P3).
+
+        Results are grouped (``documents`` / ``pdf_pages``); optional ``kind``
+        restricts to one group and ``pdf_id`` scopes the PDF-page group.
+        """
+        kind_value = kind if kind in ("document", "pdf_page") else None
+        return unifiedsearch.search(
+            app.state.store, q, limit=limit, kind=kind_value,
+            pdf_id=pdf_id or None, pdf_names=_pdf_name_map())
+
+    @app.post("/api/search/reindex")
+    def unified_search_reindex():
+        """Rebuild the unified document+PDF index from the current library."""
+        index = unifiedsearch.build_index(app.state.store, persist=True)
+        return {
+            "indexed_documents": index.get("indexed_documents"),
+            "indexed_pdf_pages": index.get("indexed_pdf_pages"),
+            "built_at": index.get("built_at"),
+            "fingerprint": index.get("fingerprint"),
+        }
+
     # ---- PDF grounded Q&A (issue 11) ----------------------------------------
 
     @app.post("/api/pdf/ask")
@@ -1354,6 +1401,7 @@ def create_app(
                 session=app.state.pdf_qa_session,
                 timeout=app.state.pdf_qa_timeout,
                 max_attempts=app.state.pdf_qa_max_attempts,
+                pdf_names=_pdf_name_map(),
             )
         except pdfqa.QaError as exc:
             status_code = 409 if exc.kind == "scope_conflict" else 422
