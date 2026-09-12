@@ -1,0 +1,1 @@
+{"merges": [{"source": "sram", "target": "存储芯片", "reason": "同义缩写"}, {"source": "静态随机存储器", "target": "存储芯片", "reason": "全称与简写"}], "groups": []}
