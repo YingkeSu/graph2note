@@ -245,6 +245,119 @@ def _cmd_notes_export(args) -> int:
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# repair scan / repair run — black-image detection + re-parse loop (R1)
+# ---------------------------------------------------------------------------
+
+
+def build_repair_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="graph2note repair",
+        description=(
+            "Detect legacy black-image documents (preprocessed.png mean < 10) and "
+            "re-run them from preprocessed_raw.png as a new version.  scan is a "
+            "read-only dry-run; run is a dry-run unless --yes is given."
+        ),
+    )
+    p.add_argument("--storage", default=None,
+                   help="document library storage dir (default: GRAPH2NOTE_STORAGE "
+                        "or <support>/storage)")
+    sub = p.add_subparsers(dest="action", required=True)
+
+    scan = sub.add_parser("scan", help="list black/suspected/needs-reupload documents (dry-run)")
+    scan.add_argument("--json", action="store_true", help="emit the full scan report as JSON")
+    scan.add_argument("--storage", default=argparse.SUPPRESS,
+                      help="document library storage dir")
+
+    run = sub.add_parser("run", help="re-run selected documents (dry-run unless --yes)")
+    run.add_argument("--doc", action="append", default=[],
+                     help="document id to repair (repeatable); default = all repairable")
+    run.add_argument("--yes", action="store_true",
+                     help="confirm and actually call the parser (default: dry-run)")
+    run.add_argument("--model", default=None, help="override the parse model")
+    run.add_argument("--json", action="store_true", help="emit the run result as JSON")
+    run.add_argument("--storage", default=argparse.SUPPRESS,
+                     help="document library storage dir")
+    return p
+
+
+def _print_scan(report: dict) -> None:
+    s = report["summary"]
+    print(f"黑图 {s['black']} 篇 · 疑似空白 {s['suspected']} 篇 · "
+          f"需重新上传 {s['needs_reupload']} 篇 · 正常 {s['healthy']} 篇")
+    print(f"可修复 {s['repairable']} 篇 · 页数 {s['pages']} · "
+          f"预估 VLM 调用数 {s['estimated_vlm_calls']}")
+    if report["needs_reupload"]:
+        print("需重新上传（缺 preprocessed_raw.png，不进入自动重跑队列）：")
+        for item in report["documents"]:
+            if item["status"] == "needs_reupload":
+                print(f"  - {item['document_id']}  {item['title']}")
+    problem = [d for d in report["documents"] if d["status"] != "healthy"]
+    if problem:
+        print("待修复名单：")
+        for item in problem:
+            mean = "—" if item["mean"] is None else f"{item['mean']:.1f}"
+            ink = "—" if item["ink_ratio"] is None else f"{item['ink_ratio']:.4f}"
+            print(f"  - {item['document_id']}  {item['status_label']}  "
+                  f"页数 {item['pages']}  均值 {mean}  墨迹 {ink}  {item['title']}")
+    if not problem:
+        print("没有需要修复的文档。")
+
+
+def _print_plan(plan: dict) -> None:
+    print(f"dry-run（未执行；加 --yes 才会真实调用 VLM）")
+    print(f"计划修复 {len(plan['document_ids'])} 篇 · 页数 {plan['pages']} · "
+          f"预估 VLM 调用数 {plan['estimated_vlm_calls']}")
+    for item in plan["documents"]:
+        print(f"  - {item['document_id']}  {item['status_label']}  {item['title']}")
+    for skip in plan["skipped"]:
+        print(f"  - {skip['document_id']}  跳过（{skip['reason']}）")
+    if not plan["document_ids"]:
+        print("没有需要重跑的文档。")
+
+
+def _cmd_repair(args) -> int:
+    import json as _json
+
+    from . import config
+    from . import repair as repairlib
+    from .store import FileDocumentStore
+
+    storage = config.ensure_storage_dir(config.resolve_storage_dir(args.storage))
+    store = FileDocumentStore(str(storage))
+
+    if args.action == "scan":
+        report = repairlib.scan_library(store)
+        if args.json:
+            print(_json.dumps(report, ensure_ascii=False, indent=2))
+        else:
+            _print_scan(report)
+        return 0
+
+    if not args.yes:
+        plan = repairlib.plan_repair(store, args.doc or None)
+        if args.json:
+            print(_json.dumps(plan, ensure_ascii=False, indent=2))
+        else:
+            _print_plan(plan)
+        return 0
+
+    job = repairlib.run_repair(store, args.doc or None, model=args.model)
+    if args.json:
+        print(_json.dumps(job.public(), ensure_ascii=False, indent=2))
+    else:
+        print(f"修复任务 {job.repair_id} · 状态 {job.status} · "
+              f"预估 VLM 调用数 {job.estimated_vlm_calls} · 实际 {job.vlm_calls}")
+        for item in job._sorted_items():
+            detail = item.error or item.reason or ""
+            post = "" if item.post_mean is None else (
+                f" 均值 {item.post_mean:.1f} 墨迹 "
+                f"{'—' if item.post_ink is None else format(item.post_ink, '.4f')}")
+            print(f"  - {item.document_id}  {item.status}{post}  {detail}")
+        print(f"结果已落盘：{job.work_dir}/job.json")
+    return 0 if job.status == "done" else 1
+
+
 def build_config_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="graph2note config",
@@ -286,6 +399,9 @@ def main(argv: list[str] | None = None) -> int:
         from .semantic import cli as _dcli
         args = _dcli.build_diff_parser().parse_args(argv[1:])
         return _dcli.cmd_diff(args)
+    if argv and argv[0] == "repair":
+        args = build_repair_parser().parse_args(argv[1:])
+        return _cmd_repair(args)
     if argv and argv[0] == "visual-qa":
         from . import visualqa
         args = visualqa.build_visualqa_parser().parse_args(argv[1:])

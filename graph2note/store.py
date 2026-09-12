@@ -114,12 +114,18 @@ class DocumentStore(ABC):
                       markdown, ir_json, original_path, original_ext,
                       preprocessed_path, preprocessed_raw_path, assets_dir,
                       timing_json, metadata=None, source_pdf=None, pdf_id=None,
-                      page_index=None, page_number=None) -> dict:
+                      page_index=None, page_number=None, provenance=None,
+                      provenance_detail=None) -> dict:
         """Commit a successful parse as the latest version of a record.
 
         ``source_pdf`` / ``pdf_id`` / ``page_index`` / ``page_number`` carry the
         PDF provenance (issue 08) so a page document can be traced back to its
         page in the original PDF, and the mapping survives a reload.
+
+        ``provenance`` labels how this version was produced (e.g. ``"repair"``
+        for R1 black-image re-runs); ``provenance_detail`` carries the matching
+        evidence.  Both are stored on the version itself so the evolution
+        anchoring work (S2) can classify a version chain without guessing.
         """
 
     @abstractmethod
@@ -279,7 +285,8 @@ class SessionDocumentStore(DocumentStore):
                       markdown, ir_json, original_path, original_ext,
                       preprocessed_path, preprocessed_raw_path, assets_dir,
                       timing_json, pg_hash="", metadata=None, source_pdf=None,
-                      pdf_id=None, page_index=None, page_number=None) -> dict:
+                      pdf_id=None, page_index=None, page_number=None,
+                      provenance=None, provenance_detail=None) -> dict:
         now = _now()
         rec = self._docs.get(document_id)
         version_id = f"v{int(time.time() * 1000)}-{len(rec.get('versions')) if rec else 0}"
@@ -320,6 +327,9 @@ class SessionDocumentStore(DocumentStore):
             "pg_hash": pg_hash,
             "original_path": original_path,
             "original_ext": original_ext,
+            **({"provenance": provenance} if provenance is not None else {}),
+            **({"provenance_detail": provenance_detail}
+               if provenance_detail is not None else {}),
             "current": True,  # refreshed below to be exact
         })
         for i, v in enumerate(rec["versions"]):
@@ -695,6 +705,8 @@ class FileDocumentStore(SessionDocumentStore):
                 "page_path": str(_first(vdir, "page.*") or vdir / "markdown.md"),
                 "timing_path": str(timing_path),
                 "telemetry": telemetry,
+                "provenance": v.get("provenance"),
+                "provenance_detail": v.get("provenance_detail"),
                 "current": vid == lv["version_id"],
             })
         rec["versions"] = versions
@@ -712,6 +724,8 @@ class FileDocumentStore(SessionDocumentStore):
                 "assets_root": str(vdir),
                 "timing_path": str(vdir / "timing.json"),
                 "telemetry": versions[-1].get("telemetry") if versions else None,
+                "provenance": lv.get("provenance"),
+                "provenance_detail": lv.get("provenance_detail"),
             }
         # live (edited) markdown
         mp = base / "markdown.md"
@@ -731,7 +745,8 @@ class FileDocumentStore(SessionDocumentStore):
                       markdown, ir_json, original_path, original_ext,
                       preprocessed_path, preprocessed_raw_path, assets_dir,
                       timing_json, pg_hash="", metadata=None, source_pdf=None,
-                      pdf_id=None, page_index=None, page_number=None) -> dict:
+                      pdf_id=None, page_index=None, page_number=None,
+                      provenance=None, provenance_detail=None) -> dict:
         document_id = _safe(document_id)
         base = self._doc_dir(document_id)
         base.mkdir(parents=True, exist_ok=True)
@@ -779,13 +794,18 @@ class FileDocumentStore(SessionDocumentStore):
         rec["latest_version"] = version_id
         rec["current_hash"] = pg_hash
         versions = rec.setdefault("versions", [])
-        versions.append({
+        version_entry = {
             "version_id": version_id,
             "created_at": now,
             "model": model,
             "pg_hash": pg_hash,
             "telemetry": normalize_telemetry(timing_json, model=model),
-        })
+        }
+        if provenance is not None:
+            version_entry["provenance"] = provenance
+        if provenance_detail is not None:
+            version_entry["provenance_detail"] = provenance_detail
+        versions.append(version_entry)
         rec["versions"] = versions
         merge_record_metadata(
             rec,
