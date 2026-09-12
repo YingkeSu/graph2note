@@ -162,6 +162,12 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 .digest-head p { font-size: 14px; }
 .digest-head { margin-bottom: 16px; }
 
+/* Organising: roomy tag rows and clear review controls. */
+.inbox-item { border-radius: 6px; padding: 18px; }
+.inbox-item-title { font-size: 16px; }
+.inbox-item-meta { font-size: 12px; }
+.inbox-item:hover { background: var(--accent-soft); border-color: var(--accent); }
+.inbox-reason { white-space: normal; }
 @media (hover: none) { .doc-card .doc-card-actions { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0s !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
