@@ -5,13 +5,15 @@
 
 ## 发布与执行状态
 
-- 已发布：15（R1、U1–U5、P1–P3、S1–S3、A1–A3）。已认领：4（S1、P1、R1、A1）。已完成：4（S1、P1、R1、A1）。已合并：4（S1，merge `582aa61`；P1，merge `e682e3f`；R1，merge `e1281d8`；A1，merge `6fe379e`）。
+- 已发布：15（R1、U1–U5、P1–P3、S1–S3、A1–A3）。已认领：5（S1、P1、R1、A1、U1）。已完成：5（S1、P1、R1、A1、U1）。已合并：5（S1，merge `582aa61`；P1，merge `e682e3f`；R1，merge `e1281d8`；A1，merge `6fe379e`；U1，merge `7643f9e`）。
+- 本次合并后**已解锁**：U2、U3、U4、U5、P2（P2 仍需 P1 已合并 —— 已满足）；建议 P3 也在 U1 之后派发。
 - 全部 issue `ready-for-agent` = 需求已就绪，**不表示阻塞依赖已完成**；依赖以各 issue Blocked by 为准。
-- 第一波（无阻塞，可立即并行派）：**R1、U1、P1、S1、A1、A2、A3**。
-- 第二波：U2/U3/U4/U5（待 U1）、P2（待 U1+P1）、P3（待 P1，建议待 U1）、S2（待 S1）。
+- 第一波（无阻塞，可立即并行派）：**R1、U1、P1、S1、A1、A2、A3**（R1/U1/P1/S1/A1 已合并）。
+- 第二波：U2/U3/U4/U5（U1 已合并 → **已解锁**）、P2（U1+P1 均已合并 → **已解锁**）、P3（待 P1，建议待 U1 —— 两者均已合并）、S2（待 S1，已满足）。
 - 第三波：S3（待 S1+U3）。
 - R1 与 S2 有字段约定（重跑版本标注 repair 来源），两 issue 派发时调度需知晓；P2 与 P3 均触碰问答前端，先后派发由调度协调（P2 先）。
 - 领地隔离：U 系 issues 大量触碰 `webstatic/`，U1 与 U2–U5 严禁并行领取（骨架未定时视图实现会全返工）；U2/U4/U5 之间可并行但需调度切分文件领地；U3 与 S3 串行。
+- U1 合并（`7643f9e`）已把 `app.js` 拆为 17 个 ES modules（入口 `webstatic/app.js` + `webstatic/js/**`）；后续 U2–U5/P2/P3 以**新模块结构**为挂载点（视图模块见 U1 handoff §4）。整合时已把 P1 多轮问答控件、R1 repair 入口（侧栏次级 + `#repair` 路由）、A1 自动打标角标移植进新结构，行为未回退。
 - A 系领地提示：A1 编辑器标签区与 U3、A2 看板区块与 U1、A3 设置视图入口与 U1 均为弱交集——A 系以现行 UI 交付、U 系重构时承诺行为保持；若同期在跑由调度切分 `webstatic/` 文件领地。A3 另触碰 `llm_settings.py`/`eval/gateway.py`（独占）。
 
 ## Issue 清单
@@ -19,7 +21,7 @@
 | Issue | 类别 | Blocked by | Status |
 |---|---|---|---|
 | [R1 黑图存量检测与重解析闭环](issues/R1-black-image-repair-loop.md) | 修复 | 无 | merged (e1281d8) |
-| [U1 全局布局与导航重构（地基）](issues/U1-global-layout-navigation.md) | UX | 无 | open |
+| [U1 全局布局与导航重构（地基）](issues/U1-global-layout-navigation.md) | UX | 无 | merged (7643f9e) |
 | [U2 文档卡片富化与 Library 网格重排](issues/U2-library-cards-grid.md) | UX | [U1](issues/U1-global-layout-navigation.md) | open |
 | [U3 编辑器工作区改造](issues/U3-editor-workspace.md) | UX | [U1](issues/U1-global-layout-navigation.md) | open |
 | [U4 知识图谱交互升级](issues/U4-graph-interaction.md) | UX | [U1](issues/U1-global-layout-navigation.md) | open |

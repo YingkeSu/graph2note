@@ -1,6 +1,6 @@
 # U1：全局布局与导航重构（地基）
 
-Status: ready-for-agent
+Status: merged
 Labels: track-ux, priority-high
 
 ## What to build
