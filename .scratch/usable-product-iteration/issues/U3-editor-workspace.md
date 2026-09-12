@@ -1,6 +1,6 @@
 # U3：编辑器工作区改造（信息侧板 + 原图查看器 + 快捷键）
 
-Status: ready-for-agent
+Status: merged
 Labels: track-ux
 
 ## What to build
