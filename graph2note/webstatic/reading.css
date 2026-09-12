@@ -132,6 +132,20 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 .timeline-thumb-missing { font-size: 12px; }
 .timeline-run-band { white-space: normal; }
 
+/* Graph keeps category colours, while the canvas becomes a quiet sheet. */
+.graph-zone { overflow: auto; }
+.graph-head { margin-bottom: 8px; }
+.graph-head p { max-width: 680px; }
+.graph-legend { flex-shrink: 0; }
+.graph-toolbar { border-radius: 6px; }
+.graph-toolbar .icon-btn { border: 1px solid var(--line); color: var(--ink); background: var(--panel); border-radius: 5px; }
+.graph-button.active, .graph-chip.active { background: var(--accent-soft); color: var(--accent-dark); }
+.graph-scroll { border-radius: 6px; min-height: 360px; }
+.graph-canvas { background: var(--panel); min-height: 340px; }
+.graph-node-document circle { fill: var(--accent); stroke: var(--accent-dark); }
+.graph-node text { font-size: 18px; }
+.graph-node:hover circle, .graph-node:focus circle { filter: none; stroke-width: 3px; }
+
 @media (hover: none) { .doc-card .doc-card-actions { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0s !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }

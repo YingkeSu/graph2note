@@ -120,6 +120,8 @@ class FakeElement {
   removeAttribute(name) { this._attrs.delete(name); }
 
   querySelector(selector) {
+    // This success-path fixture has no loading-error banner.
+    if (selector === ".view-error") return null;
     if (!this._children.has(selector)) this._children.set(selector, new FakeElement());
     return this._children.get(selector);
   }

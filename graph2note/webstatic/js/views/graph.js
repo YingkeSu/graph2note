@@ -19,7 +19,7 @@ import { el } from "../state.js";
 import { api } from "../api.js";
 import { esc } from "../utils.js";
 import { go, registerView, graphHash } from "../router.js";
-import { showToast } from "../ui.js";
+import { showViewError, clearViewError, showToast } from "../ui.js";
 import {
   CLUSTER_THRESHOLD,
   LAYOUT,
@@ -206,6 +206,7 @@ function renderSvg() {
 }
 
 async function loadGraph() {
+  clearViewError(el.graphZone);
   el.graphZone.classList.remove("hidden");
   el.graphEmpty.classList.add("hidden");
   el.graphScroll.classList.remove("hidden");
@@ -227,10 +228,9 @@ async function loadGraph() {
     renderSvg();
     wireGraphInteractions();
   } catch (e) {
-    el.graphEmpty.querySelector("p").textContent = "图谱加载失败。";
-    el.graphEmpty.classList.remove("hidden");
+    el.graphEmpty.classList.add("hidden");
     el.graphScroll.classList.add("hidden");
-    showToast("加载图谱失败：" + e.message, "err");
+    showViewError(el.graphZone, "加载图谱失败：" + e.message, loadGraph);
   }
 }
 
