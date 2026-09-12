@@ -6,13 +6,13 @@ import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 const { chromium } = await import(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const [base = 'http://127.0.0.1:8794', output = '.scratch/frontend-loop/evidence'] = process.argv.slice(2);
+const [base = 'http://127.0.0.1:8794', output = '.scratch/frontend-loop/evidence', mode = 'app'] = process.argv.slice(2);
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_BIN || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
 const results = [];
 const routes = ['library','timeline/day','graph','dashboard','inbox','tags','ask','settings','vault-export','upload','repair'];
 try {
-  for (const width of [1440,390]) {
+  for (const width of [1440,768,390]) {
     const context = await browser.newContext({viewport:{width,height:900}});
     const page = await context.newPage();
     let errors=[];
@@ -26,7 +26,7 @@ try {
         return {title:document.title, hash:location.hash,
           headings:[...document.querySelectorAll('main h2')].filter(visible).map(e=>e.textContent.trim()),
           overflow:document.documentElement.scrollWidth>innerWidth,
-          clipped:[...document.querySelectorAll('main button,main input, main select')].filter(visible).filter(e=>{const r=e.getBoundingClientRect();return r.right>innerWidth+1||r.left<0}).slice(0,20).map(e=>({id:e.id,text:e.textContent.trim().slice(0,60)}))};
+          clipped:[...document.querySelectorAll('header button,header input, main button,main input, main select')].filter(visible).filter(e=>{const r=e.getBoundingClientRect();return r.right>innerWidth+1||r.left<0}).slice(0,20).map(e=>({id:e.id,text:e.textContent.trim().slice(0,60)}))};
       });
       const filename=`${width}-${route.replaceAll('/','-')}.png`;
       await page.screenshot({path:resolve(output,filename),fullPage:true});
@@ -34,7 +34,7 @@ try {
     }
     await context.close();
   }
-  for (const name of ['a-studio','b-reading','c-index']) {
+  for (const name of mode === '--prototypes' ? ['a-studio','b-reading','c-index'] : []) {
     const page=await browser.newPage({viewport:{width:1440,height:900}});
     const errors=[];page.on('pageerror',e=>errors.push(e.message));
     await page.goto(pathToFileURL(resolve('.scratch/frontend-loop/design-demos',`${name}.html`)).href);
