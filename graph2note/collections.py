@@ -108,7 +108,20 @@ def collection_entries(
 
 
 def apply_topic_defaults(record: dict[str, Any], registry: dict[str, Any]) -> bool:
-    """Add topic-derived memberships while retaining manual memberships."""
+    """Recompute effective memberships from manual + auto + topic sources.
+
+    ``collections`` is the effective (display/export/query) list and is always
+    the ordered union of three provenance buckets:
+
+    * ``manual_collections`` — user-owned memberships, never auto-changed;
+    * ``auto_collections`` — machine-owned memberships written by the
+      auto-organization classifier (issue 02), never surfaced as manual;
+    * topic-derived memberships from ``record['topics']`` (existing behaviour).
+
+    Auto memberships pointing at a collection that no longer exists in the
+    registry are dropped, so deleting/renaming a collection cannot resurrect a
+    stale membership.
+    """
 
     topics = [str(topic).strip() for topic in (record.get("topics") or []) if str(topic).strip()]
     changed = False
@@ -118,6 +131,7 @@ def apply_topic_defaults(record: dict[str, Any], registry: dict[str, Any]) -> bo
         changed = changed or created
         derived.append(cid)
 
+    known = registry.get("collections", {})
     existing = list(record.get("collections") or [])
     manual = record.get("manual_collections")
     if manual is None:
@@ -125,10 +139,19 @@ def apply_topic_defaults(record: dict[str, Any], registry: dict[str, Any]) -> bo
         # user-owned.  Topic collections are recognized and kept derived.
         manual = [
             cid for cid in existing
-            if (registry.get("collections", {}).get(cid) or {}).get("source") != "topic"
+            if (known.get(cid) or {}).get("source") != "topic"
         ]
     manual = list(dict.fromkeys(manual))
-    memberships = list(dict.fromkeys(manual + derived))
+
+    auto = record.get("auto_collections")
+    if auto is None:
+        auto = []
+    auto = [cid for cid in dict.fromkeys(auto) if cid in known]
+    if record.get("auto_collections") != auto:
+        record["auto_collections"] = auto
+        changed = True
+
+    memberships = list(dict.fromkeys(manual + auto + derived))
     if record.get("manual_collections") != manual:
         record["manual_collections"] = manual
         changed = True
