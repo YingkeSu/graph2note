@@ -23,6 +23,7 @@ export const state = {
   libraryFilter: "all",
   libraryTag: null,
   libraryTopic: null,
+  libraryDensity: null,   // U2 grid density (comfortable/compact)
   timelineGroup: "day",
   digestId: null,      // A2: selected weekly digest id
   llmSettings: null,
@@ -36,6 +37,7 @@ export const el = {
   globalSearchInput: $("#global-search-input"),
   libraryZone: $("#library-zone"),
   libraryFilters: $("#library-filters"),
+  libraryDensity: $("#library-density"),
   inboxZone: $("#inbox-zone"),
   inboxEmpty: $("#inbox-empty"),
   inboxList: $("#inbox-list"),

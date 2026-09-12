@@ -1,6 +1,10 @@
-/* graph2note — Library view (document grid).  U1: only the head + grid + empty
-   state live here; collection tree -> sidebar, tag vocabulary -> #tags,
-   PDF search/Q&A -> #pdf-search. */
+/* graph2note — Library view (document grid).
+
+   U1: only the head + grid + empty state live here; collection tree -> sidebar,
+   tag vocabulary -> #tags, PDF search/Q&A -> #pdf-search.
+   U2: the grid renders identifiable knowledge cards (thumbnail / headline /
+   effective date / tag chips / source icon), keeps thumbnails viewport-lazy and
+   exposes density + hover quick actions. */
 "use strict";
 
 import { el, state } from "../state.js";
@@ -8,6 +12,96 @@ import { api } from "../api.js";
 import { esc } from "../utils.js";
 import { go, registerView, libraryHash } from "../router.js";
 import { showToast, refreshCollectionTree } from "../ui.js";
+import {
+  DEFAULT_DENSITY,
+  DENSITY_KEY,
+  cardHtml,
+  createThumbnailLoader,
+  normalizeDensity,
+  wireCardActions,
+} from "../library_cards.js";
+
+const SKELETON_COUNT = 8;
+const DELETE_CONFIRM = "删除文档将移除原图、识别结果、Markdown 与全部附件，且不可恢复。确定删除？";
+const REPARSE_CONFIRM = "重新解析将用新的识别结果覆盖当前 Markdown（您的编辑将被替换，旧内容仍在历史版本可查）。确定继续吗？";
+
+let thumbnailLoader = null;
+
+function readDensity() {
+  try { return normalizeDensity(localStorage.getItem(DENSITY_KEY)); }
+  catch (_) { return DEFAULT_DENSITY; }
+}
+
+function applyDensity(value) {
+  const density = normalizeDensity(value || readDensity());
+  state.libraryDensity = density;
+  if (el.libraryGrid) el.libraryGrid.dataset.density = density;
+  if (el.libraryDensity) {
+    el.libraryDensity.querySelectorAll("button[data-density]").forEach((button) => {
+      const active = button.dataset.density === density;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+  }
+  try { localStorage.setItem(DENSITY_KEY, density); } catch (_) { /* ignore */ }
+  return density;
+}
+
+function renderSkeleton() {
+  const card = `
+    <div class="doc-card doc-card-skeleton" aria-hidden="true">
+      <div class="thumb skeleton-block"></div>
+      <div class="doc-meta">
+        <div class="skeleton-line wide"></div>
+        <div class="skeleton-line"></div>
+        <div class="skeleton-line short"></div>
+      </div>
+    </div>`;
+  el.libraryGrid.innerHTML = card.repeat(SKELETON_COUNT);
+}
+
+function installThumbnailLazyLoading(root) {
+  if (thumbnailLoader) thumbnailLoader.disconnect();
+  const makeObserver = typeof IntersectionObserver === "function"
+    ? (callback) => new IntersectionObserver(callback, { rootMargin: "0px", threshold: 0.01 })
+    : null;
+  thumbnailLoader = createThumbnailLoader({
+    makeObserver,
+    load: (img) => {
+      const src = img.dataset.src;
+      if (src) {
+        img.addEventListener("error", () => img.classList.add("doc-thumb-error"), { once: true });
+        img.src = src;
+      }
+      img.removeAttribute("data-src");
+    },
+  });
+  root.querySelectorAll("img.doc-thumb[data-src]").forEach((img) => {
+    thumbnailLoader.observe(img);
+  });
+}
+
+async function quickReparse(id) {
+  if (state.busy) return;
+  state.busy = true;
+  try {
+    await api(`/api/documents/${encodeURIComponent(id)}/reparse`, { method: "POST" });
+    showToast("已发起重新解析，完成后卡片会更新", "ok");
+  } catch (e) {
+    showToast("发起重新解析失败：" + e.message, "err");
+  }
+  state.busy = false;
+}
+
+async function quickDelete(id) {
+  try {
+    await api(`/api/documents/${encodeURIComponent(id)}`, { method: "DELETE" });
+    showToast("文档已删除", "ok");
+    await renderLibrary();
+  } catch (e) {
+    showToast("删除失败：" + e.message, "err");
+  }
+}
 
 export function renderLibraryRoute(route) {
   state.libraryTag = route.tag || null;
@@ -28,7 +122,8 @@ export function renderLibraryRoute(route) {
 
 async function renderLibrary() {
   el.libraryZone.classList.remove("hidden");
-  el.libraryGrid.innerHTML = "";
+  applyDensity(state.libraryDensity);
+  renderSkeleton();
   let docs = [];
   const params = new URLSearchParams();
   if (state.libraryCollection) params.set("collection_id", state.libraryCollection);
@@ -45,29 +140,17 @@ async function renderLibrary() {
       : state.libraryTag ? `标签：#${state.libraryTag}` : "";
   }
   el.libraryEmpty.classList.toggle("hidden", docs.length > 0);
-  for (const d of docs) {
-    const card = document.createElement("div");
-    card.className = "doc-card";
-    card.dataset.id = d.document_id;
-    card.innerHTML = `
-      <div class="thumb"><img loading="lazy" alt="" data-src="/api/documents/${encodeURIComponent(d.document_id)}/preprocessed"></div>
-      <div class="doc-meta">
-        <div class="doc-title">${esc(d.title)}</div>
-        <div class="doc-time dim">更新 ${esc((d.updated_at || "").replace("T", " "))}${d.version_count > 1 ? ` · ${d.version_count} 版` : ""}</div>
-      </div>`;
-    card.addEventListener("click", () => go(`#doc/${encodeURIComponent(d.document_id)}`));
-    el.libraryGrid.appendChild(card);
-  }
+  el.libraryGrid.innerHTML = docs.map((d) => cardHtml(d, esc)).join("");
+  wireCardActions(el.libraryGrid, {
+    open: (id) => go(`#doc/${encodeURIComponent(id)}`),
+    confirmDelete: () => window.confirm(DELETE_CONFIRM),
+    remove: (id) => quickDelete(id),
+    confirmReparse: () => window.confirm(REPARSE_CONFIRM),
+    reparse: (id) => quickReparse(id),
+  });
+  installThumbnailLazyLoading(el.libraryGrid);
   syncLibraryFilters();
   await refreshCollectionTree();
-  // lazy-load thumbnails
-  requestAnimationFrame(() => {
-    el.libraryGrid.querySelectorAll("img[data-src]").forEach((img) => {
-      img.src = img.dataset.src;
-      img.removeAttribute("data-src");
-      img.onerror = () => { img.remove(); };
-    });
-  });
 }
 
 function syncLibraryFilters() {
@@ -92,12 +175,20 @@ function filterLibraryDocuments(docs) {
   });
 }
 
-/* Filter chips write to the URL so navigation state and history agree. */
+/* Filter chips and the density switch write to the URL / localStorage so
+   navigation state and the rendered grid agree after a reload. */
 export function wireLibraryFilters() {
-  if (!el.libraryFilters) return;
-  el.libraryFilters.querySelectorAll("button[data-library-filter]").forEach((button) => {
-    button.addEventListener("click", () => go(libraryHash({ filter: button.dataset.libraryFilter })));
-  });
+  if (el.libraryFilters) {
+    el.libraryFilters.querySelectorAll("button[data-library-filter]").forEach((button) => {
+      button.addEventListener("click", () => go(libraryHash({ filter: button.dataset.libraryFilter })));
+    });
+  }
+  if (el.libraryDensity) {
+    el.libraryDensity.querySelectorAll("button[data-density]").forEach((button) => {
+      button.addEventListener("click", () => applyDensity(button.dataset.density));
+    });
+  }
 }
 
+wireLibraryFilters();
 registerView("library", renderLibraryRoute);

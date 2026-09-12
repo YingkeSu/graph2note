@@ -55,6 +55,7 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_repair": "webapp",  # R1 黑图修复闭环（CLI + API + Web）
     "test_documents": "webapp",
     "test_evolution_api": "webapp",  # issue S2（版本链/候选 API 契约）,
+    "test_library_cards": "webapp",  # U2（新文件）
     "test_session_health_cli": "webapp",
     # Obsidian 导出 / 分类 / MOC
     "test_vault_exporter": "notes",

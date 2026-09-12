@@ -1,0 +1,122 @@
+{
+  "url": "http://127.0.0.1:8766/#library",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "density": "compact",
+  "columns": 4,
+  "totalCards": 43,
+  "fullyVisibleCards": 12,
+  "first12FullyVisible": 12,
+  "withThumbnail": 43,
+  "withTitle": 43,
+  "withDate": 43,
+  "withSource": 43,
+  "withChips": 43,
+  "horizontalOverflow": false,
+  "gridTop": 128,
+  "firstCardTitle": "强化学习纲要（第 43 页）",
+  "firstCardFilename": "IMG_2043.png",
+  "firstCardDate": "2026-02-17",
+  "firstCardChips": [
+    "#手稿",
+    "#待复习",
+    "#数学",
+    "+1"
+  ],
+  "firstCardSource": "image",
+  "initialImageRequests": 16,
+  "initialThumbnailRequests": 16,
+  "comfortableDensity": {
+    "density": "comfortable",
+    "columns": 3
+  },
+  "compactAfterToggle": {
+    "viewport": {
+      "width": 1440,
+      "height": 1000
+    },
+    "density": "compact",
+    "columns": 4,
+    "totalCards": 43,
+    "fullyVisibleCards": 12,
+    "first12FullyVisible": 12,
+    "withThumbnail": 43,
+    "withTitle": 43,
+    "withDate": 43,
+    "withSource": 43,
+    "withChips": 43,
+    "horizontalOverflow": false,
+    "gridTop": 128,
+    "firstCardTitle": "强化学习纲要（第 43 页）",
+    "firstCardFilename": "IMG_2043.png",
+    "firstCardDate": "2026-02-17",
+    "firstCardChips": [
+      "#手稿",
+      "#待复习",
+      "#数学",
+      "+1"
+    ],
+    "firstCardSource": "image"
+  },
+  "widthSweep": {
+    "1280": {
+      "viewport": {
+        "width": 1280,
+        "height": 1000
+      },
+      "density": "compact",
+      "columns": 3,
+      "totalCards": 43,
+      "fullyVisibleCards": 9,
+      "first12FullyVisible": 9,
+      "withThumbnail": 43,
+      "withTitle": 43,
+      "withDate": 43,
+      "withSource": 43,
+      "withChips": 43,
+      "horizontalOverflow": false,
+      "gridTop": 128,
+      "firstCardTitle": "强化学习纲要（第 43 页）",
+      "firstCardFilename": "IMG_2043.png",
+      "firstCardDate": "2026-02-17",
+      "firstCardChips": [
+        "#手稿",
+        "#待复习",
+        "#数学",
+        "+1"
+      ],
+      "firstCardSource": "image"
+    },
+    "1920": {
+      "viewport": {
+        "width": 1920,
+        "height": 1000
+      },
+      "density": "compact",
+      "columns": 6,
+      "totalCards": 43,
+      "fullyVisibleCards": 18,
+      "first12FullyVisible": 12,
+      "withThumbnail": 43,
+      "withTitle": 43,
+      "withDate": 43,
+      "withSource": 43,
+      "withChips": 43,
+      "horizontalOverflow": false,
+      "gridTop": 128,
+      "firstCardTitle": "强化学习纲要（第 43 页）",
+      "firstCardFilename": "IMG_2043.png",
+      "firstCardDate": "2026-02-17",
+      "firstCardChips": [
+        "#手稿",
+        "#待复习",
+        "#数学",
+        "+1"
+      ],
+      "firstCardSource": "image"
+    }
+  },
+  "captured_with": "headless Chrome CDP layout probe, http://127.0.0.1:8766/#library, viewport 1440x1000 (device-metrics override), 43 seeded documents (all with tag chips; every 7th is a PDF page); screenshot: library-cards-1440.png"
+}

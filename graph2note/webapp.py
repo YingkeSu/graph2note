@@ -31,6 +31,7 @@ import zipfile
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from urllib.parse import quote
 
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.responses import FileResponse, Response
@@ -112,6 +113,65 @@ def _tag_payload(record: dict | None) -> dict:
         "tags": tags,
         "tag_provenance": {item["tag"]: item["provenance"] for item in detail},
         "tags_detail": detail,
+    }
+
+
+# Maximum edge of the Library card thumbnail (U2).  Cards display at ~250-320
+# CSS px, so 480px keeps a crisp 1.5x/2x raster while cutting the 43-document
+# first-paint payload far below the raw preprocessed pages.
+THUMBNAIL_MAX = 480
+
+
+def _write_thumbnail(source: Path, target: Path) -> None:
+    """Downscale ``source`` into a cached PNG ``target`` (Pillow, offline)."""
+
+    from PIL import Image
+
+    resample = getattr(Image, "Resampling", Image).LANCZOS
+    with Image.open(source) as image:
+        thumb = image.copy()
+        thumb.thumbnail((THUMBNAIL_MAX, THUMBNAIL_MAX), resample)
+        if thumb.mode not in ("1", "L", "LA", "RGB", "RGBA", "P"):
+            thumb = thumb.convert("RGB")
+        tmp = target.with_name(target.name + ".tmp")
+        thumb.save(tmp, format="PNG", optimize=True)
+    tmp.replace(target)
+
+
+def _library_card_fields(doc: dict) -> dict:
+    """Append U2 card fields to a ``/api/documents`` summary (additive only).
+
+    No existing key is removed or redefined; the frontend degrades to
+    filename+date when any of these are absent (older API responses).
+    """
+
+    document_id = str(doc.get("document_id") or "")
+    source_pdf = doc.get("source_pdf")
+    page_number = doc.get("page_number")
+    if source_pdf:
+        label = Path(str(source_pdf)).name
+        if page_number:
+            label = f"{label} · 第 {page_number} 页"
+        source_kind = "pdf"
+    else:
+        label = "图片上传"
+        source_kind = "image"
+    version_count = doc.get("version_count")
+    if version_count is None:
+        versions = doc.get("versions")
+        version_count = len(versions) if isinstance(versions, list) else 0
+    return {
+        "headline": str(doc.get("headline") or ""),
+        "tags": list(doc.get("tags") or []),
+        "thumbnail_url": (
+            f"/api/documents/{quote(document_id, safe='')}/thumbnail"
+            if document_id else ""
+        ),
+        "source_kind": source_kind,
+        "source_label": label,
+        "source_pdf": source_pdf,
+        "page_number": page_number,
+        "version_count": version_count,
     }
 
 
@@ -689,7 +749,7 @@ def create_app(
                 if selected in (item.get("collections") or [])
             ]
         if not selected_tag and not selected_topic:
-            return documents
+            return [item | _library_card_fields(item) for item in documents]
         filtered = []
         for item in documents:
             record = store.get_document(item["document_id"])
@@ -700,7 +760,7 @@ def create_app(
             if selected_topic and selected_topic not in (record.get("topics") or []):
                 continue
             filtered.append(item)
-        return filtered
+        return [item | _library_card_fields(item) for item in filtered]
 
     @app.get("/api/timeline")
     def timeline_list(
@@ -1175,6 +1235,27 @@ def create_app(
         if not p or not Path(p).is_file():
             raise HTTPException(status_code=404, detail="预处理图尚未就绪。")
         return FileResponse(p, media_type="image/png")
+
+    @app.get("/api/documents/{document_id}/thumbnail")
+    def document_thumbnail(document_id: str):
+        """U2: downscaled card thumbnail, cached next to the preprocessed page."""
+
+        rec = _get_document(document_id)
+        latest = rec.get("latest") or {}
+        source = latest.get("preprocessed_path")
+        if not source or not Path(source).is_file():
+            raise HTTPException(status_code=404, detail="缩略图尚未就绪。")
+        source_path = Path(source)
+        target = source_path.with_name("thumbnail.png")
+        try:
+            if (not target.is_file()
+                    or target.stat().st_mtime < source_path.stat().st_mtime):
+                _write_thumbnail(source_path, target)
+        except Exception:
+            # A missing/broken cache must not hide the page: fall back to the
+            # full preprocessed image (CSS still constrains its display size).
+            return FileResponse(str(source_path), media_type="image/png")
+        return FileResponse(str(target), media_type="image/png")
 
     @app.get("/api/documents/{document_id}/assets/{name}")
     def document_asset(document_id: str, name: str):
