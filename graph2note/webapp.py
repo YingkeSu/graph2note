@@ -780,6 +780,39 @@ def create_app(
         except SettingsError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+    # ---- Custom OpenAI-compatible providers (issue A3) --------------------
+    # The API key is write-only: create/update accept it, every response only
+    # carries a configured/not-configured boolean.
+
+    @app.post("/api/llm/providers")
+    def llm_provider_create(body: dict | None = None):
+        try:
+            return app.state.llm_settings.add_provider(body or {})
+        except SettingsError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.put("/api/llm/providers/{provider_id}")
+    @app.patch("/api/llm/providers/{provider_id}")
+    def llm_provider_update(provider_id: str, body: dict | None = None):
+        try:
+            return app.state.llm_settings.update_provider(provider_id, body or {})
+        except SettingsError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.delete("/api/llm/providers/{provider_id}")
+    def llm_provider_delete(provider_id: str):
+        try:
+            return app.state.llm_settings.delete_provider(provider_id)
+        except SettingsError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.post("/api/llm/providers/{provider_id}/models")
+    def llm_provider_refresh_models(provider_id: str):
+        try:
+            return app.state.llm_settings.refresh_provider_models(provider_id)
+        except SettingsError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
     @app.get("/api/llm/health")
     @app.post("/api/llm/health")
     def llm_health():

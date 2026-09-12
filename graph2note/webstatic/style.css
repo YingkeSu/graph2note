@@ -280,6 +280,28 @@ body {
   color: var(--muted); font-size: 12px; }
 .llm-health-item strong { color: var(--ink); min-width: 80px; }
 
+/* Custom OpenAI-compatible providers (issue A3) */
+.llm-custom-zone { margin-top: 26px; border-top: 1px solid var(--line); padding-top: 20px; }
+.settings-subhead { margin-bottom: 12px; }
+.settings-subhead h3 { margin: 0; font-size: 15px; }
+.settings-subhead p { margin: 5px 0 0; font-size: 12px; max-width: 720px; }
+.settings-subhead code { font-family: var(--mono); background: #f3f4f6; padding: 1px 5px; border-radius: 4px; }
+.llm-custom-form { display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 10px;
+  padding: 14px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
+.llm-custom-form label { display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: var(--muted); }
+.llm-custom-form label.wide { grid-column: 1 / -1; }
+.llm-custom-form input, .llm-custom-form textarea { min-height: 30px; border: 1px solid var(--line);
+  border-radius: 5px; padding: 5px 8px; background: var(--panel); color: var(--ink);
+  font-size: 13px; font-family: inherit; resize: vertical; }
+.llm-custom-form-actions { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; }
+.llm-custom-form-actions .dim { font-size: 12px; }
+.llm-custom-list { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+.llm-custom-card { display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: 10px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--panel); }
+.llm-custom-info { display: flex; flex-direction: column; gap: 3px; font-size: 12px; min-width: 0; }
+.llm-custom-info .dim { overflow-wrap: anywhere; }
+.llm-custom-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+
 /* Obsidian vault export (one-way) */
 .vault-export-zone { flex: 1; overflow: auto; padding: 22px 26px 36px; max-width: 720px; }
 .vault-export-head { display: flex; align-items: flex-start; gap: 18px; margin-bottom: 18px; }
@@ -467,6 +489,8 @@ body {
   .settings-head { flex-direction: column; }
   .llm-channel-row { grid-template-columns: 1fr; }
   .llm-health-item { align-items: flex-start; flex-wrap: wrap; }
+  .llm-custom-form { grid-template-columns: 1fr; }
+  .llm-custom-card { flex-direction: column; align-items: flex-start; }
   .dashboard-periods, .dashboard-columns, .dashboard-columns:last-child { grid-template-columns: 1fr; }
   .dashboard-head { flex-direction: column; }
 }

@@ -81,6 +81,8 @@ FILE_TO_MODULE: dict[str, str] = {
     # 运行配置 / LLM 设置
     "test_config": "config",
     "test_llm_settings": "config",
+    "test_custom_llm_provider": "config",  # issue A3（自定义供应商存储/网关路由）
+    "test_custom_llm_provider_api": "webapp",  # issue A3（设置 API/UI）
     # 文档库持久化
     "test_store_bridge": "store",
     # CLI 入口
@@ -108,6 +110,7 @@ INTEGRATION_FILES: frozenset[str] = frozenset({
     "test_ingest_pdf",
     "test_autotag",
     "test_semantic_diff_cli",
+    "test_custom_llm_provider_api",  # issue A3（新文件）
 })
 
 # 成本：slow = 较重（TestClient 全链 / 全链装配 / 图渲染）
