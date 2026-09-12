@@ -112,7 +112,7 @@
 <section id="repair-zone" class="repair-zone hidden">
   <div class="repair-head">
     <h2>黑图修复报告</h2>
-    <span class="repair-dim">检测历史版本中因透视 bug 产出纯黑 preprocessed.png 的文档，并从 preprocessed_raw.png 重跑为新版本（不覆盖旧版本）。</span>
+    <span class="repair-dim">检测原图为纯黑或疑似空白的文档，可重新解析为新版本，保留旧版本。</span>
   </div>
   <div id="repair-summary" class="repair-summary"></div>
   <div class="repair-actions">
@@ -168,7 +168,7 @@
       ? `确认并开始修复（${report.repairable.length} 篇 / 预估 ${report.summary.estimated_vlm_calls} 次调用）`
       : "没有可修复的文档";
     document.getElementById("repair-note").textContent = report.repairable.length
-      ? "点击确认后会真实调用解析模型；旧版本与 preprocessed_raw.png 不会被覆盖或删除。"
+      ? "确认后将调用解析模型；原图与旧版本都会保留。"
       : "当前没有黑图或疑似空白文档需要重跑。";
 
     const list = document.getElementById("repair-list");

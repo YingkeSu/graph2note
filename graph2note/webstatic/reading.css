@@ -218,6 +218,11 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 .upload-card .btn { margin: 20px 10px 0 0; min-height: 42px; }
 .upload-format { font-size: 12px; color: var(--muted); margin: 18px 0 0; }
 
+#content .repair-zone { width: 100%; max-width: none; padding: 30px 34px 36px; }
+#content .repair-head h2 { font: 600 30px/1.35 var(--display); }
+#content .repair-row { background: var(--panel); border-color: var(--line); }
+#content .repair-row .doc { overflow-wrap: anywhere; min-width: 0; }
+#content .repair-actions { flex-wrap: wrap; }
 @media (hover: none) { .doc-card .doc-card-actions { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0s !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
@@ -240,5 +245,6 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 .tag-organize-bar { display: flex; align-items: center; }
 .doc-card .doc-source { background: #302d29dc; font-size: 12px; }
 .timeline-source { width: auto; min-width: 26px; height: auto; padding: 1px 3px; font-size: 12px; color: var(--ink); }
+#content .repair-dim { color: var(--muted); }
 .library-grid[data-density="compact"] .doc-card .thumb { height: 110px; }
 .llm-channel-label .dim { display: none; }
