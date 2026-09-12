@@ -18,6 +18,7 @@ FILE_TO_MODULE: dict[str, str] = {
     # IR schema 与校验
     "test_ir": "ir",
     "test_semantic_diff": "ir",  # issue S1（纯引擎）
+    "test_versiondiff": "ir",  # issue S3（版本对比 payload/模板摘要）
     "test_evolution": "workspace",  # issue S2（版本链 + pHash 候选规则）
     # 确定性 Markdown 渲染
     "test_renderer": "render",
@@ -56,6 +57,7 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_documents": "webapp",
     "test_evolution_api": "webapp",  # issue S2（版本链/候选 API 契约）,
     "test_library_cards": "webapp",  # U2（新文件）
+    "test_versiondiff_api": "webapp",  # issue S3（版本对比 API/静态接线）
     "test_session_health_cli": "webapp",
     # Obsidian 导出 / 分类 / MOC
     "test_vault_exporter": "notes",
@@ -119,6 +121,7 @@ INTEGRATION_FILES: frozenset[str] = frozenset({
     "test_semantic_diff_cli",
     "test_custom_llm_provider_api",  # issue A3（新文件）
     "test_evolution_api",  # issue S2（版本链/候选 API 契约）
+    "test_versiondiff_api",  # issue S3（版本对比 API/静态接线）
     "test_weekly_digest",   # issue A2（新文件）
     "test_timeline_visual",  # U5（新文件，TestClient API 契约）
 })
