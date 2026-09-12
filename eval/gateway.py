@@ -4,6 +4,9 @@ Kimi 接入见 docs/llm/kimi.md（如缺省可参照 deepseek.md 结构补充）
 DeepSeek 备援见 docs/llm/deepseek.md；opencode 历史接入见 docs/llm/opencode-go.md。
 2026-09-10 起支持 ``GRAPH2NOTE_GATEWAY=opencode|deepseek`` 切换；2026-09-11 opencode key
 退役，新增 kimi 通道，base URL / 认证 key / session 头 / 模型名映射收敛在 post_gateway 单点处理。
+2026-09-12（issue A3）：在固定注册表之外支持**任意 OpenAI 兼容自定义供应商**——
+``graph2note.llm_settings`` 落盘条目，本模块通过 ``configure_custom_providers`` 拉取合并视图；
+端点固定 ``{base_url}/chat/completions`` + Bearer key，模型名声原样透传（见 docs/llm/custom-providers.md）。
 
 按诊断报告（reports/latency-diagnosis.md）落地提速修复：
 - R1(P0) 每模型固定已验证直出 session；记录 reasoning_tokens，超阈值告警，支持换 session。
@@ -118,6 +121,83 @@ def _dotenv_get(key: str) -> str:
     return ""
 
 
+# ---------- 自定义供应商（任意 OpenAI 兼容端点，issue A3） ----------
+# 供应商条目由 ``graph2note.llm_settings`` 落盘到 llm-settings.json；传输层不反向 import
+# 该模块（会形成循环依赖），而是通过一个进程级 source 回调按需拉取条目快照：
+#
+#     gateway.configure_custom_providers(lambda: runtime_settings_store().provider_specs())
+#
+# 常量 GATEWAYS 仍是内置供应商（Kimi/DeepSeek/opencode）的唯一真相；自定义供应商以只读的
+# 合并视图叠加在上层，端点/认证/模型名透传走同一 post_gateway choke point。
+_custom_provider_source = None  # Callable[[], Mapping[str, dict]] | None
+
+
+def configure_custom_providers(source) -> None:
+    """注册「自定义供应商条目」来源（返回 id -> spec 映射的可调用对象）。
+
+    传 ``None`` 清空（测试隔离/无自定义供应商时）。回调异常一律视作「无自定义供应商」，
+    不让设置文件的问题破坏既有内置通道。
+    """
+    global _custom_provider_source
+    _custom_provider_source = source
+
+
+def reset_custom_providers() -> None:
+    """清空自定义供应商来源（测试用）。"""
+    configure_custom_providers(None)
+
+
+def _normalize_custom_config(provider_id: str, spec) -> dict | None:
+    if not isinstance(spec, dict):
+        return None
+    pid = str(provider_id or "").strip()
+    if not pid or pid in GATEWAYS:
+        return None  # 内置 id 不可被自定义覆盖
+    base = str(spec.get("base_url") or "").strip().rstrip("/")
+    if not base:
+        return None
+    models_raw = spec.get("models") or []
+    if isinstance(models_raw, str):
+        models_raw = [models_raw]
+    model_ids = [str(m).strip() for m in models_raw if str(m).strip()]
+    return {
+        "label": str(spec.get("name") or pid),
+        "base": base,
+        "key_env": None,          # 自定义供应商的 key 存本机设置文件，不读环境变量
+        "session_header": None,   # 无会话语义（OpenAI 兼容固定面）
+        "custom": True,
+        "api_key": str(spec.get("api_key") or ""),
+        "models": model_ids,      # 扁平列表：同一组模型适用于所有用途（名字原样透传）
+        "defaults": {},
+    }
+
+
+def custom_gateway_configs() -> dict[str, dict]:
+    """带归一化的自定义供应商配置（id -> config）；无来源或读取失败时为空。"""
+    source = _custom_provider_source
+    if source is None:
+        return {}
+    try:
+        specs = source() or {}
+    except Exception:
+        return {}
+    if not isinstance(specs, dict):
+        return {}
+    out: dict[str, dict] = {}
+    for pid, spec in specs.items():
+        normalized = _normalize_custom_config(pid, spec)
+        if normalized is not None:
+            out[str(pid)] = normalized
+    return out
+
+
+def available_providers() -> dict[str, dict]:
+    """内置 + 自定义供应商的合并视图（自定义覆盖不了内置 id）。"""
+    merged = dict(GATEWAYS)
+    merged.update(custom_gateway_configs())
+    return merged
+
+
 def active_gateway_name() -> str:
     raw = os.environ.get("GRAPH2NOTE_GATEWAY", "").strip() or _dotenv_get("GRAPH2NOTE_GATEWAY")
     name = raw.strip().lower() or "opencode"
@@ -129,26 +209,32 @@ def active_gateway_name() -> str:
 
 
 def gateway_config(provider: str | None = None) -> dict:
-    """Return a registered gateway, optionally overriding the env default."""
+    """Return a registered gateway (built-in or custom), overriding the env default."""
 
     name = (provider or active_gateway_name()).strip().lower() if isinstance(provider, str) else active_gateway_name()
-    if name not in GATEWAYS:
-        raise GatewayError(
-            f"未知 provider={name!r}（可选：{' / '.join(GATEWAYS)}）"
-        )
-    return GATEWAYS[name]
+    if name in GATEWAYS:
+        return GATEWAYS[name]
+    custom = custom_gateway_configs().get(name)
+    if custom is not None:
+        return custom
+    known = list(GATEWAYS) + sorted(custom_gateway_configs())
+    raise GatewayError(
+        f"未知 provider={name!r}（可选：{' / '.join(known)}）"
+    )
 
 
 def chat_completions_url(provider: str | None = None) -> str:
-    return gateway_config(provider)["base"] + "/chat/completions"
+    """OpenAI Chat Completions 端点：内置用注册 base，自定义用 ``{base_url}/chat/completions``。"""
+    return gateway_config(provider)["base"].rstrip("/") + "/chat/completions"
 
 
 def map_model(model: str, provider: str | None = None) -> str:
-    """deepseek 网关下把 opencode 时代模型名翻译为官方 API 名；其余网关原样返回。"""
+    """deepseek 网关下把 opencode 时代模型名翻译为官方 API 名；内置其余网关与自定义供应商原样返回。"""
     name = (provider or active_gateway_name()).strip().lower() if isinstance(provider, str) else active_gateway_name()
-    if name != "deepseek":
-        return model
-    return DEEPSEEK_MODEL_MAP.get(model, model)
+    if name == "deepseek" and name not in custom_gateway_configs():
+        return DEEPSEEK_MODEL_MAP.get(model, model)
+    # 自定义供应商：模型名是用户手填的厂商名，绝不套用任何 map_model 改写。
+    return model
 
 
 # 旧常量保留（opencode 默认端点；历史引用与 gold_draft 兼容），运行时端点以 chat_completions_url() 为准。
@@ -245,7 +331,8 @@ def post_gateway(
             return json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as exc:
         detail = exc.read().decode("utf-8", errors="replace")
-        raise GatewayError(f"gateway HTTP {exc.code}: {detail[:300]}") from exc
+        # 防御式：有些网关会把请求头/凭证回显在错误体里；错误信息绝不携带明文 key。
+        raise GatewayError(f"gateway HTTP {exc.code}: {_redact_secrets(detail, key)[:300]}") from exc
     except socket.timeout as exc:
         raise GatewayTimeout(f"gateway timeout after {timeout}s") from exc
     except urllib.error.URLError as exc:
@@ -256,12 +343,78 @@ def post_gateway(
         raise GatewayError(f"gateway connection error: {exc}") from exc
 
 
+def _redact_secrets(text: str, *secrets: str) -> str:
+    """把已知 key 从任意面向用户/日志的字符串里抹去（空值不处理）。"""
+    out = str(text)
+    for secret in secrets:
+        if secret and len(str(secret)) >= 4:
+            out = out.replace(str(secret), "[redacted]")
+    return out
+
+
 def load_api_key(provider: str | None = None) -> str:
-    key_env = gateway_config(provider)["key_env"]
+    """按供应商取凭证：内置走 env/.env，自定义读本机设置文件条目（绝不回写日志）。"""
+    cfg = gateway_config(provider)
+    if cfg.get("custom"):
+        key = str(cfg.get("api_key") or "").strip()
+        if key:
+            return key
+        raise GatewayError(
+            f"未找到自定义供应商 {cfg.get('label')!r} 的 API Key（请在设置页填写）"
+        )
+    key_env = cfg["key_env"]
     key = os.environ.get(key_env, "").strip() or _dotenv_get(key_env)
     if key:
         return key
     raise GatewayError(f"未找到 {key_env}（环境变量或仓库根 .env）")
+
+
+def fetch_provider_models(provider: str, *, timeout: float = 30.0,
+                         user_agent: str = USER_AGENT) -> list[str]:
+    """GET ``{base}/models`` 拉取模型清单（OpenAI 兼容面，/models 可选加分项）。
+
+    兼容两种常见响应：OpenAI ``{"data":[{"id":...}]}`` 与 Ollama ``{"models":[{"name":...}]}``。
+    返回去重排序后的 id 列表；网络/结构异常抛 :class:`GatewayError`（信息内不含 key）。
+    """
+    cfg = gateway_config(provider)
+    base = cfg["base"].rstrip("/")
+    if cfg.get("custom"):
+        key = str(cfg.get("api_key") or "").strip()
+    else:
+        key = load_api_key(provider)
+    headers = {"Accept": "application/json", "User-Agent": user_agent}
+    if key:
+        headers["Authorization"] = f"Bearer {key}"
+    req = urllib.request.Request(base + "/models", headers=headers, method="GET")
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            body = json.loads(resp.read().decode("utf-8"))
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", errors="replace")
+        raise GatewayError(f"gateway HTTP {exc.code}: {_redact_secrets(detail, key)[:300]}") from exc
+    except socket.timeout as exc:
+        raise GatewayTimeout(f"gateway timeout after {timeout}s") from exc
+    except urllib.error.URLError as exc:
+        if "timed out" in str(exc.reason).lower():
+            raise GatewayTimeout(f"gateway timeout: {exc.reason}") from exc
+        raise GatewayError(f"gateway connection error: {exc.reason}") from exc
+    except (ConnectionError, OSError) as exc:
+        raise GatewayError(f"gateway connection error: {exc}") from exc
+    except json.JSONDecodeError as exc:
+        raise GatewayError("gateway /models returned non-JSON body") from exc
+    rows = body.get("data") if isinstance(body, dict) else body
+    if not isinstance(rows, list):
+        rows = (body or {}).get("models") if isinstance(body, dict) else None
+    ids: list[str] = []
+    for row in rows or []:
+        if isinstance(row, dict):
+            value = row.get("id") or row.get("name") or row.get("model")
+        else:
+            value = row
+        token = str(value or "").strip()
+        if token and token not in ids:
+            ids.append(token)
+    return sorted(ids)
 
 
 def image_to_data_url(image_path: str) -> str:

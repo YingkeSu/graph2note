@@ -47,13 +47,13 @@ uv run pytest -m "webapp or notes"
 | pipeline | `test_pipeline.py` `test_router.py` `test_route_b.py` `test_vlm.py` `test_cli_parse.py` `test_issue11_parse.py` `test_issue12_twostage.py` `test_ocr.py` `test_e2e_images.py` | `-m pipeline` | ir、render、preprocess |
 | ingest | `test_ingest_cluster.py` `test_ingest_hash.py` `test_ingest_missing.py` `test_ingest_pdf.py`（`test_pdf_upload.py` 待 issue 08 合并） | `-m ingest` | store、webapp |
 | verify | `test_verify_diff.py` `test_verify_engine.py` | `-m verify` | pipeline |
-| webapp | `test_webapp.py` `test_webapp_vault_export.py` `test_documents.py` `test_session_health_cli.py` | `-m webapp` | pipeline、store |
+| webapp | `test_webapp.py` `test_webapp_vault_export.py` `test_documents.py` `test_session_health_cli.py` `test_custom_llm_provider_api.py` | `-m webapp` | pipeline、store |
 | notes | `test_vault_exporter.py` `test_incremental_export.py` `test_classify_moc.py` | `-m notes` | store、webapp |
 | workspace | `test_collections.py` `test_document_metadata.py` `test_tags.py` `test_timeline.py` `test_graph.py` `test_inbox.py` `test_telemetry.py` | `-m workspace` | store、webapp |
 | visualqa | `test_visualqa.py` `test_visualqa_content.py` `test_cli_visualqa.py` | `-m visualqa` | eval |
 | eval | `test_dataset.py` `test_editerate.py` `test_gateway.py` `test_gateway_select.py` `test_session_isolation.py` | `-m eval` | config、pipeline |
 | diagrams | `test_diagrams.py` `test_issue15_diagram.py` | `-m diagrams` | render、pipeline |
-| config | `test_config.py` `test_llm_settings.py` | `-m config` | eval、webapp |
+| config | `test_config.py` `test_llm_settings.py` `test_custom_llm_provider.py` | `-m config` | eval、webapp |
 | store | `test_store_bridge.py` | `-m store` | webapp、notes、workspace |
 | cli | `test_cli.py` | `-m cli` | pipeline、notes |
 | meta | `test_taxonomy.py` | `-m meta` | — |

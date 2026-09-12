@@ -130,6 +130,31 @@
     </div>
     <div id="llm-provider-list" class="llm-provider-list"></div>
     <div id="llm-channel-list" class="llm-channel-list"></div>
+
+    <!-- Custom OpenAI-compatible providers (issue A3): API Key is write-only. -->
+    <div class="llm-custom-zone">
+      <div class="settings-subhead">
+        <h3>自定义供应商</h3>
+        <p class="dim">任意 OpenAI 兼容端点：请求发往 <code>{Base URL}/chat/completions</code> + Bearer Key，
+          模型名原样透传（不做厂商改写）。API Key 只写不读，仅保存在本机设置文件（已 gitignore）。</p>
+      </div>
+      <form id="llm-custom-form" class="llm-custom-form" autocomplete="off">
+        <input id="llm-custom-id" type="hidden" />
+        <label>名称<input id="llm-custom-name" type="text" maxlength="80" placeholder="例如 DeepSeek 兼容" required /></label>
+        <label>Base URL<input id="llm-custom-base" type="url" placeholder="https://api.deepseek.com" required /></label>
+        <label>API Key<input id="llm-custom-key" type="password" autocomplete="new-password" placeholder="留空保持不变（只写不读）" /></label>
+        <label class="wide">模型列表（每行一个，或用逗号分隔）
+          <textarea id="llm-custom-models" rows="3" placeholder="deepseek-chat&#10;deepseek-reasoner"></textarea>
+        </label>
+        <div class="llm-custom-form-actions">
+          <button type="submit" id="llm-custom-submit" class="btn small primary">添加供应商</button>
+          <button type="button" id="llm-custom-cancel" class="btn small hidden">取消编辑</button>
+          <span id="llm-custom-form-hint" class="dim"></span>
+        </div>
+      </form>
+      <div id="llm-custom-list" class="llm-custom-list"></div>
+    </div>
+
     <div id="llm-health-list" class="llm-health-list"></div>
   </section>
 

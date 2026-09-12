@@ -36,6 +36,16 @@ const el = {
   llmHealthList: $("#llm-health-list"),
   llmHealthButton: $("#llm-health-button"),
   llmSaveButton: $("#llm-save-button"),
+  llmCustomForm: $("#llm-custom-form"),
+  llmCustomId: $("#llm-custom-id"),
+  llmCustomName: $("#llm-custom-name"),
+  llmCustomBase: $("#llm-custom-base"),
+  llmCustomKey: $("#llm-custom-key"),
+  llmCustomModels: $("#llm-custom-models"),
+  llmCustomSubmit: $("#llm-custom-submit"),
+  llmCustomCancel: $("#llm-custom-cancel"),
+  llmCustomHint: $("#llm-custom-form-hint"),
+  llmCustomList: $("#llm-custom-list"),
   timelineZone: $("#timeline-zone"),
   graphZone: $("#graph-zone"),
   graphEmpty: $("#graph-empty"),
@@ -547,7 +557,7 @@ function renderLlmChannels(snapshot) {
   el.llmProviderList.innerHTML = providers.map((provider) => `
     <div class="llm-provider-card">
       <span>${esc(provider.name)}</span>
-      <span class="dim">${provider.credential_configured ? "凭证已配置" : "未配置凭证"}</span>
+      <span class="dim">${provider.kind === "custom" ? "自定义 · " : ""}${provider.credential_configured ? "凭证已配置" : "未配置凭证"}</span>
     </div>`).join("");
   el.llmChannelList.innerHTML = (snapshot.purposes || []).map((purpose) => {
     const current = snapshot.channels[purpose];
@@ -567,6 +577,7 @@ function renderLlmChannels(snapshot) {
     updateLlmModelOptions(row, current && current.model);
     row.querySelector(".llm-provider").addEventListener("change", () => updateLlmModelOptions(row));
   });
+  renderLlmCustom(snapshot);
 }
 
 function renderLlmHealth(payload) {
@@ -590,6 +601,7 @@ function renderLlmHealth(payload) {
 async function renderLlmSettings() {
   el.settingsZone.classList.remove("hidden");
   el.llmChannelList.innerHTML = "<p class=\"dim\">加载配置中…</p>";
+  resetLlmCustomForm();
   try {
     state.llmSettings = await api("/api/llm/settings");
     renderLlmChannels(state.llmSettings);
@@ -628,6 +640,114 @@ async function checkLlmHealth() {
   } catch (e) { showToast("检测 LLM 通道失败：" + e.message, "err"); }
   el.llmHealthButton.disabled = false;
   el.llmHealthButton.textContent = "检测可用性";
+}
+
+/* ---------- Custom OpenAI-compatible providers (issue A3) ---------- */
+
+function customProviderHint(extra) {
+  el.llmCustomHint.textContent = extra || "";
+}
+
+function resetLlmCustomForm() {
+  el.llmCustomForm.reset();
+  el.llmCustomId.value = "";
+  el.llmCustomSubmit.textContent = "添加供应商";
+  el.llmCustomCancel.classList.add("hidden");
+  customProviderHint("");
+}
+
+function renderLlmCustom(snapshot) {
+  const providers = (snapshot && snapshot.custom_providers) || [];
+  if (!providers.length) {
+    el.llmCustomList.innerHTML = '<p class="dim">尚未添加自定义供应商。</p>';
+    return;
+  }
+  el.llmCustomList.innerHTML = providers.map((provider) => `
+    <div class="llm-custom-card" data-provider="${esc(provider.id)}">
+      <div class="llm-custom-info">
+        <strong>${esc(provider.name)}</strong>
+        <span class="dim">${esc(provider.base_url)}</span>
+        <span class="dim">模型：${esc((provider.models || []).join(", ") || "—")}</span>
+        <span class="llm-status ${provider.credential_configured ? "available" : "missing_credentials"}">${provider.credential_configured ? "Key 已设置" : "未设置 Key"}</span>
+      </div>
+      <div class="llm-custom-actions">
+        <button type="button" class="btn small" data-action="edit">编辑</button>
+        <button type="button" class="btn small" data-action="models">拉取模型</button>
+        <button type="button" class="btn small" data-action="delete">删除</button>
+      </div>
+    </div>`).join("");
+  el.llmCustomList.querySelectorAll(".llm-custom-card").forEach((card) => {
+    card.querySelectorAll("button[data-action]").forEach((button) => {
+      button.addEventListener("click", () => handleLlmCustomAction(card.dataset.provider, button.dataset.action, button));
+    });
+  });
+}
+
+function handleLlmCustomAction(providerId, action, button) {
+  const provider = ((state.llmSettings || {}).custom_providers || [])
+    .find((item) => item.id === providerId);
+  if (!provider) return;
+  if (action === "edit") {
+    el.llmCustomId.value = provider.id;
+    el.llmCustomName.value = provider.name;
+    el.llmCustomBase.value = provider.base_url;
+    el.llmCustomKey.value = "";
+    el.llmCustomModels.value = (provider.models || []).join("\n");
+    el.llmCustomSubmit.textContent = "保存供应商";
+    el.llmCustomCancel.classList.remove("hidden");
+    customProviderHint(provider.credential_configured
+      ? "API Key 已设置；留空则保持原 Key 不变。"
+      : "尚未设置 API Key。");
+    el.llmCustomName.focus();
+    return;
+  }
+  if (action === "delete") {
+    if (!window.confirm(`删除自定义供应商「${provider.name}」？其用途指派将回退默认。`)) return;
+    requestLlmCustom("DELETE", `/api/llm/providers/${encodeURIComponent(providerId)}`);
+    return;
+  }
+  if (action === "models") {
+    button.disabled = true;
+    requestLlmCustom("POST", `/api/llm/providers/${encodeURIComponent(providerId)}/models`,
+      undefined, button);
+  }
+}
+
+async function requestLlmCustom(method, route, body, button) {
+  try {
+    const payload = await api(route, {
+      method,
+      headers: body ? { "Content-Type": "application/json" } : undefined,
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    state.llmSettings = payload;
+    renderLlmChannels(payload);
+    renderLlmCustom(payload);
+    resetLlmCustomForm();
+    el.llmHealthList.innerHTML = '<p class="dim">尚未检测通道可用性。</p>';
+    showToast(payload.notice || "已保存自定义供应商", "ok");
+  } catch (e) {
+    showToast("自定义供应商操作失败：" + e.message, "err");
+  } finally {
+    if (button) button.disabled = false;
+  }
+}
+
+function submitLlmCustom(event) {
+  event.preventDefault();
+  const name = el.llmCustomName.value.trim();
+  const baseUrl = el.llmCustomBase.value.trim();
+  const apiKey = el.llmCustomKey.value.trim();
+  const models = el.llmCustomModels.value;
+  if (!name || !baseUrl) { customProviderHint("名称与 Base URL 必填"); return; }
+  const providerId = el.llmCustomId.value;
+  const body = { name, base_url: baseUrl, models };
+  // Key is write-only: only send it when the user actually typed one.
+  if (apiKey) body.api_key = apiKey;
+  el.llmCustomSubmit.disabled = true;
+  requestLlmCustom(providerId ? "PUT" : "POST",
+    providerId ? `/api/llm/providers/${encodeURIComponent(providerId)}` : "/api/llm/providers",
+    body).finally(() => { el.llmCustomSubmit.disabled = false; });
 }
 
 /* ---------- Obsidian vault export (one-way) ---------- */
@@ -1494,6 +1614,8 @@ el.vaultExportForm.addEventListener("submit", (event) => {
 el.timelineGroup.addEventListener("change", () => go(`#timeline/${el.timelineGroup.value}`));
 el.llmSaveButton.addEventListener("click", saveLlmSettings);
 el.llmHealthButton.addEventListener("click", checkLlmHealth);
+el.llmCustomForm.addEventListener("submit", submitLlmCustom);
+el.llmCustomCancel.addEventListener("click", resetLlmCustomForm);
 
 /* ---------- upload wiring ---------- */
 
