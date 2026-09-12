@@ -241,6 +241,43 @@ def infer_document_time(markdown: str | None) -> dict[str, Any] | None:
     return None
 
 
+# U2: card titles come from the Markdown body, not the uploaded filename.
+_ATX_HEADING_RE = re.compile(r"^\s{0,3}#{1,6}\s+(?P<text>.*?)\s*#*\s*$")
+_FENCE_RE = re.compile(r"^\s{0,3}(?:```|~~~)")
+MAX_HEADLINE = 200
+
+
+def extract_headline(markdown: str | None) -> str:
+    """Return the document's display title from its Markdown body.
+
+    Uses the first non-empty line (ATX ``#`` markers stripped), skipping fenced
+    code blocks so a code sample never becomes the card title.  Returns ``""``
+    when the document has no usable line, which lets callers fall back to the
+    filename without inventing a title.  Pure function: the U2 Library card and
+    its tests share this one implementation.
+    """
+
+    text = str(markdown or "")
+    if not text.strip():
+        return ""
+
+    in_fence = False
+    for raw in text.splitlines():
+        if _FENCE_RE.match(raw):
+            in_fence = not in_fence
+            continue
+        if in_fence:
+            continue
+        line = raw.strip()
+        if not line:
+            continue
+        heading = _ATX_HEADING_RE.match(line)
+        value = heading.group("text").strip() if heading else line
+        if value:
+            return value[:MAX_HEADLINE]
+    return ""
+
+
 def extract_capture_time(image_path: str | Path | None) -> dict[str, Any]:
     """Read the best available local EXIF timestamp without failing parsing."""
 
@@ -470,6 +507,7 @@ __all__ = [
     "apply_metadata_updates",
     "ensure_record_metadata",
     "extract_capture_time",
+    "extract_headline",
     "infer_document_time",
     "merge_record_metadata",
     "normalize_metadata",

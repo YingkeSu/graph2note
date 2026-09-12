@@ -46,6 +46,7 @@ from pathlib import Path
 from .metadata import (
     apply_metadata_updates,
     ensure_record_metadata,
+    extract_headline,
     merge_record_metadata,
 )
 from .collections import (
@@ -127,6 +128,26 @@ def _safe(name: str) -> str:
 
 def _now() -> str:
     return time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime())
+
+
+def _library_summary_fields(record: dict) -> dict:
+    """U2 additive fields for ``/api/documents`` summaries (never removes).
+
+    The card needs a readable headline, tag chips and source provenance; all
+    of these already live on the record.  ``version_count`` is normalised here
+    so both stores expose the same key.
+    """
+
+    markdown = record.get("current_markdown")
+    if markdown is None:
+        markdown = record.get("markdown")
+    return {
+        "headline": extract_headline(markdown),
+        "tags": list(record.get("tags") or []),
+        "source_pdf": record.get("source_pdf"),
+        "page_number": record.get("page_number"),
+        "version_count": len(record.get("versions") or []),
+    }
 
 
 class DocumentStore(ABC):
@@ -333,6 +354,7 @@ class SessionDocumentStore(DocumentStore):
                 "metadata": record.get("metadata"),
                 "effective_time": record.get("effective_time"),
                 "collections": list(record.get("collections") or []),
+                **_library_summary_fields(record),
             })
         return items
 
@@ -763,10 +785,10 @@ class FileDocumentStore(SessionDocumentStore):
                     "title": r["title"],
                     "created_at": r["created_at"],
                     "updated_at": r["updated_at"],
-                    "version_count": len(r["versions"]),
                     "metadata": r.get("metadata"),
                     "effective_time": r.get("effective_time"),
                     "collections": list(r.get("collections") or []),
+                    **_library_summary_fields(r),
                 })
         if registry_changed:
             self._save_collection_registry(registry)
@@ -798,6 +820,9 @@ class FileDocumentStore(SessionDocumentStore):
         if changed:
             (base / "record.json").write_text(
                 json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+        # Keep the live markdown available to summary builders (U2 headline)
+        # without persisting a second copy of it into record.json.
+        rec["current_markdown"] = markdown
         return rec
 
     def get_document(self, document_id: str) -> dict | None:
