@@ -1,6 +1,6 @@
 # U2：文档卡片富化与 Library 网格重排
 
-Status: ready-for-agent
+Status: merged
 Labels: track-ux
 
 ## What to build
