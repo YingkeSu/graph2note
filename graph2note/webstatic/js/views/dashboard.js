@@ -6,7 +6,7 @@ import { el, state } from "../state.js";
 import { api } from "../api.js";
 import { esc } from "../utils.js";
 import { registerView } from "../router.js";
-import { showToast } from "../ui.js";
+import { showViewError, clearViewError, showToast } from "../ui.js";
 import { renderMarkdownInto } from "./document.js";
 
 function dashboardValue(value, digits = 0) {
@@ -48,6 +48,7 @@ function renderDashboardModels(items, currency) {
 }
 
 async function renderDashboard() {
+  clearViewError(el.dashboardZone);
   el.dashboardZone.classList.remove("hidden");
   void renderDigestPanel();
   el.dashboardEmpty.classList.add("hidden");
@@ -74,10 +75,9 @@ async function renderDashboard() {
     el.dashboardDay.innerHTML = renderDashboardBuckets(stats.token_usage_by_day, stats.currency);
     el.dashboardMonth.innerHTML = renderDashboardBuckets(stats.token_usage_by_month, stats.currency);
   } catch (e) {
-    el.dashboardEmpty.querySelector("p").textContent = "数据看板加载失败。";
-    el.dashboardEmpty.classList.remove("hidden");
+    el.dashboardEmpty.classList.add("hidden");
     el.dashboardContent.classList.add("hidden");
-    showToast("加载数据看板失败：" + e.message, "err");
+    showViewError(el.dashboardZone, "加载数据看板失败：" + e.message, renderDashboard);
   }
 }
 
