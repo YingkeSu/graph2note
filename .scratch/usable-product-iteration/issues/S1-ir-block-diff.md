@@ -1,6 +1,6 @@
 # S1：IR 块级 diff 引擎（DiffReport 纯函数）
 
-Status: ready-for-agent
+Status: merged
 Labels: track-semantic, priority-high
 
 ## What to build
