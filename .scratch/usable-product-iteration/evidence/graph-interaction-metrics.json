@@ -1,0 +1,108 @@
+{
+  "captured_with": "headless Chrome CDP probe (scripts/u4_graph_probe.mjs), http://127.0.0.1:8791/#graph, viewport 1440x1000, 43 seeded documents / 8 topics / 7 tags / 2 collections",
+  "before": {
+    "nodes": 60,
+    "edges": 141,
+    "overlaps": 0,
+    "renderedNodePx": 8,
+    "viewBox": "0 0 1000 3348",
+    "viewBoxHeight": 3348.0,
+    "pixelsPerUnit": 0.1885
+  },
+  "after": {
+    "default_cluster_view": {
+      "nodes": 26,
+      "edges": 79,
+      "overlaps": 0,
+      "renderedNodePx": 47,
+      "viewBox": "0 0 828 801",
+      "viewBoxHeight": 801.0,
+      "pixelsPerUnit": 0.7753
+    },
+    "expanded_documents": {
+      "nodes": 30,
+      "edges": 86,
+      "overlaps": 0,
+      "renderedNodePx": 42,
+      "viewBox": "0 0 985 897",
+      "viewBoxHeight": 897.0,
+      "pixelsPerUnit": 0.6923
+    },
+    "focus_mode": {
+      "faded_nodes": 56,
+      "faded_edges": 138,
+      "cleared_faded_nodes": 0
+    },
+    "zoom": {
+      "min": {
+        "label": "25%",
+        "nodes": 26,
+        "viewBox": "-2476.476486901267 -2638.093928315502 3312 3204",
+        "labelShouldBe": "25%"
+      },
+      "max": {
+        "label": "400%",
+        "nodes": 26,
+        "viewBox": "178.71592171537003 190.3791093775177 207.00000000000014 200.25000000000014"
+      },
+      "fit": {
+        "label": "100%",
+        "nodes": 26,
+        "viewBox": "0 0 828 801"
+      },
+      "wheel_step": {
+        "label": "110%",
+        "viewBox": "37.63636363636368 36.35046109286225 752.7272727272726 728.1818181818181"
+      },
+      "pan_before": "0 0 828 801",
+      "pan_after": "103.18841552734375 64.49275588989258 828 801"
+    },
+    "filters": {
+      "edge_source_manual_off": {
+        "hash": "#graph?src=topic%2Ctag&clusters=expand",
+        "sources": [
+          "topic",
+          "tag"
+        ],
+        "nodes": 58,
+        "edges": 126
+      },
+      "single_tag": {
+        "hash": "#graph?src=topic%2Ctag%2Cmanual&tag=%E5%8F%82%E8%80%83&clusters=expand",
+        "tags": [
+          "参考"
+        ],
+        "nodes": 24,
+        "edges": 38
+      },
+      "cleared_nodes": 60
+    },
+    "navigation": {
+      "document": {
+        "node": "document:doc-22",
+        "route": "#doc/doc-22",
+        "hash": "#doc/doc-22",
+        "hashAfterWait": "#doc/doc-22",
+        "editorVisible": true
+      },
+      "topic": {
+        "route": "#library/topic/%E5%8C%96%E5%AD%A6",
+        "id": "topic:化学",
+        "hashAfterWait": "#library/topic/%E5%8C%96%E5%AD%A6",
+        "libraryVisible": true
+      },
+      "tag": {
+        "route": "#library/tag/%E5%8F%82%E8%80%83",
+        "id": "tag:参考",
+        "hashAfterWait": "#library/tag/%E5%8F%82%E8%80%83",
+        "libraryVisible": true
+      }
+    }
+  },
+  "overlap_pairs": {
+    "before_default": 0,
+    "after_default_cluster_view": 0,
+    "after_expanded_documents": 0,
+    "after_single_tag_filter": 0
+  }
+}

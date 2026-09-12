@@ -257,17 +257,41 @@
           </section>
         </section>
 
-        <!-- Read-only relationship graph (issue 05) -->
+        <!-- Read-only relationship graph (issue 05; interactions U4) -->
         <section id="graph-zone" class="graph-zone hidden">
           <div class="graph-head">
             <div>
               <h2>知识图谱</h2>
-              <p class="dim">图谱只消费现有主题、标签和手工关系，不会触发新的模型调用。</p>
+              <p class="dim">图谱只消费现有主题、标签和手工关系，不会触发新的模型调用。滚轮缩放、拖拽平移；双击节点直接导航，单击文档可聚焦邻域。</p>
             </div>
             <div class="graph-legend" aria-label="关系来源图例">
               <span><i class="graph-legend-dot topic"></i>主题</span>
               <span><i class="graph-legend-dot tag"></i>标签</span>
               <span><i class="graph-legend-dot manual"></i>手工</span>
+            </div>
+          </div>
+          <div id="graph-toolbar" class="graph-toolbar" role="toolbar" aria-label="图谱视图控制">
+            <div class="graph-toolbar-group" role="group" aria-label="缩放">
+              <button type="button" id="graph-zoom-out" class="icon-btn" title="缩小">－</button>
+              <span id="graph-zoom-value" class="graph-zoom-value" aria-live="polite">100%</span>
+              <button type="button" id="graph-zoom-in" class="icon-btn" title="放大">＋</button>
+            </div>
+            <div class="graph-toolbar-group">
+              <button type="button" id="graph-fit" class="graph-button">适应视图</button>
+              <button type="button" id="graph-reset" class="graph-button">重置</button>
+              <button type="button" id="graph-clusters-toggle" class="graph-button">聚类收敛</button>
+            </div>
+            <div id="graph-status" class="graph-status" role="status" aria-live="polite"></div>
+          </div>
+          <div id="graph-filters" class="graph-filters" aria-label="图谱过滤">
+            <div class="graph-filter-row">
+              <span class="graph-filter-label">边来源</span>
+              <span id="graph-source-chips" class="graph-chip-group"></span>
+            </div>
+            <div class="graph-filter-row">
+              <span id="graph-set-chips" class="graph-chip-group"></span>
+              <span id="graph-tag-chips" class="graph-chip-group"></span>
+              <button type="button" id="graph-clear-filters" class="graph-chip graph-chip-clear">清除过滤</button>
             </div>
           </div>
           <div id="graph-empty" class="graph-empty hidden">

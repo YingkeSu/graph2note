@@ -27,8 +27,9 @@ export function go(route) {
 }
 
 export function parseHash(hash = location.hash) {
-  const h = (hash || "#library").replace(/^#\/?/, "");
-  const parts = h.split("/");
+  const raw = (hash || "#library").replace(/^#\/?/, "");
+  const [pathPart, query = ""] = raw.split("?");
+  const parts = pathPart.split("/");
   if (parts[0] === "doc" && parts[1]) {
     const route = { name: "doc", id: decodeURIComponent(parts[1]) };
     // S3 deep link: #doc/<id>/diff[/<versionA>[/<versionB>]] opens the
@@ -51,7 +52,25 @@ export function parseHash(hash = location.hash) {
   // now renders the first-class Q&A view.
   if (parts[0] === "pdf-search") return { name: "ask" };
   if (parts[0] === "timeline") return { name: "timeline", group: parts[1] === "week" ? "week" : "day" };
-  if (parts[0] === "graph") return { name: "graph" };
+  if (parts[0] === "graph") {
+    const params = new URLSearchParams(query);
+    const list = (key) => params.getAll(key).flatMap((value) =>
+      String(value).split(",").map((item) => item.trim()).filter(Boolean));
+    const route = { name: "graph" };
+    const sources = list("src");
+    const collections = list("set");
+    const tags = list("tag");
+    const topic = params.get("topic");
+    const focus = params.get("focus");
+    const clusters = params.get("clusters");
+    if (sources.length) route.sources = sources;
+    if (collections.length) route.collections = collections;
+    if (tags.length) route.tags = tags;
+    if (topic) route.topic = topic;
+    if (focus) route.focus = focus;
+    if (clusters === "collapse" || clusters === "expand") route.clusters = clusters;
+    return route;
+  }
   if (parts[0] === "dashboard") return { name: "dashboard" };
   if (parts[0] === "library" && parts[1] === "topic" && parts[2]) {
     return { name: "library", topic: decodeURIComponent(parts.slice(2).join("/")) };
@@ -69,6 +88,29 @@ export function parseHash(hash = location.hash) {
   if (parts[0] === "vault-export") return { name: "vault-export" };
   if (parts[0] === "repair") return { name: "repair" };   // R1 黑图修复报告
   return { name: "library" };
+}
+
+/* Canonical hash for a graph view state (U4).  Sources/collections/tags are
+   comma-joined and repeated per key so any combination stays readable and
+   shareable; an empty state collapses to the plain `#graph` route the shell
+   already used before U4. */
+export function graphHash({
+  sources, collections, tags, topic, focus, clusters,
+} = {}) {
+  const params = new URLSearchParams();
+  const add = (key, values) => {
+    const list = (values == null ? [] : Array.isArray(values) ? values : [values])
+      .map((value) => String(value).trim()).filter(Boolean);
+    if (list.length) params.set(key, list.join(","));
+  };
+  add("src", sources);
+  add("set", collections);
+  add("tag", tags);
+  if (topic) params.set("topic", topic);
+  if (focus) params.set("focus", focus);
+  if (clusters === "collapse" || clusters === "expand") params.set("clusters", clusters);
+  const query = params.toString();
+  return query ? `#graph?${query}` : "#graph";
 }
 
 /* Canonical hash for a Library filter state (collection / tag / topic / chip).

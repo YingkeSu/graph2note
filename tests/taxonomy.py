@@ -72,6 +72,8 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_timeline": "workspace",
     "test_timeline_visual": "workspace",  # U5（时间轴可视化：字段扩展/主干刻度/只读）
     "test_graph": "workspace",
+    "test_graph_layout": "workspace",  # U4（图谱布局引擎 + API 字段契约）
+    "test_graph_interaction": "workspace",  # U4 评审修复（离线 DOM 交互契约）
     "test_inbox": "workspace",
     "test_telemetry": "workspace",
     # 视觉 QA 开发工具（UI / 内容）

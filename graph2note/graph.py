@@ -265,7 +265,96 @@ def build_graph(
         )],
         "empty": not sorted_nodes,
         "counts": {"nodes": len(sorted_nodes), "edges": len(sorted_edges), **kind_counts},
+        "clusters": _build_clusters(usable, document_topics),
+        "filters": {
+            "collections": _collection_filters(usable),
+            "tags": _tag_filters(usable),
+            "sources": [source for source in EDGE_SOURCES if any(
+                edge["source"] == source for edge in sorted_edges
+            )],
+        },
     }
+
+
+def _build_clusters(
+    usable: list[dict[str, Any]],
+    document_topics: dict[str, list[str]],
+) -> list[dict[str, Any]]:
+    """Projection-only topic clusters used by the graph view's convergence mode.
+
+    Documents are grouped by their first topic (a deterministic projection of an
+    existing field, no new inference).  Every document appears in exactly one
+    cluster; documents without topics land in a single ``unclustered`` bucket.
+    Cluster nodes are **not** part of ``nodes`` — existing consumers keep seeing
+    only document/topic/tag/collection nodes.
+    """
+
+    buckets: dict[str, list[str]] = {}
+    labels: dict[str, str] = {}
+    for record in usable:
+        document_id = _text(record["document_id"])
+        topics = document_topics.get(document_id) or []
+        if topics:
+            key = _node_id("topic", topics[0])
+            labels.setdefault(key, topics[0])
+        else:
+            key = "topic:__unclustered__"
+            labels.setdefault(key, "未归类")
+        buckets.setdefault(key, []).append(document_id)
+
+    clusters: list[dict[str, Any]] = []
+    ordered = sorted(
+        buckets.items(), key=lambda item: (item[0] == "topic:__unclustered__", item[0])
+    )
+    for key, document_ids in ordered:
+        unclustered = key == "topic:__unclustered__"
+        clusters.append({
+            "id": f"cluster:{key}",
+            "topic": None if unclustered else labels[key],
+            "label": labels[key],
+            "route": "#library" if unclustered else _route("topic", labels[key]),
+            "documents": list(document_ids),
+            "size": len(document_ids),
+            "unclustered": unclustered,
+        })
+    return clusters
+
+
+def _collection_filters(usable: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    names: dict[str, str] = {}
+    counts: dict[str, int] = {}
+    for record in usable:
+        record_names = record.get("collection_names") or {}
+        if not isinstance(record_names, dict):
+            record_names = {}
+        for collection_id in _unique(record.get("manual_collections") or []):
+            names.setdefault(collection_id, str(record_names.get(collection_id, collection_id)))
+            counts[collection_id] = counts.get(collection_id, 0) + 1
+    return [
+        {
+            "id": collection_id,
+            "label": names[collection_id],
+            "count": counts[collection_id],
+            "route": _route("collection", collection_id),
+        }
+        for collection_id in sorted(counts, key=lambda cid: (names[cid].casefold(), cid))
+    ]
+
+
+def _tag_filters(usable: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    counts: dict[str, int] = {}
+    for record in usable:
+        for tag in _unique(record.get("tags") or []):
+            counts[tag] = counts.get(tag, 0) + 1
+    return [
+        {
+            "id": tag,
+            "label": tag,
+            "count": counts[tag],
+            "route": _route("tag", tag),
+        }
+        for tag in sorted(counts, key=lambda value: (value.casefold(), value))
+    ]
 
 
 __all__ = ["EDGE_SOURCES", "build_graph"]
