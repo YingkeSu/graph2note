@@ -100,6 +100,8 @@ class Source:
     review_url: str
     source_page_url: str
     pdf_page_url: str
+    # P3: human-readable source PDF name for cross-document citations.
+    pdf_name: str | None = None
 
     def public(self) -> dict:
         return {
@@ -107,6 +109,7 @@ class Source:
             "label": f"[{self.index}]",
             "document_id": self.document_id,
             "pdf_id": self.pdf_id,
+            "pdf_name": self.pdf_name,
             "page_index": self.page_index,
             "page_number": self.page_number,
             "title": self.title,
@@ -289,7 +292,8 @@ def build_prompt(question: str, sources: list[Source],
     lines.append("资料：")
     for s in sources:
         page = s.page_number if s.page_number is not None else s.page_index + 1
-        lines.append(f'<source id="{s.index}" page="{page}">')
+        name = s.pdf_name or s.pdf_id or "PDF"
+        lines.append(f'<source id="{s.index}" pdf="{name}" page="{page}">')
         lines.append(s.snippet)
         lines.append("</source>")
     return "\n".join(lines)
@@ -301,6 +305,7 @@ def _citation_payload(source: Source) -> dict:
         "index": source.index,
         "document_id": source.document_id,
         "pdf_id": source.pdf_id,
+        "pdf_name": source.pdf_name,
         "page_index": source.page_index,
         "page_number": source.page_number,
         "title": source.title,
@@ -339,58 +344,6 @@ def _normalize_reply(reply) -> tuple[str, dict]:
         usage = reply.get("usage") or {}
         return text, usage
     raise TypeError(f"unsupported answerer reply type: {type(reply)!r}")
-
-
-# ---------------------------------------------------------------------------
-# Orchestration
-# ---------------------------------------------------------------------------
-
-
-def _call_with_timeout(fn: Callable, timeout: float):
-    box: dict = {}
-
-    def _run() -> None:
-        try:
-            box["value"] = fn()
-        except BaseException as exc:  # noqa: BLE001 - re-raised in caller thread
-            box["error"] = exc
-
-    thread = threading.Thread(target=_run, daemon=True)
-    thread.start()
-    thread.join(timeout)
-    if thread.is_alive():
-        raise TimeoutError(f"answer generation exceeded {timeout}s")
-    if "error" in box:
-        raise box["error"]
-    return box.get("value")
-
-
-def _source_from_hit(index: int, hit: dict, store, query_tokens: list[str]) -> Source:
-    doc_id = hit["document_id"]
-    snippet = hit.get("snippet") or ""
-    try:
-        rec = store.get_document(doc_id)
-    except Exception:
-        rec = None
-    if rec:
-        content = rec.get("current_markdown") or ""
-        tokens = query_tokens or pdfsearch.tokenize(snippet)
-        expanded = pdfsearch.make_snippet(content, tokens, width=SOURCE_CHARS // 2)
-        if expanded:
-            snippet = expanded[:SOURCE_CHARS]
-    return Source(
-        index=index,
-        document_id=doc_id,
-        pdf_id=hit.get("pdf_id"),
-        page_index=int(hit.get("page_index") or 0),
-        page_number=hit.get("page_number"),
-        title=hit.get("title") or doc_id,
-        version_id=hit.get("version_id"),
-        snippet=snippet[:SOURCE_CHARS],
-        review_url=hit.get("review_url") or f"/api/documents/{doc_id}",
-        source_page_url=hit.get("source_page_url") or f"/api/documents/{doc_id}/source-page",
-        pdf_page_url=hit.get("pdf_page_url") or "",
-    )
 
 
 # ---------------------------------------------------------------------------
@@ -438,30 +391,109 @@ def normalize_scope(pdf_id: str | None = None,
     return scope
 
 
-def _retrieval_public(query: str, tokens: list[str], scope: list[str]) -> dict:
+def _retrieval_public(query: str, tokens: list[str], scope: list[str],
+                      by_pdf: dict | None = None,
+                      matched_pdfs: list[str] | None = None) -> dict:
     return {
         "query": query,
         "tokens": list(tokens),
         "scope": list(scope),
         "match": "any",
+        "by_pdf": dict(by_pdf or {}),
+        "matched_pdfs": list(matched_pdfs or []),
     }
 
 
-def _search_scope(store, query: str, scope: list[str], top_k: int) -> dict:
+def _apply_pdf_names(hits: list[dict], pdf_names: dict | None) -> list[dict]:
+    if not pdf_names:
+        return hits
+    for hit in hits:
+        name = pdf_names.get(hit.get("pdf_id"))
+        if name:
+            hit["pdf_name"] = name
+    return hits
+
+
+def _aggregate_by_pdf(hits: list[dict], scope: list[str]) -> tuple[dict, list[str]]:
+    """Per-PDF hit counts (AC: 无命中的 PDF 不进上下文).
+
+    Returns ``(by_pdf, matched_pdfs)``; a scoped PDF with no hits stays at
+    ``hits: 0`` and is never part of the source set.
+    """
+    by_pdf: dict[str, dict] = {}
+    for pid in scope:
+        by_pdf[pid] = {"hits": 0, "pages": [], "name": None}
+    for hit in hits:
+        pid = hit.get("pdf_id")
+        if pid is None:
+            continue
+        entry = by_pdf.setdefault(pid, {"hits": 0, "pages": [], "name": None})
+        entry["hits"] += 1
+        entry["name"] = hit.get("pdf_name") or entry.get("name")
+        page = hit.get("page_number")
+        if page is None:
+            page = int(hit.get("page_index") or 0) + 1
+        if page not in entry["pages"]:
+            entry["pages"].append(page)
+    matched = [pid for pid, entry in by_pdf.items() if entry["hits"]]
+    return by_pdf, matched
+
+
+def _dedupe_and_rank(hits: list[dict]) -> list[dict]:
+    """Merge hits from several PDFs into one deterministic ranking.
+
+    Duplicate ``(pdf_id, page_index)`` hits collapse to the best score; the
+    merge is by score desc, then PDF name, then original page order, so a
+    multi-PDF answer is a single interleaved list rather than concatenated
+    per-PDF blocks (P3 AC1).
+    """
+    best: dict[tuple, dict] = {}
+    for hit in hits:
+        key = (hit.get("pdf_id"), hit.get("page_index"))
+        existing = best.get(key)
+        if existing is None or hit.get("score", 0) > existing.get("score", 0):
+            best[key] = hit
+    ranked = list(best.values())
+    ranked.sort(key=lambda h: (
+        -h.get("score", 0),
+        h.get("pdf_name") or "",
+        int(h.get("page_index") or 0),
+        h.get("document_id") or "",
+    ))
+    return ranked
+
+
+def _search_scope(store, query: str, scope: list[str], top_k: int,
+                  pdf_names: dict | None = None) -> dict:
     """Per-turn retrieval over the session scope (current question only).
 
     A single-PDF scope uses the issue-10 index directly.  A multi-PDF scope
-    merges the ranked hits of the selected PDFs (P1 binds the shape; P3 refines
-    cross-document ranking).  No history is ever fed into the query.
+    searches every PDF once and merges the ranked hits (P3): de-duplicated by
+    page, ordered by score / PDF name / page, with the per-PDF hit counts
+    reported so callers can tell which scoped PDFs actually contributed.
+    No history is ever fed into the query.
     """
-    if len(scope) <= 1:
-        return pdfsearch.search(store, query, pdf_id=(scope[0] if scope else None),
-                                limit=top_k, match="any")
-    merged = pdfsearch.search(store, query, pdf_id=None,
-                              limit=pdfsearch.MAX_LIMIT, match="any")
-    allowed = set(scope)
-    hits = [h for h in (merged.get("hits") or []) if h.get("pdf_id") in allowed]
-    return {**merged, "pdf_id": None, "hits": hits[:top_k], "total": len(hits)}
+    if len(scope) == 1:
+        result = pdfsearch.search(
+            store, query, pdf_id=scope[0], limit=top_k, match="any")
+    else:
+        # "all PDFs" and explicit multi-PDF scopes share one global ranking:
+        # search every PDF once, keep the scoped hits, rank them together.
+        merged = pdfsearch.search(store, query, pdf_id=None,
+                                  limit=pdfsearch.MAX_LIMIT, match="any")
+        hits = list(merged.get("hits") or [])
+        if scope:
+            allowed = set(scope)
+            hits = [h for h in hits if h.get("pdf_id") in allowed]
+        result = {**merged, "pdf_id": None, "hits": hits, "total": len(hits)}
+    all_hits = _apply_pdf_names(list(result.get("hits") or []), pdf_names)
+    ranked = _dedupe_and_rank(all_hits)
+    by_pdf, matched = _aggregate_by_pdf(all_hits, scope)
+    result["hits"] = ranked[:top_k]
+    result["total"] = len(ranked)
+    result["by_pdf"] = by_pdf
+    result["matched_pdfs"] = matched
+    return result
 
 
 def _resolve_session(session_id: str | None, scope: list[str],
@@ -589,6 +621,7 @@ def _source_from_hit(index: int, hit: dict, store, query_tokens: list[str]) -> S
         index=index,
         document_id=doc_id,
         pdf_id=hit.get("pdf_id"),
+        pdf_name=hit.get("pdf_name"),
         page_index=int(hit.get("page_index") or 0),
         page_number=hit.get("page_number"),
         title=hit.get("title") or doc_id,
@@ -615,6 +648,7 @@ def answer_question(
     top_k: int = MAX_SOURCES,
     timeout: int = ANSWER_TIMEOUT,
     max_attempts: int = MAX_ATTEMPTS,
+    pdf_names: dict | None = None,
 ) -> Answer:
     """Retrieve evidence for ``question`` then generate a cited answer (AC1).
 
@@ -637,9 +671,12 @@ def answer_question(
     context_count = len(history)
 
     top_k = max(1, min(int(top_k or MAX_SOURCES), MAX_SOURCES))
-    retrieved = _search_scope(store, q, scope, top_k)
+    retrieved = _search_scope(store, q, scope, top_k, pdf_names=pdf_names)
     hits = retrieved.get("hits") or []
     query_tokens = retrieved.get("tokens") or pdfsearch.tokenize(q)
+    by_pdf = retrieved.get("by_pdf") or {}
+    matched_pdfs = retrieved.get("matched_pdfs") or []
+    retrieval = _retrieval_public(q, query_tokens, scope, by_pdf, matched_pdfs)
     sources = [_source_from_hit(i + 1, h, store, query_tokens)
                for i, h in enumerate(hits)]
 
@@ -657,7 +694,7 @@ def answer_question(
                         warnings=list(warnings), pdf_id=pdf_id,
                         provider=provider, model=model,
                         elapsed=time.time() - started,
-                        retrieval=_retrieval_public(q, query_tokens, scope),
+                        retrieval=retrieval,
                         **extra)
         _persist_turn(sess, session_store, answer, context_count)
         return answer
@@ -722,7 +759,7 @@ def answer_question(
         grounded=bool(citations),
         message="",
         elapsed=time.time() - started,
-        retrieval=_retrieval_public(q, query_tokens, scope),
+        retrieval=retrieval,
     )
     _persist_turn(sess, session_store, answer, context_count)
     return answer

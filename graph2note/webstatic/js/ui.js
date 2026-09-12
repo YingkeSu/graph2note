@@ -50,25 +50,13 @@ function applyCollapsed(collapsed) {
   try { localStorage.setItem(SIDEBAR_KEY, collapsed ? "1" : "0"); } catch (_) { /* ignore */ }
 }
 
-/* ---------- global search placeholder (unified search lands in P3) ---------- */
+/* ---------- global search (P3: unified search panel owns the topbar entry) -------
+   The U1 placeholder behaviour moved into /static/search-panel.js, which is
+   imported by app.js: ⌘K / the topbar input open the grouped document+PDF panel
+   and Esc closes it.  Keep this hook so the shell wiring stays in one place. */
 
 function wireGlobalSearch() {
-  if (el.globalSearchForm) {
-    el.globalSearchForm.addEventListener("submit", (event) => {
-      event.preventDefault();
-      const q = (el.globalSearchInput.value || "").trim();
-      if (!q) return;
-      showToast("统一搜索将在 P3 落地；当前可在「问答」视图中检索或提问", "");
-    });
-  }
-  document.addEventListener("keydown", (event) => {
-    // placeholder focus behaviour only: ⌘K focuses, Esc blurs/clears.
-    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-      if (el.globalSearchInput) { event.preventDefault(); el.globalSearchInput.focus(); }
-    } else if (event.key === "Escape" && document.activeElement === el.globalSearchInput) {
-      el.globalSearchInput.blur();
-    }
-  });
+  /* no-op: see search-panel.js (P3) */
 }
 
 /* ---------- sidebar collection tree ---------- */

@@ -58,7 +58,7 @@
         <a class="brand" href="#library">graph2note</a>
         <form class="global-search" id="global-search-form" role="search">
           <input id="global-search-input" type="search" autocomplete="off" spellcheck="false"
-                 placeholder="搜索文档 / PDF（统一搜索将在 P3 落地）" aria-label="全局搜索（占位）" />
+                 placeholder="搜索文档 / PDF（⌘K）" aria-label="统一搜索" />
         </form>
         <span class="spacer"></span>
         <span class="ph" id="model-label"></span>
@@ -603,8 +603,39 @@
   <!-- Toast / error -->
   <div id="toast" class="toast hidden"></div>
 
+  <!-- P3 unified search panel (⌘K): title + document content + PDF pages -->
+  <div id="global-search-panel" class="search-panel hidden" role="dialog"
+       aria-modal="true" aria-label="统一搜索">
+    <div class="search-panel-box">
+      <div class="search-panel-head">
+        <input id="global-search-panel-input" type="search" autocomplete="off"
+               spellcheck="false" placeholder="搜索文档标题 / 文档内容 / PDF 内容（⌘K）" />
+        <button class="btn small" id="global-search-close" type="button"
+                title="关闭（Esc）">Esc</button>
+      </div>
+      <div id="global-search-status" class="search-panel-status dim"></div>
+      <div id="global-search-results" class="search-panel-results">
+        <section class="search-panel-group" data-search-group="documents">
+          <h4>文档 <span class="dim" id="global-search-documents-count"></span></h4>
+          <div id="global-search-documents" class="search-panel-group-body"></div>
+        </section>
+        <section class="search-panel-group" data-search-group="pdf_pages">
+          <h4>PDF 页 <span class="dim" id="global-search-pdf-count"></span></h4>
+          <div id="global-search-pdf-pages" class="search-panel-group-body"></div>
+        </section>
+      </div>
+      <div class="search-panel-foot">
+        <span class="dim">检索标题、文档 Markdown 与已解析 PDF 页内容</span>
+        <button class="btn small primary" id="global-search-ask" type="button"
+                title="把当前查询词带入问答视图预填首问">就这些结果提问</button>
+      </div>
+    </div>
+  </div>
+
   <script src="/static/assets.js"></script>
-  <!-- U1: ES-module entry (zero-build; no bundler).  Modules live under /static/js/. -->
+  <!-- U1: ES-module entry (zero-build; no bundler).  Modules live under /static/js/.
+       P3: the unified search panel is imported from app.js so the module graph
+       keeps a single entry point. -->
   <script type="module" src="/static/app.js"></script>
   <!-- R1: self-contained black-image repair report view (own button/zone). -->
   <script src="/static/repair.js"></script>

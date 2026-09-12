@@ -30,6 +30,8 @@ import "./js/views/upload.js";
 import "./js/views/document.js";
 import "./js/views/repair.js";   // R1 黑图修复报告（zone 由 /static/repair.js 自持）
 
+import "./search-panel.js";        // P3 统一搜索面板（⌘K / 顶栏搜索）
+
 import { render, startRouter } from "./js/router.js";
 import { wireShell } from "./js/ui.js";
 import { flushAutosave } from "./js/views/document.js";

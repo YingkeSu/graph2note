@@ -920,3 +920,22 @@ body {
 .search-hit-links a { color: var(--accent); text-decoration: none; }
 
 /* PDF grounded Q&A conversation (issue 11 / P1 / P2) — see .ask-* above. */
+
+/* P3 unified search (⌘K): grouped result panel (topbar entry styled by .global-search) */
+.search-panel-head input[type="search"] {
+  width: 100%; padding: 7px 12px; border: 1px solid var(--line); border-radius: 8px;
+  background: var(--bg); color: inherit; font-size: 13.5px; }
+.search-panel { position: fixed; inset: 0; z-index: 60; background: rgba(15, 23, 42, .42);
+  display: flex; align-items: flex-start; justify-content: center; padding: 8vh 16px 24px; }
+.search-panel-box { width: min(820px, 96vw); max-height: 80vh; display: flex; flex-direction: column;
+  background: var(--panel); border: 1px solid var(--line); border-radius: 12px;
+  box-shadow: 0 18px 50px rgba(15, 23, 42, .25); overflow: hidden; }
+.search-panel-head { display: flex; gap: 8px; align-items: center; padding: 12px 14px;
+  border-bottom: 1px solid var(--line); }
+.search-panel-status { padding: 8px 14px; font-size: 12.5px; min-height: 18px; }
+.search-panel-results { overflow: auto; padding: 0 14px 8px; display: flex; flex-direction: column; gap: 14px; }
+.search-panel-group h4 { margin: 8px 0 8px; font-size: 13px; color: var(--muted); }
+.search-panel-group-body { display: flex; flex-direction: column; gap: 10px; }
+.search-panel-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  padding: 10px 14px; border-top: 1px solid var(--line); background: #fbfcfd; }
+.search-hit-doc, .search-hit-pdf { cursor: pointer; }
