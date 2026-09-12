@@ -1,4 +1,9 @@
-/* graph2note — read-only timeline projection (moved verbatim under U1 shell). */
+/* graph2note — read-only timeline view (U5 visual upgrade).
+
+   Renders the `/api/timeline` projection as a vertical trunk with ticks,
+   thumbnails, source icons, tag counts, gap markers, adjacent-topic colour
+   bands and a monthly density bar.  The view is strictly read-only: it only
+   issues GET requests and never edits, reparses or deletes anything. */
 "use strict";
 
 import { el, state } from "../state.js";
@@ -6,46 +11,38 @@ import { api } from "../api.js";
 import { esc } from "../utils.js";
 import { go, registerView } from "../router.js";
 import { showToast } from "../ui.js";
+import {
+  createThumbnailLoader,
+  densityBarsHtml,
+  loadTimeline,
+  timelineGroupsHtml,
+  timelineItemHtml,
+  wireTimeline,
+} from "../timeline_view.js";
 
 // canonical default entry used by the sidebar nav and the group switcher
 export const TIMELINE_DEFAULT_ROUTE = "#timeline/day";
 
-function timelineItemHtml(item) {
-  const effective = item.effective_time || {};
-  const topics = (item.topics || []).map((topic) => `<span class="timeline-topic">${esc(topic)}</span>`).join("");
-  const collections = (item.collections || []).map((collection) => `<span class="timeline-collection">${esc(collection)}</span>`).join("");
-  return `<button class="timeline-item" type="button" data-route="${esc(item.route)}">
-    <span class="timeline-item-date">${esc(item.date || "无日期")}</span>
-    <span class="timeline-item-main">
-      <span class="timeline-item-title">${esc(item.title)}</span>
-      <span class="timeline-item-meta">${esc(effective.source || "无有效时间")}${topics}${collections}</span>
-    </span>
-    <span class="timeline-item-arrow" aria-hidden="true">›</span>
-  </button>`;
-}
+let thumbnailLoader = null;
 
-function timelineGroupHtml(group) {
-  const aggregates = (group.topic_aggregates || []).map((item) =>
-    `<span class="timeline-summary-chip">${esc(item.topic)} · ${item.count}</span>`).join("");
-  const runs = (group.adjacent_topic_runs || []).filter((run) => run.count > 1).map((run) =>
-    `<span class="timeline-run-chip">${esc(run.topic)} 连续 ${run.count} 份</span>`).join("");
-  return `<section class="timeline-group">
-    <div class="timeline-group-head">
-      <div>
-        <h3>${esc(group.label)}</h3>
-        <span class="dim">${group.count} 份 · ${esc(group.start_date)}${group.end_date !== group.start_date ? ` 至 ${esc(group.end_date)}` : ""}</span>
-      </div>
-      <div class="timeline-summary">${aggregates || `<span class="dim">暂无主题</span>`}</div>
-    </div>
-    ${runs ? `<div class="timeline-runs"><span class="dim">相邻主题</span>${runs}</div>` : ""}
-    <div class="timeline-items">${group.items.map(timelineItemHtml).join("")}</div>
-  </section>`;
-}
-
-function wireTimelineLinks(root) {
-  root.querySelectorAll("button.timeline-item[data-route]").forEach((button) => {
-    button.addEventListener("click", () => go(button.dataset.route));
+function installThumbnailLazyLoading(root) {
+  if (thumbnailLoader) thumbnailLoader.disconnect();
+  if (!root || !root.querySelectorAll) return;
+  const images = [...root.querySelectorAll("img.timeline-thumb[data-src]")];
+  if (!images.length) return;
+  thumbnailLoader = createThumbnailLoader({
+    makeObserver: typeof IntersectionObserver === "function"
+      ? (callback) => new IntersectionObserver(callback, { rootMargin: "0px" })
+      : undefined,
   });
+  images.forEach((image) => thumbnailLoader.observe(image));
+}
+
+function scrollToGroup(groupKey) {
+  if (!groupKey || !el.timelineGroups) return;
+  const safe = String(groupKey).replace(/["\\]/g, "");
+  const target = el.timelineGroups.querySelector(`.timeline-group[data-group-key="${safe}"]`);
+  if (target && target.scrollIntoView) target.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 async function renderTimeline(groupBy) {
@@ -55,22 +52,28 @@ async function renderTimeline(groupBy) {
   el.timelineUndatedItems.innerHTML = "";
   el.timelineUndated.classList.add("hidden");
   el.timelineEmpty.classList.add("hidden");
+  if (el.timelineDensity) el.timelineDensity.innerHTML = "";
   try {
-    const timeline = await api(`/api/timeline?group_by=${encodeURIComponent(groupBy)}`);
+    const timeline = await loadTimeline(api, groupBy);
     const total = Number(timeline.total || 0);
     if (!total) {
       el.timelineEmpty.classList.remove("hidden");
     } else {
-      el.timelineGroups.innerHTML = (timeline.groups || []).map(timelineGroupHtml).join("");
-      wireTimelineLinks(el.timelineGroups);
+      el.timelineGroups.innerHTML = timelineGroupsHtml(timeline.groups, esc);
+      wireTimeline(el.timelineGroups, { go, scrollTo: scrollToGroup });
+    }
+    if (el.timelineDensity) {
+      el.timelineDensity.innerHTML = densityBarsHtml(timeline.density, timeline.density_max, esc);
+      wireTimeline(el.timelineDensity, { scrollTo: scrollToGroup });
     }
     const undated = timeline.undated || [];
     if (undated.length) {
       el.timelineUndated.classList.remove("hidden");
       el.timelineUndatedCount.textContent = `${undated.length} 份`;
-      el.timelineUndatedItems.innerHTML = undated.map(timelineItemHtml).join("");
-      wireTimelineLinks(el.timelineUndatedItems);
+      el.timelineUndatedItems.innerHTML = undated.map((item, index) => timelineItemHtml(item, esc, { index })).join("");
+      wireTimeline(el.timelineUndatedItems, { go });
     }
+    installThumbnailLazyLoading(el.timelineZone);
   } catch (e) {
     el.timelineEmpty.classList.remove("hidden");
     el.timelineEmpty.querySelector("p").textContent = "时间轴加载失败。";

@@ -81,6 +81,28 @@ PDF_JOB_TIMEOUT = int(
 )
 
 
+def _resolve_thumbnail_url(record: dict, document_id: str) -> str | None:
+    """Read-only preview URL for a timeline entry (U5).
+
+    The store record always declares a preprocessed path even when the parse
+    produced no image, so the API handler verifies existence here and falls back
+    to the original page; ``None`` renders a placeholder in the timeline.
+    """
+
+    if not document_id:
+        return None
+    quoted = quote(document_id, safe="")
+    latest = record.get("latest") if isinstance(record.get("latest"), dict) else {}
+    candidates = (
+        ("preprocessed", latest.get("preprocessed_path")),
+        ("original", record.get("original_path")),
+    )
+    for suffix, path in candidates:
+        if path and Path(path).is_file():
+            return f"/api/documents/{quoted}/{suffix}"
+    return None
+
+
 def _pdf_error_status(kind: str) -> int:
     return {
         "wrong_type": 415,
@@ -778,6 +800,11 @@ def create_app(
                 continue
             if selected and selected not in (record.get("collections") or []):
                 continue
+            record = dict(record)
+            # U5: resolve the read-only preview against the filesystem here (so
+            # the pure projection can stay pure) — preprocessed page first, then
+            # the original; none when neither exists.
+            record["thumbnail_url"] = _resolve_thumbnail_url(record, summary["document_id"])
             records.append(record)
         return build_timeline(records, group_by=group_by)
 

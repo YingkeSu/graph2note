@@ -68,6 +68,7 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_tags": "workspace",
     "test_autotag": "workspace",  # A1: 识别自动打标签
     "test_timeline": "workspace",
+    "test_timeline_visual": "workspace",  # U5（时间轴可视化：字段扩展/主干刻度/只读）
     "test_graph": "workspace",
     "test_inbox": "workspace",
     "test_telemetry": "workspace",
@@ -119,6 +120,7 @@ INTEGRATION_FILES: frozenset[str] = frozenset({
     "test_custom_llm_provider_api",  # issue A3（新文件）
     "test_evolution_api",  # issue S2（版本链/候选 API 契约）
     "test_weekly_digest",   # issue A2（新文件）
+    "test_timeline_visual",  # U5（新文件，TestClient API 契约）
 })
 
 # 成本：slow = 较重（TestClient 全链 / 全链装配 / 图渲染）

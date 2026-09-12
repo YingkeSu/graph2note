@@ -95,6 +95,7 @@ export const el = {
   timelineUndatedCount: $("#timeline-undated-count"),
   timelineUndatedItems: $("#timeline-undated-items"),
   timelineGroup: $("#timeline-group"),
+  timelineDensity: $("#timeline-density"),
   libraryGrid: $("#library-grid"),
   libraryEmpty: $("#library-empty"),
   libraryCount: $("#library-count"),
