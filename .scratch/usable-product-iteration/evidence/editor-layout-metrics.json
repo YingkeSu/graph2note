@@ -1,0 +1,75 @@
+{
+  "captured_with": "headless Chrome CDP layout probe, http://127.0.0.1:8765/#doc/<id>, 1440x1000 window, one seeded image document (plus tags/collection/metadata)",
+  "metric": "editor three-pane visible height = #work-zone height minus toolbar",
+  "before": {
+    "workZoneHeight": 852,
+    "toolbar": null,
+    "panesHeight": 418,
+    "paneImageHeight": 396,
+    "paneMdHeight": 396,
+    "panePreviewHeight": 396,
+    "mainAxisChildren": [
+      "panes",
+      "markers",
+      "statusbar",
+      "document-tags",
+      "document-tags",
+      "metadata-panel",
+      "actions"
+    ],
+    "sidePanelPresent": false,
+    "tagsInSidePanel": false,
+    "collectionsInSidePanel": false,
+    "metadataInSidePanel": false,
+    "versionInSidePanel": false,
+    "saveIndicatorInToolbar": false,
+    "warningsInToolbar": false,
+    "viewerPresent": false
+  },
+  "after": {
+    "workZoneHeight": 852,
+    "toolbar": {
+      "top": 61,
+      "left": 236,
+      "width": 1204,
+      "height": 40
+    },
+    "panesHeight": 812,
+    "paneImageHeight": 784,
+    "paneMdHeight": 784,
+    "panePreviewHeight": 784,
+    "mainAxisChildren": [
+      "doc-toolbar",
+      "doc-main"
+    ],
+    "sidePanelPresent": true,
+    "sidePanelDefaultHidden": true,
+    "tagsInSidePanel": true,
+    "collectionsInSidePanel": true,
+    "metadataInSidePanel": true,
+    "versionInSidePanel": true,
+    "saveIndicatorInToolbar": true,
+    "warningsInToolbar": true,
+    "actionsInToolbar": true,
+    "viewerPresent": true
+  },
+  "delta": {
+    "paneImageHeight": 388,
+    "panesHeight": 394
+  },
+  "browser_interaction_check": {
+    "tool": "macOS Chrome headless CDP",
+    "side_panel_toggle_button": true,
+    "side_panel_cmd_slash": true,
+    "cmd_slash_guard_while_input_focused_kept_panel_open": true,
+    "cmd_slash_toggles_closed": true,
+    "viewer_open": true,
+    "viewer_zoom_after_8_clicks": "596%",
+    "viewer_fit": "73%",
+    "viewer_esc_closes": true,
+    "cmd_s_saves_with_textarea_focused": true,
+    "cmd_s_feedback": "已保存 11:37:17（⌘S）",
+    "unhandled_page_errors": [],
+    "console_errors": "only pre-existing favicon.ico 404"
+  }
+}
