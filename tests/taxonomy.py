@@ -42,6 +42,9 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_pdf_search": "webapp",  # issue 10（新文件）
     "test_pdf_qa": "webapp",  # issue 11（新文件）
     "test_pdf_qa_multiturn": "webapp",  # P1（新文件）
+    "test_unified_search": "webapp",  # P3 统一检索索引（新文件）
+    "test_p3_cross_doc_qa": "webapp",  # P3 跨文档问答（新文件）
+    "test_search_panel": "webapp",  # P3 ⌘K 搜索面板（新文件）
     # 双模型交叉验证
     "test_verify_diff": "verify",
     "test_verify_engine": "verify",
