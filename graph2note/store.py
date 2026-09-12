@@ -200,6 +200,16 @@ class DocumentStore(ABC):
     def remove_versions(self, document_id: str, version_ids: list) -> bool:
         """Drop candidate versions (used when splitting a false merge)."""
 
+    # --- evolution anchoring (S2) ---------------------------------------------
+    @abstractmethod
+    def set_manual_relations(self, document_id: str, relations: list) -> dict | None:
+        """Replace the document's persisted manual relation edges (S2).
+
+        These are the user-confirmed "same manuscript evolution" links the
+        graph projects as ``manual`` edges; nothing inferred is ever written
+        here.
+        """
+
 
 # ---------------------------------------------------------------------------
 # In-memory session store (same seam, non-durable)
@@ -509,6 +519,16 @@ class SessionDocumentStore(DocumentStore):
             v["current"] = v["version_id"] == rec["latest_version"]
         self._docs[document_id] = rec
         return True
+
+    # --- evolution anchoring (S2) ---------------------------------------------
+    def set_manual_relations(self, document_id: str, relations: list) -> dict | None:
+        rec = self._docs.get(document_id)
+        if rec is None:
+            return None
+        rec["manual_relations"] = [dict(item) for item in relations or []
+                                   if isinstance(item, dict)]
+        self._docs[document_id] = rec
+        return rec
 
 
 # ---------------------------------------------------------------------------
@@ -1063,6 +1083,20 @@ class FileDocumentStore(SessionDocumentStore):
         (base / "record.json").write_text(
             json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
         return True
+
+    # --- evolution anchoring (S2) ---------------------------------------------
+    def set_manual_relations(self, document_id: str, relations: list) -> dict | None:
+        record_path = self._doc_dir(document_id) / "record.json"
+        if not record_path.is_file():
+            return None
+        rec = self._read_record(document_id)
+        if rec is None:
+            return None
+        rec["manual_relations"] = [dict(item) for item in relations or []
+                                   if isinstance(item, dict)]
+        record_path.write_text(
+            json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+        return self.get_document(document_id)
 
 
 def _copy_if_exists(src: str | None, dst: Path) -> None:

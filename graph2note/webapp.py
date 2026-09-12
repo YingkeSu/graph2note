@@ -58,6 +58,7 @@ from .store import (
     SessionDocumentStore,
 )
 from . import config
+from . import evolution
 from . import pipeline
 from . import pdflib
 from . import pdfsearch
@@ -703,6 +704,75 @@ def create_app(
     @app.get("/api/documents/{document_id}")
     def document_get(document_id: str):
         return _get_document(document_id)
+
+    # ---- evolution anchoring (issue S2) -------------------------------------
+
+    def _bounded_max_distance(value: int | None) -> int:
+        if value is None:
+            return evolution.PHASH_SUGGEST_MAX_DISTANCE
+        if value < 0 or value > evolution.HASH_BITS:
+            raise HTTPException(
+                status_code=422,
+                detail=f"max_distance 必须在 0..{evolution.HASH_BITS} 之间（Hamming 位）。",
+            )
+        return value
+
+    @app.get("/api/documents/{document_id}/versions")
+    def document_versions(document_id: str):
+        """Time-ordered evolution timeline (source + DiffReport summary)."""
+        _get_document(document_id)
+        return evolution.build_version_chain(store, document_id)
+
+    @app.get("/api/documents/{document_id}/candidates")
+    def document_candidates(document_id: str, max_distance: int | None = None):
+        """Read-only pHash cross-document suggestions (never auto-linked)."""
+        _get_document(document_id)
+        return evolution.find_phash_candidates(
+            store, document_id, max_distance=_bounded_max_distance(max_distance)
+        )
+
+    @app.post("/api/documents/{document_id}/relations")
+    def document_confirm_relation(document_id: str, body: dict | None = None):
+        """Confirm a suggestion; persists a regular ``manual`` edge both ways."""
+        payload = body or {}
+        target_id = payload.get("target_id") or payload.get("target") or payload.get("document_id")
+        if not target_id:
+            raise HTTPException(status_code=422, detail="target_id 必填。")
+        if target_id == document_id:
+            raise HTTPException(status_code=422, detail="不能把文档关联到自身。")
+        _get_document(document_id)
+        _get_document(target_id)
+        distance = payload.get("distance")
+        if distance is not None:
+            try:
+                distance = _bounded_max_distance(int(distance))
+            except (TypeError, ValueError) as exc:
+                raise HTTPException(status_code=422, detail="distance 必须是整数。") from exc
+        result = evolution.confirm_relation(
+            store, document_id, target_id, distance=distance)
+        if result is None:
+            raise HTTPException(status_code=404, detail="文档不存在或已被删除。")
+        return result
+
+    @app.post("/api/documents/{document_id}/candidates/reject")
+    def document_reject_candidate(document_id: str, body: dict | None = None):
+        """Remember a rejected suggestion so the pair is never suggested again."""
+        payload = body or {}
+        target_id = payload.get("target_id") or payload.get("target") or payload.get("document_id")
+        if not target_id:
+            raise HTTPException(status_code=422, detail="target_id 必填。")
+        if target_id == document_id:
+            raise HTTPException(status_code=422, detail="不能拒绝与自身的关联。")
+        _get_document(document_id)
+        _get_document(target_id)
+        distance = payload.get("distance")
+        if distance is not None:
+            try:
+                distance = int(distance)
+            except (TypeError, ValueError) as exc:
+                raise HTTPException(status_code=422, detail="distance 必须是整数。") from exc
+        return evolution.reject_candidate(
+            store, document_id, target_id, distance=distance)
 
     # ---- tag vocabulary + document memberships (issue 02) -------------------
 
