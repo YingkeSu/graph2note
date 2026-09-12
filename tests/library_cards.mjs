@@ -58,9 +58,9 @@ assert.strictEqual(MAX_TAG_CHIPS, 3);
 
 // ---- 4) source icon (pdf page vs image upload) -----------------------------
 assert.deepStrictEqual(cardSource(richDoc),
-  { kind: "pdf", icon: "📄", label: "lecture.pdf · 第 12 页" });
+  { kind: "pdf", icon: "PDF", label: "lecture.pdf · 第 12 页" });
 assert.strictEqual(cardSource({ source_kind: "image" }).kind, "image");
-assert.strictEqual(cardSource({}).icon, "🖼");
+assert.strictEqual(cardSource({}).icon, "图片");
 
 // ---- 5) density normalisation ----------------------------------------------
 assert.strictEqual(normalizeDensity("comfortable"), "comfortable");
@@ -80,7 +80,7 @@ assert.ok(html.includes("2026-03-04"), "effective date");
 assert.ok(html.includes("#数学") && html.includes("#控制") && html.includes("#笔记"), "chips");
 assert.ok(html.includes("+1"), "tag overflow count");
 assert.ok(html.includes('data-source-kind="pdf"'), "source icon kind");
-assert.ok(html.includes("📄"), "source icon glyph");
+assert.ok(html.includes("PDF"), "source icon glyph");
 assert.ok(html.includes('data-card-action="reparse"') && html.includes('data-card-action="delete"'));
 assert.ok(html.includes("↻") && html.includes("✕"));
 

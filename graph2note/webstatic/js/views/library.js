@@ -11,7 +11,7 @@ import { el, state } from "../state.js";
 import { api } from "../api.js";
 import { esc } from "../utils.js";
 import { go, registerView, libraryHash } from "../router.js";
-import { showToast, refreshCollectionTree } from "../ui.js";
+import { showViewError, clearViewError, showToast, refreshCollectionTree } from "../ui.js";
 import {
   DEFAULT_DENSITY,
   DENSITY_KEY,
@@ -216,8 +216,10 @@ export function renderLibraryRoute(route) {
 }
 
 async function renderLibrary() {
+  clearViewError(el.libraryZone);
   el.libraryZone.classList.remove("hidden");
   applyDensity(state.libraryDensity);
+  el.libraryEmpty.classList.add("hidden");
   renderSkeleton();
   let docs = [];
   await loadSuggestions();
@@ -228,7 +230,12 @@ async function renderLibrary() {
   if (state.libraryTopic) params.set("topic", state.libraryTopic);
   const query = params.toString() ? `?${params.toString()}` : "";
   try { docs = await api(`/api/documents${query}`); }
-  catch (e) { showToast("加载文档库失败：" + e.message, "err"); }
+  catch (e) {
+    el.libraryGrid.innerHTML = "";
+    el.libraryCount.textContent = "";
+    showViewError(el.libraryZone, "文档库加载失败，请重试。" + e.message, renderLibrary);
+    return;
+  }
   docs = filterLibraryDocuments(docs);
   el.libraryCount.textContent = docs.length ? `共 ${docs.length} 份` : "";
   if (el.libraryFilterLabel) {
@@ -237,6 +244,15 @@ async function renderLibrary() {
       : state.libraryTag ? `标签：#${state.libraryTag}` : "";
   }
   el.libraryEmpty.classList.toggle("hidden", docs.length > 0);
+  const filtered = state.libraryCollection || state.libraryTag || state.libraryTopic || state.libraryFilter !== "all";
+  el.libraryEmpty.querySelector("p").textContent = filtered
+    ? "当前范围内没有文档。" : "你的第一份手稿，从这里开始。";
+  const description = el.libraryEmpty.querySelector(".empty-description");
+  if (description) description.textContent = filtered
+    ? "可以切回文档库查看全部内容，或上传新的手稿。"
+    : "上传手稿图片或 PDF，解析后在这里整理、阅读与编辑。";
+  const reset = el.libraryEmpty.querySelector("[data-route='#library']");
+  if (reset) reset.classList.toggle("hidden", !filtered);
   el.libraryGrid.innerHTML = docs.map((d) => cardHtml(d, esc)).join("");
   wireCardActions(el.libraryGrid, {
     open: (id) => go(`#doc/${encodeURIComponent(id)}`),
@@ -254,7 +270,9 @@ async function renderLibrary() {
 function syncLibraryFilters() {
   if (!el.libraryFilters) return;
   el.libraryFilters.querySelectorAll("button[data-library-filter]").forEach((button) => {
-    button.classList.toggle("active", button.dataset.libraryFilter === state.libraryFilter);
+    const active = button.dataset.libraryFilter === state.libraryFilter;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
   });
 }
 

@@ -61,9 +61,9 @@ export function cardTags(doc, max = MAX_TAG_CHIPS) {
 export function cardSource(doc) {
   const kind = (doc && doc.source_kind) || ((doc && doc.source_pdf) ? "pdf" : "image");
   if (kind === "pdf") {
-    return { kind: "pdf", icon: "📄", label: (doc && doc.source_label) || "PDF 页" };
+    return { kind: "pdf", icon: "PDF", label: (doc && doc.source_label) || "PDF 页" };
   }
-  return { kind: "image", icon: "🖼", label: (doc && doc.source_label) || "图片上传" };
+  return { kind: "image", icon: "图片", label: (doc && doc.source_label) || "图片上传" };
 }
 
 export function cardViewModel(doc) {
@@ -89,8 +89,8 @@ export function cardHtml(doc, escape) {
   const vm = cardViewModel(doc);
   const esc = typeof escape === "function" ? escape : (value) => String(value == null ? "" : value);
   const thumb = vm.thumbnail
-    ? `<img class="doc-thumb" loading="lazy" decoding="async" alt="" data-src="${esc(vm.thumbnail)}" />`
-    : `<div class="doc-thumb doc-thumb-missing" aria-hidden="true"></div>`;
+    ? `<img class="doc-thumb" loading="lazy" decoding="async" alt="" data-src="${esc(vm.thumbnail)}" /><span class="doc-thumb-placeholder">预览暂不可用</span>`
+    : `<div class="doc-thumb doc-thumb-missing"><span>暂无预览</span></div>`;
   const chips = vm.tags.map((tag) => `<span class="doc-chip">#${esc(tag)}</span>`).join("");
   const overflow = vm.tagOverflow
     ? `<span class="doc-chip doc-chip-overflow" title="${esc(vm.tagTotal)} 个标签">+${vm.tagOverflow}</span>`
