@@ -5,15 +5,15 @@
 
 ## 发布与执行状态
 
-- 已发布：15（R1、U1–U5、P1–P3、S1–S3、A1–A3）。已认领：11（S1、P1、R1、A1、U1、A3、S2、A2、U3、P2、U2）。已完成：11（S1、P1、R1、A1、U1、A3、S2、A2、U3、P2、U2）。已合并：11（S1，merge `582aa61`；P1，merge `e682e3f`；R1，merge `e1281d8`；A1，merge `6fe379e`；U1，merge `7643f9e`；A3，merge `21533ce`；S2，merge `57bd28a`；A2，merge `361e79e`；U3，merge `6272463`；P2，merge `9a6890f`；U2，merge `1b765af`）。
-- 本次合并后**已解锁**：U4、U5（U2、U3 均已合并）；建议 P3 也在 U1 之后派发。
+- 已发布：15（R1、U1–U5、P1–P3、S1–S3、A1–A3）。已认领：12（S1、P1、R1、A1、U1、A3、S2、A2、U3、P2、U2、U5）。已完成：12（S1、P1、R1、A1、U1、A3、S2、A2、U3、P2、U2、U5）。已合并：12（S1，merge `582aa61`；P1，merge `e682e3f`；R1，merge `e1281d8`；A1，merge `6fe379e`；U1，merge `7643f9e`；A3，merge `21533ce`；S2，merge `57bd28a`；A2，merge `361e79e`；U3，merge `6272463`；P2，merge `9a6890f`；U2，merge `1b765af`；U5，merge `d1fe8bb`）。
+- 本次合并后**已解锁**：U4（U2、U3 均已合并；U5 已合并）；建议 P3 也在 U1 之后派发。
 - 全部 issue `ready-for-agent` = 需求已就绪，**不表示阻塞依赖已完成**；依赖以各 issue Blocked by 为准。
 - 第一波（无阻塞，可立即并行派）：**R1、U1、P1、S1、A1、A2、A3**（R1/U1/P1/S1/A1/A2/A3 已合并）。
 - 第二波：U2/U3/U4/U5（U1 已合并 → **已解锁**）、P2（U1+P1 均已合并 → **已解锁**）、P3（待 P1，建议待 U1 —— 两者均已合并）、S2（S1 已合并 → **已合并**，merge `57bd28a`）。
 - 第三波：S3（S1+U3 均已合并 → **已解锁**）。
 - R1 与 S2 有字段约定（重跑版本标注 repair 来源），两 issue 派发时调度需知晓；P2 与 P3 均触碰问答前端，先后派发由调度协调（P2 先）。
 - 领地隔离：U 系 issues 大量触碰 `webstatic/`，U1 与 U2–U5 严禁并行领取（骨架未定时视图实现会全返工）；U2/U4/U5 之间可并行但需调度切分文件领地；U3 与 S3 串行。
-- U1 合并（`7643f9e`）已把 `app.js` 拆为 17 个 ES modules（入口 `webstatic/app.js` + `webstatic/js/**`）；后续 U2–U5/P2/P3 以**新模块结构**为挂载点（视图模块见 U1 handoff §4）。整合时已把 P1 多轮问答控件、R1 repair 入口（侧栏次级 + `#repair` 路由）、A1 自动打标角标移植进新结构，行为未回退；A2 合并（`361e79e`）时同样把「每周小结」区块从旧单体 `app.js` 移植进 `webstatic/js/views/dashboard.js`（+ `state.js` 元素注册、`document.js` 导出 `renderMarkdownInto`），生成/历史/查看/空态行为保持。U3 合并（`6272463`）时编辑器 `#work-zone` 重排为「工具条 + 三栏 + 信息侧板 + 大图查看器」，S2 的 `#evolution-panel` 迁到三栏下方（保持文档路由自动显示），A2 的 `renderMarkdownInto`/digest 区块原样保留；侧板内 A1 provenance 行为逐行保留。U2 合并（`1b765af`）时 Library 网格升级为缩略图/标题/日期/标签/来源卡片并加密度切换，仅 `index.html`/`state.js`/`style.css` 共享区最小行改动；整合冲突仅 `docs/testing.md`、`tests/taxonomy.py` 两处登记表，按并集保留（U3 的 `test_webapp_editor_workspace`、S2 的 `test_evolution_api` 与 U2 的 `test_library_cards` 同时登记），合并后全量 `uv run pytest` 711 passed。
+- U1 合并（`7643f9e`）已把 `app.js` 拆为 17 个 ES modules（入口 `webstatic/app.js` + `webstatic/js/**`）；后续 U2–U5/P2/P3 以**新模块结构**为挂载点（视图模块见 U1 handoff §4）。整合时已把 P1 多轮问答控件、R1 repair 入口（侧栏次级 + `#repair` 路由）、A1 自动打标角标移植进新结构，行为未回退；A2 合并（`361e79e`）时同样把「每周小结」区块从旧单体 `app.js` 移植进 `webstatic/js/views/dashboard.js`（+ `state.js` 元素注册、`document.js` 导出 `renderMarkdownInto`），生成/历史/查看/空态行为保持。U3 合并（`6272463`）时编辑器 `#work-zone` 重排为「工具条 + 三栏 + 信息侧板 + 大图查看器」，S2 的 `#evolution-panel` 迁到三栏下方（保持文档路由自动显示），A2 的 `renderMarkdownInto`/digest 区块原样保留；侧板内 A1 provenance 行为逐行保留。U2 合并（`1b765af`）时 Library 网格升级为缩略图/标题/日期/标签/来源卡片并加密度切换，仅 `index.html`/`state.js`/`style.css` 共享区最小行改动；整合冲突仅 `docs/testing.md`、`tests/taxonomy.py` 两处登记表，按并集保留（U3 的 `test_webapp_editor_workspace`、S2 的 `test_evolution_api` 与 U2 的 `test_library_cards` 同时登记），合并后全量 `uv run pytest` 711 passed。U5 合并（`d1fe8bb`）时时间轴升级为「主干 + 刻度 + 空档标记 + 主题色带 + 月度密度条 + 懒加载缩略图」，`/api/timeline` 仅追加字段；与 U2/U3/P2 的共享文件（`index.html`/`state.js`/`style.css`）无冲突自动合并，仅 `tests/taxonomy.py`、`docs/testing.md` 两处登记表补登 `test_timeline_visual`，合并后全量 `uv run pytest` 722 passed。U5 缩略图与 U2 卡片缩略图**形态一致、可共存**（同为 `data-src` + IntersectionObserver 懒加载）；端点统一为 U2 的 `/api/documents/{id}/thumbnail` 因会使只读时间轴间接触发服务端缓存写入，留作 follow-up（补丁见 U5 评审报告）。
 - A 系领地提示：A1 编辑器标签区与 U3、A2 看板区块与 U1、A3 设置视图入口与 U1 均为弱交集——A 系以现行 UI 交付、U 系重构时承诺行为保持；若同期在跑由调度切分 `webstatic/` 文件领地。A3 另触碰 `llm_settings.py`/`eval/gateway.py`（独占）。
 
 ## Issue 清单
@@ -25,7 +25,7 @@
 | [U2 文档卡片富化与 Library 网格重排](issues/U2-library-cards-grid.md) | UX | [U1](issues/U1-global-layout-navigation.md) | merged (1b765af) |
 | [U3 编辑器工作区改造](issues/U3-editor-workspace.md) | UX | [U1](issues/U1-global-layout-navigation.md) | merged (6272463) |
 | [U4 知识图谱交互升级](issues/U4-graph-interaction.md) | UX | [U1](issues/U1-global-layout-navigation.md) | open |
-| [U5 时间轴可视化升级](issues/U5-timeline-visual.md) | UX | [U1](issues/U1-global-layout-navigation.md) | open |
+| [U5 时间轴可视化升级](issues/U5-timeline-visual.md) | UX | [U1](issues/U1-global-layout-navigation.md) | merged (d1fe8bb) |
 | [P1 PDF 多轮问答](issues/P1-pdf-multiturn-qa.md) | PDF | 无 | merged (e682e3f) |
 | [P2 问答对话式界面与一级入口](issues/P2-qa-conversation-ui.md) | PDF | [U1](issues/U1-global-layout-navigation.md)、[P1](issues/P1-pdf-multiturn-qa.md) | merged (9a6890f) |
 | [P3 跨文档问答与统一搜索](issues/P3-cross-doc-unified-search.md) | PDF | [P1](issues/P1-pdf-multiturn-qa.md)（建议 U1 后） | open |

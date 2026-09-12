@@ -1,6 +1,6 @@
 # U5：时间轴可视化升级
 
-Status: ready-for-agent
+Status: merged
 Labels: track-ux
 
 ## What to build
