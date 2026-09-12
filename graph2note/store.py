@@ -64,6 +64,7 @@ from .tags import (
     canonicalize_tags,
     merge_vocabulary_tags,
     new_vocabulary,
+    normalize_vocabulary,
     rename_vocabulary_tag,
     resolve_tag,
     validate_tag_inference,
@@ -586,6 +587,27 @@ class SessionDocumentStore(DocumentStore):
         records = list(self._docs.values())
         merge_vocabulary_tags(self._tag_vocab, records, source, target)
         return self.list_tags()
+
+    # --- tag governance apply seam (auto-organization issue 01) ----------------
+    def tag_records(self) -> list[dict]:
+        """All records that carry tag memberships (governance apply input)."""
+
+        return list(self._docs.values())
+
+    def save_tag_vocabulary(self, vocabulary: dict) -> None:
+        """Persist a full vocabulary snapshot (canonical tags + v2 groups)."""
+
+        self._tag_vocab = normalize_vocabulary(vocabulary)
+
+    def save_tag_records(self, records: list[dict]) -> None:
+        """Persist records whose tag memberships were updated in place."""
+
+        for record in records:
+            document_id = record.get("document_id")
+            if document_id is None or document_id not in self._docs:
+                continue
+            ensure_tag_provenance(record)
+            self._docs[document_id] = record
 
     def list_collections(self) -> list[dict]:
         counts: dict[str, int] = {}
@@ -1188,6 +1210,20 @@ class FileDocumentStore(SessionDocumentStore):
             self._write_tag_record(record)
         self._save_tag_vocab(vocabulary)
         return self.list_tags()
+
+    # --- tag governance apply seam (auto-organization issue 01) ----------------
+    def tag_records(self) -> list[dict]:
+        return self._all_tag_records()
+
+    def save_tag_vocabulary(self, vocabulary: dict) -> None:
+        self._save_tag_vocab(normalize_vocabulary(vocabulary))
+
+    def save_tag_records(self, records: list[dict]) -> None:
+        for record in records:
+            if not record.get("document_id"):
+                continue
+            ensure_tag_provenance(record)
+            self._write_tag_record(record)
 
     def _all_collection_records(self) -> list[dict]:
         docs = self.root / "documents"

@@ -65,11 +65,17 @@ def validate_tag_inference(raw: Any) -> list[str] | None:
 
 
 def new_vocabulary() -> dict[str, Any]:
-    return {"version": 1, "tags": {}}
+    """Schema v2: canonical tags + aliases + coarse theme ``groups``."""
+
+    return {"version": 2, "tags": {}, "groups": {}}
 
 
 def normalize_vocabulary(raw: Any) -> dict[str, Any]:
-    """Return a safe vocabulary shape, migrating simple legacy lists."""
+    """Return a safe vocabulary shape, migrating v1 (and legacy lists).
+
+    v1 vocabularies have no ``groups`` key; they normalize to an empty group
+    table without touching aliases or membership counts (lossless migration).
+    """
 
     out = new_vocabulary()
     if isinstance(raw, dict) and isinstance(raw.get("tags"), dict):
@@ -106,6 +112,25 @@ def normalize_vocabulary(raw: Any) -> dict[str, Any]:
         for alias in aliases:
             if alias not in entry["aliases"]:
                 entry["aliases"].append(alias)
+    raw_groups = raw.get("groups") if isinstance(raw, dict) else None
+    if isinstance(raw_groups, dict):
+        for raw_name, details in raw_groups.items():
+            try:
+                group_name = normalize_tag(raw_name)
+            except TagError:
+                continue
+            if isinstance(details, dict):
+                raw_members = details.get("tags")
+            elif isinstance(details, list):
+                raw_members = details
+            else:
+                raw_members = []
+            members: list[str] = []
+            for member in raw_members or []:
+                text = str(member).strip()
+                if text and text not in members:
+                    members.append(text)
+            out["groups"][group_name] = {"tags": members}
     return out
 
 
@@ -186,6 +211,30 @@ def vocabulary_entries(vocabulary: dict[str, Any], counts: dict[str, int] | None
     ]
 
 
+def _remap_group_tags(vocabulary: dict[str, Any], source: str, target: str) -> bool:
+    """Keep v2 group membership aligned when a canonical tag is merged away."""
+
+    groups = vocabulary.get("groups")
+    if not isinstance(groups, dict):
+        return False
+    changed = False
+    for details in groups.values():
+        if not isinstance(details, dict):
+            continue
+        members = details.get("tags")
+        if not isinstance(members, list):
+            continue
+        remapped: list[str] = []
+        for tag in members:
+            value = target if tag == source else tag
+            if value not in remapped:
+                remapped.append(value)
+        if remapped != members:
+            details["tags"] = remapped
+            changed = True
+    return changed
+
+
 def merge_vocabulary_tags(
     vocabulary: dict[str, Any],
     records: list[dict[str, Any]],
@@ -206,6 +255,7 @@ def merge_vocabulary_tags(
     for alias in source_entry.get("aliases", []):
         if alias != target_name and alias not in aliases:
             aliases.append(alias)
+    _remap_group_tags(vocabulary, source_name, target_name)
     for record in records:
         tags = list(record.get("tags") or [])
         updated = [target_name if tag == source_name else tag for tag in tags]
@@ -234,6 +284,7 @@ def rename_vocabulary_tag(
     if source_name not in aliases:
         aliases.append(source_name)
     vocabulary["tags"][target_name] = {"aliases": aliases}
+    _remap_group_tags(vocabulary, source_name, target_name)
     for record in records:
         record["tags"] = [target_name if tag == source_name else tag
                            for tag in (record.get("tags") or [])]

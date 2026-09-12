@@ -72,6 +72,7 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_document_metadata": "workspace",
     "test_tags": "workspace",
     "test_autotag": "workspace",  # A1: 识别自动打标签
+    "test_tagorg": "workspace",  # auto-organization 01: 标签语义聚类与批量治理
     "test_timeline": "workspace",
     "test_timeline_visual": "workspace",  # U5（时间轴可视化：字段扩展/主干刻度/只读）
     "test_graph": "workspace",
@@ -123,6 +124,7 @@ INTEGRATION_FILES: frozenset[str] = frozenset({
     "test_verify_engine",
     "test_ingest_pdf",
     "test_autotag",
+    "test_tagorg",  # auto-organization 01（TestClient 契约 + CLI）
     "test_semantic_diff_cli",
     "test_custom_llm_provider_api",  # issue A3（新文件）
     "test_evolution_api",  # issue S2（版本链/候选 API 契约）
