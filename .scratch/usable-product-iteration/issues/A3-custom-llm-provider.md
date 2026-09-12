@@ -1,6 +1,6 @@
 # A3：自定义 LLM API 接入（任意 OpenAI 兼容供应商）
 
-Status: ready-for-agent
+Status: merged
 Labels: track-llm
 
 ## What to build
