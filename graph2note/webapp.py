@@ -60,6 +60,7 @@ from .store import (
     SessionDocumentStore,
 )
 from . import config
+from . import continuity
 from . import evolution
 from . import versiondiff
 from . import digest
@@ -982,7 +983,9 @@ def create_app(
             record = store.get_document(summary["document_id"])
             if record is not None:
                 records.append(record)
-        return build_inbox(records)
+        # Issue 03: surface confirmable continuity pairs as a "可合并" reason.
+        pairs = continuity.candidates_for_store(store)
+        return build_inbox(records, merge_reasons=continuity.merge_reasons_index(pairs))
 
     @app.get("/api/documents/{document_id}")
     def document_get(document_id: str):
@@ -1829,6 +1832,93 @@ def create_app(
         return {"repair_id": repair_id, "triggered": triggered,
                 "status": job.status, "retryable": retryable,
                 "message": "" if retryable else "没有可重试的文档。"}
+
+    # ---- continuity detection & merge (issue 03) ----------------------------
+
+    def _continuity_params(
+        tail_blocks: int | None,
+        min_overlap_ratio: float | None,
+        max_distance: int | None,
+    ) -> dict:
+        if tail_blocks is not None and (tail_blocks < 1 or tail_blocks > 200):
+            raise HTTPException(status_code=422, detail="tail_blocks 必须在 1..200 之间。")
+        if min_overlap_ratio is not None and (min_overlap_ratio < 0 or min_overlap_ratio > 1):
+            raise HTTPException(status_code=422, detail="min_overlap_ratio 必须在 0..1 之间。")
+        return {
+            "tail_blocks": tail_blocks or continuity.DEFAULT_TAIL_BLOCKS,
+            "min_overlap_ratio": (
+                continuity.DEFAULT_MIN_OVERLAP_RATIO
+                if min_overlap_ratio is None else float(min_overlap_ratio)
+            ),
+            "phash_max_distance": _bounded_max_distance(max_distance),
+        }
+
+    @app.get("/api/continuity/candidates")
+    def continuity_candidates(
+        tail_blocks: int | None = None,
+        min_overlap_ratio: float | None = None,
+        max_distance: int | None = None,
+    ):
+        """Read-only continuity pairs (significant + suggested), zero LLM."""
+        return continuity.candidates_payload(
+            store, **_continuity_params(tail_blocks, min_overlap_ratio, max_distance))
+
+    @app.post("/api/continuity/merge")
+    def continuity_merge(body: dict | None = None):
+        """Confirm exactly one continuity pair and merge it (never a batch)."""
+        payload = body or {}
+        for batch_key in ("pairs", "candidates", "items"):
+            if isinstance(payload.get(batch_key), list):
+                raise HTTPException(
+                    status_code=422,
+                    detail="合并必须逐条确认，不支持批量（疑似档请逐条确认）。",
+                )
+        document_id = payload.get("document_id") or payload.get("doc_a") or payload.get("source_id")
+        target_id = payload.get("target_id") or payload.get("doc_b") or payload.get("target")
+        if not document_id or not target_id:
+            raise HTTPException(status_code=422, detail="document_id 与 target_id 必填。")
+        _get_document(document_id)
+        _get_document(target_id)
+        try:
+            return continuity.merge_documents(store, document_id, target_id)
+        except continuity.ContinuityError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.post("/api/continuity/reject")
+    def continuity_reject(body: dict | None = None):
+        """Persist a rejected pair so it is never suggested again."""
+        payload = body or {}
+        document_id = payload.get("document_id") or payload.get("doc_a") or payload.get("source_id")
+        target_id = payload.get("target_id") or payload.get("doc_b") or payload.get("target")
+        if not document_id or not target_id:
+            raise HTTPException(status_code=422, detail="document_id 与 target_id 必填。")
+        _get_document(document_id)
+        _get_document(target_id)
+        distance = payload.get("distance")
+        if distance is not None:
+            try:
+                distance = int(distance)
+            except (TypeError, ValueError) as exc:
+                raise HTTPException(status_code=422, detail="distance 必须是整数。") from exc
+        try:
+            return continuity.reject_pair(
+                store, document_id, target_id, distance=distance)
+        except continuity.ContinuityError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+    @app.post("/api/documents/{document_id}/restore")
+    def document_restore(document_id: str):
+        """Clear a soft-archive marker so the document is listed again."""
+        _get_document(document_id)
+        restored = store.restore_document(document_id)
+        if restored is None:
+            raise HTTPException(status_code=404, detail="文档不存在或已被删除。")
+        return {
+            "ok": True,
+            "document_id": document_id,
+            "merged_into": restored.get("merged_into"),
+            "restored": not bool(restored.get("merged_into")),
+        }
 
     # ---- static frontend ------------------------------------------------------
 

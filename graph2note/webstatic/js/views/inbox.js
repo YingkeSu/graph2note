@@ -1,4 +1,7 @@
-/* graph2note — read-only Inbox projection (U1 relocation). */
+/* graph2note — read-only Inbox projection (U1 relocation).
+   Issue 03 adds the "可合并" continuity queue: read-only detection from
+   `/api/continuity/candidates`, per-item confirm/reject, and a post-merge
+   hand-off to the S3 version switcher (which shows the `merge` event). */
 "use strict";
 
 import { el } from "../state.js";
@@ -6,6 +9,16 @@ import { api } from "../api.js";
 import { esc, displayTime } from "../utils.js";
 import { go, registerView } from "../router.js";
 import { showToast } from "../ui.js";
+import {
+  MERGE_REASON_LABEL,
+  candidateByKey,
+  mergeEmptyHtml,
+  mergeListHtml,
+  mergeResultHtml,
+  pendingMergeCandidates,
+} from "../inbox_merge_core.js";
+
+let mergeCandidates = [];
 
 function inboxItemHtml(item) {
   const reasons = (item.inbox_reason_labels || []).map((reason) =>
@@ -26,25 +39,121 @@ function inboxItemHtml(item) {
   </button>`;
 }
 
+/* ---------- continuity merge queue (issue 03) ---------- */
+
+function ensureMergeSection() {
+  let section = document.getElementById("inbox-merge");
+  if (section) return section;
+  section = document.createElement("section");
+  section.id = "inbox-merge";
+  section.className = "inbox-merge";
+  section.innerHTML = `
+    <div class="inbox-merge-head">
+      <h3>${esc(MERGE_REASON_LABEL)}</h3>
+      <p class="dim">同 PDF 的连续页、首尾衔接的手稿可合并为一篇；原稿软归档、可恢复。</p>
+    </div>
+    <div id="inbox-merge-result" class="inbox-merge-result hidden"></div>
+    <div id="inbox-merge-list" class="inbox-merge-list"></div>`;
+  el.inboxZone.appendChild(section);
+  return section;
+}
+
+async function renderMergeSection() {
+  const section = ensureMergeSection();
+  const list = section.querySelector("#inbox-merge-list");
+  const result = section.querySelector("#inbox-merge-result");
+  if (!list) return;
+  list.innerHTML = `<span class="dim">检测中…</span>`;
+  try {
+    const payload = await api("/api/continuity/candidates");
+    mergeCandidates = pendingMergeCandidates(payload);
+    list.innerHTML = mergeCandidates.length
+      ? mergeListHtml(mergeCandidates) : mergeEmptyHtml();
+    list.querySelectorAll("button[data-merge-confirm]").forEach((button) => {
+      button.addEventListener("click", () => { void confirmMerge(button.dataset.mergeConfirm); });
+    });
+    list.querySelectorAll("button[data-merge-reject]").forEach((button) => {
+      button.addEventListener("click", () => { void rejectMerge(button.dataset.mergeReject); });
+    });
+    if (result) result.classList.add("hidden");
+  } catch (e) {
+    mergeCandidates = [];
+    list.innerHTML = mergeEmptyHtml("检测失败，请稍后重试。");
+  }
+}
+
+async function confirmMerge(key) {
+  const candidate = candidateByKey(mergeCandidates, key);
+  if (!candidate) return;
+  const label = `${candidate.titles ? candidate.titles[0] : candidate.document_id} + `
+    + `${candidate.titles ? candidate.titles[1] : candidate.target_id}`;
+  if (!window.confirm(`确认合并「${label}」？原两篇将软归档，可恢复。`)) return;
+  try {
+    const report = await api("/api/continuity/merge", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        document_id: candidate.document_id,
+        target_id: candidate.target_id,
+      }),
+    });
+    showToast(`已合并为「${report.title}」`);
+    await renderMergeSection();
+    const section = document.getElementById("inbox-merge");
+    const result = section && section.querySelector("#inbox-merge-result");
+    if (result) {
+      result.innerHTML = mergeResultHtml(report);
+      result.classList.remove("hidden");
+    }
+    // Hand off to the merged document's version chain (S3 switcher shows the
+    // `merge` source event + the two source documents in its detail).
+    go(`#doc/${encodeURIComponent(report.merged_document_id)}/versions`);
+  } catch (e) {
+    showToast("合并失败：" + e.message, "err");
+  }
+}
+
+async function rejectMerge(key) {
+  const candidate = candidateByKey(mergeCandidates, key);
+  if (!candidate) return;
+  try {
+    await api("/api/continuity/reject", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        document_id: candidate.document_id,
+        target_id: candidate.target_id,
+        distance: candidate.phash_distance,
+      }),
+    });
+    showToast("已拒绝，不再重复提示该配对。");
+    await renderInbox();
+  } catch (e) {
+    showToast("拒绝失败：" + e.message, "err");
+  }
+}
+
 async function renderInbox() {
   el.inboxZone.classList.remove("hidden");
   el.inboxList.innerHTML = "";
   el.inboxEmpty.classList.add("hidden");
+  ensureMergeSection();
   try {
     const items = await api("/api/inbox");
     if (!items.length) {
       el.inboxEmpty.classList.remove("hidden");
-      return;
+    } else {
+      el.inboxList.innerHTML = items.map(inboxItemHtml).join("");
+      el.inboxList.querySelectorAll("button.inbox-item[data-route]").forEach((button) => {
+        button.addEventListener("click", () => go(button.dataset.route));
+      });
     }
-    el.inboxList.innerHTML = items.map(inboxItemHtml).join("");
-    el.inboxList.querySelectorAll("button.inbox-item[data-route]").forEach((button) => {
-      button.addEventListener("click", () => go(button.dataset.route));
-    });
   } catch (e) {
     el.inboxEmpty.classList.remove("hidden");
     el.inboxEmpty.querySelector("p").textContent = "Inbox 加载失败。";
     showToast("加载 Inbox 失败：" + e.message, "err");
   }
+  await renderMergeSection();
 }
 
 registerView("inbox", renderInbox);
