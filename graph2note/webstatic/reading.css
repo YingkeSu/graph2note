@@ -178,6 +178,21 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 .tags-head .tag-create-form { flex-shrink: 0; }
 .tag-create-form input { min-width: 0; font-size: 14px; background: var(--panel); }
 
+/* Q&A: readable conversation, visible composer, bounded history. */
+.ask-head { flex-wrap: wrap; }
+.ask-head-actions { flex-wrap: wrap; }
+.ask-conversation { min-height: 180px; }
+.ask-empty { max-width: 900px; margin-inline: auto; }
+.ask-bubble { line-height: 1.85; padding: 16px 20px; border-radius: 8px; }
+.ask-turn-meta { font-size: 12px; }
+.ask-citation { white-space: normal; background: var(--accent-soft); border-color: var(--line); }
+.ask-citation:hover, .ask-session.active { background: var(--accent-soft); }
+.ask-composer input[type="text"] { min-height: 48px; border-radius: 6px; }
+.ask-composer .btn { min-height: 48px; }
+.ask-sessions { max-height: 130px; overflow: auto; flex-shrink: 0; }
+.ask-search-toolbar { border-radius: 5px; }
+.ask-scope-label select { max-width: min(320px,65vw); }
+
 @media (hover: none) { .doc-card .doc-card-actions { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0s !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }

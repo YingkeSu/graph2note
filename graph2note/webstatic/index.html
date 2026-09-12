@@ -122,7 +122,7 @@
           <div class="ask-head">
             <div>
               <h2>问答</h2>
-              <p class="dim">就本地已解析 PDF 提问，答案附页级引用（PDF 名 · 页码）；支持多轮追问，会话自动保存。</p>
+              <p class="dim">围绕已解析 PDF 提问，答案附原文页码。支持连续追问，会话自动保存。</p>
             </div>
             <div class="ask-head-actions">
               <label class="ask-scope-label" for="pdf-qa-scope">检索范围
@@ -139,9 +139,9 @@
             <summary>关键词检索（辅助）</summary>
             <section id="pdf-search" class="pdf-search" aria-label="PDF 内容搜索">
               <form id="pdf-search-form" class="pdf-search-form">
-                <input id="pdf-search-input" type="search" autocomplete="off"
+                <input id="pdf-search-input" aria-label="搜索 PDF 内容" type="search" autocomplete="off"
                        placeholder="搜索已解析 PDF 内容（中文 / English / 混排）" />
-                <select id="pdf-search-scope"><option value="">全部已导入 PDF</option></select>
+                <select id="pdf-search-scope" aria-label="搜索范围"><option value="">全部已导入 PDF</option></select>
                 <button class="btn primary" type="submit">搜索</button>
                 <button class="btn small" id="pdf-search-clear" type="button">清除</button>
               </form>
@@ -153,14 +153,14 @@
           <div class="ask-conversation" id="ask-conversation">
             <div id="ask-empty" class="ask-empty hidden">
               <div class="empty-icon">💬</div>
-              <p>还没有对话。就上方检索范围提出第一个问题。</p>
-              <span class="dim">每轮引用独立标注；刷新页面后可以继续追问。</span>
+              <p>从材料中，找到问题的答案。</p>
+              <span class="dim">选择 PDF 范围，在下方输入问题；回答中的引用可返回原文。</span>
             </div>
             <div id="pdf-qa-history" class="ask-messages"></div>
           </div>
 
           <form id="pdf-qa-form" class="ask-composer">
-            <input id="pdf-qa-input" type="text" autocomplete="off"
+            <input id="pdf-qa-input" aria-label="输入 PDF 问题" type="text" autocomplete="off"
                    placeholder="提问（可多轮追问，答案附页级引用）" />
             <button class="btn primary" type="submit">提问</button>
           </form>
