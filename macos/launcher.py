@@ -105,7 +105,8 @@ def main() -> int:
     from graph2note.webapp import create_app
 
     port = _free_port()
-    app = create_app()
+    # A1: production enables post-ingest auto-tagging (live classify planner).
+    app = create_app(auto_tag=True)
     logging.info("storage=%s settings=%s",
                  app.state.storage_dir, app.state.settings_path)
     config = uvicorn.Config(

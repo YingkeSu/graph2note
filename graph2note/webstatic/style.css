@@ -373,6 +373,9 @@ body {
 .tag-action { border: 0; background: transparent; color: var(--accent); padding: 0; cursor: pointer; font-size: 11px; }
 .document-tag { display: inline-flex; align-items: center; gap: 5px; padding: 4px 8px; border-radius: 999px; background: #eff6ff; color: var(--accent-dark); }
 .document-tag button { border: 0; background: transparent; color: inherit; cursor: pointer; padding: 0 2px; font-size: 14px; }
+.document-tag.auto { background: #fff7ed; color: #9a5b12; border: 1px dashed #f0b46a; }
+.tag-auto-badge { font-size: 10px; line-height: 1; padding: 2px 5px; border-radius: 999px; background: #f0b46a; color: #fff; letter-spacing: 0.5px; }
+.tag-promote { font-size: 11px !important; color: #9a5b12 !important; }
 
 .btn.danger { border-color: var(--danger); color: var(--danger); }
 .btn.danger:hover:not(:disabled) { background: var(--danger); color: #fff; }

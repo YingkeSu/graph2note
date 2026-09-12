@@ -59,6 +59,7 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_collections": "workspace",
     "test_document_metadata": "workspace",
     "test_tags": "workspace",
+    "test_autotag": "workspace",  # A1: 识别自动打标签
     "test_timeline": "workspace",
     "test_graph": "workspace",
     "test_inbox": "workspace",
@@ -104,6 +105,7 @@ INTEGRATION_FILES: frozenset[str] = frozenset({
     "test_issue12_twostage",
     "test_verify_engine",
     "test_ingest_pdf",
+    "test_autotag",
     "test_semantic_diff_cli",
 })
 
