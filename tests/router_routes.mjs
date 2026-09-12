@@ -16,7 +16,7 @@ globalThis.location = { hash: "#library" };
 const here = path.dirname(fileURLToPath(import.meta.url));
 const routerPath = path.join(here, "..", "graph2note", "webstatic", "js", "router.js");
 const router = await import(pathToFileURL(routerPath).href);
-const { parseHash, libraryHash, registerView, onRender, render } = router;
+const { parseHash, libraryHash, registerView, onRender, render, graphHash } = router;
 
 // ---- 1) every view + sub-route is directly addressable --------------------
 assert.deepStrictEqual(parseHash("#library"), { name: "library" });
@@ -69,5 +69,45 @@ assert.strictEqual(hooked.at(-1), "library");
 location.hash = "#does-not-exist";
 render();
 assert.strictEqual(rendered.at(-1)[0], "library");
+
+// ---- 4) U4 graph view state lives in the URL too --------------------------
+// `#graph` (the pre-U4 route) keeps its exact shape, extra state is additive.
+assert.deepStrictEqual(parseHash("#graph"), { name: "graph" });
+assert.strictEqual(graphHash({}), "#graph");
+assert.deepStrictEqual(
+  parseHash(graphHash({ sources: ["topic", "manual"] })),
+  { name: "graph", sources: ["topic", "manual"] },
+);
+assert.deepStrictEqual(
+  parseHash("#graph?src=topic,tag&set=research&tag=%E9%87%8D%E7%82%B9&focus=document:d1&clusters=collapse"),
+  {
+    name: "graph",
+    sources: ["topic", "tag"],
+    collections: ["research"],
+    tags: ["重点"],
+    focus: "document:d1",
+    clusters: "collapse",
+  },
+);
+assert.deepStrictEqual(parseHash(graphHash({ clusters: "expand" })), { name: "graph", clusters: "expand" });
+assert.deepStrictEqual(parseHash("#graph?src="), { name: "graph" });
+assert.deepStrictEqual(parseHash("#graph?clusters=other"), { name: "graph" });
+assert.strictEqual(
+  parseHash(graphHash({
+    sources: ["tag"], collections: ["c1"], tags: ["重点"], topic: "数学", focus: "document:d1", clusters: "collapse",
+  })).topic,
+  "数学",
+);
+for (const state of [
+  { sources: ["tag"] },
+  { collections: ["a b"] },
+  { tags: ["重点"] },
+  { focus: "document:d 1" },
+  { clusters: "expand" },
+]) {
+  assert.deepStrictEqual(parseHash(graphHash(state)).name, "graph");
+}
+assert.strictEqual(parseHash(graphHash({ collections: ["a b"] })).collections[0], "a b");
+assert.strictEqual(parseHash(graphHash({ focus: "document:d 1" })).focus, "document:d 1");
 
 console.log("router_routes: all assertions passed ✓");

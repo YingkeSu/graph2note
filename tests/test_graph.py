@@ -88,12 +88,17 @@ def test_empty_graph_is_explicit_and_does_not_infer_edges():
     assert view["sources"] == []
     assert view["empty"] is False  # the lone document remains navigable
     assert view["nodes"][0]["isolated"] is True
-    assert build_graph([]) == {
+    empty = build_graph([])
+    # U4 adds `clusters` / `filters` additively; the pre-U4 projection is exact
+    assert {key: empty[key] for key in ("nodes", "edges", "sources", "empty", "counts")} == {
         "nodes": [], "edges": [], "sources": [], "empty": True,
         "counts": {
             "nodes": 0, "edges": 0, "documents": 0, "topics": 0,
             "tags": 0, "collections": 0,
         },
+    }
+    assert empty["clusters"] == [] and empty["filters"] == {
+        "collections": [], "tags": [], "sources": [],
     }
 
 

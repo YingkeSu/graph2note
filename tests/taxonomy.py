@@ -66,6 +66,7 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_autotag": "workspace",  # A1: 识别自动打标签
     "test_timeline": "workspace",
     "test_graph": "workspace",
+    "test_graph_layout": "workspace",  # U4（图谱布局引擎 + API 字段契约）
     "test_inbox": "workspace",
     "test_telemetry": "workspace",
     # 视觉 QA 开发工具（UI / 内容）
