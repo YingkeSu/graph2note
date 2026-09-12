@@ -17,6 +17,7 @@ from __future__ import annotations
 FILE_TO_MODULE: dict[str, str] = {
     # IR schema 与校验
     "test_ir": "ir",
+    "test_semantic_diff": "ir",  # issue S1（纯引擎）
     # 确定性 Markdown 渲染
     "test_renderer": "render",
     # 图像预处理
@@ -80,6 +81,7 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_store_bridge": "store",
     # CLI 入口
     "test_cli": "cli",
+    "test_semantic_diff_cli": "cli",  # issue S1（diff 子命令）
     # 测试基础设施自身
     "test_taxonomy": "meta",
 }
@@ -99,6 +101,7 @@ INTEGRATION_FILES: frozenset[str] = frozenset({
     "test_issue12_twostage",
     "test_verify_engine",
     "test_ingest_pdf",
+    "test_semantic_diff_cli",
 })
 
 # 成本：slow = 较重（TestClient 全链 / 全链装配 / 图渲染）

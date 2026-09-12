@@ -40,6 +40,7 @@ packages = [
     "graph2note.diagrams",
     "graph2note.ingest",
     "graph2note.notes",
+    "graph2note.semantic",
     "graph2note.verify",
     "eval",
 ]
