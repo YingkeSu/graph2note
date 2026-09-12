@@ -197,7 +197,7 @@
           <div class="settings-head">
             <div>
               <h2>LLM 设置</h2>
-              <p class="dim">按用途选择已注册供应商与模型；凭证只从本地运行时读取。</p>
+              <p class="dim">为解析、整理和问答选择模型。设置完成后，可检测通道是否可用。</p>
             </div>
             <div class="settings-actions">
               <button id="llm-health-button" class="btn small">检测可用性</button>
@@ -211,8 +211,7 @@
           <div class="llm-custom-zone">
             <div class="settings-subhead">
               <h3>自定义供应商</h3>
-              <p class="dim">任意 OpenAI 兼容端点：请求发往 <code>{Base URL}/chat/completions</code> + Bearer Key，
-                模型名原样透传（不做厂商改写）。API Key 只写不读，仅保存在本机设置文件（已 gitignore）。</p>
+              <p class="dim">连接支持 OpenAI 兼容接口的服务。填写服务地址和模型名称；API Key 仅保存在本机，保存后不会回显。</p>
             </div>
             <form id="llm-custom-form" class="llm-custom-form" autocomplete="off">
               <input id="llm-custom-id" type="hidden" />

@@ -6,7 +6,7 @@ import { el, state } from "../state.js";
 import { api } from "../api.js";
 import { esc } from "../utils.js";
 import { registerView } from "../router.js";
-import { showToast } from "../ui.js";
+import { showViewError, clearViewError, showToast } from "../ui.js";
 
 function llmStatusText(status) {
   return {
@@ -80,6 +80,7 @@ function renderLlmHealth(payload) {
 }
 
 async function renderLlmSettings() {
+  clearViewError(el.settingsZone);
   el.settingsZone.classList.remove("hidden");
   el.llmChannelList.innerHTML = "<p class=\"dim\">加载配置中…</p>";
   resetLlmCustomForm();
@@ -88,8 +89,8 @@ async function renderLlmSettings() {
     renderLlmChannels(state.llmSettings);
     el.llmHealthList.innerHTML = "<p class=\"dim\">尚未检测通道可用性。</p>";
   } catch (e) {
-    el.llmChannelList.innerHTML = `<p class="dim">加载失败：${esc(e.message)}</p>`;
-    showToast("加载 LLM 设置失败：" + e.message, "err");
+    el.llmChannelList.innerHTML = "";
+    showViewError(el.settingsZone, "加载 LLM 设置失败：" + e.message, renderLlmSettings);
   }
 }
 
