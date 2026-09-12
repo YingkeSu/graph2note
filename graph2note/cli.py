@@ -445,6 +445,114 @@ def run_tags_backfill(args) -> int:
     return 0
 
 
+def build_collections_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="graph2note collections",
+        description=(
+            "Collection organization (auto-organization issue 02): deterministic "
+            "similarity candidates + one library-classification plan, reviewed "
+            "by a human before any membership is written."
+        ),
+    )
+    sub = p.add_subparsers(dest="collections_command", required=True)
+    o = sub.add_parser(
+        "organize",
+        description=(
+            "Infer a library-wide collection scheme and report it.  The default "
+            "is a dry-run; pass --yes to write the auto memberships.  The plan is "
+            "cached so a dry-run and the following --yes reuse one model call."
+        ),
+    )
+    mode = o.add_mutually_exclusive_group()
+    mode.add_argument("--dry-run", action="store_true",
+                      help="report the plan + budget only (default)")
+    mode.add_argument("--yes", action="store_true",
+                      help="write the accepted auto memberships")
+    o.add_argument("--include-manual", action="store_true",
+                   help="also write documents that already have manual memberships "
+                        "(explicit confirmation; default leaves them untouched)")
+    o.add_argument("--offline", action="store_true",
+                   help="use the deterministic rule classifier instead of an LLM")
+    o.add_argument("--force", action="store_true",
+                   help="ignore the cached plan and call the model again")
+    o.add_argument("--no-cache", action="store_true",
+                   help="read-only: do not read or write the plan cache/telemetry")
+    o.add_argument("--model", default=None, help="text model override")
+    o.add_argument("--provider", default=None, help="provider override")
+    o.add_argument("--shingle-size", type=int, default=None,
+                   help="similarity shingle width (default 3)")
+    o.add_argument("--threshold", type=float, default=None,
+                   help="similarity candidate threshold (default 0.08)")
+    o.add_argument("--max-candidates", type=int, default=None,
+                   help="cap candidate pairs injected into the prompt")
+    o.add_argument("--max-topics", type=int, default=None,
+                   help="first-level collection cap (default 8)")
+    o.add_argument("--storage", default=None,
+                   help="document library storage dir (default GRAPH2NOTE_STORAGE)")
+    o.add_argument("--json", action="store_true", help="emit the report as JSON")
+    return p
+
+
+def run_collections_organize(args) -> int:
+    import json as _json
+
+    from . import collection_organize as _co
+    from . import config as _cfg
+    from .store import FileDocumentStore
+
+    storage = _cfg.ensure_storage_dir(_cfg.resolve_storage_dir(args.storage))
+    store = FileDocumentStore(str(storage))
+    dry_run = not args.yes
+    params = {
+        key: value for key, value in (
+            ("shingle_size", args.shingle_size),
+            ("threshold", args.threshold),
+            ("max_candidates", args.max_candidates),
+            ("max_topics", args.max_topics),
+        ) if value is not None
+    }
+    try:
+        report = _co.generate_suggestions(
+            store,
+            offline=args.offline,
+            force=args.force,
+            dry_run=dry_run,
+            include_manual=args.include_manual,
+            model=args.model,
+            provider=args.provider,
+            use_cache=not args.no_cache,
+            **params,
+        )
+    except ValueError as exc:  # SchemeError (illegal model output) is a ValueError
+        print(f"归类失败（方案被拒绝）：{exc}", file=sys.stderr)
+        return 1
+
+    report["storage"] = str(storage)
+    if args.json:
+        print(_json.dumps(report, ensure_ascii=False, indent=2))
+        return 0
+
+    label = "dry-run（未写入；加 --yes 执行）" if dry_run else "已执行"
+    print(f"storage={storage}")
+    print(f"{label}：文档 {report['documents']} 篇 · 相似候选 {report['candidate_count']} 对 · "
+          f"主题 {len(report['topics'])} 个 · 待变更文档 {report['pending_count']} 篇"
+          f"（可直接写入 {report['pending_auto_count']}，需显式确认 {report['confirmation_required_count']}）")
+    for group in report["groups"]:
+        new = "（新建）" if group["collection_id"] in report["new_collections"] else "（并入既有）"
+        print(f"  - {group['topic']}{new}：{group['document_count']} 篇")
+    if report["topics"] and not report["groups"]:
+        print("没有待确认的归类建议。")
+    calls = report["calls_made"]
+    origin = "复用缓存" if calls == 0 else "本次调用"
+    print(f"模型调用 {calls} 次（{origin}）· token 合计 {report['total_tokens']} "
+          f"（预估 {report['estimated_tokens']}）· model={report['model']}")
+    if not dry_run:
+        print(f"已写入 {report['applied_count']} 篇的自动集合归属"
+              + (f"；跳过手工归类文档 {len(report['skipped_manual'])} 篇（需 --include-manual）"
+                 if report["skipped_manual"] else ""))
+    return 0
+
+
 def build_digest_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="graph2note digest",
@@ -565,6 +673,9 @@ def main(argv: list[str] | None = None) -> int:
     if argv and argv[0] == "tags":
         args = build_tags_parser().parse_args(argv[1:])
         return run_tags_backfill(args)
+    if argv and argv[0] == "collections":
+        args = build_collections_parser().parse_args(argv[1:])
+        return run_collections_organize(args)
     if argv and argv[0] == "visual-qa":
         from . import visualqa
         args = visualqa.build_visualqa_parser().parse_args(argv[1:])
