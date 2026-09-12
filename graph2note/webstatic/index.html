@@ -496,14 +496,15 @@
                   <div id="metadata-evidence" class="metadata-evidence dim"></div>
                 </section>
 
-                <!-- 版本信息（S3 版本对比视图的挂载点，见 handoff）。 -->
+                <!-- 版本信息（S3 版本切换器 + 对比视图挂载点，见 handoff）。 -->
                 <section id="version-panel" class="doc-side-section" aria-label="版本信息">
                   <div class="doc-side-head">
                     <span>版本</span>
                     <span id="version-info" class="dim"></span>
                   </div>
                   <div id="version-list" class="version-list"></div>
-                  <p class="dim version-hint">版本对比视图（S3）将在此侧板内挂载。</p>
+                  <div id="version-readonly-note" class="version-readonly-note hidden" role="status" aria-live="polite"></div>
+                  <button id="version-compare" class="btn small version-compare-btn" type="button">对比版本</button>
                 </section>
               </div>
             </aside>
@@ -515,6 +516,36 @@
                 <span id="evolution-status" class="dim"></span>
               </div>
               <div id="evolution-body"></div>
+            </section>
+
+            <!-- S3 版本对比视图：只读覆盖层（块级高亮 + 原图并排 + 模板摘要 + 点击定位）。
+                 放在 #doc-main 内，不改变 U3 的「工具条 + 三栏」主轴。 -->
+            <section id="diff-view" class="diff-view hidden" role="dialog" aria-modal="true"
+                     aria-label="版本对比" aria-hidden="true">
+              <div class="diff-toolbar">
+                <span class="diff-title">版本对比</span>
+                <label class="diff-selector">版本 A
+                  <select id="diff-select-a" aria-label="对比版本 A"></select>
+                </label>
+                <button id="diff-swap" class="btn small" type="button" title="交换两版">⇄ 交换</button>
+                <label class="diff-selector">版本 B
+                  <select id="diff-select-b" aria-label="对比版本 B"></select>
+                </label>
+                <span id="diff-readonly" class="diff-readonly hidden" role="status" aria-live="polite"></span>
+                <span class="spacer"></span>
+                <button id="diff-back-latest" class="btn small" type="button">回到最新版</button>
+                <button id="diff-compare" class="btn small primary" type="button">刷新对比</button>
+                <button id="diff-close" class="btn small" type="button">退出（Esc）</button>
+              </div>
+              <div id="diff-summary" class="diff-summary" role="status" aria-live="polite"></div>
+              <div id="diff-empty" class="diff-empty hidden"></div>
+              <div class="diff-columns">
+                <div class="diff-columns-head">
+                  <div id="diff-head-a" class="diff-col-head diff-side-a"></div>
+                  <div id="diff-head-b" class="diff-col-head diff-side-b"></div>
+                </div>
+                <div id="diff-rows" class="diff-rows"></div>
+              </div>
             </section>
           </div>
 

@@ -19,11 +19,19 @@ import { esc, displayTime, SAVE_MS } from "../utils.js";
 import { parseHash, go, registerView } from "../router.js";
 import { showToast } from "../ui.js";
 import { pollJob } from "../jobs.js";
+import {
+  configureVersionDiff,
+  renderVersionPanel,
+  closeCompare,
+  openCompare,
+  handleVersionDiffShortcut,
+} from "./version-diff.js";
 
 /* ---------- document (three-pane) ---------- */
 
-async function renderDocument(id) {
+async function renderDocument(id, route) {
   closeImageViewer();
+  closeCompare();
   toggleSidePanel(false);            // 默认收起：编辑 Markdown 时零干扰
   el.workZone.classList.remove("hidden");
   setBusy(true);
@@ -37,6 +45,7 @@ async function renderDocument(id) {
     setDocImage(id);
     el.modelLabel.textContent = "模型：" + (doc.latest && doc.latest.model) || "";
     renderVersions(doc);
+    void renderVersionPanel(id);      // S3: enrich the switcher with source + diff badges
     el.warnings.textContent = "";
     renderDocumentTags(doc.tags, doc.tag_provenance);
     await renderDocumentCollections(doc.collections);
@@ -44,6 +53,11 @@ async function renderDocument(id) {
     el.statusText.textContent = doc.current_markdown && doc.current_markdown.trim()
       ? "文档已载入，编辑自动保存 ✓" : "空文档：未识别出可渲染内容。";
     el.saveIndicator.textContent = "";
+    if (route && route.compare) {
+      void openCompare({ a: route.versionA, b: route.versionB });
+    } else if (route && route.panel) {
+      toggleSidePanel(true);            // deep link to the version switcher
+    }
   } catch (e) {
     setBusy(false);
     showToast("打开文档失败：" + e.message, "err");
@@ -53,7 +67,7 @@ async function renderDocument(id) {
 
 export function renderDocumentRoute(route) {
   state.docId = route.id;
-  renderDocument(route.id);
+  renderDocument(route.id, route);
 }
 
 function setDocImage(id) {
@@ -442,20 +456,23 @@ export function zoomImageViewer(factor, clientX, clientY) {
   return viewer.scale;
 }
 
-export function openImageViewer() {
+/* Open the viewer for ``src`` when given, else for the document's own
+   full-resolution source (image upload / PDF page).  S3 passes a per-version
+   preprocessed URL so historical original images reuse the same viewer. */
+export function openImageViewer(src) {
   if (!state.docId || !el.imageViewer) return;
-  const src = viewerSource();
-  if (!src) return;
+  const resolved = src || viewerSource();
+  if (!resolved) return;
   if (el.imageViewerImg) {
     delete el.imageViewerImg.dataset.fallback;
-    el.imageViewerImg.onerror = () => {
+    el.imageViewerImg.onerror = src ? null : () => {
       const fallback = `/api/documents/${encodeURIComponent(state.docId)}/original`;
       if (!el.imageViewerImg.dataset.fallback) {
         el.imageViewerImg.dataset.fallback = "1";
         el.imageViewerImg.src = fallback;
       }
     };
-    el.imageViewerImg.src = src;
+    el.imageViewerImg.src = resolved;
     el.imageViewerImg.style.transform = "";
     if (el.imageViewerImg.complete && el.imageViewerImg.naturalWidth) {
       fitImageViewer();
@@ -545,6 +562,7 @@ export function handleEditorShortcut(event) {
       closeImageViewer();
       return true;
     }
+    if (handleVersionDiffShortcut(event)) return true;
     if (!isTextInputFocused() && isSidePanelOpen()) {
       toggleSidePanel(false);
       return true;
@@ -637,6 +655,32 @@ if (el.imageViewerStage) {
   el.imageViewerStage.addEventListener("pointermove", onStagePointerMove);
   el.imageViewerStage.addEventListener("pointerup", onStagePointerUp);
   el.imageViewerStage.addEventListener("pointercancel", onStagePointerUp);
+}
+
+/* S3: hand the version-diff view the shared large-image viewer + the same
+   Markdown pipeline as the editor preview (no circular import). */
+configureVersionDiff({ openImageViewer, renderMarkdown: renderBlockMarkdownForVersion });
+
+function renderBlockMarkdownForVersion(markdown) {
+  if (!window.marked) return `<p>${esc(markdown || "")}</p>`;
+  try {
+    // Same marked pipeline (and asset-ref rewriting) as the editor preview.
+    ensureMarkedPrepared();
+    const html = window.marked.parse(markdown || "");
+    if (!window.renderMathInElement) return html;
+    const holder = document.createElement("div");
+    holder.innerHTML = html;
+    renderMathInElement(holder, {
+      delimiters: [
+        { left: "$$", right: "$$", display: true },
+        { left: "$", right: "$", display: false },
+      ],
+      throwOnError: false,
+    });
+    return holder.innerHTML;
+  } catch (_) {
+    return `<p>${esc(markdown || "")}</p>`;
+  }
 }
 
 /* ---------- form wiring (unchanged API contracts) ---------- */

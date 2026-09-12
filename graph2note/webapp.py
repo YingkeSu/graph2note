@@ -60,6 +60,7 @@ from .store import (
 )
 from . import config
 from . import evolution
+from . import versiondiff
 from . import digest
 from . import pipeline
 from . import pdflib
@@ -916,6 +917,41 @@ def create_app(
         """Time-ordered evolution timeline (source + DiffReport summary)."""
         _get_document(document_id)
         return evolution.build_version_chain(store, document_id)
+
+    # ---- version comparison (issue S3) --------------------------------------
+
+    @app.get("/api/documents/{document_id}/diff")
+    def document_diff(document_id: str, a: str | None = None, b: str | None = None):
+        """Read-only block-level comparison of two versions (S1 DiffReport).
+
+        Defaults to newest vs the version before it.  Returns per-block
+        Markdown + S1 anchors for the highlight/jump UI and a templated,
+        model-free summary derived from the same report numbers.
+        """
+        _get_document(document_id)
+        try:
+            payload = versiondiff.build_compare(store, document_id, version_a=a, version_b=b)
+        except versiondiff.VersionDiffError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        if payload is None:
+            raise HTTPException(status_code=404, detail="文档不存在或已被删除。")
+        return payload
+
+    @app.get("/api/documents/{document_id}/versions/{version_id}/preprocessed")
+    def document_version_preprocessed(document_id: str, version_id: str):
+        """Enhanced page image for one version (original-image side-by-side)."""
+        rec = _get_document(document_id)
+        chain = evolution.build_version_chain(store, document_id) or {}
+        known = {str(v.get("version_id")) for v in chain.get("versions") or []}
+        target = version_id
+        if version_id == versiondiff.EDIT_VERSION_ID:
+            target = chain.get("latest_version_id") or (rec.get("latest") or {}).get("version_id")
+        elif version_id not in known:
+            raise HTTPException(status_code=404, detail="版本不存在。")
+        path = versiondiff.version_preprocessed_path(store, document_id, target) if target else None
+        if not path:
+            raise HTTPException(status_code=404, detail="该版本预处理图尚未就绪。")
+        return FileResponse(path, media_type="image/png")
 
     @app.get("/api/documents/{document_id}/candidates")
     def document_candidates(document_id: str, max_distance: int | None = None):

@@ -29,7 +29,20 @@ export function go(route) {
 export function parseHash(hash = location.hash) {
   const h = (hash || "#library").replace(/^#\/?/, "");
   const parts = h.split("/");
-  if (parts[0] === "doc" && parts[1]) return { name: "doc", id: decodeURIComponent(parts[1]) };
+  if (parts[0] === "doc" && parts[1]) {
+    const route = { name: "doc", id: decodeURIComponent(parts[1]) };
+    // S3 deep link: #doc/<id>/diff[/<versionA>[/<versionB>]] opens the
+    // read-only version comparison overlay directly.
+    if (parts[2] === "diff") {
+      route.compare = true;
+      if (parts[3]) route.versionA = decodeURIComponent(parts[3]);
+      if (parts[4]) route.versionB = decodeURIComponent(parts[4]);
+    } else if (parts[2] === "versions") {
+      // S3 deep link: #doc/<id>/versions opens the info side panel (switcher).
+      route.panel = true;
+    }
+    return route;
+  }
   if (parts[0] === "inbox") return { name: "inbox" };
   if (parts[0] === "settings") return { name: "settings" };
   if (parts[0] === "tags") return { name: "tags" };
