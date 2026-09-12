@@ -5,11 +5,11 @@
 
 ## 发布与执行状态
 
-- 已发布：15（R1、U1–U5、P1–P3、S1–S3、A1–A3）。已认领：6（S1、P1、R1、A1、U1、A3）。已完成：6（S1、P1、R1、A1、U1、A3）。已合并：6（S1，merge `582aa61`；P1，merge `e682e3f`；R1，merge `e1281d8`；A1，merge `6fe379e`；U1，merge `7643f9e`；A3，merge `21533ce`）。
+- 已发布：15（R1、U1–U5、P1–P3、S1–S3、A1–A3）。已认领：7（S1、P1、R1、A1、U1、A3、S2）。已完成：7（S1、P1、R1、A1、U1、A3、S2）。已合并：7（S1，merge `582aa61`；P1，merge `e682e3f`；R1，merge `e1281d8`；A1，merge `6fe379e`；U1，merge `7643f9e`；A3，merge `21533ce`；S2，merge `57bd28a`）。
 - 本次合并后**已解锁**：U2、U3、U4、U5、P2（P2 仍需 P1 已合并 —— 已满足）；建议 P3 也在 U1 之后派发。
 - 全部 issue `ready-for-agent` = 需求已就绪，**不表示阻塞依赖已完成**；依赖以各 issue Blocked by 为准。
 - 第一波（无阻塞，可立即并行派）：**R1、U1、P1、S1、A1、A2、A3**（R1/U1/P1/S1/A1/A3 已合并）。
-- 第二波：U2/U3/U4/U5（U1 已合并 → **已解锁**）、P2（U1+P1 均已合并 → **已解锁**）、P3（待 P1，建议待 U1 —— 两者均已合并）、S2（待 S1，已满足）。
+- 第二波：U2/U3/U4/U5（U1 已合并 → **已解锁**）、P2（U1+P1 均已合并 → **已解锁**）、P3（待 P1，建议待 U1 —— 两者均已合并）、S2（S1 已合并 → **已合并**，merge `57bd28a`）。
 - 第三波：S3（待 S1+U3）。
 - R1 与 S2 有字段约定（重跑版本标注 repair 来源），两 issue 派发时调度需知晓；P2 与 P3 均触碰问答前端，先后派发由调度协调（P2 先）。
 - 领地隔离：U 系 issues 大量触碰 `webstatic/`，U1 与 U2–U5 严禁并行领取（骨架未定时视图实现会全返工）；U2/U4/U5 之间可并行但需调度切分文件领地；U3 与 S3 串行。
@@ -30,7 +30,7 @@
 | [P2 问答对话式界面与一级入口](issues/P2-qa-conversation-ui.md) | PDF | [U1](issues/U1-global-layout-navigation.md)、[P1](issues/P1-pdf-multiturn-qa.md) | open |
 | [P3 跨文档问答与统一搜索](issues/P3-cross-doc-unified-search.md) | PDF | [P1](issues/P1-pdf-multiturn-qa.md)（建议 U1 后） | open |
 | [S1 IR 块级 diff 引擎](issues/S1-ir-block-diff.md) | Semantic | 无 | merged (582aa61) |
-| [S2 演进锚定（版本链+pHash）](issues/S2-evolution-anchoring.md) | Semantic | [S1](issues/S1-ir-block-diff.md) | open |
+| [S2 演进锚定（版本链+pHash）](issues/S2-evolution-anchoring.md) | Semantic | [S1](issues/S1-ir-block-diff.md) | merged (57bd28a) |
 | [S3 版本对比视图](issues/S3-version-diff-ui.md) | Semantic | [S1](issues/S1-ir-block-diff.md)、[U3](issues/U3-editor-workspace.md) | open |
 | [A1 解析结果自动打标签](issues/A1-auto-tag-from-recognition.md) | 助理 | 无 | merged (`6fe379e`) |
 | [A2 每周小结](issues/A2-weekly-digest.md) | 助理 | 无 | open |

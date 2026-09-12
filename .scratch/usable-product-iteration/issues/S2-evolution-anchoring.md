@@ -1,6 +1,6 @@
 # S2：演进锚定——版本链与 pHash 跨文档候选
 
-Status: ready-for-agent
+Status: merged
 Labels: track-semantic
 
 ## What to build
