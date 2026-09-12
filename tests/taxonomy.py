@@ -18,6 +18,7 @@ FILE_TO_MODULE: dict[str, str] = {
     # IR schema 与校验
     "test_ir": "ir",
     "test_semantic_diff": "ir",  # issue S1（纯引擎）
+    "test_evolution": "workspace",  # issue S2（版本链 + pHash 候选规则）
     # 确定性 Markdown 渲染
     "test_renderer": "render",
     # 图像预处理
@@ -48,6 +49,7 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_webapp": "webapp",
     "test_webapp_vault_export": "webapp",  # issue 07 在途会修改内容；只读参考
     "test_documents": "webapp",
+    "test_evolution_api": "webapp",  # issue S2（版本链/候选 API 契约）
     "test_session_health_cli": "webapp",
     # Obsidian 导出 / 分类 / MOC
     "test_vault_exporter": "notes",
@@ -102,6 +104,7 @@ INTEGRATION_FILES: frozenset[str] = frozenset({
     "test_verify_engine",
     "test_ingest_pdf",
     "test_semantic_diff_cli",
+    "test_evolution_api",
 })
 
 # 成本：slow = 较重（TestClient 全链 / 全链装配 / 图渲染）
