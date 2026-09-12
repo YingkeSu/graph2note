@@ -15,6 +15,8 @@ from graph2note.llm_settings import (
     probe_channel,
 )
 
+from tests.static_assets import static_js  # noqa: E402
+
 
 @pytest.fixture(autouse=True)
 def _reset_runtime_settings_path():
@@ -165,7 +167,7 @@ def test_settings_api_health_and_next_parse_use_persisted_channel(tmp_path, monk
         "purpose": "classify", "label": "分类归纳",
     }
     html = client.get("/").text
-    javascript = client.get("/static/app.js").text
+    javascript = static_js()
     assert 'id="nav-settings"' in html
     assert 'id="settings-zone"' in html
     assert 'id="llm-health-button"' in html

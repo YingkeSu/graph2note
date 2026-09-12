@@ -45,6 +45,7 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_verify_engine": "verify",
     # 本地单用户 Web 应用
     "test_webapp": "webapp",
+    "test_webapp_layout": "webapp",  # U1（新文件）
     "test_webapp_vault_export": "webapp",  # issue 07 在途会修改内容；只读参考
     "test_documents": "webapp",
     "test_session_health_cli": "webapp",

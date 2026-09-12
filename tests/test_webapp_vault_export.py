@@ -28,6 +28,8 @@ from fastapi.testclient import TestClient  # noqa: E402
 from graph2note import webapp  # noqa: E402
 from graph2note.router import RouteARouter  # noqa: E402
 
+from tests.static_assets import static_js  # noqa: E402
+
 HERE = Path(__file__).parent
 VALID = (HERE / "golden" / "valid-ir.golden.json").read_text(encoding="utf-8")
 
@@ -219,7 +221,7 @@ def test_vault_export_ui_present(tmp_path, monkeypatch):
     page = client.get("/").text
     assert "导出 Vault" in page or "vault-export" in page
     assert "vault-export-zone" in page
-    appjs = client.get("/static/app.js").text
+    appjs = static_js()
     assert "startVaultExport" in appjs
 
 
