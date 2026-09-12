@@ -29,7 +29,7 @@
         <button class="nav-item" id="nav-dashboard" data-view="dashboard" data-route="#dashboard" title="数据看板">数据看板</button>
         <button class="nav-item" id="nav-inbox" data-view="inbox" data-route="#inbox" title="待整理">Inbox</button>
         <button class="nav-item" id="nav-tags" data-view="tags" data-route="#tags" title="标签词表">标签词表</button>
-        <button class="nav-item" id="nav-pdf-search" data-view="pdf-search" data-route="#pdf-search" title="PDF 检索与问答（临时入口）">PDF 检索</button>
+        <button class="nav-item" id="nav-ask" data-view="ask" data-route="#ask" title="PDF 问答（对话式，多轮追问）">问答</button>
       </nav>
 
       <section class="sidebar-collections" aria-label="集合">
@@ -103,39 +103,64 @@
           <div id="tag-list" class="tag-list"></div>
         </section>
 
-        <!-- PDF content search + grounded Q&A (temporary U1 home until P2/P3).
-             Behaviour is preserved verbatim; only the location moved out of
-             Library. -->
-        <section id="pdf-search-zone" class="pdf-search-zone hidden">
-          <div class="pdf-search-head">
+        <!-- First-class Q&A conversation view (P2): scope picker + bubbles +
+             session management.  The keyword-search toolbar stays mounted as an
+             auxiliary tool (P3 owns the unified-search frontend). -->
+        <section id="ask-zone" class="ask-zone hidden">
+          <div class="ask-head">
             <div>
-              <h2>PDF 检索与问答</h2>
-              <p class="dim">临时入口：关键词检索 + 多轮追问问答（页级引用）。P2 会把问答升级为一级视图。</p>
+              <h2>问答</h2>
+              <p class="dim">就本地已解析 PDF 提问，答案附页级引用（PDF 名 · 页码）；支持多轮追问，会话自动保存。</p>
+            </div>
+            <div class="ask-head-actions">
+              <label class="ask-scope-label" for="pdf-qa-scope">检索范围
+                <select id="pdf-qa-scope"><option value="">全部已导入 PDF</option></select>
+              </label>
+              <button class="btn small" id="pdf-qa-new" type="button"
+                      title="开启新话题（当前会话保留在历史里）">新会话</button>
             </div>
           </div>
-          <section id="pdf-search" class="pdf-search" aria-label="PDF 内容搜索">
-            <form id="pdf-search-form" class="pdf-search-form">
-              <input id="pdf-search-input" type="search" autocomplete="off"
-                     placeholder="搜索已解析 PDF 内容（中文 / English / 混排）" />
-              <select id="pdf-search-scope"><option value="">全部已导入 PDF</option></select>
-              <button class="btn primary" type="submit">搜索</button>
-              <button class="btn small" id="pdf-search-clear" type="button">清除</button>
-            </form>
-            <div id="pdf-search-status" class="dim"></div>
-            <div class="pdf-qa">
-              <form id="pdf-qa-form" class="pdf-qa-form">
-                <input id="pdf-qa-input" type="text" autocomplete="off"
-                       placeholder="就上方检索范围提问（可多轮追问，答案附页级引用）" />
-                <button class="btn" type="submit">提问</button>
-                <button class="btn small" id="pdf-qa-new" type="button"
-                        title="开启新话题（清空当前会话上下文）">新会话</button>
+
+          <!-- Keyword search stays available as an auxiliary toolbar.  The
+               block is mounted as-is; only its host view moved (P2). -->
+          <details class="ask-search-toolbar" id="ask-search-toolbar">
+            <summary>关键词检索（辅助）</summary>
+            <section id="pdf-search" class="pdf-search" aria-label="PDF 内容搜索">
+              <form id="pdf-search-form" class="pdf-search-form">
+                <input id="pdf-search-input" type="search" autocomplete="off"
+                       placeholder="搜索已解析 PDF 内容（中文 / English / 混排）" />
+                <select id="pdf-search-scope"><option value="">全部已导入 PDF</option></select>
+                <button class="btn primary" type="submit">搜索</button>
+                <button class="btn small" id="pdf-search-clear" type="button">清除</button>
               </form>
-              <div id="pdf-qa-status" class="dim"></div>
-              <div id="pdf-qa-history" class="pdf-qa-history hidden"></div>
-              <div id="pdf-qa-result" class="pdf-qa-result hidden"></div>
+              <div id="pdf-search-status" class="dim"></div>
+            </section>
+            <div id="pdf-search-results" class="pdf-search-results hidden"></div>
+          </details>
+
+          <div class="ask-conversation" id="ask-conversation">
+            <div id="ask-empty" class="ask-empty hidden">
+              <div class="empty-icon">💬</div>
+              <p>还没有对话。就上方检索范围提出第一个问题。</p>
+              <span class="dim">每轮引用独立标注；刷新页面后可以继续追问。</span>
             </div>
+            <div id="pdf-qa-history" class="ask-messages"></div>
+          </div>
+
+          <form id="pdf-qa-form" class="ask-composer">
+            <input id="pdf-qa-input" type="text" autocomplete="off"
+                   placeholder="提问（可多轮追问，答案附页级引用）" />
+            <button class="btn primary" type="submit">提问</button>
+          </form>
+          <div id="pdf-qa-status" class="dim ask-status"></div>
+
+          <section class="ask-sessions" id="ask-sessions-zone" aria-label="历史会话">
+            <div class="ask-sessions-head">
+              <h3>历史会话</h3>
+              <span class="dim" id="ask-sessions-count"></span>
+            </div>
+            <div id="ask-sessions" class="ask-session-list"></div>
           </section>
-          <div id="pdf-search-results" class="pdf-search-results hidden"></div>
         </section>
 
         <!-- Read-only Inbox projection (issue 07) -->

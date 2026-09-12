@@ -16,7 +16,9 @@ export const state = {
   searchQuery: "",
   pdfQaSessionId: null,   // P1 multi-turn conversation id
   pdfQaScopeKey: null,    // scope the current conversation is bound to
-  pdfQaHistory: [],       // [{question, response}] of the current conversation
+  pdfQaHistory: [],       // conversation turns [{index, question, status, ...}]
+  askSessions: [],        // persisted session summaries (history list)
+  askBusy: false,         // a turn is in flight (composer disabled)
   libraryCollection: null,
   libraryFilter: "all",
   libraryTag: null,
@@ -129,7 +131,7 @@ export const el = {
   navSettings: $("#nav-settings"),
   navVaultExport: $("#nav-vault-export"),
   navTags: $("#nav-tags"),
-  navPdfSearch: $("#nav-pdf-search"),
+  navAsk: $("#nav-ask"),
   navUpload: $("#nav-upload"),
   modelLabel: $("#model-label"),
   vaultExportZone: $("#vault-export-zone"),
@@ -144,7 +146,7 @@ export const el = {
   pdfFilename: $("#pdf-filename"),
   pdfSummary: $("#pdf-summary"),
   pdfRetry: $("#pdf-retry"),
-  pdfSearchZone: $("#pdf-search-zone"),
+  // Keyword-search toolbar (aux tool inside the ask view; P3 owns unified search).
   pdfSearchForm: $("#pdf-search-form"),
   pdfSearchInput: $("#pdf-search-input"),
   pdfSearchScope: $("#pdf-search-scope"),
@@ -156,7 +158,12 @@ export const el = {
   pdfQaNew: $("#pdf-qa-new"),
   pdfQaStatus: $("#pdf-qa-status"),
   pdfQaHistory: $("#pdf-qa-history"),
-  pdfQaResult: $("#pdf-qa-result"),
+  // First-class Q&A conversation view (P2).
+  askZone: $("#ask-zone"),
+  askScope: $("#pdf-qa-scope"),
+  askEmpty: $("#ask-empty"),
+  askSessions: $("#ask-sessions"),
+  askSessionsCount: $("#ask-sessions-count"),
   // R1 黑图修复报告：zone 由 /static/repair.js（classic，先于模块执行）注入。
   repairZone: $("#repair-zone"),
 };
@@ -164,7 +171,7 @@ export const el = {
 /* Views routed by location.hash; every routable zone is hidden before the
    active one is shown (U1 keeps the single-zone-at-a-time contract). */
 export const ZONES = [
-  el.libraryZone, el.tagsZone, el.pdfSearchZone, el.inboxZone, el.settingsZone,
+  el.libraryZone, el.tagsZone, el.askZone, el.inboxZone, el.settingsZone,
   el.timelineZone, el.graphZone, el.dashboardZone, el.uploadZone,
   el.workingZone, el.workZone, el.vaultExportZone, el.pdfZone, el.repairZone,
 ];

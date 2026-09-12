@@ -18,6 +18,7 @@
 
 import "./js/views/library.js";
 import "./js/views/tags.js";
+import "./js/views/ask.js";   // P2: first-class Q&A conversation view (imports pdf.js)
 import "./js/views/pdf.js";
 import "./js/views/inbox.js";
 import "./js/views/settings.js";
