@@ -46,6 +46,7 @@ FILE_TO_MODULE: dict[str, str] = {
     # 本地单用户 Web 应用
     "test_webapp": "webapp",
     "test_webapp_vault_export": "webapp",  # issue 07 在途会修改内容；只读参考
+    "test_repair": "webapp",  # R1 黑图修复闭环（CLI + API + Web）
     "test_documents": "webapp",
     "test_session_health_cli": "webapp",
     # Obsidian 导出 / 分类 / MOC
@@ -88,6 +89,7 @@ FILE_TO_MODULE: dict[str, str] = {
 INTEGRATION_FILES: frozenset[str] = frozenset({
     "test_webapp",
     "test_webapp_vault_export",
+    "test_repair",
     "test_documents",
     "test_e2e_images",
     "test_pipeline",

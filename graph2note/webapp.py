@@ -62,6 +62,7 @@ from . import pipeline
 from . import pdflib
 from . import pdfsearch
 from . import pdfqa
+from . import repair as repairlib
 
 DEFAULT_MODEL = os.environ.get("GRAPH2NOTE_MODEL", "glm-5.3-flash")
 MAX_SIZE = 10 * 1024 * 1024  # 10 MB (FR-015)
@@ -217,6 +218,40 @@ class JobRunner:
             )
         finally:
             pdflib.save_job(job)
+
+    # ---- R1 black-image repair jobs -----------------------------------------
+
+    def trigger_repair(self, job: repairlib.RepairJob) -> bool:
+        """Start/resume one repair job; False if it is already running."""
+        with job.lock:
+            if job._running:
+                return False
+            job._running = True
+        threading.Thread(target=self._wrapper_repair, args=(job,), daemon=True).start()
+        return True
+
+    def _wrapper_repair(self, job: repairlib.RepairJob) -> None:
+        app = self.app
+        try:
+            channel = app.state.llm_settings.resolve("parse_visual")
+            model = app.state.model_override or channel["model"]
+            with job.lock:
+                job.model = model
+            repairlib.run_job(
+                app.state.store,
+                job,
+                router_factory=app.state.router_factory,
+                provider=channel["provider"],
+            )
+        except Exception as exc:  # never present a failure as a clean run
+            with job.lock:
+                job.status = "failed"
+                job.error = f"修复任务失败：{exc}"
+                job.error_kind = "failed"
+            repairlib.save_job(job)
+        finally:
+            with job.lock:
+                job._running = False
 
     def _run_parse(self, job: Job) -> None:
         app = self.app
@@ -420,6 +455,13 @@ def create_app(
     for _persisted in pdflib.load_jobs(store):
         pdflib.save_job(_persisted)  # persist the reconciled 'interrupted' state
         app.state.pdf_jobs[_persisted.pdf_id] = _persisted
+
+    # R1: black-image repair runs (durable, per-document results, retryable).
+    app.state.repair_jobs: dict[str, repairlib.RepairJob] = {}
+    app.state.repair_jobs_lock = threading.Lock()
+    for _repair in repairlib.load_jobs(store):
+        repairlib.save_job(_repair)
+        app.state.repair_jobs[_repair.repair_id] = _repair
 
     def _get_job(job_id: str) -> Job:
         with app.state.jobs_lock:
@@ -1220,6 +1262,104 @@ def create_app(
         except pdfqa.QaError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
         return answer.public()
+
+    # ---- R1 black-image repair loop -----------------------------------------
+    # detect -> report -> confirm -> re-run from preprocessed_raw.png -> verify.
+    # ``scan`` is read-only (no LLM call); ``run`` requires an explicit document
+    # id list *and* ``confirm=true`` so a whole-library run can never be triggered
+    # implicitly.
+
+    def _get_repair_job(repair_id: str) -> repairlib.RepairJob:
+        with app.state.repair_jobs_lock:
+            job = app.state.repair_jobs.get(repair_id)
+        if job is None:
+            try:
+                work_dir = repairlib.repair_dir(app.state.store, repair_id)
+            except RuntimeError:
+                work_dir = None
+            job = repairlib.load_job(work_dir) if work_dir else None
+            if job is None:
+                raise HTTPException(status_code=404, detail="修复任务不存在。")
+            job.mark_interrupted()
+            repairlib.save_job(job)
+            with app.state.repair_jobs_lock:
+                existing = app.state.repair_jobs.get(repair_id)
+                if existing is not None:
+                    return existing
+                app.state.repair_jobs[repair_id] = job
+        return job
+
+    @app.post("/api/repair/scan")
+    def repair_scan(body: dict | None = None):
+        payload = body or {}
+        ids = payload.get("document_ids") or None
+        return repairlib.scan_library(app.state.store, ids)
+
+    @app.get("/api/repair")
+    def repair_list():
+        with app.state.repair_jobs_lock:
+            jobs = list(app.state.repair_jobs.values())
+        jobs.sort(key=lambda j: (j.created_at or 0), reverse=True)
+        return [j.summary() for j in jobs]
+
+    @app.post("/api/repair/run")
+    def repair_run(body: dict | None = None):
+        payload = body or {}
+        raw_ids = payload.get("document_ids") or []
+        ids = [str(x).strip() for x in raw_ids if str(x).strip()]
+        if not ids:
+            raise HTTPException(
+                status_code=422,
+                detail="repair run 必须携带明确的文档 id 列表（document_ids），不接受全库隐式执行。",
+            )
+        if payload.get("confirm") is not True:
+            raise HTTPException(
+                status_code=400,
+                detail="repair run 需要确认参数 confirm=true 才会真实调用解析。",
+            )
+        unknown = [d for d in ids if app.state.store.get_document(d) is None]
+        if unknown:
+            raise HTTPException(status_code=404,
+                                detail=f"文档不存在：{', '.join(unknown)}")
+
+        channel = app.state.llm_settings.resolve("parse_visual")
+        model = app.state.model_override or channel["model"]
+        job = repairlib.create_repair_job(app.state.store, ids, model=model)
+        with app.state.repair_jobs_lock:
+            app.state.repair_jobs[job.repair_id] = job
+        repairlib.save_job(job)
+        triggered = app.state.runner.trigger_repair(job)
+        return {"repair_id": job.repair_id, "status": job.status,
+                "triggered": triggered, "total": len(job.items),
+                "estimated_vlm_calls": job.estimated_vlm_calls}
+
+    @app.get("/api/repair/{repair_id}")
+    def repair_status(repair_id: str):
+        return _get_repair_job(repair_id).public()
+
+    @app.post("/api/repair/{repair_id}/retry")
+    def repair_retry(repair_id: str):
+        """Retry only the documents whose repair failed / did not verify."""
+        job = _get_repair_job(repair_id)
+        with job.lock:
+            if job._running:
+                return {"repair_id": repair_id, "triggered": False,
+                        "status": job.status,
+                        "retryable": job.retryable_ids(),
+                        "message": "修复任务正在处理中，请稍候。"}
+            retryable = []
+            for item in job.items.values():
+                if item.status == "failed":
+                    item.status = "pending"
+                    item.error = None
+                    item.error_kind = None
+                    item.verified = None
+                    retryable.append(item.document_id)
+        repairlib.save_job(job)
+        triggered = app.state.runner.trigger_repair(job) if retryable else False
+        return {"repair_id": repair_id, "triggered": triggered,
+                "status": job.status, "retryable": retryable,
+                "message": "" if retryable else "没有可重试的文档。"}
 
     # ---- static frontend ------------------------------------------------------
 
