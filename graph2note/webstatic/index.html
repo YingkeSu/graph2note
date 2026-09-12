@@ -398,12 +398,13 @@
         <!-- Upload / intro state -->
         <section id="upload-zone" class="upload-zone hidden">
           <div class="upload-card" id="upload-card">
-            <div class="upload-icon">📄</div>
-            <p class="upload-title">上传手稿图片（JPG / JPEG / PNG，≤10MB）</p>
-            <p class="upload-sub">解析后自动存入本地文档库；可继续校对编辑</p>
+            <p class="page-kicker">手稿 · PDF · 知识</p>
+            <h2 class="upload-title">让手稿成为知识。</h2>
+            <p class="upload-sub">拖入手稿图片，或选择文件。解析后自动存入文档库，可继续校对和编辑。</p>
+            <p class="upload-format">图片支持 JPG / JPEG / PNG，单张不超过 10MB。PDF 不超过 50MB，将逐页解析。</p>
             <button id="pick-file" class="btn primary">选择图片</button>
             <input id="file-input" type="file" accept=".jpg,.jpeg,.png" hidden />
-            <button id="pick-pdf" class="btn">上传 PDF（逐页解析入库）</button>
+            <button id="pick-pdf" class="btn">选择 PDF</button>
             <input id="pdf-input" type="file" accept=".pdf" hidden />
             <p class="upload-sub" id="upload-hint"></p>
           </div>

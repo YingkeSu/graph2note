@@ -209,6 +209,15 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 .vault-export-input { min-width: 0; font-size: 14px; }
 .vault-export-status { overflow-wrap: anywhere; border-radius: 5px; }
 
+/* Upload: the two input types are explicit, without changing file handling. */
+.upload-zone { padding: 30px; overflow: auto; }
+.upload-card { width: 640px; max-width: 100%; text-align: left; padding: 48px;
+  border-radius: 6px; border: 1px solid var(--line); border-top: 2px solid var(--ink); }
+.upload-title { font: 600 30px/1.4 var(--display); margin: 0 0 12px; }
+.upload-sub { font-size: 14px; line-height: 1.8; }
+.upload-card .btn { margin: 20px 10px 0 0; min-height: 42px; }
+.upload-format { font-size: 12px; color: var(--muted); margin: 18px 0 0; }
+
 @media (hover: none) { .doc-card .doc-card-actions { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0s !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
