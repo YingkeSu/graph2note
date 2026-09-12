@@ -5,7 +5,7 @@
 
 ## 发布与执行状态
 
-- 已发布：15（R1、U1–U5、P1–P3、S1–S3、A1–A3）。已认领：2（S1、P1）。已完成：2（S1、P1）。已合并：2（S1，merge `582aa61`；P1，merge `e682e3f`）。
+- 已发布：15（R1、U1–U5、P1–P3、S1–S3、A1–A3）。已认领：3（S1、P1、R1）。已完成：3（S1、P1、R1）。已合并：3（S1，merge `582aa61`；P1，merge `e682e3f`；R1，merge `e1281d8`）。
 - 全部 issue `ready-for-agent` = 需求已就绪，**不表示阻塞依赖已完成**；依赖以各 issue Blocked by 为准。
 - 第一波（无阻塞，可立即并行派）：**R1、U1、P1、S1、A1、A2、A3**。
 - 第二波：U2/U3/U4/U5（待 U1）、P2（待 U1+P1）、P3（待 P1，建议待 U1）、S2（待 S1）。
@@ -18,7 +18,7 @@
 
 | Issue | 类别 | Blocked by | Status |
 |---|---|---|---|
-| [R1 黑图存量检测与重解析闭环](issues/R1-black-image-repair-loop.md) | 修复 | 无 | open |
+| [R1 黑图存量检测与重解析闭环](issues/R1-black-image-repair-loop.md) | 修复 | 无 | merged (e1281d8) |
 | [U1 全局布局与导航重构（地基）](issues/U1-global-layout-navigation.md) | UX | 无 | open |
 | [U2 文档卡片富化与 Library 网格重排](issues/U2-library-cards-grid.md) | UX | [U1](issues/U1-global-layout-navigation.md) | open |
 | [U3 编辑器工作区改造](issues/U3-editor-workspace.md) | UX | [U1](issues/U1-global-layout-navigation.md) | open |

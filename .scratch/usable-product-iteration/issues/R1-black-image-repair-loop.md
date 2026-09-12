@@ -1,6 +1,6 @@
 # R1：黑图存量检测与重解析闭环
 
-Status: ready-for-agent
+Status: merged
 Labels: track-repair, priority-high
 
 ## What to build
