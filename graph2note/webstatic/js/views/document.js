@@ -71,10 +71,19 @@ export function renderDocumentRoute(route) {
 }
 
 function setDocImage(id) {
-  el.originalImg.src = `/api/documents/${encodeURIComponent(id)}/preprocessed`;
+  const hint = document.getElementById("original-image-hint");
+  if (hint) hint.classList.add("hidden");
+  el.originalImg.classList.remove("hidden");
   el.originalImg.onerror = () => {
+    // Try the original once. A missing original must not loop requests forever.
+    el.originalImg.onerror = () => {
+      el.originalImg.onerror = null;
+      el.originalImg.classList.add("hidden");
+      if (hint) hint.classList.remove("hidden");
+    };
     el.originalImg.src = `/api/documents/${encodeURIComponent(id)}/original`;
   };
+  el.originalImg.src = `/api/documents/${encodeURIComponent(id)}/preprocessed`;
 }
 
 /* ---------- version info (side panel; S3 version-diff mount point) ---------- */

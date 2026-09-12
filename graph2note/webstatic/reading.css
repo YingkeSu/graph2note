@@ -218,11 +218,24 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 .upload-card .btn { margin: 20px 10px 0 0; min-height: 42px; }
 .upload-format { font-size: 12px; color: var(--muted); margin: 18px 0 0; }
 
+/* Editor: preserve the three-pane axis and independently scrolling content. */
+.doc-toolbar { padding: 12px 24px; gap: 12px; }
+.panes { gap: 12px; padding: 16px 24px 24px; grid-template-columns: 1fr 1.05fr 1fr; }
+.pane { border-radius: 6px; min-width: 0; }
+.pane-head { padding: 12px; font-size: 12px; gap: 8px; flex-wrap: wrap; }
+.md-editor { background: var(--panel); color: var(--ink); font-size: 14px; line-height: 1.8; }
+.preview { line-height: 1.85; font-size: 15px; }
+.preview h1, .preview h2, .preview h3 { font-family: var(--display); }
+.image-body { background: var(--surface); }
+.doc-side-panel { background: var(--panel); max-width: 100%; }
+.doc-side-section { border-color: var(--line); }
+.pdf-row { flex-wrap: wrap; border-radius: 6px; }
 #content .repair-zone { width: 100%; max-width: none; padding: 30px 34px 36px; }
 #content .repair-head h2 { font: 600 30px/1.35 var(--display); }
 #content .repair-row { background: var(--panel); border-color: var(--line); }
 #content .repair-row .doc { overflow-wrap: anywhere; min-width: 0; }
 #content .repair-actions { flex-wrap: wrap; }
+
 @media (hover: none) { .doc-card .doc-card-actions { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0s !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
@@ -248,3 +261,4 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 #content .repair-dim { color: var(--muted); }
 .library-grid[data-density="compact"] .doc-card .thumb { height: 110px; }
 .llm-channel-label .dim { display: none; }
+#original-image-hint { max-width: 280px; padding: 20px; color: var(--muted); font-size: 14px; line-height: 1.8; }

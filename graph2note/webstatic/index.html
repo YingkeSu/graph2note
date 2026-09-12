@@ -459,17 +459,18 @@
                     <button class="btn small" id="btn-zoom-image" type="button"
                             title="大图查看（点击原图也可）">⤢ 大图</button>
                     <button class="btn small" id="btn-repic" type="button"
-                            title="重新加载预处理图">↻</button>
+                            title="重新加载预处理图" aria-label="重新加载原图">↻</button>
                   </span>
                 </div>
                 <div class="pane-body image-body">
                   <img id="original-img" alt="原图" tabindex="0" role="button"
                        title="点击进入大图查看" />
+                  <p id="original-image-hint" class="hidden" role="status">原图暂不可用。可点击右上方重新加载，或重新上传源文件；已保存的文字仍可编辑。</p>
                 </div>
               </div>
               <div class="pane pane-md">
                 <div class="pane-head">可编辑 Markdown</div>
-                <textarea id="md-editor" class="md-editor" spellcheck="false"
+                <textarea id="md-editor" aria-label="编辑 Markdown" class="md-editor" spellcheck="false"
                           placeholder="解析完成后，可在此直接编辑 Markdown（自动保存）…"></textarea>
               </div>
               <div class="pane pane-preview">
@@ -491,7 +492,7 @@
                     <span>文档标签</span>
                   </div>
                   <form id="document-tag-form" class="tag-create-form">
-                    <input id="document-tag-input" type="text" placeholder="添加标签" />
+                    <input id="document-tag-input" aria-label="添加文档标签" type="text" placeholder="添加标签" />
                     <button class="btn small" type="submit">添加</button>
                   </form>
                   <div id="document-tag-list" class="document-tag-list"></div>
@@ -502,7 +503,7 @@
                     <span>所属集合</span>
                   </div>
                   <form id="document-collection-form" class="tag-create-form">
-                    <select id="document-collection-select"><option value="">选择集合</option></select>
+                    <select id="document-collection-select" aria-label="选择文档集合"><option value="">选择集合</option></select>
                     <button class="btn small" type="submit">加入</button>
                   </form>
                   <div id="document-collection-list" class="document-tag-list"></div>
