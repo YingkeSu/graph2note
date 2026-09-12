@@ -1,0 +1,1 @@
+来源：graph2note/webstatic/index.html 与 style.css。现有文字品牌 graph2note；底色 #f6f7f9，面板 #ffffff，正文 #1f2328，强调色 #2563eb。未发现正式图形 logo，沿用真实文字品牌。无内容照片需求。基线截图见 evidence。

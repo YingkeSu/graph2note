@@ -1,0 +1,302 @@
+[
+  {
+    "route": "library",
+    "width": 1440,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#library",
+    "headings": [
+      "本地文档库"
+    ],
+    "overflow": false,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "1440-library.png"
+  },
+  {
+    "route": "timeline/day",
+    "width": 1440,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#timeline/day",
+    "headings": [
+      "时间轴"
+    ],
+    "overflow": false,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "1440-timeline-day.png"
+  },
+  {
+    "route": "graph",
+    "width": 1440,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#graph",
+    "headings": [
+      "知识图谱"
+    ],
+    "overflow": false,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "1440-graph.png"
+  },
+  {
+    "route": "dashboard",
+    "width": 1440,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#dashboard",
+    "headings": [
+      "数据看板"
+    ],
+    "overflow": false,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "1440-dashboard.png"
+  },
+  {
+    "route": "inbox",
+    "width": 1440,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#inbox",
+    "headings": [
+      "Inbox"
+    ],
+    "overflow": false,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "1440-inbox.png"
+  },
+  {
+    "route": "tags",
+    "width": 1440,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#tags",
+    "headings": [
+      "标签词表"
+    ],
+    "overflow": false,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "1440-tags.png"
+  },
+  {
+    "route": "ask",
+    "width": 1440,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#ask",
+    "headings": [
+      "问答"
+    ],
+    "overflow": false,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "1440-ask.png"
+  },
+  {
+    "route": "settings",
+    "width": 1440,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#settings",
+    "headings": [
+      "LLM 设置"
+    ],
+    "overflow": false,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "1440-settings.png"
+  },
+  {
+    "route": "vault-export",
+    "width": 1440,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#vault-export",
+    "headings": [
+      "导出 Obsidian Vault"
+    ],
+    "overflow": false,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "1440-vault-export.png"
+  },
+  {
+    "route": "upload",
+    "width": 1440,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#upload",
+    "headings": [],
+    "overflow": false,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "1440-upload.png"
+  },
+  {
+    "route": "repair",
+    "width": 1440,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#repair",
+    "headings": [
+      "黑图修复报告"
+    ],
+    "overflow": false,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "1440-repair.png"
+  },
+  {
+    "route": "library",
+    "width": 390,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#library",
+    "headings": [
+      "本地文档库"
+    ],
+    "overflow": true,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "390-library.png"
+  },
+  {
+    "route": "timeline/day",
+    "width": 390,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#timeline/day",
+    "headings": [
+      "时间轴"
+    ],
+    "overflow": true,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "390-timeline-day.png"
+  },
+  {
+    "route": "graph",
+    "width": 390,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#graph",
+    "headings": [
+      "知识图谱"
+    ],
+    "overflow": true,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "390-graph.png"
+  },
+  {
+    "route": "dashboard",
+    "width": 390,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#dashboard",
+    "headings": [
+      "数据看板"
+    ],
+    "overflow": true,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "390-dashboard.png"
+  },
+  {
+    "route": "inbox",
+    "width": 390,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#inbox",
+    "headings": [
+      "Inbox"
+    ],
+    "overflow": true,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "390-inbox.png"
+  },
+  {
+    "route": "tags",
+    "width": 390,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#tags",
+    "headings": [
+      "标签词表"
+    ],
+    "overflow": true,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "390-tags.png"
+  },
+  {
+    "route": "ask",
+    "width": 390,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#ask",
+    "headings": [
+      "问答"
+    ],
+    "overflow": true,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "390-ask.png"
+  },
+  {
+    "route": "settings",
+    "width": 390,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#settings",
+    "headings": [
+      "LLM 设置"
+    ],
+    "overflow": true,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "390-settings.png"
+  },
+  {
+    "route": "vault-export",
+    "width": 390,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#vault-export",
+    "headings": [
+      "导出 Obsidian Vault"
+    ],
+    "overflow": true,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "390-vault-export.png"
+  },
+  {
+    "route": "upload",
+    "width": 390,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#upload",
+    "headings": [],
+    "overflow": true,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "390-upload.png"
+  },
+  {
+    "route": "repair",
+    "width": 390,
+    "title": "graph2note — 手稿电子化",
+    "hash": "#repair",
+    "headings": [
+      "黑图修复报告"
+    ],
+    "overflow": true,
+    "clipped": [],
+    "errors": [],
+    "screenshot": "390-repair.png"
+  },
+  {
+    "prototype": "a-studio",
+    "width": 390,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "prototype": "b-reading",
+    "width": 390,
+    "overflow": false,
+    "errors": []
+  },
+  {
+    "prototype": "c-index",
+    "width": 390,
+    "overflow": false,
+    "errors": []
+  }
+]

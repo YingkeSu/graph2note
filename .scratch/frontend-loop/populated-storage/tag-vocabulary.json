@@ -1,0 +1,27 @@
+{
+  "version": 2,
+  "tags": {
+    "重点": {
+      "aliases": []
+    },
+    "复习": {
+      "aliases": []
+    },
+    "草稿": {
+      "aliases": []
+    },
+    "参考": {
+      "aliases": []
+    },
+    "待整理": {
+      "aliases": []
+    },
+    "归档": {
+      "aliases": []
+    },
+    "疑问": {
+      "aliases": []
+    }
+  },
+  "groups": {}
+}

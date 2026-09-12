@@ -1,0 +1,113 @@
+{
+  "document_id": "doc-10",
+  "title": "有机化学笔记",
+  "created_at": "2026-09-12T17:40:16",
+  "source_job_id": "seed-job-10",
+  "original_ext": ".jpg",
+  "updated_at": "2026-09-12T17:40:16",
+  "tags": [
+    "复习",
+    "疑问"
+  ],
+  "auto_collections": [],
+  "manual_collections": [],
+  "collections": [
+    "化学"
+  ],
+  "source_pdf": null,
+  "pdf_id": null,
+  "page_index": null,
+  "page_number": null,
+  "latest_version": "v1789206016342-0",
+  "current_hash": "",
+  "versions": [
+    {
+      "version_id": "v1789206016342-0",
+      "created_at": "2026-09-12T17:40:16",
+      "model": "fixture",
+      "pg_hash": "",
+      "telemetry": {
+        "schema_version": 1,
+        "provider": null,
+        "model": "fixture",
+        "prompt_tokens": null,
+        "completion_tokens": null,
+        "reasoning_tokens": null,
+        "total_tokens": null,
+        "latency_seconds": null,
+        "retries": null,
+        "cached": null,
+        "attempts": null,
+        "has_usage": false,
+        "has_telemetry": false,
+        "status": "unavailable",
+        "cost_status": "usage_unavailable"
+      }
+    }
+  ],
+  "metadata": {
+    "capture_time": {
+      "value": null,
+      "source": "none",
+      "confidence": null,
+      "evidence": "未读取到 EXIF 拍摄时间",
+      "manual": false
+    },
+    "document_time": {
+      "value": null,
+      "source": "none",
+      "confidence": null,
+      "evidence": null,
+      "manual": false
+    },
+    "import_time": {
+      "value": "2026-09-12T17:40:16",
+      "source": "system",
+      "confidence": null,
+      "evidence": "首次导入时间（兼容旧记录）",
+      "manual": false
+    },
+    "modified_time": {
+      "value": "2026-09-12T17:40:16",
+      "source": "system",
+      "confidence": null,
+      "evidence": "最近一次内容解析",
+      "manual": false
+    },
+    "needs_organization": false,
+    "effective_time": {
+      "field": "import_time",
+      "value": "2026-09-12T17:40:16",
+      "source": "system",
+      "confidence": null,
+      "evidence": "首次导入时间（兼容旧记录）"
+    }
+  },
+  "capture_time": null,
+  "document_time": null,
+  "import_time": "2026-09-12T17:40:16",
+  "modified_time": "2026-09-12T17:40:16",
+  "needs_organization": false,
+  "effective_time": {
+    "field": "import_time",
+    "value": "2026-09-12T17:40:16",
+    "source": "system",
+    "confidence": null,
+    "evidence": "首次导入时间（兼容旧记录）"
+  },
+  "topics": [
+    "化学"
+  ],
+  "current_markdown": "# 有机化学笔记\n\n种子文档，用于 U4 图谱验收截图。\n",
+  "tag_provenance": {
+    "复习": "manual",
+    "疑问": "manual"
+  },
+  "manual_relations": [
+    {
+      "from": "doc-10",
+      "to": "doc-11",
+      "kind": "manual"
+    }
+  ]
+}
