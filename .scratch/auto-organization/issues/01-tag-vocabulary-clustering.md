@@ -1,6 +1,6 @@
 # 01：标签语义聚类与批量治理（词表瘦身 + 主题分组）
 
-Status: ready-for-agent
+Status: merged
 Labels: track-organization
 
 ## What to build
