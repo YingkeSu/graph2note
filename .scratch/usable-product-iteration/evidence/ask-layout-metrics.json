@@ -1,0 +1,39 @@
+{
+  "scene": "P2 ask view before/after",
+  "viewport": {
+    "width": 1440,
+    "height": 1000
+  },
+  "before_url": "http://127.0.0.1:8792/#pdf-search (main @ 29c915b)",
+  "after_url": "http://127.0.0.1:8791/#ask (dev/p2-qa-conversation)",
+  "before": {
+    "sidebar_ask_entry": false,
+    "sidebar_pdf_search_entry": true,
+    "ask_zone": false,
+    "pdf_search_zone": true,
+    "qa_form_id": true,
+    "qa_scope_select": false,
+    "new_session_button": true,
+    "conversation_area": true,
+    "session_history_list": false,
+    "library_hosts_qa_form": false,
+    "ask_zone_hosts_qa_form": false,
+    "ask_zone_hosts_keyword_search": false,
+    "citation_chips": 0
+  },
+  "after": {
+    "sidebar_ask_entry": true,
+    "sidebar_pdf_search_entry": false,
+    "ask_zone": true,
+    "pdf_search_zone": false,
+    "qa_form_id": true,
+    "qa_scope_select": true,
+    "new_session_button": true,
+    "conversation_area": true,
+    "session_history_list": true,
+    "library_hosts_qa_form": false,
+    "ask_zone_hosts_qa_form": true,
+    "ask_zone_hosts_keyword_search": true,
+    "citation_chips": 3
+  }
+}
