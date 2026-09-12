@@ -1,6 +1,6 @@
 # P3：跨文档问答与统一搜索（⌘K）
 
-Status: ready-for-agent
+Status: merged
 Labels: track-pdf-qa
 
 ## What to build

@@ -117,6 +117,13 @@ Issue: `issues/P3-cross-doc-unified-search.md` · Status → ready-for-review
 
 rebase 中 `graph2note/webstatic/index.html` 出现冲突，按上述口径手工解决；其余文件无冲突。
 
+**评审期集成补充（reviewer，合并进 main 后）**：P2 已在 main 上把问答视图升为一级 `#ask` 并把
+`#pdf-search-zone` 改名为 `#ask-zone`（`#pdf-search` 仅留作别名路由），因此 P3 原来的 shell 探测
+（无 `#pdf-search-zone` → `#library`）会在集成后把「就这些结果提问」落到不承载问答表单的 Library。
+已在集成提交 `e11f827` 把 `qaRoute()` 改为优先探测 `#ask-zone` → `#ask`（U1 与旧壳回退不变），
+并补齐 `tests/search_panel.mjs` / `tests/test_search_panel.py` 断言；`sessionStorage["graph2note.pendingAsk"]`
++ `#pdf-qa-input` 的 P2 兼容入口不变。合并后全量 `uv run pytest` 777 passed / 0 failed。
+
 ## 8. 如何运行
 
 ```bash
