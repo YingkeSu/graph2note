@@ -441,6 +441,16 @@ body {
   border: 1px solid var(--line); border-radius: 8px; background: var(--panel); color: inherit; }
 .pdf-qa-result { margin-top: 10px; background: var(--panel); border: 1px solid var(--line);
   border-radius: 10px; padding: 12px 14px; }
+.pdf-qa-history { margin-top: 10px; display: flex; flex-direction: column; gap: 8px; }
+.pdf-qa-turn { background: var(--panel); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 12px; font-size: 14px; }
+.pdf-qa-turn-q { font-weight: 600; margin-bottom: 4px; }
+.pdf-qa-turn-a { line-height: 1.55; color: var(--ink); }
+.pdf-qa-history-citations { margin: 6px 0 0 18px; padding: 0; }
+.pdf-qa-history-citations li { margin: 3px 0; }
+.pdf-qa-history-citations a { color: var(--accent); text-decoration: none; }
+.pdf-qa-prior { display: inline-block; font-size: 12px; padding: 0 6px; border-radius: 6px;
+  background: #eef2ff; color: #3b4cca; }
 .pdf-qa-answer { line-height: 1.6; }
 .pdf-qa-citations { margin-top: 10px; }
 .pdf-qa-citations ol { margin: 6px 0 0 18px; padding: 0; }

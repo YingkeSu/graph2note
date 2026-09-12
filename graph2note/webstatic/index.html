@@ -55,10 +55,13 @@
       <div class="pdf-qa">
         <form id="pdf-qa-form" class="pdf-qa-form">
           <input id="pdf-qa-input" type="text" autocomplete="off"
-                 placeholder="就上方检索范围提问（单轮问答，答案附页级引用）" />
+                 placeholder="就上方检索范围提问（可多轮追问，答案附页级引用）" />
           <button class="btn" type="submit">提问</button>
+          <button class="btn small" id="pdf-qa-new" type="button"
+                  title="开启新话题（清空当前会话上下文）">新会话</button>
         </form>
         <div id="pdf-qa-status" class="dim"></div>
+        <div id="pdf-qa-history" class="pdf-qa-history hidden"></div>
         <div id="pdf-qa-result" class="pdf-qa-result hidden"></div>
       </div>
     </section>
