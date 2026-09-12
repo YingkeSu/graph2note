@@ -6,7 +6,7 @@
 
 ## 发布与执行状态
 
-- 已发布：3（01、02、03）。已认领：0。已完成：2（01、03）。已合并：2（01 merge `6baa5dd`、03 merge `edae1e7`）。
+- 已发布：3（01、02、03）。已认领：0。已完成：3（01、02、03）。已合并：3（01 merge `6baa5dd`、02 merge `da19bdc`、03 merge `edae1e7`）。
 - 全部 issue `ready-for-agent` = 需求已就绪；三 issue **互相无阻塞，可全量并行派发**。
 - 共同纪律（各 issue 均内嵌）：LLM 只提议 + schema 校验 + 确定性应用 + 人确认后执行；无 embedding；dry-run 预算纪律（03 全程零 LLM）；provenance auto/manual 分流；合并可逆（软归档）。
 - 领地隔离：01 独占 `views/tags.js` + 新增 `tagorg.py`；02 独占 `views/library.js` 集合区 + 新增相似度/归类模块；03 独占 `inbox.py`/`views/inbox.js` + 新增检测/合并模块。三者共享文件仅 `store.py`（各自只追加函数）与 `webapp.py` 路由登记（各自只追加端点）——并行领取时调度按并集整合，冲突面小。
@@ -17,7 +17,7 @@
 | Issue | 类别 | Blocked by | Status |
 |---|---|---|---|
 | [01 标签语义聚类与批量治理](issues/01-tag-vocabulary-clustering.md) | 整理 | 无 | merged (6baa5dd) |
-| [02 相似笔记自动归类到集合（文件夹）](issues/02-auto-collection-assignment.md) | 整理 | 无 | ready-for-agent |
+| [02 相似笔记自动归类到集合（文件夹）](issues/02-auto-collection-assignment.md) | 整理 | 无 | merged (da19bdc) |
 | [03 显著连续笔记的检测与合并](issues/03-continuity-merge.md) | 整理 | 无 | merged (edae1e7) |
 
 ## 背景速览

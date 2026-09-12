@@ -1,6 +1,6 @@
 # 02：相似笔记自动归类到集合（文件夹）
 
-Status: ready-for-agent
+Status: merged
 Labels: track-organization
 
 ## What to build
