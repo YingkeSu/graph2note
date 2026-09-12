@@ -1,0 +1,25 @@
+{
+  "captured_with": "headless Chrome CDP layout probe, http://127.0.0.1:8765/#library, viewport 1440x1000, 14 seeded documents",
+  "before": {
+    "gridTop": 470,
+    "rows_total": 3,
+    "visibleRows": 2,
+    "topbarControls": 10,
+    "sidebarNavItems": 0,
+    "activeNav": null,
+    "pdfSearchInLibrary": true,
+    "collectionTreeInLibrary": true,
+    "tagVocabularyInLibrary": true
+  },
+  "after": {
+    "gridTop": 128,
+    "rows_total": 3,
+    "visibleRows": 3,
+    "topbarControls": 4,
+    "sidebarNavItems": 7,
+    "activeNav": "nav-library",
+    "pdfSearchInLibrary": false,
+    "collectionTreeInLibrary": false,
+    "tagVocabularyInLibrary": false
+  }
+}

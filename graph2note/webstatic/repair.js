@@ -1,10 +1,16 @@
 /* graph2note — R1 black-image repair report (self-contained view).
  *
- * Kept out of app.js on purpose: it injects its own topbar entry, its own
- * zone and its own styles, so the global layout work (U1) can move app.js
- * without conflicts.  Interaction mirrors the PDF batch-job pattern: scan is
- * a read-only dry-run, "确认修复" posts explicit document ids + confirm=true,
+ * Kept out of app.js on purpose: it injects its own nav entry, its own zone and
+ * its own styles, so the global layout work (U1) can move app.js without
+ * conflicts.  Interaction mirrors the PDF batch-job pattern: scan is a
+ * read-only dry-run, "确认修复" posts explicit document ids + confirm=true,
  * then the view polls GET /api/repair/{id} until the run finishes.
+ *
+ * U1 integration: the U1 shell owns routing (hash -> view) and the content
+ * area, so this script no longer runs its own hashchange router.  It injects
+ * its entry into the sidebar secondary nav (keeping the topbar at 4 controls),
+ * injects its zone into `#content`, and exposes `window.__g2nRepair.mount()`
+ * for `js/views/repair.js` to call from the hash router.
  */
 "use strict";
 
@@ -57,7 +63,7 @@
     const style = document.createElement("style");
     style.id = "repair-styles";
     style.textContent = `
-.repair-zone { max-width: 980px; margin: 0 auto; padding: 18px 22px 60px; }
+.repair-zone { flex: 1; min-height: 0; overflow: auto; max-width: 980px; margin: 0 auto; padding: 18px 22px 60px; }
 .repair-head { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
 .repair-head h2 { margin: 0; }
 .repair-summary { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
@@ -94,11 +100,11 @@
 
   function ensureDom() {
     injectStyles();
-    const topbar = document.querySelector(".topbar");
-    if (topbar && !document.getElementById("nav-repair")) {
-      const btn = h(`<button class="btn small" id="nav-repair" title="黑图修复报告">修复报告</button>`);
-      const upload = document.getElementById("nav-upload");
-      topbar.insertBefore(btn, upload || null);
+    // U1: secondary entries live in the sidebar; the topbar stays at 4 controls.
+    const secondary = document.getElementById("sidebar-secondary");
+    if (secondary && !document.getElementById("nav-repair")) {
+      const btn = h(`<button class="nav-item" id="nav-repair" data-view="repair" title="黑图修复报告">修复报告</button>`);
+      secondary.appendChild(btn);
       btn.addEventListener("click", () => { location.hash = "#repair"; });
     }
     if (!document.getElementById("repair-zone")) {
@@ -117,22 +123,21 @@
   <div id="repair-note" class="repair-note"></div>
   <div id="repair-list" class="repair-list"></div>
 </section>`);
-      document.body.insertBefore(zone, document.getElementById("toast"));
+      const content = document.getElementById("content");
+      if (content) content.appendChild(zone);
+      else document.body.insertBefore(zone, document.getElementById("toast"));
       document.getElementById("repair-scan-btn").addEventListener("click", () => scan());
       document.getElementById("repair-run-btn").addEventListener("click", () => runRepair());
       document.getElementById("repair-retry-btn").addEventListener("click", () => retryRepair());
     }
   }
 
-  function active() {
-    return (location.hash || "").replace(/^#\/?/, "") === "repair";
-  }
-
   function showZone(on) {
     const zone = document.getElementById("repair-zone");
     if (!zone) return;
     if (on) {
-      document.querySelectorAll("body > section").forEach((s) => {
+      // U1: routable zones live inside the content area, not directly on body.
+      document.querySelectorAll("#content > section").forEach((s) => {
         if (s.id !== "repair-zone") s.classList.add("hidden");
       });
       zone.classList.remove("hidden");
@@ -292,22 +297,17 @@
     tick();
   }
 
-  function onRoute() {
+  /* U1: mounted by js/views/repair.js from the hash router (route "repair"). */
+  function mount() {
     ensureDom();
-    if (active()) {
-      showZone(true);
-      if (!state.report && !state.job) scan();
-      else if (state.job) renderJob();
-      else renderReport();
-    } else {
-      showZone(false);
-    }
+    showZone(true);
+    if (!state.report && !state.job) scan();
+    else if (state.job) renderJob();
+    else renderReport();
   }
 
-  window.addEventListener("hashchange", onRoute);
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", onRoute);
-  } else {
-    onRoute();
-  }
+  // Inject the entry/zone up front so the U1 module graph can find #repair-zone
+  // when it builds its zone registry (this classic script runs before modules).
+  ensureDom();
+  window.__g2nRepair = { mount };
 })();

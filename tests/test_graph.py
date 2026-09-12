@@ -11,6 +11,8 @@ from graph2note.store import FileDocumentStore
 from graph2note.graph import build_graph
 from graph2note.webapp import create_app
 
+from tests.static_assets import static_js
+
 
 def _record(
     document_id: str,
@@ -133,7 +135,7 @@ def test_graph_api_and_library_navigation_filters_are_offline(tmp_path):
     assert [item["document_id"] for item in client.get("/api/documents?tag=重点").json()] == ["d1"]
 
     html = client.get("/").text
-    javascript = client.get("/static/app.js").text
+    javascript = static_js()
     assert 'id="nav-graph"' in html
     assert 'id="graph-zone"' in html
     assert "/api/graph" in javascript

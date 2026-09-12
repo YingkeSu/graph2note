@@ -10,6 +10,8 @@ from graph2note.store import FileDocumentStore
 from graph2note.timeline import build_timeline, effective_document_time
 from graph2note.webapp import create_app
 
+from tests.static_assets import static_js
+
 
 def _slot(value=None, source="none", *, manual=False):
     return {
@@ -178,6 +180,6 @@ def test_timeline_api_and_static_ui_contract_are_offline(tmp_path):
     html = client.get("/").text
     assert 'id="nav-timeline"' in html
     assert 'id="timeline-zone"' in html
-    javascript = client.get("/static/app.js").text
+    javascript = static_js()
     assert "/api/timeline?group_by=" in javascript
     assert "#timeline/day" in javascript

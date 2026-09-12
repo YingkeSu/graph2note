@@ -27,6 +27,8 @@ from graph2note import webapp  # noqa: E402
 from graph2note.router import RouteARouter  # noqa: E402
 from graph2note.store import FileDocumentStore, SessionDocumentStore  # noqa: E402
 
+from tests.static_assets import static_js  # noqa: E402
+
 HERE = Path(__file__).parent
 GOLDEN = json.loads(
     (HERE / "golden" / "valid-ir.golden.json").read_text(encoding="utf-8"))
@@ -441,7 +443,8 @@ def test_ask_ui_exposes_multiturn_controls(tmp_path):
     assert 'id="pdf-qa-new"' in html              # explicit new-session button
     assert 'id="pdf-qa-history"' in html          # prior-turn history area
     assert "单轮问答" not in html
-    js = client.get("/static/app.js").text
+    # U1（ES modules）：断言改为拼接全部前端源码（行为断言不变）。
+    js = static_js()
     assert "pdfQaSessionId" in js and "session_id: state.pdfQaSessionId" in js
     assert "前文提到" in js                       # historical citations are labelled
 

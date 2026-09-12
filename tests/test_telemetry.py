@@ -14,6 +14,8 @@ from graph2note.store import FileDocumentStore
 from graph2note.telemetry import build_stats, normalize_telemetry
 from graph2note.webapp import create_app
 
+from tests.static_assets import static_js
+
 
 TZ = ZoneInfo("Asia/Shanghai")
 NOW = datetime(2024, 4, 10, 15, 0, tzinfo=TZ)
@@ -289,7 +291,7 @@ def test_version_telemetry_persists_across_file_store_reload_and_stats_api(tmp_p
     assert payload["periods"]["total"]["pages"] == 1
     assert payload["model_usage"][0]["cost"] == 0.00021
     html = client.get("/").text
-    javascript = client.get("/static/app.js").text
+    javascript = static_js()
     assert 'id="nav-dashboard"' in html
     assert 'id="dashboard-zone"' in html
     assert "/api/stats" in javascript

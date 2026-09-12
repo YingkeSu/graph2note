@@ -13,6 +13,8 @@ from graph2note.notes.loader import load_entries
 from graph2note.store import FileDocumentStore
 from graph2note.webapp import create_app
 
+from tests.static_assets import static_js
+
 
 def test_inbox_uses_only_present_signals_and_exposes_reasons():
     records = [
@@ -129,7 +131,7 @@ def test_inbox_api_writes_explicit_marker_and_survives_reload(tmp_path):
         "needs-topic",
     ]
     html = client.get("/").text
-    javascript = client.get("/static/app.js").text
+    javascript = static_js()
     assert 'id="nav-inbox"' in html
     assert 'id="inbox-zone"' in html
     assert 'id="metadata-needs-organization"' in html
