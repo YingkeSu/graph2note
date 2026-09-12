@@ -1,6 +1,6 @@
 # P2：问答对话式界面与一级入口
 
-Status: ready-for-agent
+Status: merged
 Labels: track-pdf-qa
 
 ## What to build

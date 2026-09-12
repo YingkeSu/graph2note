@@ -5,7 +5,7 @@
 
 ## 发布与执行状态
 
-- 已发布：15（R1、U1–U5、P1–P3、S1–S3、A1–A3）。已认领：9（S1、P1、R1、A1、U1、A3、S2、A2、U3）。已完成：9（S1、P1、R1、A1、U1、A3、S2、A2、U3）。已合并：9（S1，merge `582aa61`；P1，merge `e682e3f`；R1，merge `e1281d8`；A1，merge `6fe379e`；U1，merge `7643f9e`；A3，merge `21533ce`；S2，merge `57bd28a`；A2，merge `361e79e`；U3，merge `6272463`）。
+- 已发布：15（R1、U1–U5、P1–P3、S1–S3、A1–A3）。已认领：10（S1、P1、R1、A1、U1、A3、S2、A2、U3、P2）。已完成：10（S1、P1、R1、A1、U1、A3、S2、A2、U3、P2）。已合并：10（S1，merge `582aa61`；P1，merge `e682e3f`；R1，merge `e1281d8`；A1，merge `6fe379e`；U1，merge `7643f9e`；A3，merge `21533ce`；S2，merge `57bd28a`；A2，merge `361e79e`；U3，merge `6272463`；P2，merge `9a6890f`）。
 - 本次合并后**已解锁**：U2、U3（已合并）、U4、U5、P2（P2 仍需 P1 已合并 —— 已满足）；建议 P3 也在 U1 之后派发。
 - 全部 issue `ready-for-agent` = 需求已就绪，**不表示阻塞依赖已完成**；依赖以各 issue Blocked by 为准。
 - 第一波（无阻塞，可立即并行派）：**R1、U1、P1、S1、A1、A2、A3**（R1/U1/P1/S1/A1/A2/A3 已合并）。
@@ -27,7 +27,7 @@
 | [U4 知识图谱交互升级](issues/U4-graph-interaction.md) | UX | [U1](issues/U1-global-layout-navigation.md) | open |
 | [U5 时间轴可视化升级](issues/U5-timeline-visual.md) | UX | [U1](issues/U1-global-layout-navigation.md) | open |
 | [P1 PDF 多轮问答](issues/P1-pdf-multiturn-qa.md) | PDF | 无 | merged (e682e3f) |
-| [P2 问答对话式界面与一级入口](issues/P2-qa-conversation-ui.md) | PDF | [U1](issues/U1-global-layout-navigation.md)、[P1](issues/P1-pdf-multiturn-qa.md) | open |
+| [P2 问答对话式界面与一级入口](issues/P2-qa-conversation-ui.md) | PDF | [U1](issues/U1-global-layout-navigation.md)、[P1](issues/P1-pdf-multiturn-qa.md) | merged (9a6890f) |
 | [P3 跨文档问答与统一搜索](issues/P3-cross-doc-unified-search.md) | PDF | [P1](issues/P1-pdf-multiturn-qa.md)（建议 U1 后） | open |
 | [S1 IR 块级 diff 引擎](issues/S1-ir-block-diff.md) | Semantic | 无 | merged (582aa61) |
 | [S2 演进锚定（版本链+pHash）](issues/S2-evolution-anchoring.md) | Semantic | [S1](issues/S1-ir-block-diff.md) | merged (57bd28a) |
