@@ -51,12 +51,18 @@ PROVENANCE_REPARSE = "reparse"
 PROVENANCE_EDIT = "edit"
 PROVENANCE_REPAIR = "repair"
 PROVENANCE_UNKNOWN = "unknown"
+# Issue 03 (continuity merge): the first version of a document produced by
+# merging two source documents carries ``provenance == "merge"`` plus a
+# ``provenance_detail`` naming both sources (same field pattern as R1's
+# ``repair``).  Recognised here so the version chain labels the event.
+PROVENANCE_MERGE = "merge"
 
 SOURCE_LABELS = {
     PROVENANCE_PARSE: "解析",
     PROVENANCE_REPARSE: "重解析",
     PROVENANCE_EDIT: "编辑保存",
     PROVENANCE_REPAIR: "修复",
+    PROVENANCE_MERGE: "合并",
     PROVENANCE_UNKNOWN: "未知",
 }
 
@@ -107,7 +113,7 @@ def classify_version_source(meta: dict[str, Any], *, index: int) -> str:
     if explicit is not None:
         value = explicit.casefold()
         if value in (PROVENANCE_PARSE, PROVENANCE_REPARSE,
-                     PROVENANCE_EDIT, PROVENANCE_REPAIR):
+                     PROVENANCE_EDIT, PROVENANCE_REPAIR, PROVENANCE_MERGE):
             return value
         return PROVENANCE_UNKNOWN
     return PROVENANCE_PARSE if index <= 0 else PROVENANCE_REPARSE
@@ -606,6 +612,7 @@ __all__ = [
     "PROVENANCE_REPARSE",
     "PROVENANCE_EDIT",
     "PROVENANCE_REPAIR",
+    "PROVENANCE_MERGE",
     "PROVENANCE_UNKNOWN",
     "SOURCE_LABELS",
     "PHASH_SUGGEST_MAX_DISTANCE",

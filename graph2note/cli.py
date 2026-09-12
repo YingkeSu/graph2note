@@ -580,6 +580,99 @@ def run_tags_organize(args) -> int:
     return 0
 
 
+# ---------------------------------------------------------------------------
+# docs merge-continuous — significant-tier continuity batch (issue 03)
+# ---------------------------------------------------------------------------
+
+
+def build_docs_parser() -> argparse.ArgumentParser:
+    p = argparse.ArgumentParser(
+        prog="graph2note docs",
+        description=(
+            "Document organization utilities.  `merge-continuous` batches the "
+            "deterministic significant tier (same-PDF adjacent pages) and is "
+            "a dry-run unless --yes is given; the suggested tier is never "
+            "merged in bulk (confirm it one by one in the Inbox)."
+        ),
+    )
+    sub = p.add_subparsers(dest="docs_command", required=True)
+    m = sub.add_parser(
+        "merge-continuous",
+        description=(
+            "Detect and merge continuous documents (deterministic, zero LLM). "
+            "Default is a dry-run report; --yes executes the significant tier "
+            "only."
+        ),
+    )
+    mode = m.add_mutually_exclusive_group()
+    mode.add_argument("--dry-run", action="store_true",
+                      help="report pairs + evidence only (default)")
+    mode.add_argument("--yes", action="store_true",
+                      help="execute the significant-tier merges (soft-archives sources)")
+    m.add_argument("--storage", default=None,
+                   help="document library storage dir (default: GRAPH2NOTE_STORAGE "
+                        "or <support>/storage)")
+    m.add_argument("--tail-blocks", type=int, default=None,
+                   help="tail/head window N for overlap detection (default 8)")
+    m.add_argument("--min-overlap-ratio", type=float, default=None,
+                   help="suggested-tier minimum matched ratio in 0..1 (default 0.5)")
+    m.add_argument("--max-distance", type=int, default=None,
+                   help="pHash Hamming distance bound for suggestions")
+    m.add_argument("--json", action="store_true", help="emit the report as JSON")
+    return p
+
+
+def run_docs_merge_continuous(args) -> int:
+    import json as _json
+
+    from . import config
+    from . import continuity
+    from . import evolution
+    from .store import FileDocumentStore
+
+    storage = config.ensure_storage_dir(config.resolve_storage_dir(args.storage))
+    store = FileDocumentStore(str(storage))
+    report = continuity.merge_continuous(
+        store,
+        dry_run=not args.yes,
+        phash_max_distance=(args.max_distance
+                            if args.max_distance is not None
+                            else evolution.PHASH_SUGGEST_MAX_DISTANCE),
+        tail_blocks=args.tail_blocks or continuity.DEFAULT_TAIL_BLOCKS,
+        min_overlap_ratio=(args.min_overlap_ratio
+                           if args.min_overlap_ratio is not None
+                           else continuity.DEFAULT_MIN_OVERLAP_RATIO),
+    )
+    report["storage"] = str(storage)
+    if args.json:
+        print(_json.dumps(report, ensure_ascii=False, indent=2))
+        return 0
+    print(f"storage={storage}")
+    if report["dry_run"]:
+        print(f"dry-run: 显著连续对 {report['counts']['significant']} 对，"
+              f"疑似（仅入确认队列）{report['counts']['suggested']} 对，"
+              f"预估 LLM 调用 {report['llm_calls']}")
+        for pair in report["significant"]:
+            print(f"  - [显著] {pair['document_id']} → {pair['target_id']}  "
+                  f"{pair['evidence_label']}  「{pair['titles'][0]}」/「{pair['titles'][1]}」")
+        for pair in report["suggested"]:
+            print(f"  - [疑似·需逐条确认] {pair['document_id']} → {pair['target_id']}  "
+                  f"{pair['evidence_label']}  pHash 距离 {pair['phash_distance']}")
+        if not report["counts"]["total"]:
+            print("没有可合并的连续笔记。")
+        else:
+            print("核对后请加 --yes 执行显著档（疑似档请在 Inbox 逐条确认）。")
+        return 0
+    print(f"已合并 {report['merged_count']} 对（仅显著档），LLM 调用 {report['llm_calls']}")
+    for item in report["executed"]:
+        print(f"  - {item['order'][0]} + {item['order'][1]} → {item['merged_document_id']}  "
+              f"重叠 {item['overlap_blocks']} 块，合并后 {item['block_counts']['merged']} 块")
+    for skip in report["skipped"]:
+        print(f"  - 跳过 {skip['key']}（{skip['reason']}）")
+    return 0
+    return 0
+
+
 def build_digest_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="graph2note digest",
@@ -697,6 +790,11 @@ def main(argv: list[str] | None = None) -> int:
     if argv and argv[0] == "repair":
         args = build_repair_parser().parse_args(argv[1:])
         return _cmd_repair(args)
+    if argv and argv[0] == "docs":
+        args = build_docs_parser().parse_args(argv[1:])
+        if args.docs_command == "merge-continuous":
+            return run_docs_merge_continuous(args)
+        return 2
     if argv and argv[0] == "tags":
         args = build_tags_parser().parse_args(argv[1:])
         if getattr(args, "tags_command", None) == "organize":

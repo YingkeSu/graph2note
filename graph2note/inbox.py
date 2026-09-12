@@ -17,6 +17,11 @@ REASON_LABELS = {
     "no_tag": "无标签",
     "explicit": "标记待整理",
     "low_confidence": "低置信度",
+    # Issue 03: a continuity pair (same-PDF adjacent pages / tail-head overlap)
+    # that the user can confirm or reject.  Projected only when the caller
+    # supplies the candidate evidence (``merge_reasons=``); the pure inbox
+    # reasons above are unchanged.
+    "merge_candidate": "可合并",
 }
 
 _FLAG_KEYS = (
@@ -134,16 +139,32 @@ def _view_item(record: dict[str, Any], reasons: list[str]) -> dict[str, Any]:
     }
 
 
-def build_inbox(records: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Project records into Inbox items without exposing editable Markdown."""
+def build_inbox(
+    records: Iterable[dict[str, Any]],
+    *,
+    merge_reasons: dict[str, list[str]] | None = None,
+) -> list[dict[str, Any]]:
+    """Project records into Inbox items without exposing editable Markdown.
 
+    ``merge_reasons`` (issue 03) maps a document id to continuity evidence
+    labels; documents appearing there gain the ``merge_candidate`` reason and
+    carry the labels in ``merge_evidence`` so the UI can explain *why*.
+    """
+
+    evidence = merge_reasons or {}
     result: list[dict[str, Any]] = []
     for record in records:
         if not isinstance(record, dict):
             continue
         reasons = inbox_reasons(record)
+        extra = evidence.get(str(record.get("document_id")))
+        if extra and "merge_candidate" not in reasons:
+            reasons = [*reasons, "merge_candidate"]
         if reasons:
-            result.append(_view_item(record, reasons))
+            item = _view_item(record, reasons)
+            if extra:
+                item["merge_evidence"] = list(extra)
+            result.append(item)
     return result
 
 

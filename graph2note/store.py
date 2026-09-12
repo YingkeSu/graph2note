@@ -173,8 +173,14 @@ class DocumentStore(ABC):
 
     # --- document library (issue 07) ------------------------------------------
     @abstractmethod
-    def list_documents(self) -> list[dict]:
-        """Metadata for every library document (list page)."""
+    def list_documents(self, include_archived: bool = False) -> list[dict]:
+        """Metadata for every library document (list page).
+
+        Issue 03 soft archive: documents carrying a truthy ``merged_into`` are
+        excluded by default (Library default list, detection, auto-tag
+        backfill all read through here); pass ``include_archived=True`` for the
+        archive listing.  Direct ``get_document`` always stays reachable.
+        """
 
     @abstractmethod
     def get_document(self, document_id: str) -> dict | None:
@@ -348,9 +354,11 @@ class SessionDocumentStore(DocumentStore):
         shutil.rmtree(self.root / "jobs" / job_id, ignore_errors=True)
 
     # --- document library ------------------------------------------------------
-    def list_documents(self) -> list[dict]:
+    def list_documents(self, include_archived: bool = False) -> list[dict]:
         items = []
         for record in self._docs.values():
+            if not include_archived and record.get("merged_into"):
+                continue  # issue 03: soft-archived (merged) documents are hidden
             record, _ = ensure_record_metadata(
                 record,
                 original_path=record.get("original_path"),
@@ -365,6 +373,7 @@ class SessionDocumentStore(DocumentStore):
                 "metadata": record.get("metadata"),
                 "effective_time": record.get("effective_time"),
                 "collections": list(record.get("collections") or []),
+                "merged_into": record.get("merged_into"),
                 **_library_summary_fields(record),
             })
         return items
@@ -724,6 +733,56 @@ class SessionDocumentStore(DocumentStore):
         self._docs[document_id] = rec
         return rec
 
+    # --- continuity merge / soft archive (issue 03) ---------------------------
+    def set_tags_with_provenance(self, document_id: str, tags: list,
+                                 provenance: dict | None = None) -> dict | None:
+        """Persist a tag list keeping a per-tag auto/manual provenance map.
+
+        Issue 03's merge takes the **union** of the source documents' tags and
+        must preserve each tag's original provenance (auto stays auto, manual
+        stays manual).  ``set_tags`` would flatten everything to manual, so the
+        merge path uses this additive helper instead.
+        """
+        rec = self._docs.get(document_id)
+        if rec is None:
+            return None
+        normalized, _ = canonicalize_tags(self._tag_vocab, list(tags or []))
+        mapping = {str(k): str(v) for k, v in (provenance or {}).items()}
+        rec["tags"] = normalized
+        rec["tag_provenance"] = {
+            tag: mapping.get(tag, MANUAL_TAG_PROVENANCE) for tag in normalized
+        }
+        self._docs[document_id] = rec
+        return rec
+
+    def archive_document(self, document_id: str, merged_into: str) -> dict | None:
+        """Soft-archive a document by stamping ``merged_into`` (never deletes)."""
+        rec = self._docs.get(document_id)
+        if rec is None:
+            return None
+        rec["merged_into"] = str(merged_into)
+        rec["merged_at"] = _now()
+        self._docs[document_id] = rec
+        return rec
+
+    def restore_document(self, document_id: str) -> dict | None:
+        """Clear the soft-archive marker so the document is listed again."""
+        rec = self._docs.get(document_id)
+        if rec is None:
+            return None
+        rec.pop("merged_into", None)
+        rec.pop("merged_at", None)
+        self._docs[document_id] = rec
+        return rec
+
+    def archived_documents(self) -> list[dict]:
+        """Summaries of soft-archived documents (issue 03 archive listing)."""
+        out: list[dict] = []
+        for item in self.list_documents(include_archived=True):
+            if item.get("merged_into"):
+                out.append(item)
+        return out
+
 
 # ---------------------------------------------------------------------------
 # File-system backed (durable) store
@@ -805,7 +864,7 @@ class FileDocumentStore(SessionDocumentStore):
         return changed or registry_changed
 
     # --- library (durable) ------------------------------------------------------
-    def list_documents(self) -> list[dict]:
+    def list_documents(self, include_archived: bool = False) -> list[dict]:
         items = []
         docs = self.root / "documents"
         if not docs.is_dir():
@@ -815,6 +874,8 @@ class FileDocumentStore(SessionDocumentStore):
         for p in sorted(docs.iterdir(), key=lambda d: d.stat().st_mtime,
                          reverse=True):
             r = self._load_record_with_metadata(p.name)
+            if r and not include_archived and r.get("merged_into"):
+                continue  # issue 03: soft-archived (merged) documents are hidden
             if r:
                 before = json.dumps(registry, ensure_ascii=False, sort_keys=True)
                 apply_topic_defaults(r, registry)
@@ -830,6 +891,7 @@ class FileDocumentStore(SessionDocumentStore):
                     "metadata": r.get("metadata"),
                     "effective_time": r.get("effective_time"),
                     "collections": list(r.get("collections") or []),
+                    "merged_into": r.get("merged_into"),
                     **_library_summary_fields(r),
                 })
         if registry_changed:
@@ -1400,6 +1462,57 @@ class FileDocumentStore(SessionDocumentStore):
         record_path.write_text(
             json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
         return self.get_document(document_id)
+
+    # --- continuity merge / soft archive (issue 03) ---------------------------
+    def set_tags_with_provenance(self, document_id: str, tags: list,
+                                 provenance: dict | None = None) -> dict | None:
+        """Durable variant of the issue-03 union-with-provenance write."""
+        record = self._load_record_with_metadata(document_id)
+        if record is None:
+            return None
+        vocabulary = self._load_tag_vocab()
+        normalized, _ = canonicalize_tags(vocabulary, list(tags or []))
+        mapping = {str(k): str(v) for k, v in (provenance or {}).items()}
+        record["tags"] = normalized
+        record["tag_provenance"] = {
+            tag: mapping.get(tag, MANUAL_TAG_PROVENANCE) for tag in normalized
+        }
+        self._write_tag_record(record)
+        self._save_tag_vocab(vocabulary)
+        return self.get_document(document_id)
+
+    def archive_document(self, document_id: str, merged_into: str) -> dict | None:
+        """Stamp ``merged_into`` on ``record.json`` (soft archive, no delete)."""
+        record_path = self._doc_dir(document_id) / "record.json"
+        if not record_path.is_file():
+            return None
+        rec = self._read_record(document_id)
+        if rec is None:
+            return None
+        rec["merged_into"] = str(merged_into)
+        rec["merged_at"] = _now()
+        record_path.write_text(
+            json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+        return self.get_document(document_id)
+
+    def restore_document(self, document_id: str) -> dict | None:
+        """Clear the soft-archive marker so the document is listed again."""
+        record_path = self._doc_dir(document_id) / "record.json"
+        if not record_path.is_file():
+            return None
+        rec = self._read_record(document_id)
+        if rec is None:
+            return None
+        rec.pop("merged_into", None)
+        rec.pop("merged_at", None)
+        record_path.write_text(
+            json.dumps(rec, ensure_ascii=False, indent=2), encoding="utf-8")
+        return self.get_document(document_id)
+
+    def archived_documents(self) -> list[dict]:
+        """Summaries of soft-archived documents (issue 03 archive listing)."""
+        return [item for item in self.list_documents(include_archived=True)
+                if item.get("merged_into")]
 
 
 def _copy_if_exists(src: str | None, dst: Path) -> None:
