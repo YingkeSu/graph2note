@@ -414,6 +414,14 @@
             <div id="metadata-evidence" class="metadata-evidence dim"></div>
           </section>
 
+          <section id="evolution-panel" class="metadata-panel hidden" aria-label="演进锚定">
+            <div class="metadata-head">
+              <span>演进锚定 — <span id="evolution-title" class="dim"></span></span>
+              <span id="evolution-status" class="dim"></span>
+            </div>
+            <div id="evolution-body"></div>
+          </section>
+
           <div class="actions">
             <button id="btn-reparse" class="btn">重新解析</button>
             <button id="btn-copy" class="btn">复制到剪贴板</button>
@@ -434,5 +442,7 @@
   <script type="module" src="/static/app.js"></script>
   <!-- R1: self-contained black-image repair report view (own button/zone). -->
   <script src="/static/repair.js"></script>
+  <!-- S2: self-contained evolution anchoring panel (version chain + pHash hints). -->
+  <script src="/static/evolution.js"></script>
 </body>
 </html>
