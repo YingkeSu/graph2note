@@ -15,8 +15,8 @@ const modulePath = path.join(
 const mod = await import(pathToFileURL(modulePath).href);
 const {
   normalizeSuggestions, suggestionDocMap, suggestionsHtml, suggestionChipHtml,
-  wireSuggestionActions, wireSuggestionChips, SUGGESTION_EMPTY_TEXT,
-  SUGGESTION_DONE_TEXT,
+  suggestionApplyBody, wireSuggestionActions, wireSuggestionChips,
+  SUGGESTION_EMPTY_TEXT, SUGGESTION_DONE_TEXT,
 } = mod;
 
 const escapeHtml = (value) => String(value == null ? "" : value)
@@ -182,5 +182,25 @@ assert.deepStrictEqual(calls.chip, [["doc-b", "控制理论"], ["doc-b", "控制
 wireSuggestionActions(root, { generate: () => { calls.generate += 1; } });
 generate.dispatch("click", stop);
 assert.strictEqual(calls.generate, 2, "second wiring does not re-bind");
+
+// ---- 6) apply request body (issue-02 BLOCKER regression) ------------------
+// A reject/ignore click must carry an explicit empty accept array so the
+// server can tell "accept nothing" apart from "accept everything".
+assert.deepStrictEqual(
+  suggestionApplyBody([], ["doc-c"]), { accept: [], reject: ["doc-c"] },
+  "reject-only request carries an explicit empty accept",
+);
+assert.deepStrictEqual(
+  suggestionApplyBody(["doc-a"], []), { accept: ["doc-a"], reject: [] },
+  "accept request carries both fields",
+);
+assert.deepStrictEqual(
+  suggestionApplyBody(null, null), { accept: [], reject: [] },
+  "missing arguments normalize to empty arrays",
+);
+assert.ok(
+  "accept" in suggestionApplyBody([], ["doc-c"]),
+  "accept key is present even when nothing is accepted",
+);
 
 console.log("collection_suggestions: all assertions passed ✓");

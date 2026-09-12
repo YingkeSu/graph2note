@@ -770,7 +770,17 @@ def apply_suggestions(
     accept: Iterable[str] | None = None,
     reject: Iterable[str] | None = None,
 ) -> dict[str, Any]:
-    """Confirm a subset of the cached suggestions and write auto memberships."""
+    """Confirm an explicit subset of the cached suggestions and write auto memberships.
+
+    ``accept`` is the explicit confirmation set.  A request that omits it
+    (``None``) records only the ``reject`` list and writes **no** memberships.
+    Unlike :func:`apply_assignments` (where ``None`` means "the whole plan",
+    used by the CLI ``--yes`` path), the review API must never silently fall
+    back to a full apply: an ``ignore`` action used to do exactly that and also
+    appended auto memberships to manually organized documents.  Callers that
+    intend to accept documents must send an explicit ``accept`` list (an empty
+    list is a valid "accept nothing" confirmation).
+    """
 
     plan = load_cached_plan(store)
     if plan is None:
@@ -778,7 +788,9 @@ def apply_suggestions(
     rejected = list(dict.fromkeys(list(plan.get("rejected") or []) + list(reject or [])))
     plan["rejected"] = rejected
     save_cached_plan(store, plan)
-    outcome = apply_assignments(store, plan, accept=accept, include_manual=True)
+    outcome: dict[str, list[str]] = {"applied": [], "skipped_manual": []}
+    if accept is not None:
+        outcome = apply_assignments(store, plan, accept=accept, include_manual=True)
     write_telemetry(store, plan=plan, applied=len(outcome["applied"]), dry_run=False)
     payload = suggestions_payload(store, plan, from_cache=True)
     payload["applied"] = outcome["applied"]

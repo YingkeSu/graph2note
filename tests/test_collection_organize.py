@@ -546,6 +546,84 @@ def test_suggestions_api_manual_document_requires_confirmation(tmp_path):
     assert record_a["manual_collections"] == ["手工集合"]
 
 
+def test_suggestions_api_reject_only_writes_nothing(tmp_path):
+    """Blocker regression: an "ignore" request must never apply the plan.
+
+    The Library "忽略" / "整组忽略" buttons used to omit ``accept`` from the
+    request body; the server read that as ``accept=None`` == "apply everything"
+    and appended auto memberships even to manually organized documents.  A
+    reject-only request must write no memberships at all.
+    """
+
+    from fastapi.testclient import TestClient
+
+    root = tmp_path / "storage"
+    store = FileDocumentStore(root)
+    for doc_id in ("doc-a", "doc-b", "doc-c"):
+        _seed(store, doc_id, doc_id, "# 正文")
+    store.create_collection("手工集合")
+    store.set_collections("doc-a", ["手工集合"])
+    planner = StubPlanner(_golden("organize-new.json"))
+    client = TestClient(
+        create_app(document_store=store, storage_dir=root, organize_planner=planner)
+    )
+    generated = client.post("/api/collections/suggestions", json={}).json()
+    assert generated["pending_count"] == 3
+
+    before = {
+        doc_id: store.get_document(doc_id)
+        for doc_id in ("doc-a", "doc-b", "doc-c")
+    }
+
+    # (a) current UI shape: explicit empty accept + reject ("ignore doc-c")
+    rejected = client.post(
+        "/api/collections/suggestions/apply",
+        json={"accept": [], "reject": ["doc-c"]},
+    ).json()
+    assert rejected["applied"] == []
+    assert "doc-c" in rejected["rejected"]
+
+    # (b) legacy shape: accept omitted entirely must also be a safe no-op
+    rejected = client.post(
+        "/api/collections/suggestions/apply", json={"reject": ["doc-b"]}
+    ).json()
+    assert rejected["applied"] == []
+
+    # nothing changed anywhere (manual doc especially), only rejections recorded
+    for doc_id, snapshot in before.items():
+        after = store.get_document(doc_id)
+        assert after["collections"] == snapshot["collections"], doc_id
+        assert after["auto_collections"] == snapshot["auto_collections"], doc_id
+        assert after["manual_collections"] == snapshot["manual_collections"], doc_id
+    assert store.get_document("doc-a")["manual_collections"] == ["手工集合"]
+    assert store.get_document("doc-b")["auto_collections"] == []
+    assert set(rejected["rejected"]) >= {"doc-b", "doc-c"}
+
+    # the accept path still writes exactly the confirmed subset (contract kept)
+    applied = client.post(
+        "/api/collections/suggestions/apply", json={"accept": ["doc-a"]}
+    ).json()
+    assert applied["applied"] == ["doc-a"]
+    record_a = FileDocumentStore(root).get_document("doc-a")
+    assert set(record_a["collections"]) == {"手工集合", "控制理论"}
+    assert record_a["manual_collections"] == ["手工集合"]
+    assert record_a["auto_collections"] == ["控制理论"]
+
+
+def test_apply_suggestions_none_accept_is_a_noop(tmp_path):
+    """Unit-level guard: ``apply_suggestions(accept=None)`` records-only."""
+
+    root = tmp_path / "storage"
+    store = FileDocumentStore(root)
+    _seed(store, "doc-a", "doc-a", "# 正文")
+    CO.save_cached_plan(store, _plan({"控制理论": ["doc-a"]}))
+
+    outcome = CO.apply_suggestions(store, reject=["doc-b"])
+    assert outcome["applied"] == []
+    assert store.get_document("doc-a")["auto_collections"] == []
+    assert outcome["rejected"] == ["doc-b"]
+
+
 def test_collection_suggestions_frontend_is_wired():
     from tests.static_assets import WEBSTATIC, static_js
 
@@ -555,6 +633,7 @@ def test_collection_suggestions_frontend_is_wired():
     assert "collection_suggestions.js" in source
     assert "suggestionsHtml" in source and "suggestionChipHtml" in source
     assert "/api/collections/suggestions/apply" in source
+    assert "suggestionApplyBody" in source, "apply body carries an explicit accept"
     assert "data-suggestion-action" in source and "data-suggestion-chip" in source
 
 

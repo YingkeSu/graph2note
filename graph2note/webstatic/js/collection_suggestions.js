@@ -155,6 +155,17 @@ export function suggestionChipHtml(suggestion, esc) {
     + ` title="建议集合：${esc(suggestion.topic)}${esc(confirm)}">建议集合：${esc(suggestion.topic)}${esc(confirm)}</span>`;
 }
 
+/* Build the review-apply request body.  ``accept`` is always present (even as
+   an empty array) so the server can tell "accept nothing / ignore" apart from a
+   legacy request that would otherwise omit the field and be read as "apply
+   everything" (issue-02 blocker). */
+export function suggestionApplyBody(accept, reject) {
+  return {
+    accept: Array.from(accept || [], (id) => String(id)),
+    reject: Array.from(reject || [], (id) => String(id)),
+  };
+}
+
 /* Dispatch clicks on any [data-suggestion-action] node.  Handlers are keyed by
    the action name and receive (dataset, event); group actions are resolved by
    the caller (which owns the payload). */

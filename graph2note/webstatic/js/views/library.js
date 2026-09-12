@@ -22,6 +22,7 @@ import {
 } from "../library_cards.js";
 import {
   normalizeSuggestions,
+  suggestionApplyBody,
   suggestionChipHtml,
   suggestionDocMap,
   suggestionsHtml,
@@ -126,9 +127,9 @@ async function applySuggestion(accept, reject) {
   if (!accept.length && !reject.length) return;
   state.busy = true;
   try {
-    const body = {};
-    if (accept.length) body.accept = accept;
-    if (reject.length) body.reject = reject;
+    // Always carry an explicit accept list (``[]`` for reject-only): the server
+    // treats a missing accept as "write nothing", never as "apply everything".
+    const body = suggestionApplyBody(accept, reject);
     await api("/api/collections/suggestions/apply", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
