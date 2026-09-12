@@ -5,15 +5,15 @@
 
 ## 发布与执行状态
 
-- 已发布：15（R1、U1–U5、P1–P3、S1–S3、A1–A3）。已认领：7（S1、P1、R1、A1、U1、A3、S2）。已完成：7（S1、P1、R1、A1、U1、A3、S2）。已合并：7（S1，merge `582aa61`；P1，merge `e682e3f`；R1，merge `e1281d8`；A1，merge `6fe379e`；U1，merge `7643f9e`；A3，merge `21533ce`；S2，merge `57bd28a`）。
+- 已发布：15（R1、U1–U5、P1–P3、S1–S3、A1–A3）。已认领：8（S1、P1、R1、A1、U1、A3、S2、A2）。已完成：8（S1、P1、R1、A1、U1、A3、S2、A2）。已合并：8（S1，merge `582aa61`；P1，merge `e682e3f`；R1，merge `e1281d8`；A1，merge `6fe379e`；U1，merge `7643f9e`；A3，merge `21533ce`；S2，merge `57bd28a`；A2，merge `361e79e`）。
 - 本次合并后**已解锁**：U2、U3、U4、U5、P2（P2 仍需 P1 已合并 —— 已满足）；建议 P3 也在 U1 之后派发。
 - 全部 issue `ready-for-agent` = 需求已就绪，**不表示阻塞依赖已完成**；依赖以各 issue Blocked by 为准。
-- 第一波（无阻塞，可立即并行派）：**R1、U1、P1、S1、A1、A2、A3**（R1/U1/P1/S1/A1/A3 已合并）。
+- 第一波（无阻塞，可立即并行派）：**R1、U1、P1、S1、A1、A2、A3**（R1/U1/P1/S1/A1/A2/A3 已合并）。
 - 第二波：U2/U3/U4/U5（U1 已合并 → **已解锁**）、P2（U1+P1 均已合并 → **已解锁**）、P3（待 P1，建议待 U1 —— 两者均已合并）、S2（S1 已合并 → **已合并**，merge `57bd28a`）。
 - 第三波：S3（待 S1+U3）。
 - R1 与 S2 有字段约定（重跑版本标注 repair 来源），两 issue 派发时调度需知晓；P2 与 P3 均触碰问答前端，先后派发由调度协调（P2 先）。
 - 领地隔离：U 系 issues 大量触碰 `webstatic/`，U1 与 U2–U5 严禁并行领取（骨架未定时视图实现会全返工）；U2/U4/U5 之间可并行但需调度切分文件领地；U3 与 S3 串行。
-- U1 合并（`7643f9e`）已把 `app.js` 拆为 17 个 ES modules（入口 `webstatic/app.js` + `webstatic/js/**`）；后续 U2–U5/P2/P3 以**新模块结构**为挂载点（视图模块见 U1 handoff §4）。整合时已把 P1 多轮问答控件、R1 repair 入口（侧栏次级 + `#repair` 路由）、A1 自动打标角标移植进新结构，行为未回退。
+- U1 合并（`7643f9e`）已把 `app.js` 拆为 17 个 ES modules（入口 `webstatic/app.js` + `webstatic/js/**`）；后续 U2–U5/P2/P3 以**新模块结构**为挂载点（视图模块见 U1 handoff §4）。整合时已把 P1 多轮问答控件、R1 repair 入口（侧栏次级 + `#repair` 路由）、A1 自动打标角标移植进新结构，行为未回退；A2 合并（`361e79e`）时同样把「每周小结」区块从旧单体 `app.js` 移植进 `webstatic/js/views/dashboard.js`（+ `state.js` 元素注册、`document.js` 导出 `renderMarkdownInto`），生成/历史/查看/空态行为保持。
 - A 系领地提示：A1 编辑器标签区与 U3、A2 看板区块与 U1、A3 设置视图入口与 U1 均为弱交集——A 系以现行 UI 交付、U 系重构时承诺行为保持；若同期在跑由调度切分 `webstatic/` 文件领地。A3 另触碰 `llm_settings.py`/`eval/gateway.py`（独占）。
 
 ## Issue 清单
@@ -33,7 +33,7 @@
 | [S2 演进锚定（版本链+pHash）](issues/S2-evolution-anchoring.md) | Semantic | [S1](issues/S1-ir-block-diff.md) | merged (57bd28a) |
 | [S3 版本对比视图](issues/S3-version-diff-ui.md) | Semantic | [S1](issues/S1-ir-block-diff.md)、[U3](issues/U3-editor-workspace.md) | open |
 | [A1 解析结果自动打标签](issues/A1-auto-tag-from-recognition.md) | 助理 | 无 | merged (`6fe379e`) |
-| [A2 每周小结](issues/A2-weekly-digest.md) | 助理 | 无 | open |
+| [A2 每周小结](issues/A2-weekly-digest.md) | 助理 | 无 | merged (361e79e) |
 | [A3 自定义 LLM API](issues/A3-custom-llm-provider.md) | LLM | 无 | merged (21533ce) |
 
 ## 背景速览

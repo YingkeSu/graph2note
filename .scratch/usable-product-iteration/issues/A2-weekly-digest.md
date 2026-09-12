@@ -1,6 +1,6 @@
 # A2：每周小结（范围内材料的周期性汇总）
 
-Status: ready-for-agent
+Status: merged
 Labels: track-assistant
 
 ## What to build
