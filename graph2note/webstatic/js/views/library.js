@@ -20,12 +20,21 @@ import {
   normalizeDensity,
   wireCardActions,
 } from "../library_cards.js";
+import {
+  normalizeSuggestions,
+  suggestionChipHtml,
+  suggestionDocMap,
+  suggestionsHtml,
+  wireSuggestionActions,
+  wireSuggestionChips,
+} from "../collection_suggestions.js";
 
 const SKELETON_COUNT = 8;
 const DELETE_CONFIRM = "删除文档将移除原图、识别结果、Markdown 与全部附件，且不可恢复。确定删除？";
 const REPARSE_CONFIRM = "重新解析将用新的识别结果覆盖当前 Markdown（您的编辑将被替换，旧内容仍在历史版本可查）。确定继续吗？";
 
 let thumbnailLoader = null;
+let suggestionPayload = null;
 
 function readDensity() {
   try { return normalizeDensity(localStorage.getItem(DENSITY_KEY)); }
@@ -45,6 +54,91 @@ function applyDensity(value) {
   }
   try { localStorage.setItem(DENSITY_KEY, density); } catch (_) { /* ignore */ }
   return density;
+}
+
+/* ---------- collection suggestions (auto-organization issue 02) ---------- */
+
+async function loadSuggestions() {
+  try { suggestionPayload = await api("/api/collections/suggestions"); }
+  catch (_) { suggestionPayload = null; }
+  return suggestionPayload;
+}
+
+function pendingDocIds(topic) {
+  const view = normalizeSuggestions(suggestionPayload);
+  const group = view.groups.find((item) => item.topic === topic);
+  if (!group) return [];
+  return group.documents
+    .filter((doc) => doc.status === "pending" || doc.status === "confirmation_required")
+    .map((doc) => doc.documentId);
+}
+
+function renderSuggestionSection() {
+  if (!el.collectionSuggestions) return;
+  el.collectionSuggestions.innerHTML = suggestionsHtml(suggestionPayload, esc);
+  wireSuggestionActions(el.collectionSuggestions, {
+    generate: () => generateSuggestions(),
+    accept: (data) => applySuggestion([data.documentId], []),
+    reject: (data) => applySuggestion([], [data.documentId]),
+    acceptGroup: (data) => applySuggestion(pendingDocIds(data.topic), []),
+    rejectGroup: (data) => applySuggestion([], pendingDocIds(data.topic)),
+  });
+}
+
+function injectSuggestionChips() {
+  if (!el.libraryGrid) return;
+  const map = suggestionDocMap(suggestionPayload);
+  el.libraryGrid.querySelectorAll(".doc-card[data-id]").forEach((card) => {
+    const suggestion = map[card.dataset.id];
+    if (!suggestion) return;
+    const markup = suggestionChipHtml({
+      documentId: card.dataset.id, topic: suggestion.topic, status: suggestion.status,
+    }, esc);
+    if (!markup) return;
+    const holder = document.createElement("div");
+    holder.innerHTML = markup;
+    const chip = holder.firstElementChild;
+    if (!chip) return;
+    (card.querySelector(".doc-meta") || card).appendChild(chip);
+  });
+  wireSuggestionChips(el.libraryGrid, (docId) => applySuggestion([docId], []));
+}
+
+async function generateSuggestions() {
+  if (state.busy) return;
+  state.busy = true;
+  showToast("正在生成归类建议…");
+  try {
+    await api("/api/collections/suggestions", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ force: false }),
+    });
+    await renderLibrary();
+    showToast("归类建议已生成", "ok");
+  } catch (e) {
+    showToast("生成归类建议失败：" + e.message, "err");
+  }
+  state.busy = false;
+}
+
+async function applySuggestion(accept, reject) {
+  if (state.busy) return;
+  if (!accept.length && !reject.length) return;
+  state.busy = true;
+  try {
+    const body = {};
+    if (accept.length) body.accept = accept;
+    if (reject.length) body.reject = reject;
+    await api("/api/collections/suggestions/apply", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    showToast(accept.length ? `已归入 ${accept.length} 篇的自动集合` : `已忽略 ${reject.length} 条建议`, "ok");
+    await renderLibrary();
+  } catch (e) {
+    showToast("归类建议操作失败：" + e.message, "err");
+  }
+  state.busy = false;
 }
 
 function renderSkeleton() {
@@ -125,6 +219,8 @@ async function renderLibrary() {
   applyDensity(state.libraryDensity);
   renderSkeleton();
   let docs = [];
+  await loadSuggestions();
+  renderSuggestionSection();
   const params = new URLSearchParams();
   if (state.libraryCollection) params.set("collection_id", state.libraryCollection);
   if (state.libraryTag) params.set("tag", state.libraryTag);
@@ -148,6 +244,7 @@ async function renderLibrary() {
     confirmReparse: () => window.confirm(REPARSE_CONFIRM),
     reparse: (id) => quickReparse(id),
   });
+  injectSuggestionChips();
   installThumbnailLazyLoading(el.libraryGrid);
   syncLibraryFilters();
   await refreshCollectionTree();

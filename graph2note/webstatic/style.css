@@ -939,3 +939,29 @@ body {
 .search-panel-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px;
   padding: 10px 14px; border-top: 1px solid var(--line); background: #fbfcfd; }
 .search-hit-doc, .search-hit-pdf { cursor: pointer; }
+
+/* Auto-organization issue 02: Library collection-suggestion review + card chip */
+.collection-suggestions { margin: 4px 0 14px; }
+.suggestions-empty { display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+  border: 1px dashed var(--line); border-radius: 10px; background: var(--panel); }
+.suggestions-head { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; margin-bottom: 8px; }
+.suggestions-head h3 { margin: 0; font-size: 15px; }
+.suggestions-meta { font-size: 12.5px; }
+.suggestion-groups { display: flex; flex-direction: column; gap: 10px; }
+.suggestion-group { border: 1px solid var(--line); border-radius: 10px; background: var(--panel);
+  padding: 10px 12px; }
+.suggestion-group-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.suggestion-topic { font-weight: 600; }
+.suggestion-docs { list-style: none; margin: 8px 0 0; padding: 0; display: flex;
+  flex-direction: column; gap: 6px; }
+.suggestion-doc { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;
+  padding: 5px 0; border-top: 1px solid var(--line); }
+.suggestion-doc-title { font-weight: 500; }
+.suggestion-doc-summary { font-size: 12.5px; }
+.suggestion-doc-flag { font-size: 11.5px; color: #b45309; border: 1px solid #f0d3a8;
+  background: #fdf1e3; border-radius: 6px; padding: 1px 6px; }
+.suggestion-doc-actions { margin-left: auto; display: flex; gap: 6px; }
+.doc-collection-chip { display: inline-block; margin-top: 6px; padding: 2px 8px; font-size: 11.5px;
+  border: 1px solid #b9d4f7; background: #eaf2fd; color: #1f6feb; border-radius: 999px;
+  cursor: pointer; }
+.doc-collection-chip:hover { background: #dbe9fb; }

@@ -113,6 +113,7 @@ export const el = {
   libraryEmpty: $("#library-empty"),
   libraryCount: $("#library-count"),
   libraryFilterLabel: $("#library-filter-label"),
+  collectionSuggestions: $("#collection-suggestions"),
   collectionTree: $("#collection-tree"),
   collectionCreateForm: $("#collection-create-form"),
   collectionCreateInput: $("#collection-create-input"),
