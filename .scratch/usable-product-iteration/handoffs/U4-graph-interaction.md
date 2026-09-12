@@ -83,3 +83,40 @@ bash scripts/u4_capture_evidence.sh            # 43 文档库 → before/after �
 - `impeccable`：图谱视觉密度/配色/微交互进一步打磨（本轮以交互与可读性为先，配色沿用既有体系）。
 - `diagnose`：若出现「布局失真/缩放后节点丢失」类问题，按 `computeLayout → fitToViewBox → separate → applyViewBox` 链定位（首版失败根因即在此链的顺序）。
 - `prototype`：聚类展开/过滤形态的进一步探索可在动正式实现前先出可玩原型。
+
+## 评审修复记录（review-U4：2 blocker + 4 minor）
+
+**基线**：`005fc3b`（评审对象）→ 本段记录修复后分支状态。修复提交仍在
+`dev/u4-graph-interaction`；未 push、未合并 `main`、未自审、未改 `BOARD.md` / `issues/*.md`。
+
+### Blocker
+
+| Finding | 修复方式 | 测试证据 |
+|---|---|---|
+| **U4-1 平移二次加速**：`pointermove` 在已含上一次 pan 的 CTM 下换算指针，`dragging.x` 又是 pointerdown 参考点，pan 累计位移被反复计入（50 事件位移 -2550px），且单次移动方向与 grab 光标相反。 | `pointerdown` 只记录屏幕坐标 `lastX/lastY`；`pointermove` 用 `pointerToLayout()` 对“上次/本次”两个 client 点各算一次布局坐标，取**增量** `view.pan -= (to - from)`（每步独立，不再喂回累计 pan），方向改为 grab 语义（内容跟随指针）。布局取 `currentLayout()`。 | `tests/graph_interaction.mjs` → `drag_pan_is_linear_across_many_pointermoves`：6 事件（≥5）每步增量恒为 `(-20, -10)`，总位移 `(-120, -60)`；`tests/test_graph_interaction.py` 逐项断言 `increments == [-20]×5`、`total == -20/step`、方向为负。**回归有效性**：把 `graph.js` 暂存回 `005fc3b` 后该断言在 step 1 即失败（旧实现 step1 `pan.x=+20`，方向反且随后进入 20/40/80… 累加）。 |
+| **U4-2 topic/tag 单击导航回退**：`wireGraphNodes()` 的 click 对所有 kind 先进聚焦态，topic/tag 单击不再 `go(route)`。 | 抽出单一 `activateNode()`：cluster → 就地展开；document → 首击聚焦、再击导航；topic/tag/collection → 直接 `go(route)`（不进入聚焦）。click 与 keydown 共用该路径，鼠标/键盘不再分叉。 | `tests/graph_interaction.mjs` → `document_click_focuses_then_navigates`（首击 `focusId`、hash 不动；再击到 `#doc/d00`）与 `topic_and_tag_click_navigate_directly`（topic/tag/collection 单击后 `focusId===null` 且 hash 为目标 `#library/...` route）。Python 端 `test_single_click_navigation_for_document_topic_tag` 断言三类 nodeId/route/focusId。 |
+
+### Minor
+
+| Finding | 修复方式 | 测试证据 |
+|---|---|---|
+| **U4-3 聚类节点 keydown 无效**（role=button/tabindex=0 无 data-route，Enter/Space 无响应） | keydown 改走 `activateNode()`，cluster 分支展开该聚合（不再依赖 `data-route`）；Enter 与 Space 行为一致。 | `tests/graph_interaction.mjs` → `cluster_keyboard_expand_and_toggle_feedback`：对 cluster 节点派发 Enter 后可见节点数 `before 9 → after 16`；Python 断言 `after > before`。 |
+| **U4-4 聚类切换按钮无状态反馈**（两态文本/class 不变，`.graph-button.active` 死 CSS） | 新增 `renderClusterToggle()`（随每次 `renderSvg`）：按**渲染结果**（`view.rendered.aggregates`）更新文案「聚类收敛/聚类展开」、`.active` 与 `aria-pressed`。 | 同一 harness 断言：收敛态文案「聚类收敛」+ `.active` + `aria-pressed="true"`；展开态「聚类展开」、无 `.active`、`aria-pressed="false"`。 |
+| **U4-5 tooltip 文案与实现不符**（聚类写「双击展开」，实为单击；首击后节点重建 dblclick 不生效） | 聚类 tooltip 改为「单击展开」；顺带把 document/其它节点的 route hint 改为与当前语义一致（文档「单击聚焦邻域、双击进入编辑器」，主题/标签/集合「单击在文档库中过滤」）。 | harness 断言收敛视图 `canvas.innerHTML` 含「单击展开」。 |
+| **U4-6 缩放锚点用未收敛布局**（缩放/按钮传 `view.layout`，`viewBoxFor()` 用 `view.rendered.layout`） | 新增 `currentLayout()` 统一取 `view.rendered.layout`，`viewBoxFor`、滚轮缩放、缩放±按钮全部改用它；fit/reset 只改 zoom/pan 不受影响。 | harness → `zoom_button_anchor_uses_rendered_layout`：先确认收敛 rendered layout 与展开 layout 不同（`680×826` vs `477×574`），再点「放大」断言 `pan.x = 0.5·W·(1-1/zoom)`、`pan.y = 0.5·H·(1-1/zoom)`，W/H 为**收敛后** rendered 尺寸；若仍传 `view.layout` 该值不等。 |
+
+**观察项（可读性口径，不改 AC 文案）**：tooltip / 状态提示只是把「节点上已有的交互语义」说清楚——单击=聚焦（仅文档）/导航（主题、标签、集合）/展开（聚类），双击仅作为文档的直达编辑器快捷键保留；切换按钮文案描述当前渲染态而非固定值。这些均为文案与标签口径，不改变任何 AC 的判定条件或阈值。
+
+### 修复后验证（全离线，CI 零网络 / 零模型调用）
+
+```bash
+uv run pytest            # 696 passed（基线 692 + 新增 4 条 DOM 交互断言）
+node tests/graph_layout.mjs       # 通过（零重叠等原有断言不变）
+node tests/router_routes.mjs      # router_routes: all assertions passed
+```
+
+新增测试文件 `tests/graph_interaction.mjs`（Node 最小 DOM shim，驱动真实 `views/graph.js`）与
+`tests/test_graph_interaction.py`（`build_graph` 真实 payload + 运行 harness 并断言摘要），
+已在 `tests/taxonomy.py` 登记为 `workspace`；`docs/testing.md` 模块表同步。
+后一位 reviewer 可只跑 `uv run pytest tests/test_graph_interaction.py -q` 复核本段全部 6 条。
+

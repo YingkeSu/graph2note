@@ -28,6 +28,7 @@ import {
   computeLayout,
   focusSet,
   nodeRadius,
+  pointerToLayout,
   solveFromPositions,
   subgraph,
   zoomedViewBox,
@@ -77,9 +78,16 @@ function applyViewBox() {
   }
 }
 
-function viewBoxFor() {
-  const layout = (view.rendered && view.rendered.layout)
+/* The viewBox always tracks the *rendered* layout (clustered aggregates are
+   re-solved, so their dimensions can differ from the pre-aggregation layout).
+   Zoom, pan and fit all read this one accessor so they can never disagree. */
+function currentLayout() {
+  return (view.rendered && view.rendered.layout)
     || view.layout || { width: 320, height: 240 };
+}
+
+function viewBoxFor() {
+  const layout = currentLayout();
   const width = Math.max(1, layout.width) / view.zoom;
   const height = Math.max(1, layout.height) / view.zoom;
   return { x: view.pan.x, y: view.pan.y, width, height };
@@ -116,9 +124,11 @@ function computeView() {
 
 function nodeTooltip(node) {
   if (node.kind === "cluster") {
-    return `${node.label} · 主题聚类 · ${node.documentCount} 份文档 · 双击展开`;
+    return `${node.label} · 主题聚类 · ${node.documentCount} 份文档 · 单击展开`;
   }
-  const routeHint = node.kind === "document" ? "双击进入编辑器" : "双击在文档库中过滤";
+  const routeHint = node.kind === "document"
+    ? "单击聚焦邻域、双击进入编辑器"
+    : "单击在文档库中过滤";
   return `${node.label} · ${GRAPH_KIND_LABELS[node.kind] || node.kind} · ${node.degree || 0} 条关系 · ${routeHint}`;
 }
 
@@ -191,6 +201,7 @@ function renderSvg() {
   wireGraphNodes();
   renderStatus(active);
   renderFilterChips();
+  renderClusterToggle();
   view.version += 1;
 }
 
@@ -306,6 +317,20 @@ function renderFilterChips() {
   }
 }
 
+/* The cluster toggle is a two-state control: the label, `.active` class and
+   `aria-pressed` must all follow the rendered cluster state, otherwise the
+   button gives no feedback that the mode changed (U4-4). */
+function renderClusterToggle() {
+  if (!el.graphClustersToggle) return;
+  // Reflect what is actually on screen: `auto` only aggregates above the
+  // threshold, so "expanded" means no aggregates were rendered.
+  const collapsed = Boolean(view.rendered && view.rendered.aggregates
+    && view.rendered.aggregates.length);
+  el.graphClustersToggle.textContent = collapsed ? "聚类收敛" : "聚类展开";
+  el.graphClustersToggle.classList.toggle("active", collapsed);
+  el.graphClustersToggle.setAttribute("aria-pressed", String(collapsed));
+}
+
 /* ---------- interaction wiring ---------- */
 
 function commit(next = {}) {
@@ -332,37 +357,53 @@ function isBackground(target) {
   return !target.closest || !target.closest("g.graph-node");
 }
 
+/* Single activation path shared by mouse click and keyboard (Enter/Space), so
+   the two input modes cannot drift apart.
+
+   Navigation semantics (restored to pre-U4 behaviour after review):
+     - documents: first activation focuses the 1-hop neighbourhood, a second
+       one navigates to the editor; double-click navigates directly.
+     - topics / tags / collections: activation navigates straight to the
+       library filter (`go(route)`); it must not enter focus mode.
+     - clusters: activation expands that aggregate inline. */
+function activateNode(node) {
+  const clusterId = node.dataset.cluster;
+  if (clusterId) {
+    if (view.clusters === "expand") return; // already fully expanded
+    view.expanded.add(clusterId);
+    computeView();
+    renderSvg();
+    return;
+  }
+  const id = node.dataset.nodeId;
+  if (node.dataset.kind === "document") {
+    if (view.focusId !== id) {
+      // focus is a view-only state: no relayout, just a re-render
+      view.focusId = id;
+      renderSvg();
+      return;
+    }
+    go(node.dataset.route || "#library");
+    return;
+  }
+  if (node.dataset.route) go(node.dataset.route);
+}
+
 function wireGraphNodes() {
   el.graphCanvas.querySelectorAll("g.graph-node[data-route], g.graph-node[data-cluster]")
     .forEach((node) => {
       node.addEventListener("click", (event) => {
         event.stopPropagation();
-        const clusterId = node.dataset.cluster;
-        if (clusterId && view.clusters !== "expand") {
-          // click a converged topic aggregate -> expand it inline
-          view.expanded.add(clusterId);
-          computeView();
-          renderSvg();
-          return;
-        }
-        const id = node.dataset.nodeId;
-        if (view.focusId !== id) {
-          // focus is a view-only state: no relayout, just a re-render
-          view.focusId = id;
-          renderSvg();
-          return;
-        }
-        go(node.dataset.route || "#library");
+        activateNode(node);
       });
       node.addEventListener("dblclick", (event) => {
         event.stopPropagation();
         if (node.dataset.route) go(node.dataset.route);
       });
       node.addEventListener("keydown", (event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          if (node.dataset.route) go(node.dataset.route);
-        }
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        activateNode(node);
       });
     });
 }
@@ -382,18 +423,23 @@ function wireGraphInteractions() {
   let dragging = null;
   canvas.addEventListener("pointerdown", (event) => {
     if (event.button !== 0 || !isBackground(event.target)) return;
-    const point = canvasPoint(event);
-    dragging = { x: point.x, y: point.y, panX: view.pan.x, panY: view.pan.y };
+    // Record the raw screen position: each pointermove applies the delta from
+    // the previous event, so the accumulated pan is never re-fed into the next
+    // step (the old CTM-based version re-added it and accelerated quadratically).
+    dragging = { lastX: event.clientX, lastY: event.clientY };
     canvas.classList.add("panning");
     if (canvas.setPointerCapture) canvas.setPointerCapture(event.pointerId);
   });
   canvas.addEventListener("pointermove", (event) => {
     if (!dragging) return;
-    const point = canvasPoint(event);
-    view.pan = {
-      x: dragging.panX + point.x - dragging.x,
-      y: dragging.panY + point.y - dragging.y,
-    };
+    const layout = currentLayout();
+    const rect = canvas.getBoundingClientRect();
+    const from = pointerToLayout(dragging.lastX, dragging.lastY, rect, layout, view.zoom);
+    const to = pointerToLayout(event.clientX, event.clientY, rect, layout, view.zoom);
+    dragging.lastX = event.clientX;
+    dragging.lastY = event.clientY;
+    // grab semantics: the content follows the cursor, so pan moves the other way
+    view.pan = { x: view.pan.x - (to.x - from.x), y: view.pan.y - (to.y - from.y) };
     applyViewBox();
   });
   const endDrag = (event) => {
@@ -412,7 +458,7 @@ function wireGraphInteractions() {
     event.preventDefault();
     const factor = event.deltaY < 0 ? 1.1 : 1 / 1.1;
     const anchor = canvasPoint(event);
-    const next = zoomedViewBox(view.layout, view.zoom, view.pan, factor, anchor);
+    const next = zoomedViewBox(currentLayout(), view.zoom, view.pan, factor, anchor);
     view.zoom = next.zoom;
     view.pan = next.pan;
     applyViewBox();
@@ -422,7 +468,7 @@ function wireGraphInteractions() {
 function wireGraphControls() {
   if (el.graphZoomIn) {
     el.graphZoomIn.addEventListener("click", () => {
-      const next = zoomedViewBox(view.layout, view.zoom, view.pan, ZOOM_STEP_RATIO);
+      const next = zoomedViewBox(currentLayout(), view.zoom, view.pan, ZOOM_STEP_RATIO);
       view.zoom = next.zoom;
       view.pan = next.pan;
       applyViewBox();
@@ -430,7 +476,7 @@ function wireGraphControls() {
   }
   if (el.graphZoomOut) {
     el.graphZoomOut.addEventListener("click", () => {
-      const next = zoomedViewBox(view.layout, view.zoom, view.pan, 1 / ZOOM_STEP_RATIO);
+      const next = zoomedViewBox(currentLayout(), view.zoom, view.pan, 1 / ZOOM_STEP_RATIO);
       view.zoom = next.zoom;
       view.pan = next.pan;
       applyViewBox();
