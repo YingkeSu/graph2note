@@ -47,9 +47,9 @@ assert.notStrictEqual(topicColor("数学"), topicColor("控制"));
 
 // ---- 2) source icon (pdf page vs image vs document) -----------------------
 assert.deepStrictEqual(sourceIcon(item),
-  { kind: "pdf", icon: "📄", label: "lecture.pdf · 第 12 页" });
-assert.strictEqual(sourceIcon({ source_kind: "image" }).icon, "🖼");
-assert.strictEqual(sourceIcon({ source_kind: "document" }).icon, "📝");
+  { kind: "pdf", icon: "PDF", label: "lecture.pdf · 第 12 页" });
+assert.strictEqual(sourceIcon({ source_kind: "image" }).icon, "图片");
+assert.strictEqual(sourceIcon({ source_kind: "document" }).icon, "文档");
 assert.strictEqual(sourceIcon({}).kind, "image");
 
 // ---- 3) gap markers -------------------------------------------------------
@@ -85,7 +85,7 @@ assert.ok(itemHtml.includes('data-src="/api/documents/doc-1/preprocessed"'), "de
 assert.ok(!/(^|\s)src="/.test(itemHtml), "no eager src attribute on the thumbnail");
 assert.ok(itemHtml.includes("状态空间模型笔记"), "title");
 assert.ok(itemHtml.includes('data-source-kind="pdf"'), "source icon kind");
-assert.ok(itemHtml.includes("📄"), "source icon glyph");
+assert.ok(itemHtml.includes("PDF"), "source icon glyph");
 assert.ok(itemHtml.includes("2026-03-04"), "date");
 assert.ok(itemHtml.includes("数学") && itemHtml.includes("控制"), "topic chips");
 assert.ok(itemHtml.includes("标签 2"), "tag count");

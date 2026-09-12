@@ -116,6 +116,22 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 :is(.library-empty,.timeline-empty,.graph-empty,.dashboard-empty,.inbox-empty,.ask-empty) .btn { margin-top: 24px; display: inline-flex; }
 .empty-description { display: block; max-width: 580px; line-height: 1.8; }
 
+/* Timeline: the date is the index; content rows are easy to scan. */
+.timeline-density { padding: 12px 12px 24px; height: 86px; border-radius: 6px; }
+.timeline-density-bar { background: var(--surface); min-width: 32px; min-height: 0; }
+.timeline-density-fill, .timeline-density-bar:hover .timeline-density-fill { background: var(--accent); }
+.timeline-density-label { font-size: 12px; bottom: -20px; }
+.timeline-groups::before { background: var(--line); }
+.timeline-group-body, .timeline-undated { border-radius: 6px; padding: 20px; }
+.timeline-group-head h3 { font: 600 20px var(--display); }
+.timeline-item { background: var(--bg); padding: 12px; }
+.timeline-item:hover, .timeline-item-row.run-active { background: var(--accent-soft); }
+.timeline-summary-chip, .timeline-tag-count { background: var(--surface); color: var(--muted); }
+.timeline-gap-label, .timeline-run-band, .timeline-summary-chip, .timeline-run-chip,
+.timeline-topic, .timeline-collection, .timeline-tag-count, .timeline-item-meta, .timeline-item-date { font-size: 12px; }
+.timeline-thumb-missing { font-size: 12px; }
+.timeline-run-band { white-space: normal; }
+
 @media (hover: none) { .doc-card .doc-card-actions { opacity: 1; } }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition-duration: 0s !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
@@ -132,5 +148,8 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 .doc-thumb-error + .doc-thumb-placeholder { display: flex; }
 .doc-card .doc-thumb-missing { display: flex; align-items: center; justify-content: center;
   color: var(--muted); font-size: 12px; }
+.timeline-density-bar { flex: 0 0 56px; }
+.timeline-density-bar:hover { background: var(--accent-soft); }
 .doc-card .doc-source { background: #302d29dc; font-size: 12px; }
+.timeline-source { width: auto; min-width: 26px; height: auto; padding: 1px 3px; font-size: 12px; color: var(--ink); }
 .library-grid[data-density="compact"] .doc-card .thumb { height: 110px; }
