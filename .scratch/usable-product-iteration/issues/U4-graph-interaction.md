@@ -1,6 +1,6 @@
 # U4：知识图谱交互升级
 
-Status: ready-for-agent
+Status: merged
 Labels: track-ux
 
 ## What to build
