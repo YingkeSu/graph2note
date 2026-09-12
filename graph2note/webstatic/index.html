@@ -9,9 +9,9 @@
        zero-build local tool; a fallback keeps the editor usable if the CDN is
        unreachable (preview-only degradation, never touches the editor). -->
   <!-- marked is PINNED to 4.3.0: unmarked "latest" (v12+) changed renderer.image
-       to take a token object; our renderer app.js uses the v4 string signature
-       (and also tolerates the v12+ token object defensively).  KaTeX stays at
-       its existing pin. -->
+       to take a token object; our renderer uses the v4 string signature (and also
+       tolerates the v12+ token object defensively).  KaTeX stays at its
+       existing pin. -->
   <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js" onerror="window.__mdMissing=1"></script>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -19,350 +19,389 @@
           onerror="window.__katexMissing=1"></script>
 </head>
 <body>
-  <header class="topbar">
-    <a class="brand" href="#library">graph2note</a>
-    <button class="btn small" id="nav-library" title="文档库">文档库</button>
-    <button class="btn small" id="nav-inbox" title="待整理">Inbox</button>
-    <button class="btn small" id="nav-timeline" title="时间轴">时间轴</button>
-    <button class="btn small" id="nav-graph" title="知识图谱">知识图谱</button>
-    <button class="btn small" id="nav-dashboard" title="数据看板">数据看板</button>
-    <button class="btn small" id="nav-settings" title="LLM 设置">LLM 设置</button>
-    <button class="btn small" id="nav-vault-export" title="导出 Obsidian Vault">导出 Vault</button>
-    <button class="btn small primary" id="nav-upload" title="解析新手稿">新解析</button>
-    <span class="spacer"></span>
-    <!-- P1 placeholder: template selector (not implemented). -->
-    <label class="ph" title="模板选择（P1）">模板 <select id="template-select" disabled>
-      <option>简洁 Markdown（默认）</option></select></label>
-    <span class="ph" id="model-label"></span>
-  </header>
+  <div class="app-shell" id="app-shell">
+    <!-- ============ 左侧栏：视图导航 + 集合树 + 次级入口 ============ -->
+    <aside class="sidebar" id="app-sidebar" aria-label="主导航">
+      <nav class="sidebar-nav" id="sidebar-nav" aria-label="视图导航">
+        <button class="nav-item" id="nav-library" data-view="library" data-route="#library" title="文档库">文档库</button>
+        <button class="nav-item" id="nav-timeline" data-view="timeline" data-route="#timeline/day" title="时间轴">时间轴</button>
+        <button class="nav-item" id="nav-graph" data-view="graph" data-route="#graph" title="知识图谱">知识图谱</button>
+        <button class="nav-item" id="nav-dashboard" data-view="dashboard" data-route="#dashboard" title="数据看板">数据看板</button>
+        <button class="nav-item" id="nav-inbox" data-view="inbox" data-route="#inbox" title="待整理">Inbox</button>
+        <button class="nav-item" id="nav-tags" data-view="tags" data-route="#tags" title="标签词表">标签词表</button>
+        <button class="nav-item" id="nav-pdf-search" data-view="pdf-search" data-route="#pdf-search" title="PDF 检索与问答（临时入口）">PDF 检索</button>
+      </nav>
 
-  <!-- Library list state (home) -->
-  <section id="library-zone" class="library-zone">
-    <div class="library-head">
-      <h2>本地文档库</h2>
-      <span class="dim" id="library-count"></span>
-      <span class="dim" id="library-filter-label"></span>
-    </div>
-    <section id="pdf-search" class="pdf-search" aria-label="PDF 内容搜索">
-      <form id="pdf-search-form" class="pdf-search-form">
-        <input id="pdf-search-input" type="search" autocomplete="off"
-               placeholder="搜索已解析 PDF 内容（中文 / English / 混排）" />
-        <select id="pdf-search-scope"><option value="">全部已导入 PDF</option></select>
-        <button class="btn primary" type="submit">搜索</button>
-        <button class="btn small" id="pdf-search-clear" type="button">清除</button>
-      </form>
-      <div id="pdf-search-status" class="dim"></div>
-      <div class="pdf-qa">
-        <form id="pdf-qa-form" class="pdf-qa-form">
-          <input id="pdf-qa-input" type="text" autocomplete="off"
-                 placeholder="就上方检索范围提问（单轮问答，答案附页级引用）" />
-          <button class="btn" type="submit">提问</button>
-        </form>
-        <div id="pdf-qa-status" class="dim"></div>
-        <div id="pdf-qa-result" class="pdf-qa-result hidden"></div>
-      </div>
-    </section>
-    <div id="pdf-search-results" class="pdf-search-results hidden"></div>
-    <section id="workspace-navigation" class="workspace-navigation" aria-label="工作台导航">
-      <div class="workspace-nav-column">
-        <div class="workspace-nav-head">
+      <section class="sidebar-collections" aria-label="集合">
+        <div class="sidebar-section-head">
           <h3>集合</h3>
-          <form id="collection-create-form" class="tag-create-form">
-            <input id="collection-create-input" type="text" placeholder="新建集合" />
-            <button class="btn small" type="submit">添加</button>
-          </form>
         </div>
+        <form id="collection-create-form" class="tag-create-form">
+          <input id="collection-create-input" type="text" placeholder="新建集合" />
+          <button class="btn small" type="submit">添加</button>
+        </form>
         <div id="collection-tree" class="collection-tree"></div>
-      </div>
-      <div class="workspace-nav-column quick-links">
-        <h3>快捷入口</h3>
-        <button class="workspace-link" data-library-filter="today">今日新增</button>
-        <button class="workspace-link" data-library-filter="week">本周新增</button>
-        <button class="workspace-link" data-library-filter="recent">最近编辑</button>
-        <button class="workspace-link" data-library-filter="all">全部 Library</button>
-      </div>
-    </section>
-    <section id="tag-vocabulary" class="tag-vocabulary" aria-label="标签词表">
-      <div class="tag-vocabulary-head">
-        <h3>标签词表</h3>
-        <form id="tag-create-form" class="tag-create-form">
-          <input id="tag-create-input" type="text" placeholder="新增标签" />
-          <button class="btn small" type="submit">添加</button>
+      </section>
+
+      <nav class="sidebar-secondary" id="sidebar-secondary" aria-label="次级入口">
+        <button class="nav-item" id="nav-settings" data-view="settings" data-route="#settings" title="LLM 设置">LLM 设置</button>
+        <button class="nav-item" id="nav-vault-export" data-view="vault-export" data-route="#vault-export" title="导出 Obsidian Vault">导出 Vault</button>
+      </nav>
+    </aside>
+
+    <div class="main">
+      <!-- ============ 顶栏（≤4 项：折叠/品牌/搜索/新解析） ============ -->
+      <header class="topbar">
+        <button class="btn small icon-btn" id="sidebar-toggle" type="button"
+                aria-controls="app-sidebar" aria-expanded="true" title="折叠侧栏">☰</button>
+        <a class="brand" href="#library">graph2note</a>
+        <form class="global-search" id="global-search-form" role="search">
+          <input id="global-search-input" type="search" autocomplete="off" spellcheck="false"
+                 placeholder="搜索文档 / PDF（统一搜索将在 P3 落地）" aria-label="全局搜索（占位）" />
         </form>
-      </div>
-      <div id="tag-list" class="tag-list"></div>
-    </section>
-    <div id="library-grid" class="library-grid"></div>
-    <div id="library-empty" class="library-empty hidden">
-      <div class="empty-icon">🗂</div>
-      <p>还没有文档。点「新解析」上传一张手稿图片开始。</p>
-    </div>
-  </section>
+        <span class="spacer"></span>
+        <span class="ph" id="model-label"></span>
+        <button class="btn primary" id="nav-upload" data-route="#upload" title="解析新手稿">新解析</button>
+      </header>
 
-  <!-- Read-only Inbox projection (issue 07) -->
-  <section id="inbox-zone" class="inbox-zone hidden">
-    <div class="inbox-head">
-      <div>
-        <h2>Inbox</h2>
-        <p class="dim">集中处理无主题、无标签或明确标记为待整理的文档。</p>
-      </div>
-      <span class="dim">点击条目回到三栏编辑器整理</span>
-    </div>
-    <div id="inbox-empty" class="inbox-empty hidden">
-      <div class="empty-icon">✓</div>
-      <p>Inbox 是空的。</p>
-      <span class="dim">所有文档都已具备基本归档信息。</span>
-    </div>
-    <div id="inbox-list" class="inbox-list"></div>
-  </section>
+      <!-- ============ 内容区：按视图切换 ============ -->
+      <main class="content" id="content">
+        <!-- Library list state (home).  U1: 只保留文档网格为主，集合树/词表/
+             PDF 搜索迁出（集合树 -> 侧栏，词表 -> #tags，搜索/问答 -> #pdf-search）。 -->
+        <section id="library-zone" class="library-zone">
+          <div class="library-head">
+            <h2>本地文档库</h2>
+            <span class="dim" id="library-count"></span>
+            <span class="dim" id="library-filter-label"></span>
+            <div class="library-filters" id="library-filters" aria-label="文档过滤">
+              <button class="filter-chip" type="button" data-library-filter="all">全部</button>
+              <button class="filter-chip" type="button" data-library-filter="today">今日新增</button>
+              <button class="filter-chip" type="button" data-library-filter="week">本周新增</button>
+              <button class="filter-chip" type="button" data-library-filter="recent">最近编辑</button>
+            </div>
+          </div>
+          <div id="library-grid" class="library-grid"></div>
+          <div id="library-empty" class="library-empty hidden">
+            <div class="empty-icon">🗂</div>
+            <p>还没有文档。点「新解析」上传一张手稿图片开始。</p>
+          </div>
+        </section>
 
-  <!-- Provider/model settings projection (issue 16) -->
-  <section id="settings-zone" class="settings-zone hidden">
-    <div class="settings-head">
-      <div>
-        <h2>LLM 设置</h2>
-        <p class="dim">按用途选择已注册供应商与模型；凭证只从本地运行时读取。</p>
-      </div>
-      <div class="settings-actions">
-        <button id="llm-health-button" class="btn small">检测可用性</button>
-        <button id="llm-save-button" class="btn small primary">保存配置</button>
-      </div>
-    </div>
-    <div id="llm-provider-list" class="llm-provider-list"></div>
-    <div id="llm-channel-list" class="llm-channel-list"></div>
-    <div id="llm-health-list" class="llm-health-list"></div>
-  </section>
+        <!-- Tag vocabulary (moved out of Library by U1) -->
+        <section id="tags-zone" class="tags-zone hidden">
+          <div class="tags-head">
+            <div>
+              <h2>标签词表</h2>
+              <p class="dim">标签的规范化词表与复用入口；重命名 / 合并会作用于全库文档。</p>
+            </div>
+            <form id="tag-create-form" class="tag-create-form">
+              <input id="tag-create-input" type="text" placeholder="新增标签" />
+              <button class="btn small" type="submit">添加</button>
+            </form>
+          </div>
+          <div id="tag-list" class="tag-list"></div>
+        </section>
 
-  <!-- Read-only timeline projection (issue 04) -->
-  <section id="timeline-zone" class="timeline-zone hidden">
-    <div class="timeline-head">
-      <div>
-        <h2>时间轴</h2>
-        <p class="dim">按有效文档时间回看全部记录；时间轴只读，不会触发重新解析。</p>
-      </div>
-      <label class="timeline-group-control">分组
-        <select id="timeline-group">
-          <option value="day">按天</option>
-          <option value="week">按周</option>
-        </select>
-      </label>
-    </div>
-    <div id="timeline-empty" class="timeline-empty hidden">
-      <div class="empty-icon">◷</div>
-      <p>还没有可展示的文档。</p>
-      <span class="dim">完成一次解析后，文档会按有效时间出现在这里。</span>
-    </div>
-    <div id="timeline-groups" class="timeline-groups"></div>
-    <section id="timeline-undated" class="timeline-undated hidden">
-      <div class="timeline-group-head">
-        <h3>无可用日期</h3>
-        <span class="dim" id="timeline-undated-count"></span>
-      </div>
-      <div id="timeline-undated-items" class="timeline-items"></div>
-    </section>
-  </section>
+        <!-- PDF content search + grounded Q&A (temporary U1 home until P2/P3).
+             Behaviour is preserved verbatim; only the location moved out of
+             Library. -->
+        <section id="pdf-search-zone" class="pdf-search-zone hidden">
+          <div class="pdf-search-head">
+            <div>
+              <h2>PDF 检索与问答</h2>
+              <p class="dim">临时入口：关键词检索 + 单轮问答（页级引用）。P2 会把问答升级为一级视图。</p>
+            </div>
+          </div>
+          <section id="pdf-search" class="pdf-search" aria-label="PDF 内容搜索">
+            <form id="pdf-search-form" class="pdf-search-form">
+              <input id="pdf-search-input" type="search" autocomplete="off"
+                     placeholder="搜索已解析 PDF 内容（中文 / English / 混排）" />
+              <select id="pdf-search-scope"><option value="">全部已导入 PDF</option></select>
+              <button class="btn primary" type="submit">搜索</button>
+              <button class="btn small" id="pdf-search-clear" type="button">清除</button>
+            </form>
+            <div id="pdf-search-status" class="dim"></div>
+            <div class="pdf-qa">
+              <form id="pdf-qa-form" class="pdf-qa-form">
+                <input id="pdf-qa-input" type="text" autocomplete="off"
+                       placeholder="就上方检索范围提问（单轮问答，答案附页级引用）" />
+                <button class="btn" type="submit">提问</button>
+              </form>
+              <div id="pdf-qa-status" class="dim"></div>
+              <div id="pdf-qa-result" class="pdf-qa-result hidden"></div>
+            </div>
+          </section>
+          <div id="pdf-search-results" class="pdf-search-results hidden"></div>
+        </section>
 
-  <!-- Read-only relationship graph (issue 05) -->
-  <section id="graph-zone" class="graph-zone hidden">
-    <div class="graph-head">
-      <div>
-        <h2>知识图谱</h2>
-        <p class="dim">图谱只消费现有主题、标签和手工关系，不会触发新的模型调用。</p>
-      </div>
-      <div class="graph-legend" aria-label="关系来源图例">
-        <span><i class="graph-legend-dot topic"></i>主题</span>
-        <span><i class="graph-legend-dot tag"></i>标签</span>
-        <span><i class="graph-legend-dot manual"></i>手工</span>
-      </div>
-    </div>
-    <div id="graph-empty" class="graph-empty hidden">
-      <div class="empty-icon">◎</div>
-      <p>暂无可导航的关系图谱。</p>
-      <span class="dim">文档、主题或标签进入文档库后会显示在这里。</span>
-    </div>
-    <div id="graph-scroll" class="graph-scroll">
-      <svg id="graph-canvas" class="graph-canvas" role="img" aria-label="文档关系图谱"></svg>
-    </div>
-  </section>
+        <!-- Read-only Inbox projection (issue 07) -->
+        <section id="inbox-zone" class="inbox-zone hidden">
+          <div class="inbox-head">
+            <div>
+              <h2>Inbox</h2>
+              <p class="dim">集中处理无主题、无标签或明确标记为待整理的文档。</p>
+            </div>
+            <span class="dim">点击条目回到三栏编辑器整理</span>
+          </div>
+          <div id="inbox-empty" class="inbox-empty hidden">
+            <div class="empty-icon">✓</div>
+            <p>Inbox 是空的。</p>
+            <span class="dim">所有文档都已具备基本归档信息。</span>
+          </div>
+          <div id="inbox-list" class="inbox-list"></div>
+        </section>
 
-  <!-- Obsidian vault export (one-way) -->
-  <section id="vault-export-zone" class="vault-export-zone hidden">
-    <div class="vault-export-head">
-      <div>
-        <h2>导出 Obsidian Vault</h2>
-        <p class="dim">把当前文档库完整导出为 Obsidian Vault（Markdown、原稿、附件、主题 MOC、集合与元数据）。这是单向导出，不会把 Vault 里的修改同步回 graph2note。</p>
-      </div>
+        <!-- Provider/model settings projection (issue 16) -->
+        <section id="settings-zone" class="settings-zone hidden">
+          <div class="settings-head">
+            <div>
+              <h2>LLM 设置</h2>
+              <p class="dim">按用途选择已注册供应商与模型；凭证只从本地运行时读取。</p>
+            </div>
+            <div class="settings-actions">
+              <button id="llm-health-button" class="btn small">检测可用性</button>
+              <button id="llm-save-button" class="btn small primary">保存配置</button>
+            </div>
+          </div>
+          <div id="llm-provider-list" class="llm-provider-list"></div>
+          <div id="llm-channel-list" class="llm-channel-list"></div>
+          <div id="llm-health-list" class="llm-health-list"></div>
+        </section>
+
+        <!-- Read-only timeline projection (issue 04) -->
+        <section id="timeline-zone" class="timeline-zone hidden">
+          <div class="timeline-head">
+            <div>
+              <h2>时间轴</h2>
+              <p class="dim">按有效文档时间回看全部记录；时间轴只读，不会触发重新解析。</p>
+            </div>
+            <label class="timeline-group-control">分组
+              <select id="timeline-group">
+                <option value="day">按天</option>
+                <option value="week">按周</option>
+              </select>
+            </label>
+          </div>
+          <div id="timeline-empty" class="timeline-empty hidden">
+            <div class="empty-icon">◷</div>
+            <p>还没有可展示的文档。</p>
+            <span class="dim">完成一次解析后，文档会按有效时间出现在这里。</span>
+          </div>
+          <div id="timeline-groups" class="timeline-groups"></div>
+          <section id="timeline-undated" class="timeline-undated hidden">
+            <div class="timeline-group-head">
+              <h3>无可用日期</h3>
+              <span class="dim" id="timeline-undated-count"></span>
+            </div>
+            <div id="timeline-undated-items" class="timeline-items"></div>
+          </section>
+        </section>
+
+        <!-- Read-only relationship graph (issue 05) -->
+        <section id="graph-zone" class="graph-zone hidden">
+          <div class="graph-head">
+            <div>
+              <h2>知识图谱</h2>
+              <p class="dim">图谱只消费现有主题、标签和手工关系，不会触发新的模型调用。</p>
+            </div>
+            <div class="graph-legend" aria-label="关系来源图例">
+              <span><i class="graph-legend-dot topic"></i>主题</span>
+              <span><i class="graph-legend-dot tag"></i>标签</span>
+              <span><i class="graph-legend-dot manual"></i>手工</span>
+            </div>
+          </div>
+          <div id="graph-empty" class="graph-empty hidden">
+            <div class="empty-icon">◎</div>
+            <p>暂无可导航的关系图谱。</p>
+            <span class="dim">文档、主题或标签进入文档库后会显示在这里。</span>
+          </div>
+          <div id="graph-scroll" class="graph-scroll">
+            <svg id="graph-canvas" class="graph-canvas" role="img" aria-label="文档关系图谱"></svg>
+          </div>
+        </section>
+
+        <!-- Obsidian vault export (one-way) -->
+        <section id="vault-export-zone" class="vault-export-zone hidden">
+          <div class="vault-export-head">
+            <div>
+              <h2>导出 Obsidian Vault</h2>
+              <p class="dim">把当前文档库完整导出为 Obsidian Vault（Markdown、原稿、附件、主题 MOC、集合与元数据）。这是单向导出，不会把 Vault 里的修改同步回 graph2note。</p>
+            </div>
+          </div>
+          <form id="vault-export-form" class="vault-export-form">
+            <label class="vault-export-label" for="vault-export-dir">目标目录（本机绝对路径）</label>
+            <div class="vault-export-row">
+              <input id="vault-export-dir" type="text" class="vault-export-input"
+                     placeholder="例如 /Users/you/Obsidian/MyVault" spellcheck="false" />
+              <button id="btn-vault-export" class="btn primary" type="submit">导出到 Vault</button>
+            </div>
+            <p class="dim">导出后会按需只写入变化的文件；你在 Vault 中手工改过的文件会被保留为备份（不覆盖、不删除）。</p>
+          </form>
+          <div id="vault-export-status" class="vault-export-status dim">尚未导出。</div>
+        </section>
+
+        <!-- Read-only telemetry Dashboard (issue 06) -->
+        <section id="dashboard-zone" class="dashboard-zone hidden">
+          <div class="dashboard-head">
+            <div>
+              <h2>数据看板</h2>
+              <p class="dim">解析节奏、分类分布与本地遥测成本估计。</p>
+            </div>
+            <span id="dashboard-quality-label" class="dim"></span>
+          </div>
+          <div id="dashboard-empty" class="dashboard-empty hidden">
+            <div class="empty-icon">▦</div>
+            <p>文档库还是空的。</p>
+            <span class="dim">完成一次解析后，这里会显示统计数据。</span>
+          </div>
+          <div id="dashboard-content" class="dashboard-content">
+            <div id="dashboard-periods" class="dashboard-periods"></div>
+            <div id="dashboard-quality" class="dashboard-quality"></div>
+            <div class="dashboard-columns">
+              <section class="dashboard-panel"><h3>新增文档趋势</h3><div id="dashboard-trend"></div></section>
+              <section class="dashboard-panel"><h3>分类分布</h3><div id="dashboard-categories"></div></section>
+              <section class="dashboard-panel"><h3>标签 Top</h3><div id="dashboard-tags"></div></section>
+            </div>
+            <section class="dashboard-panel"><h3>按模型 token 与成本</h3><div id="dashboard-models"></div></section>
+            <div class="dashboard-columns">
+              <section class="dashboard-panel"><h3>按日 token 用量</h3><div id="dashboard-day"></div></section>
+              <section class="dashboard-panel"><h3>按月 token 用量</h3><div id="dashboard-month"></div></section>
+            </div>
+          </div>
+        </section>
+
+        <!-- Upload / intro state -->
+        <section id="upload-zone" class="upload-zone hidden">
+          <div class="upload-card" id="upload-card">
+            <div class="upload-icon">📄</div>
+            <p class="upload-title">上传手稿图片（JPG / JPEG / PNG，≤10MB）</p>
+            <p class="upload-sub">解析后自动存入本地文档库；可继续校对编辑</p>
+            <button id="pick-file" class="btn primary">选择图片</button>
+            <input id="file-input" type="file" accept=".jpg,.jpeg,.png" hidden />
+            <button id="pick-pdf" class="btn">上传 PDF（逐页解析入库）</button>
+            <input id="pdf-input" type="file" accept=".pdf" hidden />
+            <p class="upload-sub" id="upload-hint"></p>
+          </div>
+        </section>
+
+        <!-- PDF job status state (issue 08) -->
+        <section id="pdf-zone" class="library-zone hidden">
+          <div class="library-head">
+            <h2>PDF 逐页解析</h2>
+            <span class="dim" id="pdf-filename"></span>
+            <button id="pdf-retry" class="btn small hidden" type="button" title="仅重试失败或未完成的页">重试未完成页</button>
+          </div>
+          <div id="pdf-list" class="pdf-list"></div>
+          <p class="upload-sub" id="pdf-summary"></p>
+        </section>
+
+        <!-- Working state: spinner + status -->
+        <section id="working-zone" class="working-zone hidden">
+          <div class="spinner"></div>
+          <p id="working-text">正在解析…</p>
+          <p id="working-detail" class="dim"></p>
+        </section>
+
+        <!-- Three-pane work state -->
+        <section id="work-zone" class="work-zone hidden">
+          <div class="panes">
+            <div class="pane pane-image">
+              <div class="pane-head">原图（预处理后）
+                <button class="btn small" id="btn-repic" title="重新加载预处理图">↻</button>
+              </div>
+              <div class="pane-body image-body"><img id="original-img" alt="原图" /></div>
+            </div>
+            <div class="pane pane-md">
+              <div class="pane-head">可编辑 Markdown
+                <span class="dim" id="save-indicator"></span>
+              </div>
+              <textarea id="md-editor" class="md-editor" spellcheck="false"
+                        placeholder="解析完成后，可在此直接编辑 Markdown（自动保存）…"></textarea>
+            </div>
+            <div class="pane pane-preview">
+              <div class="pane-head">实时渲染预览</div>
+              <div id="preview" class="preview"></div>
+            </div>
+          </div>
+
+          <!-- P1 placeholders for issue 09 / issue 10 markers (not implemented). -->
+          <div class="markers">
+            <span id="marker-cv" class="marker ph hidden" title="issue 10：交叉验证分歧标记（P1 占位）">⚖ 交叉验证占位</span>
+            <span id="marker-page" class="marker ph hidden" title="issue 09：缺页/重复版本提示（P1 占位）">📑 缺页/版本占位</span>
+          </div>
+
+          <div class="statusbar" id="statusbar">
+            <span id="status-text" class="dim"></span>
+            <span id="warnings" class="warnings"></span>
+            <span class="spacer"></span>
+            <span class="dim" id="version-info"></span>
+          </div>
+
+          <section id="document-tags" class="document-tags" aria-label="文档标签">
+            <div class="document-tags-head">
+              <span>文档标签</span>
+              <form id="document-tag-form" class="tag-create-form">
+                <input id="document-tag-input" type="text" placeholder="添加标签" />
+                <button class="btn small" type="submit">添加</button>
+              </form>
+            </div>
+            <div id="document-tag-list" class="document-tag-list"></div>
+          </section>
+
+          <section id="document-collections" class="document-tags" aria-label="文档集合">
+            <div class="document-tags-head">
+              <span>所属集合</span>
+              <form id="document-collection-form" class="tag-create-form">
+                <select id="document-collection-select"><option value="">选择集合</option></select>
+                <button class="btn small" type="submit">加入</button>
+              </form>
+            </div>
+            <div id="document-collection-list" class="document-tag-list"></div>
+          </section>
+
+          <section id="metadata-panel" class="metadata-panel" aria-label="文档时间元数据">
+            <div class="metadata-head">
+              <span>时间元数据</span>
+              <span class="metadata-head-actions">
+                <label class="metadata-pending"><input id="metadata-needs-organization" type="checkbox" /> 待整理</label>
+                <span id="metadata-save" class="dim"></span>
+              </span>
+            </div>
+            <div class="metadata-grid">
+              <label class="metadata-field editable">手稿日期
+                <input id="metadata-document-time" type="date" />
+                <span class="dim">可手工纠正，保存后优先于自动推断</span>
+              </label>
+              <div class="metadata-field">拍摄时间
+                <span id="metadata-capture-time" class="metadata-value"></span>
+              </div>
+              <div class="metadata-field">导入时间
+                <span id="metadata-import-time" class="metadata-value"></span>
+              </div>
+              <div class="metadata-field">修改时间
+                <span id="metadata-modified-time" class="metadata-value"></span>
+              </div>
+            </div>
+            <div id="metadata-evidence" class="metadata-evidence dim"></div>
+          </section>
+
+          <div class="actions">
+            <button id="btn-reparse" class="btn">重新解析</button>
+            <button id="btn-copy" class="btn">复制到剪贴板</button>
+            <button id="btn-download" class="btn primary">下载 .md + 附件</button>
+            <span class="spacer"></span>
+            <button id="btn-delete" class="btn danger">删除文档</button>
+          </div>
+        </section>
+      </main>
     </div>
-    <form id="vault-export-form" class="vault-export-form">
-      <label class="vault-export-label" for="vault-export-dir">目标目录（本机绝对路径）</label>
-      <div class="vault-export-row">
-        <input id="vault-export-dir" type="text" class="vault-export-input"
-               placeholder="例如 /Users/you/Obsidian/MyVault" spellcheck="false" />
-        <button id="btn-vault-export" class="btn primary" type="submit">导出到 Vault</button>
-      </div>
-      <p class="dim">导出后会按需只写入变化的文件；你在 Vault 中手工改过的文件会被保留为备份（不覆盖、不删除）。</p>
-    </form>
-    <div id="vault-export-status" class="vault-export-status dim">尚未导出。</div>
-  </section>
-
-  <!-- Read-only telemetry Dashboard (issue 06) -->
-  <section id="dashboard-zone" class="dashboard-zone hidden">
-    <div class="dashboard-head">
-      <div>
-        <h2>数据看板</h2>
-        <p class="dim">解析节奏、分类分布与本地遥测成本估计。</p>
-      </div>
-      <span id="dashboard-quality-label" class="dim"></span>
-    </div>
-    <div id="dashboard-empty" class="dashboard-empty hidden">
-      <div class="empty-icon">▦</div>
-      <p>文档库还是空的。</p>
-      <span class="dim">完成一次解析后，这里会显示统计数据。</span>
-    </div>
-    <div id="dashboard-content" class="dashboard-content">
-      <div id="dashboard-periods" class="dashboard-periods"></div>
-      <div id="dashboard-quality" class="dashboard-quality"></div>
-      <div class="dashboard-columns">
-        <section class="dashboard-panel"><h3>新增文档趋势</h3><div id="dashboard-trend"></div></section>
-        <section class="dashboard-panel"><h3>分类分布</h3><div id="dashboard-categories"></div></section>
-        <section class="dashboard-panel"><h3>标签 Top</h3><div id="dashboard-tags"></div></section>
-      </div>
-      <section class="dashboard-panel"><h3>按模型 token 与成本</h3><div id="dashboard-models"></div></section>
-      <div class="dashboard-columns">
-        <section class="dashboard-panel"><h3>按日 token 用量</h3><div id="dashboard-day"></div></section>
-        <section class="dashboard-panel"><h3>按月 token 用量</h3><div id="dashboard-month"></div></section>
-      </div>
-    </div>
-  </section>
-
-  <!-- Upload / intro state -->
-  <section id="upload-zone" class="upload-zone hidden">
-    <div class="upload-card" id="upload-card">
-      <div class="upload-icon">📄</div>
-      <p class="upload-title">上传手稿图片（JPG / JPEG / PNG，≤10MB）</p>
-      <p class="upload-sub">解析后自动存入本地文档库；可继续校对编辑</p>
-      <button id="pick-file" class="btn primary">选择图片</button>
-      <input id="file-input" type="file" accept=".jpg,.jpeg,.png" hidden />
-      <button id="pick-pdf" class="btn">上传 PDF（逐页解析入库）</button>
-      <input id="pdf-input" type="file" accept=".pdf" hidden />
-      <p class="upload-sub" id="upload-hint"></p>
-    </div>
-  </section>
-
-  <!-- PDF job status state (issue 08) -->
-  <section id="pdf-zone" class="library-zone hidden">
-    <div class="library-head">
-      <h2>PDF 逐页解析</h2>
-      <span class="dim" id="pdf-filename"></span>
-      <button id="pdf-retry" class="btn small hidden" type="button" title="仅重试失败或未完成的页">重试未完成页</button>
-    </div>
-    <div id="pdf-list" class="pdf-list"></div>
-    <p class="upload-sub" id="pdf-summary"></p>
-  </section>
-
-  <!-- Working state: spinner + status -->
-  <section id="working-zone" class="working-zone hidden">
-    <div class="spinner"></div>
-    <p id="working-text">正在解析…</p>
-    <p id="working-detail" class="dim"></p>
-  </section>
-
-  <!-- Three-pane work state -->
-  <section id="work-zone" class="work-zone hidden">
-    <div class="panes">
-      <div class="pane pane-image">
-        <div class="pane-head">原图（预处理后）
-          <button class="btn small" id="btn-repic" title="重新加载预处理图">↻</button>
-        </div>
-        <div class="pane-body image-body"><img id="original-img" alt="原图" /></div>
-      </div>
-      <div class="pane pane-md">
-        <div class="pane-head">可编辑 Markdown
-          <span class="dim" id="save-indicator"></span>
-        </div>
-        <textarea id="md-editor" class="md-editor" spellcheck="false"
-                  placeholder="解析完成后，可在此直接编辑 Markdown（自动保存）…"></textarea>
-      </div>
-      <div class="pane pane-preview">
-        <div class="pane-head">实时渲染预览</div>
-        <div id="preview" class="preview"></div>
-      </div>
-    </div>
-
-    <!-- P1 placeholders for issue 09 / issue 10 markers (not implemented). -->
-    <div class="markers">
-      <span id="marker-cv" class="marker ph hidden" title="issue 10：交叉验证分歧标记（P1 占位）">⚖ 交叉验证占位</span>
-      <span id="marker-page" class="marker ph hidden" title="issue 09：缺页/重复版本提示（P1 占位）">📑 缺页/版本占位</span>
-    </div>
-
-    <div class="statusbar" id="statusbar">
-      <span id="status-text" class="dim"></span>
-      <span id="warnings" class="warnings"></span>
-      <span class="spacer"></span>
-      <span class="dim" id="version-info"></span>
-    </div>
-
-    <section id="document-tags" class="document-tags" aria-label="文档标签">
-      <div class="document-tags-head">
-        <span>文档标签</span>
-        <form id="document-tag-form" class="tag-create-form">
-          <input id="document-tag-input" type="text" placeholder="添加标签" />
-          <button class="btn small" type="submit">添加</button>
-        </form>
-      </div>
-      <div id="document-tag-list" class="document-tag-list"></div>
-    </section>
-
-    <section id="document-collections" class="document-tags" aria-label="文档集合">
-      <div class="document-tags-head">
-        <span>所属集合</span>
-        <form id="document-collection-form" class="tag-create-form">
-          <select id="document-collection-select"><option value="">选择集合</option></select>
-          <button class="btn small" type="submit">加入</button>
-        </form>
-      </div>
-      <div id="document-collection-list" class="document-tag-list"></div>
-    </section>
-
-    <section id="metadata-panel" class="metadata-panel" aria-label="文档时间元数据">
-      <div class="metadata-head">
-        <span>时间元数据</span>
-        <span class="metadata-head-actions">
-          <label class="metadata-pending"><input id="metadata-needs-organization" type="checkbox" /> 待整理</label>
-          <span id="metadata-save" class="dim"></span>
-        </span>
-      </div>
-      <div class="metadata-grid">
-        <label class="metadata-field editable">手稿日期
-          <input id="metadata-document-time" type="date" />
-          <span class="dim">可手工纠正，保存后优先于自动推断</span>
-        </label>
-        <div class="metadata-field">拍摄时间
-          <span id="metadata-capture-time" class="metadata-value"></span>
-        </div>
-        <div class="metadata-field">导入时间
-          <span id="metadata-import-time" class="metadata-value"></span>
-        </div>
-        <div class="metadata-field">修改时间
-          <span id="metadata-modified-time" class="metadata-value"></span>
-        </div>
-      </div>
-      <div id="metadata-evidence" class="metadata-evidence dim"></div>
-    </section>
-
-    <div class="actions">
-      <button id="btn-reparse" class="btn">重新解析</button>
-      <button id="btn-copy" class="btn">复制到剪贴板</button>
-      <button id="btn-download" class="btn primary">下载 .md + 附件</button>
-      <span class="spacer"></span>
-      <button id="btn-delete" class="btn danger">删除文档</button>
-    </div>
-  </section>
+  </div>
 
   <!-- Toast / error -->
   <div id="toast" class="toast hidden"></div>
 
   <script src="/static/assets.js"></script>
-  <script src="/static/app.js"></script>
+  <!-- U1: ES-module entry (zero-build; no bundler).  Modules live under /static/js/. -->
+  <script type="module" src="/static/app.js"></script>
 </body>
 </html>
