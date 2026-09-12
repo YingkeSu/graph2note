@@ -30,7 +30,9 @@ assert.deepStrictEqual(parseHash("#dashboard"), { name: "dashboard" });
 assert.deepStrictEqual(parseHash("#inbox"), { name: "inbox" });
 assert.deepStrictEqual(parseHash("#settings"), { name: "settings" });
 assert.deepStrictEqual(parseHash("#tags"), { name: "tags" });
-assert.deepStrictEqual(parseHash("#pdf-search"), { name: "pdf-search" });
+assert.deepStrictEqual(parseHash("#ask"), { name: "ask" });
+// legacy alias: U1 bookmarks / P3 panel jump to #pdf-search -> ask view
+assert.deepStrictEqual(parseHash("#pdf-search"), { name: "ask" });
 assert.deepStrictEqual(parseHash("#vault-export"), { name: "vault-export" });
 assert.deepStrictEqual(parseHash("#upload"), { name: "upload" });
 

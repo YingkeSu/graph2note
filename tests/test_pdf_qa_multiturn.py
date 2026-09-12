@@ -436,17 +436,20 @@ def test_session_token_usage_is_recorded_in_telemetry(tmp_path):
 
 
 def test_ask_ui_exposes_multiturn_controls(tmp_path):
-    """The QA block keeps its place but gains session/追问 controls (P1, in-place)."""
+    """P1's multi-turn controls survive the P2 move to the first-class ask view."""
     store = FileDocumentStore(str(tmp_path / "store"))
     client, _ = _three_page_library(store, ScriptedAnswerer(["答案 [1]"]))
     html = client.get("/").text
     assert 'id="pdf-qa-new"' in html              # explicit new-session button
-    assert 'id="pdf-qa-history"' in html          # prior-turn history area
+    assert 'id="pdf-qa-history"' in html          # conversation area
+    assert 'id="ask-zone"' in html                # P2 first-class view
     assert "单轮问答" not in html
     # U1（ES modules）：断言改为拼接全部前端源码（行为断言不变）。
     js = static_js()
-    assert "pdfQaSessionId" in js and "session_id: state.pdfQaSessionId" in js
-    assert "前文提到" in js                       # historical citations are labelled
+    assert "pdfQaSessionId" in js and "state.pdfQaSessionId" in js
+    # P2: every turn renders its own citation chips with the source-page jump
+    # (the old "前文提到" split-area label is gone — turns keep their citations).
+    assert "ask-citation" in js and "source_page_url" in js
 
 
 def test_unknown_session_is_404(tmp_path):

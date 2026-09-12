@@ -1,17 +1,17 @@
 /* graph2note — PDF per-page upload status (issue 08/09) + PDF content search
-   (issue 10) + grounded single-turn Q&A (issue 11).
+   (issue 10).
 
-   U1 moved the search/Q&A block out of Library into its own temporary
-   `#pdf-search` view, and P1's multi-turn conversation controls (new-session
-   button, prior-turn history) are kept in the moved block; the internal
-   behaviour below is unchanged apart from no longer sharing the Library zone
-   with the document grid. */
+   P2 moved the grounded Q&A out of this module into the first-class `#ask`
+   conversation view (`views/ask.js`).  What remains here is the per-page upload
+   job view plus the keyword-search toolbar, which the ask view mounts as an
+   auxiliary tool (P3 owns the unified-search frontend).  The search behaviour
+   itself is unchanged; `loadPdfScopeOptions(el)` is exported for the ask view. */
 "use strict";
 
 import { el, state, hideAll, setBusy } from "../state.js";
 import { api } from "../api.js";
 import { esc, escapeRe, POLL_MS } from "../utils.js";
-import { go, registerView } from "../router.js";
+import { go } from "../router.js";
 import { showToast } from "../ui.js";
 import { showWorking } from "../jobs.js";
 
@@ -26,19 +26,22 @@ function pdfScopeLabel(j) {
   return `${j.filename}（导入中 ${c.success || 0}/${total} 页）`;
 }
 
-async function loadPdfScopeOptions() {
+/* Populate a scope `<select>` with the imported PDFs (current value kept). */
+export async function loadPdfScopeOptions(selectEl) {
+  const select = selectEl || el.pdfSearchScope;
+  if (!select) return;
   let jobs = [];
   try { jobs = await api("/api/pdf"); } catch (_) { jobs = []; }
-  const current = el.pdfSearchScope.value;
-  el.pdfSearchScope.innerHTML = `<option value="">全部已导入 PDF</option>`;
+  const current = select.value;
+  select.innerHTML = `<option value="">全部已导入 PDF</option>`;
   for (const j of jobs) {
     const opt = document.createElement("option");
     opt.value = j.pdf_id;
     opt.textContent = pdfScopeLabel(j);
-    el.pdfSearchScope.appendChild(opt);
+    select.appendChild(opt);
   }
-  if ([...el.pdfSearchScope.options].some((o) => o.value === current))
-    el.pdfSearchScope.value = current;
+  if ([...select.options].some((o) => o.value === current))
+    select.value = current;
 }
 
 function showSearchResults() {
@@ -52,10 +55,6 @@ function resetPdfSearchUI() {
   el.pdfSearchResults.classList.add("hidden");
   el.pdfSearchResults.innerHTML = "";
   el.pdfSearchStatus.textContent = "";
-  if (el.pdfQaResult) {
-    resetPdfQaSession();
-    el.pdfQaStatus.textContent = "";
-  }
 }
 
 function highlightSnippet(snippet, query) {
@@ -101,128 +100,6 @@ async function runPdfSearch() {
     ? `命中 ${r.total} 条 · 检索范围 ${r.indexed_documents} 页`
     : (r.message || "没有匹配的内容。");
   renderSearchHits(r.hits || [], q);
-}
-
-/* ---------- PDF grounded Q&A (issue 11 + P1 multi-turn) ---------- */
-
-function newPdfQaSessionId() {
-  if (window.crypto && typeof crypto.randomUUID === "function")
-    return "qa-" + crypto.randomUUID();
-  return "qa-" + Date.now().toString(36) + "-" + Math.random().toString(36).slice(2, 10);
-}
-
-function currentQaScopeKey() {
-  return el.pdfSearchScope ? (el.pdfSearchScope.value || "") : "";
-}
-
-function resetPdfQaSession(opts) {
-  state.pdfQaSessionId = newPdfQaSessionId();
-  state.pdfQaScopeKey = currentQaScopeKey();
-  state.pdfQaHistory = [];
-  if (el.pdfQaHistory) {
-    el.pdfQaHistory.innerHTML = "";
-    el.pdfQaHistory.classList.add("hidden");
-  }
-  if (el.pdfQaResult) {
-    el.pdfQaResult.innerHTML = "";
-    el.pdfQaResult.classList.add("hidden");
-  }
-  if (opts && opts.notice && el.pdfQaStatus) el.pdfQaStatus.textContent = opts.notice;
-}
-
-function historyCitationHtml(c) {
-  const page = c.page_number ? `第 ${c.page_number} 页` : `第 ${c.page_index + 1} 页`;
-  return `<li><span class="pdf-qa-prior">前文提到</span> `
-    + `<a href="#doc/${encodeURIComponent(c.document_id)}">${esc(c.label)} ${esc(c.title || c.document_id)}</a>`
-    + ` <span class="dim">${page} · 原页序 ${c.page_index + 1}</span>`
-    + ` <a href="${c.source_page_url}" target="_blank" rel="noopener">查看原 PDF 页</a></li>`;
-}
-
-function renderPdfQaHistory() {
-  if (!el.pdfQaHistory) return;
-  const prior = state.pdfQaHistory.slice(0, -1);
-  if (!prior.length) {
-    el.pdfQaHistory.innerHTML = "";
-    el.pdfQaHistory.classList.add("hidden");
-    return;
-  }
-  el.pdfQaHistory.innerHTML = prior.map((turn, i) => {
-    const r = turn.response || {};
-    const answer = r.answer
-      ? esc(r.answer).replace(/\n/g, "<br>")
-      : `<span class="dim">${esc(r.message || r.status || "未作答")}</span>`;
-    const cits = (r.citations && r.citations.length)
-      ? `<ol class="pdf-qa-history-citations">${r.citations.map(historyCitationHtml).join("")}</ol>`
-      : "";
-    return `<div class="pdf-qa-turn">`
-      + `<div class="pdf-qa-turn-q">第 ${i + 1} 轮 · ${esc(turn.question)}</div>`
-      + `<div class="pdf-qa-turn-a">${answer}</div>${cits}</div>`;
-  }).join("");
-  el.pdfQaHistory.classList.remove("hidden");
-}
-
-function renderPdfAnswer(r) {
-  const parts = [];
-  if (r.answer) {
-    parts.push(`<div class="pdf-qa-answer">${esc(r.answer).replace(/\n/g, "<br>")}</div>`);
-  } else if (r.message) {
-    parts.push(`<div class="pdf-qa-answer dim">${esc(r.message)}</div>`);
-  }
-  if (r.citations && r.citations.length) {
-    const items = r.citations.map((c) => {
-      const page = c.page_number ? `第 ${c.page_number} 页` : `第 ${c.page_index + 1} 页`;
-      return `<li><a href="#doc/${encodeURIComponent(c.document_id)}">${esc(c.label)} ${esc(c.title || c.document_id)}</a>`
-        + ` <span class="dim">${page} · 原页序 ${c.page_index + 1}</span>`
-        + ` <a href="${c.source_page_url}" target="_blank" rel="noopener">查看原 PDF 页</a></li>`;
-    }).join("");
-    parts.push(`<div class="pdf-qa-citations"><div class="dim">引用来源</div><ol>${items}</ol></div>`);
-  }
-  const warn = [];
-  if (r.untrusted_citations && r.untrusted_citations.length)
-    warn.push(`模型给出的无效引用已忽略：${r.untrusted_citations.map((x) => esc(x)).join("、")}`);
-  for (const w of (r.warnings || [])) warn.push(esc(w));
-  if (warn.length) parts.push(`<div class="pdf-qa-warn">${warn.join("<br>")}</div>`);
-  return parts.join("");
-}
-
-async function askPdf() {
-  const q = (el.pdfQaInput.value || "").trim();
-  if (!q) { el.pdfQaStatus.textContent = "请输入问题。"; return; }
-  if (!state.pdfQaSessionId || state.pdfQaScopeKey !== currentQaScopeKey())
-    resetPdfQaSession();
-  el.pdfQaStatus.textContent = "检索并生成中…";
-  el.pdfQaResult.classList.add("hidden");
-  el.pdfQaResult.innerHTML = "";
-  const payload = { question: q, session_id: state.pdfQaSessionId };
-  if (el.pdfSearchScope.value) payload.pdf_id = el.pdfSearchScope.value;
-  let r;
-  try {
-    r = await api("/api/pdf/ask", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-  } catch (e) {
-    // a scope conflict means the caller must start an explicit new session
-    if (String(e.message || "").includes("新建会话")) resetPdfQaSession();
-    el.pdfQaStatus.textContent = "提问失败：" + e.message;
-    return;
-  }
-  const labels = {
-    answered: r.grounded ? "已生成（含页级引用）" : "已生成（未引用来源）",
-    insufficient_evidence: "证据不足",
-    timeout: "生成超时",
-    model_unavailable: "模型不可用",
-  };
-  const turn = (r.session && r.session.turn_index) || (state.pdfQaHistory.length + 1);
-  el.pdfQaStatus.textContent = `第 ${turn} 轮 · ${labels[r.status] || r.status}`
-    + ` · 检索 ${r.retrieved} 条`
-    + (r.model ? ` · ${r.model}` : "");
-  el.pdfQaResult.innerHTML = renderPdfAnswer(r);
-  el.pdfQaResult.classList.remove("hidden");
-  state.pdfQaHistory.push({ question: q, response: r });
-  renderPdfQaHistory();
-  el.pdfQaInput.value = "";
 }
 
 /* ---------- PDF upload / per-page job (issue 08/09) ---------- */
@@ -351,13 +228,7 @@ async function retryPdf(pdfId) {
   pollPdf(pdfId);
 }
 
-/* ---------- view ---------- */
-
-function renderPdfSearch() {
-  el.pdfSearchZone.classList.remove("hidden");
-  resetPdfSearchUI();
-  loadPdfScopeOptions();
-}
+/* ---------- wiring ---------- */
 
 el.pdfSearchForm.addEventListener("submit", (e) => {
   e.preventDefault();
@@ -369,21 +240,11 @@ el.pdfSearchClear.addEventListener("click", () => {
   resetPdfSearchUI();
 });
 el.pdfSearchScope.addEventListener("change", () => {
-  // switching retrieval scope is a new topic: start an explicit new session
-  if (el.pdfQaResult) resetPdfQaSession({ notice: "检索范围已更改，已开启新会话。" });
   if (state.searchActive || (el.pdfSearchInput.value || "").trim()) runPdfSearch();
 });
-el.pdfQaForm.addEventListener("submit", (e) => { e.preventDefault(); askPdf(); });
-if (el.pdfQaNew) {
-  el.pdfQaNew.addEventListener("click", () => {
-    resetPdfQaSession({ notice: "已开启新会话（上下文已清空）。" });
-  });
-}
 
 el.pickPdf.onclick = () => el.pdfInput.click();
 el.pdfInput.addEventListener("change", (e) => acceptPdf(e.target.files[0]));
 el.pdfRetry.addEventListener("click", () => {
   if (state.pdfId) retryPdf(state.pdfId);
 });
-
-registerView("pdf-search", renderPdfSearch);

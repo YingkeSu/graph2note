@@ -58,7 +58,7 @@ function wireGlobalSearch() {
       event.preventDefault();
       const q = (el.globalSearchInput.value || "").trim();
       if (!q) return;
-      showToast("统一搜索将在 P3 落地；当前可在「PDF 检索」视图中搜索", "");
+      showToast("统一搜索将在 P3 落地；当前可在「问答」视图中检索或提问", "");
     });
   }
   document.addEventListener("keydown", (event) => {

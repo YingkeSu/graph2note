@@ -125,7 +125,7 @@ def test_three_zone_shell_present(dom):
     # every routable zone lives in the content area, not in the sidebar/topbar
     for zone in ("library-zone", "timeline-zone", "graph-zone", "dashboard-zone",
                  "inbox-zone", "settings-zone", "vault-export-zone", "tags-zone",
-                 "pdf-search-zone", "upload-zone", "work-zone"):
+                 "ask-zone", "upload-zone", "work-zone"):
         assert content.find(id=zone) is not None, zone
 
 
@@ -165,10 +165,11 @@ def test_library_is_grid_first_without_moved_blocks(dom):
                   "collection-create-form", "tag-vocabulary", "tag-list",
                   "workspace-navigation"):
         assert not library.contains_id(moved), f"{moved} must be moved out of Library"
-    # the moved blocks are still reachable elsewhere
-    assert dom.find(id="pdf-search-zone").contains_id("pdf-search")
-    assert dom.find(id="pdf-search-zone").contains_id("pdf-search-results")
-    assert dom.find(id="pdf-search-zone").contains_id("pdf-qa-form")
+    # the moved blocks are still reachable elsewhere (P2: keyword search is an
+    # auxiliary toolbar, the Q&A block is the first-class ask view)
+    assert dom.find(id="ask-zone").contains_id("pdf-search")
+    assert dom.find(id="ask-zone").contains_id("pdf-search-results")
+    assert dom.find(id="ask-zone").contains_id("pdf-qa-form")
     assert dom.find(id="tags-zone").contains_id("tag-list")
     assert dom.find(id="tags-zone").contains_id("tag-create-form")
 

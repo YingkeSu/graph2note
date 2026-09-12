@@ -33,7 +33,10 @@ export function parseHash(hash = location.hash) {
   if (parts[0] === "inbox") return { name: "inbox" };
   if (parts[0] === "settings") return { name: "settings" };
   if (parts[0] === "tags") return { name: "tags" };
-  if (parts[0] === "pdf-search") return { name: "pdf-search" };
+  if (parts[0] === "ask") return { name: "ask" };
+  // legacy alias: U1 bookmarks and P3's panel still jump to #pdf-search, which
+  // now renders the first-class Q&A view.
+  if (parts[0] === "pdf-search") return { name: "ask" };
   if (parts[0] === "timeline") return { name: "timeline", group: parts[1] === "week" ? "week" : "day" };
   if (parts[0] === "graph") return { name: "graph" };
   if (parts[0] === "dashboard") return { name: "dashboard" };
