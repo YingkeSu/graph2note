@@ -309,6 +309,37 @@ def _events(records: list[dict[str, Any]], timezone: ZoneInfo) -> list[dict[str,
     return events
 
 
+def _digest_events(digest_records: Iterable[dict[str, Any]], timezone: ZoneInfo) -> list[dict[str, Any]]:
+    """Token events for generated digests (issue A2).
+
+    Digests are not documents, so these events feed the model/token aggregates
+    only — they never inflate the document counts or coverage quality metrics.
+    """
+    events: list[dict[str, Any]] = []
+    for digest in digest_records or []:
+        if not isinstance(digest, dict):
+            continue
+        usage = digest.get("usage") if isinstance(digest.get("usage"), dict) else {}
+        attempt = {key: value for key, value in usage.items() if value is not None}
+        raw = {
+            "total_seconds": digest.get("elapsed"),
+            "llm": {
+                "model": digest.get("model"),
+                "provider": digest.get("provider"),
+                "attempts": [attempt] if attempt else [],
+            },
+        }
+        events.append({
+            "document_id": f"digest:{digest.get('digest_id') or ''}",
+            "version_index": 0,
+            "when": _parse_datetime(digest.get("created_at"), timezone),
+            "telemetry": normalize_telemetry(
+                raw, model=digest.get("model"), provider=digest.get("provider")
+            ),
+        })
+    return events
+
+
 def _aggregate(events: list[dict[str, Any]], price_table: dict[str, Any]) -> dict[str, Any]:
     usage_events = [event for event in events if event["telemetry"].get("has_usage")]
     telemetry_events = [event for event in events if event["telemetry"].get("has_telemetry")]
@@ -356,8 +387,13 @@ def build_stats(
     now: datetime | None = None,
     price_table: dict[str, Any] | None = None,
     timezone: str = DEFAULT_TIMEZONE,
+    digest_records: Iterable[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Build the deterministic Dashboard payload from document records."""
+    """Build the deterministic Dashboard payload from document records.
+
+    ``digest_records`` (issue A2) are persisted digest metas; their model/token
+    usage is merged into the usage aggregates without affecting document counts.
+    """
 
     records = [record for record in records if isinstance(record, dict)]
     records.sort(key=lambda record: _text(record.get("document_id")) or "")
@@ -367,12 +403,13 @@ def build_stats(
         now = now.replace(tzinfo=zone)
     now = now.astimezone(zone)
     prices = normalize_price_table(price_table)
-    events = _events(records, zone)
+    doc_events = _events(records, zone)
+    usage_events = doc_events + _digest_events(digest_records, zone)
     today = now.date()
     week_start = today - timedelta(days=today.weekday())
 
     first_dates: dict[str, date | None] = {}
-    for event in sorted(events, key=lambda item: (
+    for event in sorted(doc_events, key=lambda item: (
         item["document_id"], item["when"] is None, item["when"] or now,
         item["version_index"],
     )):
@@ -381,7 +418,7 @@ def build_stats(
         )
 
     def count_pages(predicate) -> int:
-        return sum(1 for event in events if event["when"] and predicate(event["when"].date()))
+        return sum(1 for event in doc_events if event["when"] and predicate(event["when"].date()))
 
     today_docs = sum(1 for value in first_dates.values() if value == today)
     week_docs = sum(1 for value in first_dates.values() if value and week_start <= value <= today)
@@ -405,8 +442,8 @@ def build_stats(
         for tag in tags:
             tag_order.setdefault(tag, len(tag_order))
 
-    telemetry_events = [event for event in events if event["telemetry"].get("has_telemetry")]
-    missing_count = len(events) - len(telemetry_events)
+    telemetry_events = [event for event in doc_events if event["telemetry"].get("has_telemetry")]
+    missing_count = len(doc_events) - len(telemetry_events)
     latencies = [
         event["telemetry"]["latency_seconds"]
         for event in telemetry_events
@@ -421,7 +458,7 @@ def build_stats(
     )
 
     model_groups: defaultdict[tuple[str, str | None], list[dict[str, Any]]] = defaultdict(list)
-    for event in events:
+    for event in usage_events:
         telemetry = event["telemetry"]
         model_groups[(_text(telemetry.get("model")) or "未知模型", telemetry.get("provider"))].append(event)
     model_usage = []
@@ -441,7 +478,7 @@ def build_stats(
         "periods": {
             "today": {"pages": count_pages(lambda value: value == today), "new_documents": today_docs},
             "week": {"pages": count_pages(lambda value: week_start <= value <= today), "new_documents": week_docs},
-            "total": {"pages": len(events), "new_documents": len(records)},
+            "total": {"pages": len(doc_events), "new_documents": len(records)},
         },
         "new_documents_trend": [
             {"date": period, "count": trend_counter[period]}
@@ -456,11 +493,11 @@ def build_stats(
             for tag, count in sorted(tag_counter.items(), key=lambda item: (-item[1], tag_order[item[0]]))
         ],
         "model_usage": model_usage,
-        "token_usage_by_day": _bucket_stats(events, prices, "day"),
-        "token_usage_by_month": _bucket_stats(events, prices, "month"),
+        "token_usage_by_day": _bucket_stats(usage_events, prices, "day"),
+        "token_usage_by_month": _bucket_stats(usage_events, prices, "month"),
         "quality": {
             "status": quality_status,
-            "total_events": len(events),
+            "total_events": len(doc_events),
             "telemetry_events": len(telemetry_events),
             "missing_telemetry_events": missing_count,
             "average_latency_seconds": round(sum(latencies) / len(latencies), 3) if latencies else None,

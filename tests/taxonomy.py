@@ -53,6 +53,7 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_vault_exporter": "notes",
     "test_incremental_export": "notes",
     "test_classify_moc": "notes",
+    "test_weekly_digest": "notes",  # issue A2（每周小结）
     # knowledge-workspace（collections/graph/inbox/metadata/tags/timeline/telemetry）
     "test_collections": "workspace",
     "test_document_metadata": "workspace",
@@ -102,6 +103,7 @@ INTEGRATION_FILES: frozenset[str] = frozenset({
     "test_verify_engine",
     "test_ingest_pdf",
     "test_semantic_diff_cli",
+    "test_weekly_digest",
 })
 
 # 成本：slow = 较重（TestClient 全链 / 全链装配 / 图渲染）
