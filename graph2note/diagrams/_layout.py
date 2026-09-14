@@ -9,7 +9,10 @@ infinity; ordering only ever depends on node ids (stable tie-breaks).
 - ``layer``  groups share one horizontal band (one row, top-to-bottom reading
   order); band order is derived deterministically from the graph structure,
   never from an ``order`` field the VLM may have produced;
-- ``lane``   groups share one vertical column (swimlane);
+- ``lane``   groups *prefer* one shared vertical column (swimlane) -- each lane
+  gets its own column while a base row holds at most one member of that lane;
+  extra members landing on the same row overflow into free columns (best
+  effort, matching SPEC's "优先同列");
 - ``cluster`` groups keep their members adjacent within a row and are reported
   with a local bounding box.
 
@@ -17,9 +20,17 @@ Invariants (golden-tested in ``tests/test_diagram_group_layout.py``):
 
 1. no groups -> rows are exactly ``LayerLayout.layers()`` (regression lock);
 2. same semantic input -> byte-identical output (FR-020);
-3. layer members share a row, lane members share a column;
+3. layer members share a row; lane members share a column *when no two of them
+   share a base row* (see the lane note above);
 4. a group's ``bbox`` contains every member position;
 5. zero nodes / empty groups / dangling members never raise.
+
+Known limit (F4): when one node belongs to several ``layer`` groups, the
+lower-priority group (higher id) still reserves a band; if all of its members
+were already claimed by a lower-id group the band is empty yet still counts in
+``nrows`` (all rows then spread over that phantom row).  It is deterministic
+and harmless for rendering, but callers must not assume ``nrows`` equals the
+number of non-empty bands.
 
 Output is a plain, JSON-serialisable dict (the interface shared with D3):
 
@@ -29,6 +40,8 @@ Output is a plain, JSON-serialisable dict (the interface shared with D3):
       "positions": {node_id: {"x": float, "y": float}},  # x: left->right, y: top->bottom
       "rows": [[node_id, ...], ...],                      # top -> bottom
       "columns": [[node_id, ...], ...],                   # left -> right
+      # NOTE: rows[i] is in barycenter-sweep order, NOT necessarily left->right;
+      # use "columns"/"positions" for the actual x axis.
       "groups": [{"id", "label", "kind", "members",
                   "bbox": {"x0", "y0", "x1", "y1"} | None,
                   "row_span": [lo, hi] | None,
@@ -147,12 +160,12 @@ def grouped_layout(
         return _result(rows, [], cgroups, dangling, width, height)
 
     # Deterministic anchor: the existing layered layout decides base depth and a
-    # within-layer horizontal preference; groups only re-arrange from there.
+    # within-layer *order position* (base y); groups only re-arrange from there.
     base = LayerLayout(nid, edge_pairs)
     base_layers = base.layers()
     depth = {n: i for i, layer in enumerate(base_layers) for n in layer}
     base_pos = base.positions()
-    hpref = {n: base_pos[n][1] for n in nid}
+    base_order = {n: base_pos[n][1] for n in nid}  # base within-layer order (not x)
 
     layer_groups = [g for g in cgroups if g["kind"] == "layer"]
     lane_groups = [g for g in cgroups if g["kind"] == "lane"]
@@ -210,14 +223,18 @@ def grouped_layout(
         rows[row].append(n)
 
     # -- crossing reduction: barycenter sweeps over the free (non-lane) order --
+    # Rows are kept in sweep order here; x is assigned from the lane/free column
+    # pass below, so rows[i] is not necessarily left-to-right.
     for i, row in enumerate(rows):
-        rows[i] = sorted(row, key=lambda n: (hpref[n], n))
+        rows[i] = sorted(row, key=lambda n: (base_order[n], n))
     rows = _reduce_crossings(rows, edge_pairs)
 
     # -- columns: lanes are fixed swimlanes, the rest fill the gaps --
+    # A lane keeps its own column only while each base row holds at most one of
+    # its members; overflow members fall through to the free columns.
     lane_order = sorted(
         lane_groups,
-        key=lambda g: (_mean([hpref[m] for m in g["nodes"]], 0.0), g["id"]),
+        key=lambda g: (_mean([base_order[m] for m in g["nodes"]], 0.0), g["id"]),
     )
     lane_col = {g["id"]: i for i, g in enumerate(lane_order)}
 
