@@ -1,5 +1,5 @@
 {
-  "comment": "golden layout for a lane group fixture (SPW D2)",
+  "comment": "golden layout — swimlane coverage (two vertical lanes over a pipeline) (SPW D2)",
   "expected": {
     "columns": [
       [
@@ -200,5 +200,6 @@
       "f3",
       "s"
     ]
-  }
+  },
+  "scenario": "swimlane coverage (two vertical lanes over a pipeline)"
 }

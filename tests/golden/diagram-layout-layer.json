@@ -1,21 +1,20 @@
 {
-  "comment": "golden layout for a layer group fixture (SPW D2)",
+  "comment": "golden layout — 01-requirements-arch / three horizontal bands (SPW D2)",
   "expected": {
     "columns": [
       [
-        "m3",
-        "c2",
-        "e1"
+        "win-laptop",
+        "comm-layer",
+        "ci-runner"
       ],
       [
-        "m2",
-        "c1"
+        "macmini",
+        "layer-comm",
+        "exec-layer"
       ],
       [
-        "m1"
-      ],
-      [
-        "free"
+        "macbook",
+        "api-gw"
       ]
     ],
     "dangling": [],
@@ -23,7 +22,7 @@
       {
         "bbox": {
           "x0": 0.0,
-          "x1": 0.5,
+          "x1": 0.6666666666666666,
           "y0": 0.33333333333333337,
           "y1": 0.6666666666666666
         },
@@ -35,8 +34,8 @@
         "kind": "layer",
         "label": "通信层",
         "members": [
-          "c1",
-          "c2"
+          "comm-layer",
+          "layer-comm"
         ],
         "row_span": [
           1,
@@ -46,19 +45,21 @@
       {
         "bbox": {
           "x0": 0.0,
-          "x1": 0.25,
+          "x1": 1.0,
           "y0": 0.6666666666666667,
           "y1": 1.0
         },
         "col_span": [
           0,
-          0
+          2
         ],
         "id": "g-exec",
         "kind": "layer",
         "label": "执行层",
         "members": [
-          "e1"
+          "api-gw",
+          "ci-runner",
+          "exec-layer"
         ],
         "row_span": [
           2,
@@ -68,7 +69,7 @@
       {
         "bbox": {
           "x0": 0.0,
-          "x1": 0.75,
+          "x1": 1.0,
           "y0": 0.0,
           "y1": 0.3333333333333333
         },
@@ -80,9 +81,9 @@
         "kind": "layer",
         "label": "层间通信",
         "members": [
-          "m1",
-          "m2",
-          "m3"
+          "macbook",
+          "macmini",
+          "win-laptop"
         ],
         "row_span": [
           0,
@@ -90,119 +91,125 @@
         ]
       }
     ],
-    "ncols": 4,
+    "ncols": 3,
     "node_groups": {
-      "c1": [
-        "g-comm"
-      ],
-      "c2": [
-        "g-comm"
-      ],
-      "e1": [
+      "api-gw": [
         "g-exec"
       ],
-      "free": [],
-      "m1": [
+      "ci-runner": [
+        "g-exec"
+      ],
+      "comm-layer": [
+        "g-comm"
+      ],
+      "exec-layer": [
+        "g-exec"
+      ],
+      "layer-comm": [
+        "g-comm"
+      ],
+      "macbook": [
         "g-machines"
       ],
-      "m2": [
+      "macmini": [
         "g-machines"
       ],
-      "m3": [
+      "win-laptop": [
         "g-machines"
       ]
     },
     "nrows": 3,
     "positions": {
-      "c1": {
-        "x": 0.375,
-        "y": 0.5
-      },
-      "c2": {
-        "x": 0.125,
-        "y": 0.5
-      },
-      "e1": {
-        "x": 0.125,
+      "api-gw": {
+        "x": 0.8333333333333334,
         "y": 0.8333333333333334
       },
-      "free": {
-        "x": 0.875,
+      "ci-runner": {
+        "x": 0.16666666666666666,
+        "y": 0.8333333333333334
+      },
+      "comm-layer": {
+        "x": 0.16666666666666666,
+        "y": 0.5
+      },
+      "exec-layer": {
+        "x": 0.5,
+        "y": 0.8333333333333334
+      },
+      "layer-comm": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "macbook": {
+        "x": 0.8333333333333334,
         "y": 0.16666666666666666
       },
-      "m1": {
-        "x": 0.625,
+      "macmini": {
+        "x": 0.5,
         "y": 0.16666666666666666
       },
-      "m2": {
-        "x": 0.375,
-        "y": 0.16666666666666666
-      },
-      "m3": {
-        "x": 0.125,
+      "win-laptop": {
+        "x": 0.16666666666666666,
         "y": 0.16666666666666666
       }
     },
     "rows": [
       [
-        "m3",
-        "m2",
-        "m1",
-        "free"
+        "win-laptop",
+        "macmini",
+        "macbook"
       ],
       [
-        "c2",
-        "c1"
+        "comm-layer",
+        "layer-comm"
       ],
       [
-        "e1"
+        "ci-runner",
+        "exec-layer",
+        "api-gw"
       ]
     ]
   },
   "fixture": {
     "edges": [
       [
-        "m1",
-        "c1"
+        "macmini",
+        "comm-layer"
       ],
       [
-        "m2",
-        "c1"
+        "macbook",
+        "comm-layer"
       ],
       [
-        "m3",
-        "c1"
+        "win-laptop",
+        "comm-layer"
       ],
       [
-        "c1",
-        "c2"
+        "layer-comm",
+        "comm-layer"
       ],
       [
-        "c2",
-        "e1"
+        "comm-layer",
+        "exec-layer"
       ],
       [
-        "free",
-        "c1"
+        "exec-layer",
+        "api-gw"
+      ],
+      [
+        "exec-layer",
+        "ci-runner"
       ]
     ],
     "groups": [
-      {
-        "id": "g-exec",
-        "kind": "layer",
-        "label": "执行层",
-        "nodes": [
-          "e1"
-        ]
-      },
       {
         "id": "g-machines",
         "kind": "layer",
         "label": "层间通信",
         "nodes": [
-          "m2",
-          "m1",
-          "m3"
+          "macmini",
+          "macbook",
+          "win-laptop"
         ]
       },
       {
@@ -210,19 +217,31 @@
         "kind": "layer",
         "label": "通信层",
         "nodes": [
-          "c2",
-          "c1"
+          "layer-comm",
+          "comm-layer"
+        ]
+      },
+      {
+        "id": "g-exec",
+        "kind": "layer",
+        "label": "执行层",
+        "nodes": [
+          "exec-layer",
+          "api-gw",
+          "ci-runner"
         ]
       }
     ],
     "nodes": [
-      "c1",
-      "c2",
-      "e1",
-      "free",
-      "m1",
-      "m2",
-      "m3"
+      "api-gw",
+      "ci-runner",
+      "comm-layer",
+      "exec-layer",
+      "layer-comm",
+      "macbook",
+      "macmini",
+      "win-laptop"
     ]
-  }
+  },
+  "scenario": "01-requirements-arch / three horizontal bands"
 }

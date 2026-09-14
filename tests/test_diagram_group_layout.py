@@ -2,10 +2,13 @@
 
 Three complementary layers, no network and no live model calls:
 
-1. **Golden fixtures** — one per group kind (``layer``/``lane``/``cluster``),
-   stored as ``tests/golden/diagram-layout-<kind>.json`` (fixture + expected
-   geometry).  They lock the reading order, lane columns and bounding boxes the
-   renderers (D3) will draw.
+1. **Golden fixtures** — one per group kind (``layer``/``lane``/``cluster``)
+   plus the corrected 02-increment scenario, stored as
+   ``tests/golden/diagram-layout-<name>.json`` (fixture + expected geometry).
+   The scenarios follow the *corrected* SPEC §1 anchors (main ``916846d``):
+   01 = three horizontal bands; 02 = main pipeline + 「调研：」/「设计：」annotation
+   clusters; 02-increment = two independent flows kept distinguishable.  They
+   lock the reading order, lane columns and bounding boxes D3 will draw.
 2. **Invariants** — group bounding boxes contain their members; layer members
    share a row, lane members share a column, cluster members are adjacent.
 3. **Regressions / edges** — no groups reproduces ``LayerLayout.layers()``
@@ -28,7 +31,9 @@ from graph2note.diagrams._layout import LayerLayout, grouped_layout
 from graph2note.ir import Edge, Node
 
 GOLDEN_DIR = Path(__file__).parent / "golden"
+# one golden per group kind, plus the corrected 02-increment scenario
 KINDS = ("layer", "lane", "cluster")
+GOLDENS = ("layer", "lane", "cluster", "increment")
 
 
 # ---------------------------------------------------------------------------
@@ -36,16 +41,20 @@ KINDS = ("layer", "lane", "cluster")
 # ---------------------------------------------------------------------------
 
 
-def _golden(kind: str) -> dict:
+def _golden(name: str) -> dict:
     return json.loads(
-        (GOLDEN_DIR / f"diagram-layout-{kind}.json").read_text(encoding="utf-8")
+        (GOLDEN_DIR / f"diagram-layout-{name}.json").read_text(encoding="utf-8")
     )
 
 
-def _layout_of(kind: str) -> tuple[dict, dict]:
-    doc = _golden(kind)
+def _run(doc: dict) -> dict:
     fx = doc["fixture"]
-    return fx, grouped_layout(fx["nodes"], fx["edges"], fx["groups"])
+    return grouped_layout(fx["nodes"], fx["edges"], fx["groups"])
+
+
+def _layout_of(name: str) -> tuple[dict, dict]:
+    doc = _golden(name)
+    return doc["fixture"], _run(doc)
 
 
 def _row_of(layout: dict) -> dict[str, int]:
@@ -61,13 +70,17 @@ def _col_of(layout: dict) -> dict[str, int]:
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("kind", KINDS)
-def test_golden_fixture_matches(kind):
-    doc = _golden(kind)
-    layout = grouped_layout(
-        doc["fixture"]["nodes"], doc["fixture"]["edges"], doc["fixture"]["groups"]
-    )
-    assert layout == doc["expected"]
+@pytest.mark.parametrize("name", GOLDENS)
+def test_golden_fixture_matches(name):
+    doc = _golden(name)
+    assert _run(doc) == doc["expected"]
+
+
+@pytest.mark.parametrize("name", GOLDENS)
+def test_golden_fixture_declares_a_scenario(name):
+    doc = _golden(name)
+    assert doc["scenario"]
+    assert doc["fixture"]["groups"]
 
 
 @pytest.mark.parametrize("kind", KINDS)
@@ -86,6 +99,37 @@ def test_golden_layout_is_byte_deterministic(kind):
     second = json.dumps(grouped_layout(fx["nodes"], fx["edges"], fx["groups"]),
                         ensure_ascii=False, sort_keys=True)
     assert first == second
+
+
+# --- corrected SPEC §1 acceptance anchors (main 916846d) -------------------
+
+
+def test_01_fixture_covers_the_three_bands_anchor():
+    doc = _golden("layer")
+    labels = {g["label"] for g in doc["fixture"]["groups"]}
+    assert {"层间通信", "通信层", "执行层"} <= labels
+    assert {g["kind"] for g in doc["fixture"]["groups"]} == {"layer"}
+
+
+def test_02_fixture_uses_the_research_and_design_annotations():
+    doc = _golden("cluster")
+    labels = {g["label"] for g in doc["fixture"]["groups"]}
+    assert labels == {"调研：", "设计："}
+    assert {g["kind"] for g in doc["fixture"]["groups"]} == {"cluster"}
+
+
+def test_increment_fixture_keeps_two_flows_distinguishable():
+    """02-increment: two independent flows must stay separable by groups."""
+    doc = _golden("increment")
+    layout = _run(doc)
+    assert layout == doc["expected"]
+    boxes = {g["id"]: g["bbox"] for g in layout["groups"]}
+    left, right = boxes["flow-left"], boxes["flow-right"]
+    assert left["x1"] <= right["x0"] or right["x1"] <= left["x0"]
+    col = _col_of(layout)
+    left_cols = {col[g] for g in doc["fixture"]["groups"][0]["nodes"]}
+    right_cols = {col[g] for g in doc["fixture"]["groups"][1]["nodes"]}
+    assert left_cols.isdisjoint(right_cols)
 
 
 @pytest.mark.parametrize("kind", KINDS)
