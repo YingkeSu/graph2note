@@ -3,7 +3,8 @@
 Status: **ready-for-review**
 分支:`dev/D2-diagram-layout`(已 rebase 到 main `916846d`)
 契约:[SPEC.md §1](../SPEC.md) 布局条（**已按 T-audit 阶段1 证据更正的锚点**）
-提交:`5b65632` `3d9755a` `394168b` `6331db8` `e3b52a0` `3a362f2` `c2a18fe` `54a471e` `bae1baf` `37fe378`
+提交:`5b65632` `3d9755a` `394168b` `6331db8` `e3b52a0` `3a362f2` `c2a18fe` `54a471e` `bae1baf` `37fe378` `148c846`（rebase 后重放为 `942e9a1` `fc8109e` `b23447f` `11487a2` `221d228` `7074765` `6107de7` `b9800ad` `9d896a9` `2279c4a` `6531daa`）+ `d32672a`（D1 接线测试）
+最终实现 SHA:`d32672a`；handoff 提交为其后 docs commit。
 
 ## 改动清单（严格限于领地）
 
@@ -12,7 +13,7 @@ Status: **ready-for-review**
 | `graph2note/diagrams/_canonical.py` | 追加 `canonical_groups()` + `group_as_dict()`；`canonical_nodes`/`canonical_edges` **零改动** |
 | `graph2note/diagrams/_layout.py` | `LayerLayout` **零改动**；追加 `grouped_layout()` 及内部辅助（`_reduce_crossings` 等） |
 | `graph2note/diagrams/engine.py` | 追加 `prepare_diagram_layout()`；`render_structured`/`render_to_png` 增加可选 `groups=`；`RenderOutcome` 追加 `layout` 字段（默认 `None`） |
-| `tests/test_diagram_group_layout.py` | 新增 58 个离线测试 |
+| `tests/test_diagram_group_layout.py` | 新增 60 个离线测试 |
 | `tests/golden/diagram-layout-{layer,lane,cluster,increment}.json` | 场景 golden（fixture + expected 全量几何），已对齐更正后锚点 |
 | `tests/taxonomy.py` | **领地外唯一改动**：`FILE_TO_MODULE` 追加一行登记新测试文件（见「边界说明」） |
 
@@ -61,16 +62,19 @@ layout = engine.prepare_diagram_layout(nodes, edges, groups)   # nodes/edges: ir
 - **02-increment 特别提示**：D3 画 `groups` 时应把每个 flow 簇做成独立子图/背景框，避免两侧压成一张散点图；D2 的几何保证左右两簇 `bbox` 不重叠、列集合不相交（见 golden `diagram-layout-increment.json`）。
 - **lane 背景框宽度不能假设为单列（评审 F3）**：lane 组在「同行多成员溢出/并行 lane」时 `col_span` 可能 >1（极端下相互穿插）；请按 `groups[].col_span`/`bbox` 实际范围绘制，勿写死单列宽。
 
-## rebase 状态
+## rebase 状态（D1 合并后，已完成）
 
-- 已 **rebase 到 main `916846d`**（更正后 SPEC；T-audit 阶段1 证据）。`git merge --ff-only` 因本分支已有提交而不可用，按 brief 用 `git rebase main` 完成（分支未 push、非共享，无历史风险）。rebase 后全量测试仍绿。
-- **D1 仍未合并**：`dev/D1-diagram-extract` 已有若干提交（评审时 tip `dddc2c7`），但**未合并进 main**，`main == 916846d`。本分支**未 import D1 任何未合并代码**：全部按 SPEC §1 JSON 形状的 dict 开发；`canonical_groups`/`group_as_dict` 同时接受 dict 与 pydantic 风格对象（`model_dump()` 或属性），D1 合并后预期**零逻辑改动**接线。
-- 收到调度「D1 已合并」通知后：再次 rebase 到新 main → 跑全量 pytest → 补记结果。
+- **已 rebase 到 main `cb989c7`（D1 已并入：merge `b4d09d1` + board `cb989c7`）**。11 个 D2 提交全部重放，`git merge-base main HEAD == cb989c7`。
+- rebase 唯一冲突：`tests/taxonomy.py`（D1 追加了 `test_diagram_groups_ir`/`test_diagram_groups_pipeline` 两行，D2 追加 `test_diagram_group_layout`）→ **按并集解决**，三行均保留，未删 D1 登记。
+- **D1 接线（复核零逻辑改动）**：D1 的 `DiagramGroup` 是 pydantic 模型，`model_dump()` 正是 SPEC §1 dict 形状；`_canonical.group_as_dict` 已同时接受 dict 与 pydantic 对象，因此 `canonical_groups`/`prepare_diagram_layout` **无需改任何逻辑**即可直接吃 `DiagramBlock.groups`。新增测试证明：
+  - `test_d1_diagram_block_groups_flow_into_the_layout`：真实 `DiagramBlock(groups=[DiagramGroup(...)])` 经 `prepare_diagram_layout(block.nodes, block.edges, block.groups)` 得到预期带布局；
+  - `test_d1_serialized_groups_dict_matches_pydantic_groups`：`block.groups` 与 `[g.model_dump() for g in block.groups]` 两路径逐字段一致（dict 形状 == pydantic 形状）。
+- D3 接线（render.py / attachments.py 把 `block.groups` 传给 `render_to_png(groups=...)`）仍属 D3 领地，D3 rebase 后自行接。
 
 ## 测试证据（离线，无网络/无 LLM）
 
-- `python -m pytest` → **937 passed**（本分支，2026-09-14，含全部既有测试）。
-- `python -m pytest tests/test_diagram_group_layout.py --collect-only` → **58 tests**。
+- `python -m pytest` → **980 passed**（本分支，2026-09-14；D1 合并后 main 基线 920 + D2 新增 60，无新增失败）。
+- `python -m pytest tests/test_diagram_group_layout.py --collect-only` → **60 tests**。
 - 覆盖：
   - 场景 golden（`tests/golden/diagram-layout-*.json`，fixture+expected 全量几何锁定）：`layer`=01 三层带、`cluster`=02 主线+「调研：」/「设计：」旁注簇、`increment`=02-increment 左右两独立流程、`lane`=泳道 kind 覆盖；
   - 锚点专项断言：`test_01_fixture_covers_the_three_bands_anchor`、`test_02_fixture_uses_the_research_and_design_annotations`、`test_increment_fixture_keeps_two_flows_distinguishable`；
@@ -125,4 +129,4 @@ layout = engine.prepare_diagram_layout(nodes, edges, groups)   # nodes/edges: ir
 | F9 taxonomy.py 领地 | 评审已接受该 1 行 append-only | — |
 | F10 n=0 差异 | 已被 `test_zero_nodes_yields_empty_layout` 锁定，无渲染影响 | — |
 
-**纯文档修正未改任何布局逻辑**；全部改动后 `tests/test_diagram_group_layout.py` 58 passed，全量 pytest 复跑见下。
+**纯文档修正未改任何布局逻辑**；全部改动后 `tests/test_diagram_group_layout.py` 58 passed（后续 D1 接线测试增至 60）；全量 pytest 见「测试证据」。
