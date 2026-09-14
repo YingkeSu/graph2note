@@ -965,3 +965,24 @@ body {
   border: 1px solid #b9d4f7; background: #eaf2fd; color: #1f6feb; border-radius: 999px;
   cursor: pointer; }
 .doc-collection-chip:hover { background: #dbe9fb; }
+
+/* ============ D3 (SPW): structure-diagram presentation ============
+   Append-only.  Rendered structure diagrams/flows (grouped layers, notes,
+   weak links) are shown as a labelled figure block; clicking or pressing
+   Enter/Space opens the shared zoom/pan viewer so a wide drawing stays
+   readable.  No existing selector is modified. */
+.preview figure.g2n-diagram {
+  margin: 16px 0; padding: 10px 12px 6px; border: 1px solid var(--line);
+  border-radius: 10px; background: #fcfbf8;
+}
+.preview figure.g2n-diagram img {
+  display: block; max-width: 100%; height: auto; margin: 0 auto;
+  cursor: zoom-in;
+}
+.preview figure.g2n-diagram img:focus-visible {
+  outline: 2px solid var(--accent); outline-offset: 2px;
+}
+.preview figure.g2n-diagram .g2n-diagram-caption {
+  margin: 7px 0 2px; font-size: 12.5px; line-height: 1.5;
+  color: var(--muted); text-align: center;
+}

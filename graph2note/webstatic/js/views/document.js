@@ -297,6 +297,12 @@ function ensureMarkedPrepared() {
     const a = window.__g2nAssets.normalizeImageArgs(hrefOrToken, title, text);
     const ctx = currentPreviewContext();
     const src = ctx ? window.__g2nAssets.resolveAssetSrc(a.href, ctx.kind, ctx.id) : a.href;
+    // Rendered structure diagrams get a labelled <figure> block (caption +
+    // click/keyboard zoom) so a grouped/layered drawing stays readable in the
+    // reading pane; every other image keeps the plain <img> path.
+    if (window.__g2nAssets.isDiagramAssetRef(a.href)) {
+      return window.__g2nAssets.buildDiagramFigure(src, a.text || "", a.title);
+    }
     let attrs = `src="${src}" alt="${esc(a.text || "")}"`;
     if (a.title) attrs += ` title="${esc(a.title)}"`;
     return `<img ${attrs}>`;
@@ -664,6 +670,28 @@ if (el.imageViewerStage) {
   el.imageViewerStage.addEventListener("pointermove", onStagePointerMove);
   el.imageViewerStage.addEventListener("pointerup", onStagePointerUp);
   el.imageViewerStage.addEventListener("pointercancel", onStagePointerUp);
+}
+
+/* Structure diagrams in the reading pane open in the shared zoom/pan viewer,
+   which is the readable fallback for very wide grouped/layered drawings. */
+function diagramImageTarget(event) {
+  const target = event.target;
+  if (!target || !target.closest) return null;
+  return target.closest("figure.g2n-diagram img");
+}
+
+if (el.preview) {
+  el.preview.addEventListener("click", (event) => {
+    const img = diagramImageTarget(event);
+    if (img && img.src) openImageViewer(img.src);
+  });
+  el.preview.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter" && event.key !== " ") return;
+    const img = diagramImageTarget(event);
+    if (!img || !img.src) return;
+    event.preventDefault();
+    openImageViewer(img.src);
+  });
 }
 
 /* S3: hand the version-diff view the shared large-image viewer + the same

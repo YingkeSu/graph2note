@@ -19,15 +19,45 @@ from __future__ import annotations
 
 import re
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from pathlib import Path
 
 from .ir import Node, Edge
 
 
-class DiagramSemantics:
-    """Structured semantics handed to the drawing layer."""
+def semantics_field(obj, *names, default=None):
+    """Read a SPEC §1 dict key or an IR/object attribute (first match wins).
 
-    __slots__ = ("kind", "nodes", "edges", "caption", "orientation", "source")
+    The single "dict-or-object" accessor for diagram semantics, shared by the
+    export sidecar extraction (``render.py``) and the renderer adapter
+    (``diagrams/render_semantics.py``); keeping it here avoids a third copy and
+    keeps both call sites free of optional dependencies (no numpy import).
+    """
+    if obj is None:
+        return default
+    if isinstance(obj, Mapping):
+        for name in names:
+            if name in obj:
+                return obj[name]
+        return default
+    for name in names:
+        value = getattr(obj, name, None)
+        if value is not None:
+            return value
+    return default
+
+
+class DiagramSemantics:
+    """Structured semantics handed to the drawing layer.
+
+    ``groups`` (SPEC §1) is an optional list of visual groups in the SPEC JSON
+    shape *or* IR objects; the renderers normalize it.  Keeping the raw shape
+    here means the export chain never loses grouping/note/style information on
+    its way to the drawing layer.
+    """
+
+    __slots__ = ("kind", "nodes", "edges", "caption", "orientation", "source",
+                 "groups")
 
     def __init__(
         self,
@@ -37,6 +67,7 @@ class DiagramSemantics:
         caption: str = "",
         orientation: str | None = None,
         source: str | None = None,
+        groups: list | None = None,
     ) -> None:
         self.kind = kind
         self.nodes = nodes
@@ -46,6 +77,8 @@ class DiagramSemantics:
         # Optional reference to the original manuscript image used only when
         # structured semantics are missing (degrade-to-crop path).
         self.source = source
+        # SPEC §1 visual groups (layer/lane/cluster); [] means "flat diagram".
+        self.groups = list(groups or [])
 
 
 class AttachmentWriter(ABC):
@@ -107,23 +140,44 @@ class FileAssetWriter(AttachmentWriter):
 
     def write_diagram(self, doc_id: str, index: int, semantics: DiagramSemantics) -> str:
         from .diagrams import engine
+        from .diagrams import render_semantics
 
         rel = self._path(doc_id, index, semantics.kind)
         target = self.assets_dir / rel
+        # Normalized once here so the audit trail records exactly the visual
+        # semantics that reached the drawing layer (nothing is silently lost).
+        sem = render_semantics.normalize(
+            semantics.nodes, semantics.edges, semantics.groups
+        )
+        kwargs = {
+            "prefer": self.prefer,
+            "max_embed_width": self.max_embed_width,
+            "orientation": semantics.orientation or "TB",
+            # D1 (IR groups) + D2 (engine.prepare_diagram_layout) are merged on
+            # main, so the engine always accepts ``groups=`` now.
+            "groups": list(semantics.groups) or None,
+        }
         outcome = engine.render_to_png(
             list(semantics.nodes),
             list(semantics.edges),
             semantics.source,
             str(target),
-            prefer=self.prefer,
-            max_embed_width=self.max_embed_width,
-            orientation=semantics.orientation or "TB",
+            **kwargs,
         )
         self.results.append((rel, {
             "engine": outcome.engine,
             "degraded": outcome.degraded,
             "path": outcome.path,
             "notes": list(outcome.notes),
+            "semantics": {
+                "groups": [
+                    {"id": g.id, "label": g.label, "kind": g.kind,
+                     "nodes": list(g.nodes)}
+                    for g in sem.groups
+                ],
+                "notes": {n.id: n.note for n in sem.nodes if n.note},
+                "dashed_edges": [[e.from_, e.to] for e in sem.edges if e.dashed],
+            },
         }))
         return rel
 
@@ -160,4 +214,5 @@ __all__ = [
     "PlaceholderAttachmentWriter",
     "FileAssetWriter",
     "missing_attachments",
+    "semantics_field",
 ]

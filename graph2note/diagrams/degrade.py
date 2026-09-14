@@ -4,6 +4,12 @@ When a ``diagram``/``flow`` block has no structured semantics (VLM extraction
 failed) it may still reference the original image via ``source``.  The product
 embeds a cropped non-background region instead of producing garbage text.
 This path runs no OCR and no text pipeline, so it can never produce mojibake.
+
+D-track compatibility (SPEC §1): ``groups``/``note``/``style`` are *visual*
+semantics.  They must never promote a structure-less block into the structured
+render path, nor push a structured block into degradation -
+:func:`degrade_required` is the assertion anchor for that rule (the engine
+owns the actual branch and is expected to call it once wired in).
 """
 
 from __future__ import annotations
@@ -12,6 +18,19 @@ import os
 
 import numpy as np
 from PIL import Image
+
+
+def degrade_required(nodes, edges, groups=None) -> bool:
+    """Compatibility helper: True when a block has no structured semantics.
+
+    Groups (and the ``note``/``style`` extensions) are visual additions and
+    must never change the degrade decision, so this stays a pure function of
+    ``nodes``/``edges``.  The engine currently inlines the same ``if nodes or
+    edges`` test (``engine.py`` is not D3 territory); this helper is the
+    assertion anchor for that rule and the place the engine can call once its
+    owner wires it in - it is *not* yet the engine's single source of truth.
+    """
+    return not (list(nodes or []) or list(edges or []))
 
 
 def crop_image(src: str, out_path: str, margin_frac: float = 0.04,
@@ -59,3 +78,6 @@ def blank_png(out_path: str) -> str:
         fh.write(ihdr)
         fh.write(iend)
     return out_path
+
+
+__all__ = ["crop_image", "blank_png", "degrade_required"]

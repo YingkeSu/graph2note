@@ -63,9 +63,44 @@
     };
   }
 
+  // Structure diagrams / flows rendered by the backend follow the issue-02
+  // path contract: assets/<doc>-<diagram|flow>-<n>.png (rendered structure,
+  // not an uploaded photo).  They get a dedicated figure presentation so a
+  // grouped/layered drawing is readable in the reading pane.
+  const DIAGRAM_ASSET_RE = /(?:^|\/)[^/]*-(?:diagram|flow)-\d+\.png$/i;
+
+  function isDiagramAssetRef(name) {
+    return typeof name === "string" && DIAGRAM_ASSET_RE.test(name);
+  }
+
+  function escHtml(value) {
+    return String(value == null ? "" : value)
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+
+  // Wrap a rendered structure diagram in a <figure> with its caption so the
+  // reading pane shows the drawing as a distinct, labelled block.  Pure string
+  // builder (DOM-free) so it can be unit-tested under Node.  ``alt`` is the
+  // diagram caption produced by the renderer (SPEC: caption = alt text).
+  function buildDiagramFigure(src, alt, title) {
+    const caption = typeof alt === "string" ? alt : "";
+    const titleAttr = typeof title === "string" && title
+      ? ` title="${escHtml(title)}"` : "";
+    const captionHtml = caption
+      ? `<figcaption class="g2n-diagram-caption">${escHtml(caption)}</figcaption>`
+      : "";
+    return `<figure class="g2n-diagram">`
+      + `<img src="${escHtml(src)}" alt="${escHtml(caption)}"${titleAttr}`
+      + ` tabindex="0" role="button" aria-label="放大查看结构图">`
+      + `${captionHtml}</figure>`;
+  }
+
   return {
     isAssetRef: isAssetRef,
     resolveAssetSrc: resolveAssetSrc,
     normalizeImageArgs: normalizeImageArgs,
+    isDiagramAssetRef: isDiagramAssetRef,
+    buildDiagramFigure: buildDiagramFigure,
   };
 });
