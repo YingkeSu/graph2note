@@ -110,8 +110,8 @@ def test_writer_records_groups_notes_and_dashed_edges(tmp_path):
     assert sem["dashed_edges"] == [["n3", "n1"]]
 
 
-def test_groups_forwarded_to_engine_when_supported(tmp_path, monkeypatch):
-    from graph2note import attachments
+def test_groups_forwarded_to_engine(tmp_path, monkeypatch):
+    """D1+D2 are merged: the writer always forwards groups to the engine."""
     from graph2note.diagrams import engine
 
     calls = {}
@@ -123,16 +123,33 @@ def test_groups_forwarded_to_engine_when_supported(tmp_path, monkeypatch):
             fh.write("png")
         return engine.RenderOutcome(engine="graphviz", path=out_path)
 
-    monkeypatch.setattr(attachments, "_ENGINE_GROUPS_SUPPORT", None)
     monkeypatch.setattr(engine, "render_to_png", fake_render_to_png)
     doc = StubDoc([StubBlock(nodes=NODES, edges=EDGES, groups=GROUPS)])
     render_markdown(doc, doc_id="doc", attachment_writer=FileAssetWriter(tmp_path))
     assert calls["groups"] == GROUPS
 
 
-def test_groups_absence_does_not_break_legacy_engine(tmp_path):
-    """The merged engine may not know ``groups`` yet (D2 parallel window)."""
-    doc = StubDoc([StubBlock(nodes=NODES, edges=EDGES, groups=GROUPS)])
+def test_empty_groups_forward_none(tmp_path, monkeypatch):
+    from graph2note.diagrams import engine
+
+    calls = {}
+
+    def fake_render_to_png(nodes, edges, source, out_path, *, groups=None, **kw):
+        calls["groups"] = groups
+        os.makedirs(os.path.dirname(out_path), exist_ok=True)
+        with open(out_path, "w", encoding="utf-8") as fh:
+            fh.write("png")
+        return engine.RenderOutcome(engine="graphviz", path=out_path)
+
+    monkeypatch.setattr(engine, "render_to_png", fake_render_to_png)
+    render_markdown(StubDoc([StubBlock(nodes=NODES, edges=EDGES)]), doc_id="doc",
+                    attachment_writer=FileAssetWriter(tmp_path))
+    assert calls["groups"] is None
+
+
+def test_flat_diagram_still_renders(tmp_path):
+    """A flat block keeps rendering through the (now group-aware) engine."""
+    doc = StubDoc([StubBlock(nodes=NODES, edges=EDGES)])
     writer = FileAssetWriter(tmp_path, doc_id="doc")
     rel = render_markdown(doc, doc_id="doc", attachment_writer=writer)
     assert rel.startswith("![")

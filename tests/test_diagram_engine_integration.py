@@ -1,4 +1,4 @@
-"""D3 rework F1: group semantics must reach the *product* render path.
+"""D3 F1: group semantics must reach the *product* render path.
 
 The original D3 delivery only proved that the renderers draw groups when they
 are called directly; the reviewer showed the product chain
@@ -6,23 +6,16 @@ are called directly; the reviewer showed the product chain
 them, because the renderers did not declare D2's ``layout=`` keyword, so the
 engine's ``_renderer_layout_kwargs`` forwarded nothing (F1).
 
-These tests drive the real product chain and assert that a grouped diagram
-produces a *different* PNG than the same diagram without groups, and that the
-prepared geometry actually arrived at the renderer (spy on ``build_digraph`` /
-``build_figure``).
-
-Engine selection: when the installed engine already supports ``groups`` (D2
-merged) the real engine is used.  Until then a stub implementing exactly the
-D2 contract (same layout dict shape, same ``layout``-signature forwarding) is
-installed, so the test still traps a missing ``layout=`` on the renderers.
+D1 (IR ``groups``) and D2 (``engine.prepare_diagram_layout``) are now merged on
+main, so these tests drive the real product chain end to end and assert that a
+grouped diagram produces a *different* PNG than the same diagram without
+groups, and that the prepared geometry actually arrived at the renderer (spy on
+``build_digraph`` / ``build_figure``).
 """
 
 from __future__ import annotations
 
-import inspect
-import os
-import shutil
-import types
+import hashlib
 
 import pytest
 
@@ -32,7 +25,8 @@ from tests.test_diagram_render_groups import EDGES, GROUPS, NODES
 
 
 # ---------------------------------------------------------------------------
-# SPEC §1 shaped stubs (no dependency on D1's IR extension)
+# SPEC §1 shaped objects (D1's IR also carries note/style/groups now; these
+# lightweight objects keep the test independent of the pydantic model wiring)
 # ---------------------------------------------------------------------------
 
 
@@ -78,107 +72,13 @@ def _doc(*, with_groups: bool):
                         groups=GROUPS if with_groups else [])])
 
 
-# ---------------------------------------------------------------------------
-# a stub engine implementing the D2 contract (used until D2 is merged)
-# ---------------------------------------------------------------------------
-
-
-def _stub_layout(nodes, edges, groups) -> dict:
-    """D2-shaped layout dict: positions + per-group bbox, deterministic."""
-    ids = sorted({str(getattr(n, "id", n)) for n in nodes})
-    id_set = set(ids)
-    cleaned = []
-    for g in groups or []:
-        gid = str(g.get("id", ""))
-        if not gid:
-            continue
-        members = sorted({str(m) for m in (g.get("nodes") or []) if str(m) in id_set})
-        cleaned.append({
-            "id": gid,
-            "label": str(g.get("label", "")),
-            "kind": str(g.get("kind") or "cluster"),
-            "members": members,
-        })
-    cleaned.sort(key=lambda g: (g["id"], g["kind"], g["label"], tuple(g["members"])))
-    owners = {}
-    for g in cleaned:
-        for m in g["members"]:
-            owners.setdefault(m, g["id"])
-    rows = [list(g["members"]) for g in cleaned]
-    ungrouped = [n for n in ids if n not in owners]
-    if ungrouped:
-        rows.append(ungrouped)
-    if not rows:
-        rows = [ids]
-    nrows, ncols = len(rows), max(1, max(len(r) for r in rows))
-    positions = {}
-    for r, row in enumerate(rows):
-        for c, n in enumerate(row):
-            positions[n] = {"x": (c + 0.5) / ncols, "y": (r + 0.5) / nrows}
-    boxes = []
-    for g in cleaned:
-        pts = [positions[m] for m in g["members"] if m in positions]
-        if pts:
-            mx, my = 0.5 / ncols, 0.5 / nrows
-            bbox = {
-                "x0": max(0.0, min(p["x"] for p in pts) - mx),
-                "y0": max(0.0, min(p["y"] for p in pts) - my),
-                "x1": min(1.0, max(p["x"] for p in pts) + mx),
-                "y1": min(1.0, max(p["y"] for p in pts) + my),
-            }
-        else:
-            bbox = None
-        boxes.append({**g, "bbox": bbox, "row_span": None, "col_span": None})
-    return {
-        "positions": positions, "rows": rows, "columns": [],
-        "groups": boxes, "node_groups": {}, "dangling": [],
-        "nrows": nrows, "ncols": ncols,
-    }
-
-
-def _forward_layout(renderer, layout):
-    """Mirror of D2's ``_renderer_layout_kwargs`` (the F1 trap)."""
-    if layout is None:
-        return {}
-    return {"layout": layout} if "layout" in inspect.signature(renderer).parameters else {}
-
-
-def _install_engine(monkeypatch) -> str:
-    """Use the real D2 engine when present, else a D2-contract stub."""
-    from graph2note import attachments
-    from graph2note.diagrams import engine as engine_mod
-    from graph2note.diagrams import graphviz_renderer, matplotlib_renderer
-
-    monkeypatch.setattr(attachments, "_ENGINE_GROUPS_SUPPORT", None)
-    if "groups" in inspect.signature(engine_mod.render_to_png).parameters:
-        return "real"
-
-    def stub_render_to_png(nodes, edges, source, out_path, *, prefer="graphviz",
-                           max_embed_width=900, orientation="TB", groups=None):
-        layout = _stub_layout(nodes, edges, groups) if groups else None
-        os.makedirs(os.path.dirname(os.path.abspath(out_path)) or ".", exist_ok=True)
-        if prefer == "graphviz" and graphviz_renderer.available():
-            kwargs = _forward_layout(graphviz_renderer.render, layout)
-            path = graphviz_renderer.render(nodes, edges, out_path,
-                                            orientation=orientation, **kwargs)
-            return _outcome("graphviz", path, layout)
-        labels = {n.id: n.label for n in nodes}
-        kwargs = _forward_layout(matplotlib_renderer.render, layout)
-        path = matplotlib_renderer.render(nodes, edges, labels, out_path,
-                                          orientation=orientation, **kwargs)
-        return _outcome("matplotlib", path, layout)
-
-    monkeypatch.setattr(engine_mod, "render_to_png", stub_render_to_png)
-    return "stub"
-
-
-def _outcome(engine: str, path: str, layout):
-    """Duck-typed ``RenderOutcome`` so the stub works with or without D2."""
-    return types.SimpleNamespace(engine=engine, path=path, degraded=False,
-                                 notes=[], layout=layout)
+def _sha(path) -> str:
+    with open(path, "rb") as fh:
+        return hashlib.sha256(fh.read()).hexdigest()
 
 
 def _render(tmp_path, prefer: str, *, with_groups: bool):
+    tmp_path.mkdir(parents=True, exist_ok=True)
     writer = FileAssetWriter(tmp_path, doc_id="doc", prefer=prefer)
     render_mod.render_markdown(_doc(with_groups=with_groups), doc_id="doc",
                                attachment_writer=writer)
@@ -186,46 +86,42 @@ def _render(tmp_path, prefer: str, *, with_groups: bool):
     return writer, info, (tmp_path / rel)
 
 
-def _sha(path) -> str:
-    with open(path, "rb") as fh:
-        return __import__("hashlib").sha256(fh.read()).hexdigest()
+def test_engine_accepts_groups_now():
+    """Guard for the merge: the shim probe was removed, the engine takes groups."""
+    import inspect
 
+    from graph2note.diagrams import engine
 
-# ---------------------------------------------------------------------------
-# product-chain regression (F1)
-# ---------------------------------------------------------------------------
+    assert "groups" in inspect.signature(engine.render_to_png).parameters
+    assert "layout" in inspect.signature(
+        __import__("graph2note.diagrams.graphviz_renderer", fromlist=["x"]).render
+    ).parameters
 
 
 @pytest.mark.parametrize("prefer", ["graphviz", "matplotlib"])
-def test_product_chain_grouped_render_differs_from_flat(tmp_path, monkeypatch, prefer):
+def test_product_chain_grouped_render_differs_from_flat(tmp_path, prefer):
     """The reviewer's F1 probe: grouped vs flat PNG must not be identical."""
-    from graph2note.diagrams import engine as engine_mod
+    from graph2note.diagrams import engine
 
-    if prefer == "graphviz" and not engine_mod.graphviz_available():
+    if prefer == "graphviz" and not engine.graphviz_available():
         pytest.skip("graphviz/dot unavailable")
-    mode = _install_engine(monkeypatch)
 
-    grouped_dir = tmp_path / "grouped"
-    flat_dir = tmp_path / "flat"
-    grouped_dir.mkdir()
-    flat_dir.mkdir()
-    _writer, info, grouped_png = _render(grouped_dir, prefer, with_groups=True)
-    _render(flat_dir, prefer, with_groups=False)
-    flat_png = flat_dir / "assets" / "doc-diagram-0.png"
+    _writer, info, grouped_png = _render(tmp_path / "grouped", prefer, with_groups=True)
+    _render(tmp_path / "flat", prefer, with_groups=False)
+    flat_png = tmp_path / "flat" / "assets" / "doc-diagram-0.png"
 
-    assert info["engine"] == prefer, (mode, info)
+    assert info["engine"] == prefer, info
     assert _sha(grouped_png) != _sha(flat_png), (
-        f"{prefer}: product chain dropped the groups (engine mode={mode})"
+        f"{prefer}: product chain dropped the groups (F1 regression)"
     )
 
 
 def test_product_chain_forwards_layout_to_graphviz(tmp_path, monkeypatch):
-    from graph2note.diagrams import engine as engine_mod
+    from graph2note.diagrams import engine
     from graph2note.diagrams import graphviz_renderer
 
-    if not engine_mod.graphviz_available():
+    if not engine.graphviz_available():
         pytest.skip("graphviz/dot unavailable")
-    mode = _install_engine(monkeypatch)
 
     captured = {}
     real_build = graphviz_renderer.build_digraph
@@ -241,9 +137,8 @@ def test_product_chain_forwards_layout_to_graphviz(tmp_path, monkeypatch):
     monkeypatch.setattr(graphviz_renderer, "build_digraph", spy)
     _render(tmp_path, "graphviz", with_groups=True)
 
-    assert mode in {"real", "stub"}
-    assert captured["layout"], "engine never forwarded a prepared layout (F1)"
-    layout = captured["layout"]
+    layout = captured.get("layout")
+    assert layout, "engine never forwarded a prepared layout (F1)"
     assert [g["id"] for g in layout["groups"]] == ["g1", "g2", "g3"]
     assert layout["positions"], "layout carries no positions"
     # groups + notes + dashed edges all reached the drawing layer
@@ -256,7 +151,6 @@ def test_product_chain_forwards_layout_to_graphviz(tmp_path, monkeypatch):
 def test_product_chain_forwards_layout_to_matplotlib(tmp_path, monkeypatch):
     from graph2note.diagrams import matplotlib_renderer
 
-    _install_engine(monkeypatch)
     captured = {}
     real_build = matplotlib_renderer.build_figure
 
@@ -270,12 +164,11 @@ def test_product_chain_forwards_layout_to_matplotlib(tmp_path, monkeypatch):
     monkeypatch.setattr(matplotlib_renderer, "build_figure", spy)
     _render(tmp_path, "matplotlib", with_groups=True)
 
-    assert captured["layout"], "engine never forwarded a prepared layout (F1)"
+    assert captured.get("layout"), "engine never forwarded a prepared layout (F1)"
     assert captured["drawn"] == ["g1", "g2", "g3"]
 
 
-def test_product_chain_records_semantics_for_export(tmp_path, monkeypatch):
-    _install_engine(monkeypatch)
+def test_product_chain_records_semantics_for_export(tmp_path):
     _writer, info, _png = _render(tmp_path, "matplotlib", with_groups=True)
     semantics = info["semantics"]
     assert [g["id"] for g in semantics["groups"]] == ["g1", "g2", "g3"]
@@ -317,6 +210,13 @@ def test_without_layout_group_order_still_node_reading_order():
     assert [g.id for g in sem.groups] == ["g1", "g2", "g3"]
 
 
+def _require_graphviz_source(gv, *, layout):
+    if not gv.available():
+        pytest.skip("graphviz/dot unavailable")
+    nodes = [{"id": "n1", "label": "A"}, {"id": "n3", "label": "C"}]
+    return gv.build_digraph(nodes, [], layout=layout).source
+
+
 def test_graphviz_uses_layout_group_order_and_kind():
     from graph2note.diagrams import graphviz_renderer as gv
 
@@ -332,13 +232,6 @@ def test_graphviz_uses_layout_group_order_and_kind():
     assert src.index("cluster_gz") < src.index("cluster_ga")
     # only the layer group pins rank=same, and the kind came from the layout
     assert src.count("rank=same") == 1
-
-
-def _require_graphviz_source(gv, *, layout):
-    if not gv.available():
-        pytest.skip("graphviz/dot unavailable")
-    nodes = [{"id": "n1", "label": "A"}, {"id": "n3", "label": "C"}]
-    return gv.build_digraph(nodes, [], layout=layout).source
 
 
 def test_matplotlib_uses_layout_positions_and_bbox():
@@ -391,26 +284,23 @@ def test_duplicate_edges_are_not_deduplicated():
         [("n1", "n2", "x"), ("n1", "n2", "x"), ("n2", "n3", "z")]
 
 
-def test_duplicate_edge_flat_render_matches_no_duplicate_shape(tmp_path, monkeypatch):
+def test_duplicate_edge_flat_render_matches_no_duplicate_shape(tmp_path):
     """A duplicate edge is drawn twice, exactly like the pre-D3 renderer."""
-    from graph2note.diagrams import engine as engine_mod
+    from graph2note.diagrams import engine
 
-    if not engine_mod.graphviz_available():
+    if not engine.graphviz_available():
         pytest.skip("graphviz/dot unavailable")
-    _install_engine(monkeypatch)
-    dup_png = _render_edges(tmp_path / "dup", [
-        {"id": "n1", "label": "A"}, {"id": "n2", "label": "B"},
-    ], [{"from": "n1", "to": "n2", "label": "x"},
-        {"from": "n1", "to": "n2", "label": "x"}], prefer="graphviz")
-    uniq_png = _render_edges(tmp_path / "uniq", [
-        {"id": "n1", "label": "A"}, {"id": "n2", "label": "B"},
-    ], [{"from": "n1", "to": "n2", "label": "x"}], prefer="graphviz")
+    dup_png = _render_edges(tmp_path / "dup", prefer="graphviz", edges=[
+        {"from": "n1", "to": "n2", "label": "x"},
+        {"from": "n1", "to": "n2", "label": "x"}])
+    uniq_png = _render_edges(tmp_path / "uniq", prefer="graphviz", edges=[
+        {"from": "n1", "to": "n2", "label": "x"}])
     assert _sha(dup_png) != _sha(uniq_png)
 
 
-def _render_edges(tmp_path, nodes, edges, *, prefer):
+def _render_edges(tmp_path, *, prefer, edges):
     tmp_path.mkdir(parents=True, exist_ok=True)
-    node_objs = [_Node(n["id"], n["label"]) for n in nodes]
+    node_objs = [_Node("n1", "A"), _Node("n2", "B")]
     edge_objs = [_Edge(e["from"], e["to"], e.get("label", "")) for e in edges]
     writer = FileAssetWriter(tmp_path, doc_id="doc", prefer=prefer)
     render_mod.render_markdown(

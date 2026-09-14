@@ -17,7 +17,6 @@ reference in the Markdown must have a corresponding file in the assets dir.
 
 from __future__ import annotations
 
-import inspect
 import re
 from abc import ABC, abstractmethod
 from collections.abc import Mapping
@@ -92,22 +91,6 @@ class AttachmentWriter(ABC):
 
 _SAFE_DOC_ID = re.compile(r"[^A-Za-z0-9._-]")
 
-# Whether the installed ``engine.render_to_png`` understands ``groups=``.
-# D2 owns engine.py, so during the parallel D-track window the group argument
-# is forwarded only when the merged engine accepts it (documented TODO:
-# simplify to an unconditional kwarg once D2 is merged).
-_ENGINE_GROUPS_SUPPORT: bool | None = None
-
-
-def _engine_accepts_groups(fn) -> bool:
-    global _ENGINE_GROUPS_SUPPORT
-    if _ENGINE_GROUPS_SUPPORT is None:
-        try:
-            _ENGINE_GROUPS_SUPPORT = "groups" in inspect.signature(fn).parameters
-        except (TypeError, ValueError):  # pragma: no cover - exotic callable
-            _ENGINE_GROUPS_SUPPORT = False
-    return _ENGINE_GROUPS_SUPPORT
-
 
 class PlaceholderAttachmentWriter(AttachmentWriter):
     """Deterministic stub: returns ``assets/<doc>-diagram-<n>.png``.
@@ -170,9 +153,10 @@ class FileAssetWriter(AttachmentWriter):
             "prefer": self.prefer,
             "max_embed_width": self.max_embed_width,
             "orientation": semantics.orientation or "TB",
+            # D1 (IR groups) + D2 (engine.prepare_diagram_layout) are merged on
+            # main, so the engine always accepts ``groups=`` now.
+            "groups": list(semantics.groups) or None,
         }
-        if semantics.groups and _engine_accepts_groups(engine.render_to_png):
-            kwargs["groups"] = semantics.groups
         outcome = engine.render_to_png(
             list(semantics.nodes),
             list(semantics.edges),
