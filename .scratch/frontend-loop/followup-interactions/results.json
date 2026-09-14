@@ -1,0 +1,14 @@
+{
+  "checks": [
+    "desktop navigation, filter state and density persist",
+    "keyboard skip link preserves current route and primary hover stays readable",
+    "mobile navigation can expand, switch views and collapse",
+    "search keyboard navigation, focus return and dialog boundaries",
+    "retryable failures recover on all seven data views",
+    "graph zoom, filters and rendered label bounds",
+    "editor panes, information panel and save feedback at two sizes",
+    "PDF upload status, failure details and document link (mocked transport)",
+    "Q&A waiting, error, retry and cited answer (mocked transport)"
+  ],
+  "errors": []
+}

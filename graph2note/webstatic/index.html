@@ -60,7 +60,7 @@
                 aria-controls="app-sidebar" aria-expanded="true" title="折叠侧栏" aria-label="折叠侧栏">☰</button>
         <a class="brand" href="#library">graph2note</a>
         <form class="global-search" id="global-search-form" role="search">
-          <input id="global-search-input" type="search" autocomplete="off" spellcheck="false"
+          <input id="global-search-input" aria-haspopup="dialog" aria-controls="global-search-panel" type="search" autocomplete="off" spellcheck="false"
                  placeholder="搜索文档 / PDF（⌘K）" aria-label="统一搜索" />
         </form>
         <span class="spacer"></span>
@@ -617,9 +617,9 @@
        aria-modal="true" aria-label="统一搜索">
     <div class="search-panel-box">
       <div class="search-panel-head">
-        <input id="global-search-panel-input" type="search" autocomplete="off"
+        <input id="global-search-panel-input" aria-label="搜索文档和 PDF 内容" type="search" autocomplete="off"
                spellcheck="false" placeholder="搜索文档标题 / 文档内容 / PDF 内容（⌘K）" />
-        <button class="btn small" id="global-search-close" type="button"
+        <button class="btn small" id="global-search-close" aria-label="关闭搜索" type="button"
                 title="关闭（Esc）">Esc</button>
       </div>
       <div id="global-search-status" class="search-panel-status dim"></div>

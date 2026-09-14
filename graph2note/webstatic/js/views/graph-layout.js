@@ -61,7 +61,7 @@ export function nodeRadius(node) {
 
 function labelText(node) {
   if (!node) return "";
-  const raw = node.kind === "cluster" ? `▣ ${node.label}` : node.label;
+  const raw = node.kind === "cluster" ? `▣ ${node.label}` : node.kind === "tag" ? `#${node.label}` : node.label;
   const text = raw == null ? "" : String(raw);
   if (text.length <= LAYOUT.maxLabelChars) return text;
   return text.slice(0, LAYOUT.maxLabelChars - 1) + "…";
@@ -69,7 +69,9 @@ function labelText(node) {
 
 export function labelWidth(node) {
   const chars = Math.max(1, labelText(node).length);
-  return Math.min(chars * LAYOUT.labelCharWidth, 2 * nodeRadius(node) + LAYOUT.labelCharWidth);
+  // The text can be wider than its circle. Reserve the complete truncated
+  // label, otherwise the separation pass can place neighbours on top of it.
+  return chars * LAYOUT.labelCharWidth;
 }
 
 /* The node's bounding box in layout units.  Labels render at 18px inside the

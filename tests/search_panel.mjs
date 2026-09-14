@@ -139,6 +139,18 @@ doc.activeElement = null;
 doc.dispatch("keydown", keyEvent("k", { metaKey: true, target: { tagName: "INPUT" } }));
 assert.ok(panelNode.classList.contains("hidden"), "⌘K inside an input is ignored");
 
+// Tab focus must not activate a dialog. Explicit click opens it; Escape
+// returns to the search field without immediately reopening the panel.
+const entry = nodes.get("global-search-input");
+entry.focus();
+entry.dispatch("focus", {});
+assert.ok(panelNode.classList.contains("hidden"), "plain focus must not open search");
+entry.dispatch("click", {});
+assert.ok(!panelNode.classList.contains("hidden"), "click opens search");
+doc.dispatch("keydown", keyEvent("Escape"));
+assert.strictEqual(doc.activeElement, entry, "closing restores the trigger focus");
+assert.ok(panelNode.classList.contains("hidden"));
+
 // grouped results render through /api/search (documents / PDF pages)
 api.open("状态空间");
 await new Promise((resolve) => setTimeout(resolve, 20));

@@ -68,6 +68,33 @@ try {
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);
     await shot('mobile-ask');
   });
+  await check('search keyboard navigation, focus return and dialog boundaries',async()=>{
+    await visit('library');
+    await page.locator('#global-search-input').focus();
+    assert.equal(await page.locator('#global-search-panel').isVisible(),false);
+    await page.keyboard.press('Tab');
+    assert.equal(await page.locator('#nav-upload').evaluate(e=>e===document.activeElement),true);
+    await page.keyboard.press('Shift+Tab');
+    await page.keyboard.press('Enter');
+    await page.locator('#global-search-panel:visible').waitFor();
+    assert.equal(await page.locator('#global-search-panel-input').evaluate(e=>e===document.activeElement),true);
+    await page.keyboard.press('Shift+Tab');
+    assert.equal(await page.locator('#global-search-ask').evaluate(e=>e===document.activeElement),true);
+    await page.keyboard.press('Tab');
+    assert.equal(await page.locator('#global-search-panel-input').evaluate(e=>e===document.activeElement),true);
+    await shot('mobile-search-keyboard');
+    await page.keyboard.press('Escape');
+    assert.equal(await page.locator('#global-search-input').evaluate(e=>e===document.activeElement),true);
+    assert.equal(await page.locator('#global-search-panel').isVisible(),false);
+    await page.keyboard.press('Tab');
+    assert.equal(await page.locator('#nav-upload').evaluate(e=>e===document.activeElement),true);
+    await page.locator('#global-search-input').click();
+    await page.locator('#global-search-panel-input').fill('线性代数');
+    await page.locator('#global-search-documents .search-hit-title').first().waitFor();
+    await page.locator('#global-search-documents .search-hit-title').first().click();
+    await page.waitForFunction(()=>location.hash.startsWith('#doc/'));
+    await page.locator('#global-search-panel').waitFor({state:'hidden'});
+  });
   await check('retryable failures recover on all seven data views',async()=>{
     const cases=[['library','**/api/documents'],['timeline/day','**/api/timeline?*'],['graph','**/api/graph'],['dashboard','**/api/stats'],['inbox','**/api/inbox'],['settings','**/api/llm/settings'],['tags','**/api/tags/groups']];
     for(const [view,pattern] of cases){
@@ -84,7 +111,7 @@ try {
       assert.equal(await page.locator('.view-error:visible').count(),0,view);
     }
   });
-  await check('graph zoom, filters, keyboard node access and label bounds',async()=>{
+  await check('graph zoom, filters and rendered label bounds',async()=>{
     await page.setViewportSize({width:1440,height:900});
     await visit('graph');
     await page.locator('#graph-canvas .graph-node').first().waitFor();
@@ -95,13 +122,24 @@ try {
     assert.equal(Number(await page.locator('#graph-canvas').getAttribute('data-zoom')),1);
     const source=page.locator('#graph-source-chips [data-source="tag"]');
     await source.click();await page.waitForFunction(()=>document.querySelector('#graph-source-chips [data-source="tag"]')?.getAttribute('aria-pressed')==='false');
+    const filteredVersion=await page.evaluate(()=>window.__g2nGraph.version);
     await page.locator('#graph-clear-filters').click();
-    await page.waitForLoadState('networkidle');
-    const bounds=await page.locator('#graph-canvas').evaluate(svg=>[...svg.querySelectorAll('g.graph-node')].map(n=>{
-      const t=n.querySelector('text'),circle=[...n.querySelectorAll('circle')].at(-1);
-      return t&&circle?{label:t.textContent,width:t.getBBox().width,diameter:2*Number(circle.getAttribute('r'))}:null;
-    }).filter(Boolean));
-    assert.ok(bounds.every(b=>b.width<=b.diameter+40),JSON.stringify(bounds));
+    await page.waitForFunction(version=>window.__g2nGraph.version>version
+      && window.__g2nGraph.sources.length===3
+      && document.querySelector('#graph-source-chips [data-source="tag"]')?.getAttribute('aria-pressed')==='true'
+      && document.querySelectorAll('#graph-canvas g.graph-node').length>0,filteredVersion);
+    const bounds=await page.locator('#graph-canvas').evaluate(async svg=>{
+      const {nodeBox}=await import('/static/js/views/graph-layout.js');
+      const {view}=await import('/static/js/views/graph.js');
+      const byId=new Map(view.rendered.nodes.map(n=>[n.id,n]));
+      return [...svg.querySelectorAll('g.graph-node')].map(n=>{
+        const node=byId.get(n.dataset.nodeId),text=n.querySelector('text');
+        const box=nodeBox(node,0,0);
+        return {label:text.textContent,width:text.getBBox().width,reserved:box.right-box.left};
+      });
+    });
+    assert.ok(bounds.length>0,'Graph label checks require rendered nodes');
+    assert.ok(bounds.every(b=>b.width<=b.reserved),JSON.stringify(bounds));
     await shot('desktop-graph');
   });
   await check('editor panes, information panel and save feedback at two sizes',async()=>{
@@ -109,6 +147,17 @@ try {
     await page.route('**/api/documents/doc-00/markdown',route=>{saved=route.request().postDataJSON();return json(route,{ok:true});});
     await visit('doc/doc-00');
     await page.locator('#md-editor').waitFor();
+    await page.locator('#original-image-hint').waitFor();
+    let sourceRetries=0;
+    const track=request=>{if(request.url().endsWith('/api/documents/doc-00/original'))sourceRetries++;};
+    page.on('request',track);
+    const originalResponse=page.waitForResponse(response=>response.url().endsWith('/api/documents/doc-00/original'));
+    await page.locator('#btn-repic').click();
+    await originalResponse;
+    await page.locator('#original-image-hint').waitFor();
+    await page.waitForLoadState('networkidle');
+    assert.equal(sourceRetries,1,'A missing original must only be requested once per retry');
+    page.off('request',track);
     await page.locator('#md-editor').fill('# 浏览器验收材料\n\n仅用于界面验证，不写入文档库。');
     await page.waitForFunction(()=>document.querySelector('#save-indicator').textContent.startsWith('已保存'));
     assert.ok(saved.markdown.includes('浏览器验收材料'));
@@ -141,17 +190,21 @@ try {
     let calls=0;
     await page.route('**/api/pdf/ask',async route=>{
       calls++;
+      await new Promise(resolve=>setTimeout(resolve,350));
       if(calls===1)return json(route,{detail:'测试：连接中断'},503);
       const request=route.request().postDataJSON();
-      return json(route,{session_id:request.session_id,answer:'这是用于界面验收的回答。结论对应原文第一页。',status:'answered',retrieved:1,citations:[{document_id:'doc-00',pdf_name:'界面验收.pdf',page_number:1,page_index:0,source_page_url:'/api/documents/doc-00/source-page'}]});
+      return json(route,{session_id:request.session_id,question:request.question,turn_index:1,answer:'这是用于界面验收的回答。结论对应原文第一页。',status:'answered',retrieved:1,citations:[{document_id:'doc-00',pdf_name:'界面验收.pdf',page_number:1,page_index:0,source_page_url:'/api/documents/doc-00/source-page'}]});
     });
     await visit('ask');
     await page.locator('#pdf-qa-input').fill('这份材料的核心观点是什么？');
     await page.locator('#pdf-qa-form button').click();
+    await page.locator('.ask-pending').first().waitFor();
     await page.locator('.ask-retry').waitFor();
     await page.locator('.ask-retry').click();
     await page.locator('.ask-citation').waitFor();
     assert.equal(calls,2);
+    assert.ok((await page.locator('.ask-bubble-user').innerText()).includes('核心观点'));
+    assert.ok((await page.locator('#pdf-qa-status').innerText()).includes('第 1 轮'));
     assert.ok((await page.locator('.ask-citation').innerText()).includes('p1'));
     await shot('mobile-ask-answer');
     assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth>innerWidth),false);

@@ -356,3 +356,9 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 .library-grid[data-density="compact"] .doc-card .thumb { height: 110px; }
 .llm-channel-label .dim { display: none; }
 #original-image-hint { max-width: 280px; padding: 20px; color: var(--muted); font-size: 14px; line-height: 1.8; }
+
+/* Follow-up review: dates, reasons and editor metadata remain legible. */
+.doc-card .doc-date, .inbox-reason, .version-hint, .version-readonly-note,
+.version-readonly-note code, .diff-chip, .diff-version-id, .diff-no-image,
+.vault-export-status code { font-size: 12px; }
+.search-panel-foot { flex-wrap: wrap; }

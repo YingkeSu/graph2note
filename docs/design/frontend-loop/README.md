@@ -1,6 +1,6 @@
 # 前端逐页反馈循环
 
-状态：基线巡检与三方向初稿阶段。尚未选定设计方向，不将初稿直接替换生产页面。
+状态：用户已选择 B「纸感阅读室」，主要页面已实施。2026-09-14 继续修复辅助字号、搜索键盘导航和图谱标签边界。最新证据见 `.scratch/frontend-loop/followup-2026-09-14.md`。
 
 ## 本轮范围
 
@@ -41,7 +41,7 @@ node scripts/frontend_audit.mjs http://127.0.0.1:8794 .scratch/frontend-loop/evi
 
 若 Playwright 不在项目模块路径，可用 `PLAYWRIGHT_MODULE` 指向其 `index.mjs`；`CHROME_BIN` 可覆盖 Chrome 路径。脚本使用独立浏览器上下文，只访问页面，不提交上传、模型调用、保存、删除或导出。发现 JS 异常或横向溢出时退出码为 1，截图和 audit.json 仍保留。
 
-自动巡检只证明路由渲染和几何检查，不证明业务成功、可访问性全面合格或设计优秀。当前基线使用空库，真实文档流程尚未验收。原型检查依赖 `.scratch/frontend-loop/design-demos/` 中的本轮三个初稿；它们是视觉比较材料，不是应用功能替代品。
+自动巡检只证明路由渲染和几何检查，不证明业务成功、可访问性全面合格或设计优秀。应用巡检覆盖 390 / 768 / 1440px，可对空库和独立测试库分别执行。编辑器保存、PDF 上传和问答的浏览器交互使用拦截响应，不发起真实模型调用。通过可选参数 `--prototypes` 才执行原型检查，该检查依赖 `.scratch/frontend-loop/design-demos/` 中的本轮三个初稿；它们是视觉比较材料，不是应用功能替代品。
 
 ## 设计记录
 
@@ -50,4 +50,16 @@ node scripts/frontend_audit.mjs http://127.0.0.1:8794 .scratch/frontend-loop/evi
 - 方向 A：轮盘秒数 32 → 第 13 项。以深色工作区适配，主动去掉发光与渐变；不宣称完整复刻风格库。
 - 方向 B：参考 Bear 的侧栏组织与阅读排印方法，来源 https://bear.app/faq/about-the-sidebar-in-bear/ 和 https://bear.app/faq/typography-options/ 。原型不展示第三方品牌或 logo。
 - 方向 C：借鉴原研哉的信息减法思考，以手稿目录和索引为布局母题，并非本人作品。
-- 正式实施前记录用户选择原话到 `direction-approved.md`。当前不伪造批准记录。
+- 用户选择原话「B」已记录于 `.scratch/frontend-loop/direction-approved.md`；同一方向的改进自主执行，不重复确认。
+
+## 交互回归
+
+在运行了独立 43 文档种子库的应用上执行：
+
+```sh
+node scripts/frontend_interactions.mjs http://127.0.0.1:8795 .scratch/frontend-loop/interactions
+```
+
+同样支持 `PLAYWRIGHT_MODULE` 与 `CHROME_BIN`。脚本检查导航、密度、跳转链接、搜索对话框焦点、7 页错误恢复、图谱标签实际边界、原图失败的有限重试、编辑器保存反馈、PDF 状态和问答重试。写入和模型请求全部使用测试响应；报告明确区分传输测试桩与真实后端处理。
+
+本轮反馈循环的终止条件：逐页问题已处理，相关测试与截图验证通过；未执行后台定时任务。保留这些脚本供后续修改后重新运行，不因已通过的结果无限重复巡检。

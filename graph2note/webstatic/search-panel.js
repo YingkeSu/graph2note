@@ -90,8 +90,12 @@ export function initSearchPanel(env = {}) {
   let query = "";
   let timer = null;
   let requestId = 0;
+  let returnFocus = null;
 
   function open(initial) {
+    if (panel.classList.contains("hidden")) {
+      returnFocus = doc.activeElement && doc.activeElement !== doc.body ? doc.activeElement : topbarInput;
+    }
     panel.classList.remove("hidden");
     if (initial != null) {
       query = String(initial);
@@ -102,11 +106,14 @@ export function initSearchPanel(env = {}) {
     if (query.trim()) queueSearch(0);
   }
 
-  function close() {
+  function close({ restoreFocus = true } = {}) {
+    const wasOpen = !panel.classList.contains("hidden");
     panel.classList.add("hidden");
-    // do not leave focus trapped in the hidden field: ⌘K must work again
-    if (panelInput && doc.activeElement === panelInput) {
-      try { panelInput.blur(); } catch (_) { /* ignore */ }
+    if (!wasOpen) return;
+    if (restoreFocus && returnFocus) {
+      returnFocus.focus({ preventScroll: true });
+    } else if (doc.activeElement && (doc.activeElement === panelInput || panel.contains(doc.activeElement))) {
+      doc.activeElement.blur();
     }
   }
 
@@ -287,7 +294,8 @@ export function initSearchPanel(env = {}) {
   /* ---------- events ---------- */
 
   if (topbarInput) {
-    topbarInput.addEventListener("focus", () => open(topbarInput.value || ""));
+    // Tab only focuses the field. Clicking, typing or submitting opens search.
+    topbarInput.addEventListener("click", () => open(topbarInput.value || ""));
     topbarInput.addEventListener("input", () => {
       query = topbarInput.value || "";
       if (panelInput) panelInput.value = query;
@@ -319,13 +327,25 @@ export function initSearchPanel(env = {}) {
       open(topbarInput ? topbarInput.value : "");
       return;
     }
+    if (key === "tab" && !panel.classList.contains("hidden")) {
+      const controls = [...panel.querySelectorAll("a[href], button, input, select, textarea, [tabindex='0']")]
+        .filter((node) => !node.disabled && node.getClientRects().length);
+      const first = controls[0], last = controls[controls.length - 1];
+      if (first && (event.shiftKey ? doc.activeElement === first : doc.activeElement === last)) {
+        event.preventDefault();
+        (event.shiftKey ? last : first).focus();
+      }
+    }
     if (key === "escape" && !panel.classList.contains("hidden")) {
       event.preventDefault();
       close();
     }
   });
 
-  win.addEventListener("hashchange", () => { setTimeout(applyPendingAsk, 0); });
+  win.addEventListener("hashchange", () => {
+    close({ restoreFocus: false });
+    setTimeout(applyPendingAsk, 0);
+  });
   applyPendingAsk();
 
   const api = { open, close, applyPendingAsk, askAboutResults, getQuery: () => query };
