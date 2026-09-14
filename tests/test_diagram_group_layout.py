@@ -15,8 +15,11 @@ Three complementary layers, no network and no live model calls:
    exactly; determinism (FR-020); zero/one node, empty group, single-node group,
    dangling members, unknown kind, model-object groups (D1 rewiring).
 
-The layout is driven purely by the SPEC §1 JSON shape: no import of the D1
-``ir.py`` extension, so this file stays green before and after that merge.
+The layout is driven purely by the SPEC §1 JSON shape.  D1's models are now
+merged, so this file also proves the wiring both ways: real
+``DiagramBlock.groups`` (``DiagramGroup`` objects) and their ``model_dump()``
+dict form produce byte-identical layouts (zero-change duck typing), and the
+no-groups regression still matches ``LayerLayout``.
 """
 
 from __future__ import annotations
@@ -28,7 +31,7 @@ import pytest
 
 from graph2note.diagrams import _canonical, engine, matplotlib_renderer
 from graph2note.diagrams._layout import LayerLayout, grouped_layout
-from graph2note.ir import Edge, Node
+from graph2note.ir import DiagramBlock, DiagramGroup, Edge, Node
 
 GOLDEN_DIR = Path(__file__).parent / "golden"
 # one golden per group kind, plus the corrected 02-increment scenario
@@ -457,6 +460,49 @@ def test_prepare_diagram_layout_without_groups_is_layered():
 
 def test_render_outcome_layout_defaults_to_none():
     assert engine.RenderOutcome(engine="empty", path="x.png").layout is None
+
+
+# --- D1 merged wiring: DiagramBlock.groups -> dict, zero logic change --------
+
+
+def _d1_block() -> DiagramBlock:
+    return DiagramBlock(
+        type="diagram",
+        nodes=[Node(id="a"), Node(id="b"), Node(id="c")],
+        edges=[Edge(from_="a", to="b"), Edge(from_="b", to="c")],
+        groups=[DiagramGroup(id="g", label="通信层", kind="layer",
+                             nodes=["b", "a"])],
+    )
+
+
+def test_d1_diagram_block_groups_flow_into_the_layout():
+    block = _d1_block()
+    layout = engine.prepare_diagram_layout(block.nodes, block.edges, block.groups)
+    row = _row_of(layout)
+    assert row["a"] == row["b"]
+    assert layout["groups"][0]["members"] == ["a", "b"]
+    assert layout["groups"][0]["bbox"] is not None
+    assert layout == _golden_d1_layout(block)
+
+
+def test_d1_serialized_groups_dict_matches_pydantic_groups():
+    """The SPEC §1 dict form and D1's ``model_dump()`` are interchangeable."""
+    block = _d1_block()
+    serialized = [g.model_dump() for g in block.groups]
+    assert serialized == [{"id": "g", "label": "通信层", "kind": "layer",
+                           "nodes": ["b", "a"]}]
+    assert _canonical.canonical_groups(block.groups, {"a", "b", "c"}) == \
+        _canonical.canonical_groups(serialized, {"a", "b", "c"})
+    assert engine.prepare_diagram_layout(block.nodes, block.edges, serialized) == \
+        engine.prepare_diagram_layout(block.nodes, block.edges, block.groups)
+
+
+def _golden_d1_layout(block: DiagramBlock) -> dict:
+    """Recompute the expected layout from the dict shape (no D1 types)."""
+    ids = [n.id for n in block.nodes]
+    pairs = [(e.from_, e.to) for e in block.edges]
+    groups = [g.model_dump() for g in block.groups]
+    return grouped_layout(ids, pairs, groups)
 
 
 def test_render_structured_without_groups_leaves_layout_none(tmp_path):
