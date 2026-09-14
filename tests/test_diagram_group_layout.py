@@ -153,6 +153,27 @@ def test_cluster_members_are_adjacent_in_each_row():
                 assert idx == list(range(idx[0], idx[0] + len(idx))), row
 
 
+def test_band_order_ignores_vlm_order_hint():
+    """Band order comes from graph structure, never from an ``order`` field."""
+    nodes = ["a", "b", "c"]
+    edges = [("a", "b"), ("b", "c")]
+    base = grouped_layout(
+        nodes, edges,
+        [{"id": "g1", "kind": "layer", "nodes": ["a"]},
+         {"id": "g2", "kind": "layer", "nodes": ["b"]},
+         {"id": "g3", "kind": "layer", "nodes": ["c"]}],
+    )
+    assert base["rows"] == [["a"], ["b"], ["c"]]
+    # contradicting hints must change nothing (no order_hint is implemented)
+    hinted = grouped_layout(
+        nodes, edges,
+        [{"id": "g1", "kind": "layer", "nodes": ["a"], "order": 3},
+         {"id": "g2", "kind": "layer", "nodes": ["b"], "order": 2},
+         {"id": "g3", "kind": "layer", "nodes": ["c"], "order": 1}],
+    )
+    assert hinted == base
+
+
 # ---------------------------------------------------------------------------
 # 3) no-groups regression (behaviour identical to the pre-SPW layered layout)
 # ---------------------------------------------------------------------------
