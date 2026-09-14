@@ -17,6 +17,7 @@ reference in the Markdown must have a corresponding file in the assets dir.
 
 from __future__ import annotations
 
+import inspect
 import re
 from abc import ABC, abstractmethod
 from pathlib import Path
@@ -25,9 +26,16 @@ from .ir import Node, Edge
 
 
 class DiagramSemantics:
-    """Structured semantics handed to the drawing layer."""
+    """Structured semantics handed to the drawing layer.
 
-    __slots__ = ("kind", "nodes", "edges", "caption", "orientation", "source")
+    ``groups`` (SPEC §1) is an optional list of visual groups in the SPEC JSON
+    shape *or* IR objects; the renderers normalize it.  Keeping the raw shape
+    here means the export chain never loses grouping/note/style information on
+    its way to the drawing layer.
+    """
+
+    __slots__ = ("kind", "nodes", "edges", "caption", "orientation", "source",
+                 "groups")
 
     def __init__(
         self,
@@ -37,6 +45,7 @@ class DiagramSemantics:
         caption: str = "",
         orientation: str | None = None,
         source: str | None = None,
+        groups: list | None = None,
     ) -> None:
         self.kind = kind
         self.nodes = nodes
@@ -46,6 +55,8 @@ class DiagramSemantics:
         # Optional reference to the original manuscript image used only when
         # structured semantics are missing (degrade-to-crop path).
         self.source = source
+        # SPEC §1 visual groups (layer/lane/cluster); [] means "flat diagram".
+        self.groups = list(groups or [])
 
 
 class AttachmentWriter(ABC):
@@ -57,6 +68,22 @@ class AttachmentWriter(ABC):
 
 
 _SAFE_DOC_ID = re.compile(r"[^A-Za-z0-9._-]")
+
+# Whether the installed ``engine.render_to_png`` understands ``groups=``.
+# D2 owns engine.py, so during the parallel D-track window the group argument
+# is forwarded only when the merged engine accepts it (documented TODO:
+# simplify to an unconditional kwarg once D2 is merged).
+_ENGINE_GROUPS_SUPPORT: bool | None = None
+
+
+def _engine_accepts_groups(fn) -> bool:
+    global _ENGINE_GROUPS_SUPPORT
+    if _ENGINE_GROUPS_SUPPORT is None:
+        try:
+            _ENGINE_GROUPS_SUPPORT = "groups" in inspect.signature(fn).parameters
+        except (TypeError, ValueError):  # pragma: no cover - exotic callable
+            _ENGINE_GROUPS_SUPPORT = False
+    return _ENGINE_GROUPS_SUPPORT
 
 
 class PlaceholderAttachmentWriter(AttachmentWriter):
@@ -107,23 +134,43 @@ class FileAssetWriter(AttachmentWriter):
 
     def write_diagram(self, doc_id: str, index: int, semantics: DiagramSemantics) -> str:
         from .diagrams import engine
+        from .diagrams import render_semantics
 
         rel = self._path(doc_id, index, semantics.kind)
         target = self.assets_dir / rel
+        # Normalized once here so the audit trail records exactly the visual
+        # semantics that reached the drawing layer (nothing is silently lost).
+        sem = render_semantics.normalize(
+            semantics.nodes, semantics.edges, semantics.groups
+        )
+        kwargs = {
+            "prefer": self.prefer,
+            "max_embed_width": self.max_embed_width,
+            "orientation": semantics.orientation or "TB",
+        }
+        if semantics.groups and _engine_accepts_groups(engine.render_to_png):
+            kwargs["groups"] = semantics.groups
         outcome = engine.render_to_png(
             list(semantics.nodes),
             list(semantics.edges),
             semantics.source,
             str(target),
-            prefer=self.prefer,
-            max_embed_width=self.max_embed_width,
-            orientation=semantics.orientation or "TB",
+            **kwargs,
         )
         self.results.append((rel, {
             "engine": outcome.engine,
             "degraded": outcome.degraded,
             "path": outcome.path,
             "notes": list(outcome.notes),
+            "semantics": {
+                "groups": [
+                    {"id": g.id, "label": g.label, "kind": g.kind,
+                     "nodes": list(g.nodes)}
+                    for g in sem.groups
+                ],
+                "notes": {n.id: n.note for n in sem.nodes if n.note},
+                "dashed_edges": [[e.from_, e.to] for e in sem.edges if e.dashed],
+            },
         }))
         return rel
 

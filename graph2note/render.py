@@ -22,7 +22,9 @@ through unchanged.
 
 from __future__ import annotations
 
+import json
 import re
+from collections.abc import Mapping
 
 from .attachments import AttachmentWriter, DiagramSemantics, PlaceholderAttachmentWriter
 from .ir import DocumentIR, Block, ListItem, TableBlock
@@ -139,10 +141,88 @@ def _render_diagram(block: Block, index: int, writer: AttachmentWriter, doc_id: 
         caption=block.caption,
         orientation=getattr(block, "orientation", None),
         source=getattr(block, "source", None),
+        # D1 adds ``groups`` to the diagram/flow blocks; ``getattr`` keeps this
+        # renderer working both before and after that branch merges.
+        groups=getattr(block, "groups", None),
     )
     path = writer.write_diagram(doc_id, index, semantics)
     caption = escape_text(block.caption)
-    return f"![{caption}]({path})"
+    image = f"![{caption}]({path})"
+    comment = _semantics_comment(block)
+    return f"{image}\n\n{comment}" if comment else image
+
+
+# --- hierarchy semantics sidecar -------------------------------------------
+#
+# Grouping / notes / dashed edges are baked into the rendered PNG, but a
+# *text* export (Markdown is the export format) would otherwise drop them.
+# When a block carries hierarchy semantics we append one deterministic,
+# invisible HTML comment describing them, so the .md / vault export keeps the
+# information without changing what the reader sees.
+
+
+def _sem_get(obj, *names, default=None):
+    """Read SPEC §1 dict keys or IR object attributes (first match wins)."""
+    if obj is None:
+        return default
+    if isinstance(obj, Mapping):
+        for name in names:
+            if name in obj:
+                return obj[name]
+        return default
+    for name in names:
+        value = getattr(obj, name, None)
+        if value is not None:
+            return value
+    return default
+
+
+def _diagram_semantics_payload(block: Block) -> dict | None:
+    groups = []
+    for raw in _sem_get(block, "groups", default=[]) or []:
+        group_id = _sem_get(raw, "id")
+        if not group_id:
+            continue
+        members = [str(m) for m in (_sem_get(raw, "nodes", default=[]) or []) if m]
+        groups.append({
+            "id": str(group_id),
+            "label": str(_sem_get(raw, "label", default="") or ""),
+            "kind": str(_sem_get(raw, "kind", default="cluster") or "cluster"),
+            "nodes": sorted(members),
+        })
+    notes = {}
+    for raw in _sem_get(block, "nodes", default=[]) or []:
+        node_id = _sem_get(raw, "id")
+        note = _sem_get(raw, "note")
+        if node_id and note:
+            notes[str(node_id)] = str(note)
+    dashed = []
+    for raw in _sem_get(block, "edges", default=[]) or []:
+        if str(_sem_get(raw, "style", default="solid") or "solid") != "dashed":
+            continue
+        src = _sem_get(raw, "from", "from_")
+        dst = _sem_get(raw, "to")
+        if src and dst:
+            dashed.append([str(src), str(dst)])
+    if not (groups or notes or dashed):
+        return None
+    return {
+        "groups": sorted(groups, key=lambda g: (g["id"],)),
+        "notes": dict(sorted(notes.items())),
+        "dashed_edges": sorted(dashed),
+    }
+
+
+def _semantics_comment(block: Block) -> str | None:
+    payload = _diagram_semantics_payload(block)
+    if payload is None:
+        return None
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True,
+                     separators=(",", ":"))
+    # Never let document text close the HTML comment early; \u003c/> are
+    # valid JSON escapes and decode back to the original characters.
+    raw = raw.replace("<", "\\u003c").replace(">", "\\u003e")
+    return f"<!-- diagram-semantics: {raw} -->"
 
 
 # --- top-level -------------------------------------------------------------
