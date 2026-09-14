@@ -1,0 +1,142 @@
+{
+  "comment": "golden layout for a cluster group fixture (SPW D2)",
+  "expected": {
+    "columns": [
+      [
+        "n1",
+        "n2",
+        "r",
+        "t"
+      ],
+      [
+        "p",
+        "q"
+      ]
+    ],
+    "dangling": [],
+    "groups": [
+      {
+        "bbox": {
+          "x0": 0.0,
+          "x1": 0.5,
+          "y0": 0.0,
+          "y1": 0.5
+        },
+        "col_span": [
+          0,
+          0
+        ],
+        "id": "cluster-notes",
+        "kind": "cluster",
+        "label": "旁注",
+        "members": [
+          "n1",
+          "n2"
+        ],
+        "row_span": [
+          0,
+          1
+        ]
+      }
+    ],
+    "ncols": 2,
+    "node_groups": {
+      "n1": [
+        "cluster-notes"
+      ],
+      "n2": [
+        "cluster-notes"
+      ],
+      "p": [],
+      "q": [],
+      "r": [],
+      "t": []
+    },
+    "nrows": 4,
+    "positions": {
+      "n1": {
+        "x": 0.25,
+        "y": 0.125
+      },
+      "n2": {
+        "x": 0.25,
+        "y": 0.375
+      },
+      "p": {
+        "x": 0.75,
+        "y": 0.125
+      },
+      "q": {
+        "x": 0.75,
+        "y": 0.375
+      },
+      "r": {
+        "x": 0.25,
+        "y": 0.625
+      },
+      "t": {
+        "x": 0.25,
+        "y": 0.875
+      }
+    },
+    "rows": [
+      [
+        "p",
+        "n1"
+      ],
+      [
+        "q",
+        "n2"
+      ],
+      [
+        "r"
+      ],
+      [
+        "t"
+      ]
+    ]
+  },
+  "fixture": {
+    "edges": [
+      [
+        "p",
+        "q"
+      ],
+      [
+        "q",
+        "r"
+      ],
+      [
+        "r",
+        "t"
+      ],
+      [
+        "n1",
+        "q"
+      ],
+      [
+        "n1",
+        "n2"
+      ]
+    ],
+    "groups": [
+      {
+        "id": "cluster-notes",
+        "kind": "cluster",
+        "label": "旁注",
+        "nodes": [
+          "n2",
+          "n1"
+        ]
+      }
+    ],
+    "nodes": [
+      "n1",
+      "n2",
+      "p",
+      "q",
+      "r",
+      "t"
+    ]
+  }
+}
