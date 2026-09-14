@@ -402,3 +402,114 @@ def test_infer_flow_from_lines_stays_backward_compatible():
         [{"id": "n1", "label": "A"}, {"id": "n2", "label": "B"}],
         [{"from": "n1", "to": "n2", "label": ""}],
     )
+
+
+# ---------------------------------------------------------------------------
+# Offline fixtures for the (corrected) SPEC §1 acceptance anchors
+#
+# These are *expected VLM outputs*, validated through the same contract the
+# live extractor uses.  They document how 01/02/02-increment must be shaped for
+# D2/D3; they do not attempt a live call.
+# ---------------------------------------------------------------------------
+
+
+_ANCHOR_01 = {
+    "caption": "01 需求/架构",
+    "groups": [
+        {"id": "g1", "label": "层间通信", "kind": "layer",
+         "nodes": ["n1", "n2", "n3"]},
+        {"id": "g2", "label": "通信层", "kind": "layer", "nodes": ["n4"]},
+        {"id": "g3", "label": "执行层", "kind": "layer", "nodes": ["n5"]},
+    ],
+    "nodes": [
+        {"id": "n1", "label": "Macmini"},
+        {"id": "n2", "label": "MacBook"},
+        {"id": "n3", "label": "Windows laptop"},
+        {"id": "n4", "label": "Tiger VNC"},
+        {"id": "n5", "label": "360 Linux"},
+        # right-hand prose area: annotation only, never a peer graph node
+        {"id": "n6", "label": "通信方案",
+         "note": "亮点：Critical Path 优化 ☆"},
+    ],
+    "edges": [{"from": "n1", "to": "n4", "style": "dashed"}],
+}
+
+
+def test_anchor_01_yields_layered_groups_and_note_not_flat_nodes():
+    payload, verdict = diagram.validate_diagram_json(_ANCHOR_01)
+    assert verdict == "ok"
+    groups = payload["groups"]
+    assert [g["kind"] for g in groups] == ["layer", "layer", "layer"]
+    assert len(groups) >= 2
+    members = {m for g in groups for m in g["nodes"]}
+    assert {"n1", "n2", "n3"} <= members  # macmini/macbook/windows laptop
+    # the prose text lives as a note, not as a same-level node label
+    assert all("Critical Path" not in n["label"] for n in payload["nodes"])
+    assert payload["nodes"][-1]["note"] == "亮点：Critical Path 优化 ☆"
+    # and it round-trips into a valid IR block
+    doc = _doc({"type": "flow", **payload})
+    assert len(doc.blocks[0].groups) == 3
+
+
+_ANCHOR_02 = {
+    "caption": "02 数字化管线",
+    "groups": [
+        {"id": "g1", "label": "阶段主线", "kind": "cluster",
+         "nodes": ["n1", "n2", "n3"]},
+    ],
+    "nodes": [
+        {"id": "n1", "label": "输入"},
+        {"id": "n2", "label": "预处理"},
+        {"id": "n3", "label": "矢量化", "note": "设计：标注规范"},
+        {"id": "n4", "label": "调研：方案选型"},
+    ],
+    "edges": [
+        {"from": "n1", "to": "n2", "label": ""},
+        {"from": "n2", "to": "n3", "label": ""},
+        {"from": "n4", "to": "n2", "label": "参考", "style": "dashed"},
+    ],
+}
+
+
+def test_anchor_02_notes_use_note_and_dashed_weak_links():
+    payload, verdict = diagram.validate_diagram_json(_ANCHOR_02)
+    assert verdict == "ok"
+    # main flow stays solid and directed
+    main = [e for e in payload["edges"] if e.get("style") != "dashed"]
+    assert [e["from"] for e in main] == ["n1", "n2"]
+    # annotation is separated: note text + dashed weak link
+    notes = [n["note"] for n in payload["nodes"] if n.get("note")]
+    assert any("设计" in t for t in notes)
+    assert any(e.get("style") == "dashed" for e in payload["edges"])
+    labels = [n["label"] for n in payload["nodes"] if "调研" not in n["label"]]
+    assert labels  # the annotation did not become a main-flow peer label
+
+
+_ANCHOR_02_INCREMENT = {
+    "caption": "02 增量：原子/增量两侧",
+    "groups": [
+        {"id": "g1", "label": "原子流程", "kind": "lane",
+         "nodes": ["n1", "n2"]},
+        {"id": "g2", "label": "增量流程", "kind": "lane",
+         "nodes": ["n3", "n4"]},
+    ],
+    "nodes": [
+        {"id": "n1", "label": "原子输入"},
+        {"id": "n2", "label": "原子输出"},
+        {"id": "n3", "label": "增量输入"},
+        {"id": "n4", "label": "增量输出"},
+    ],
+    "edges": [
+        {"from": "n1", "to": "n2", "label": ""},
+        {"from": "n3", "to": "n4", "label": ""},
+    ],
+}
+
+
+def test_anchor_02_increment_keeps_two_distinguishable_sides():
+    payload, verdict = diagram.validate_diagram_json(_ANCHOR_02_INCREMENT)
+    assert verdict == "ok"
+    sides = [set(g["nodes"]) for g in payload["groups"]]
+    assert len(sides) == 2
+    assert sides[0].isdisjoint(sides[1])
+    assert sides[0] | sides[1] == {"n1", "n2", "n3", "n4"}
