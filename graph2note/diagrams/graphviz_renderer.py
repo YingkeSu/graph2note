@@ -53,7 +53,7 @@ NOTE_COLOR = "#555b6b"
 # rank stays narrow and the post-fit text is bigger.  Applied only when the
 # block carries groups/notes (the D-track hierarchy path), so ungrouped output
 # stays byte-identical to the legacy renderer.
-LABEL_WRAP_UNITS = 9
+LABEL_WRAP_UNITS = 12
 
 
 def available() -> bool:
@@ -79,19 +79,7 @@ def _xml(text: str) -> str:
 
 def wrap_label(label: str, max_units: int = LABEL_WRAP_UNITS) -> str:
     """Wrap a mixed CJK/Latin label into ``\\n``-separated display lines."""
-    lines: list[str] = []
-    current: list[str] = []
-    units = 0
-    for char in label:
-        width = 2 if ord(char) > 127 else 1
-        if current and units + width > max_units:
-            lines.append("".join(current))
-            current, units = [], 0
-        current.append(char)
-        units += width
-    if current or not lines:
-        lines.append("".join(current))
-    return "\n".join(lines)
+    return rs.wrap_display_label(label, max_units)
 
 
 def html_label(label: str, note: str) -> str:

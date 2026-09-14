@@ -145,6 +145,22 @@ def test_font_size_rule_group_at_least_note_below_label():
         assert mod.GROUP_FONTSIZE >= mod.NOTE_FONTSIZE
 
 
+def test_label_wrapping_keeps_ascii_words_whole():
+    # Readability strategy: narrow ranks -> bigger post-fit text.  CJK may
+    # break per character, but an ASCII word must never be cut mid-word unless
+    # it is longer than the whole line budget.
+    assert rs.wrap_display_label("亮点：Critical Path 优化 ☆", 12) == \
+        "亮点：\nCritical\nPath 优化 ☆"
+    assert rs.wrap_display_label("坑：Tiger VNC 不支持", 12) == \
+        "坑：Tiger\nVNC 不支持"
+    assert rs.wrap_display_label("windows laptop", 12) == "windows\nlaptop"
+    # an over-long single token is hard-split as a last resort
+    assert rs.wrap_display_label("averyveryverylongword", 12) == \
+        "averyveryver\nylongword"
+    # explicit newlines are preserved; trailing spaces are trimmed
+    assert rs.wrap_display_label("多行\n标签", 12) == "多行\n标签"
+
+
 # ---------------------------------------------------------------------------
 # graphviz
 # ---------------------------------------------------------------------------

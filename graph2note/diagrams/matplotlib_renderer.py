@@ -139,7 +139,8 @@ def _box_sizes(sem: rs.RenderSemantics, labels: dict[str, str]):
     for node in sem.nodes:
         text = labels.get(node.id, node.label)
         wrapped[node.id] = _wrap_label(text)
-        notes[node.id] = _wrap_label(node.note, max_units=16) if node.note else ""
+        notes[node.id] = (rs.wrap_display_label(node.note, 16)
+                          if node.note else "")
         box_w[node.id] = min(0.42, max(0.12, 0.06 + 0.012 * min(
             _label_len(text), 24
         )))

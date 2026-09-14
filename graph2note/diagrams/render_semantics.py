@@ -49,6 +49,79 @@ def group_colors(index: int) -> tuple[str, str]:
     return GROUP_FILL[index % len(GROUP_FILL)], GROUP_LINE[index % len(GROUP_LINE)]
 
 
+# ---------------------------------------------------------------------------
+# display-label wrapping (legibility on narrow ranks)
+# ---------------------------------------------------------------------------
+
+def _display_units(text: str) -> int:
+    return sum(2 if ord(char) > 127 else 1 for char in text)
+
+
+def _chunks(text: str) -> list[str]:
+    """Split into break opportunities: ASCII words stay whole, CJK per char."""
+    out: list[str] = []
+    buf = ""
+    for char in text:
+        if ord(char) < 128 and not char.isspace():
+            buf += char
+        else:
+            if buf:
+                out.append(buf)
+                buf = ""
+            out.append(char)
+    if buf:
+        out.append(buf)
+    return out
+
+
+def _hard_split(chunk: str, max_units: int) -> list[str]:
+    parts: list[str] = []
+    current = ""
+    units = 0
+    for char in chunk:
+        width = 2 if ord(char) > 127 else 1
+        if current and units + width > max_units:
+            parts.append(current)
+            current, units = "", 0
+        current += char
+        units += width
+    if current:
+        parts.append(current)
+    return parts
+
+
+def wrap_display_label(label: str, max_units: int = 9) -> str:
+    """Wrap a mixed CJK/Latin label into ``\\n`` lines, never mid-word (ASCII).
+
+    Long Latin words that exceed ``max_units`` on their own are hard-split as a
+    last resort; explicit newlines in the source label are preserved.
+    """
+    lines: list[str] = []
+    for source_line in (label or "").split("\n"):
+        current = ""
+        units = 0
+        for chunk in _chunks(source_line):
+            chunk_units = _display_units(chunk)
+            if current and units + chunk_units > max_units and not chunk.isspace():
+                lines.append(current)
+                current, units = "", 0
+            if chunk_units > max_units:
+                pieces = _hard_split(chunk, max_units)
+                if current:
+                    lines.append(current)
+                    current, units = "", 0
+                lines.extend(pieces[:-1])
+                current = pieces[-1]
+                units = _display_units(current)
+                continue
+            if not current and chunk.isspace():
+                continue  # never start a display line with a space
+            current += chunk
+            units += chunk_units
+        lines.append(current)
+    return "\n".join(line.rstrip() for line in lines)
+
+
 @dataclass(frozen=True)
 class RenderNode:
     """A node as the renderers see it (SPEC §1 + ``note``)."""
@@ -280,6 +353,7 @@ __all__ = [
     "GROUP_FILL",
     "GROUP_LINE",
     "group_colors",
+    "wrap_display_label",
     "RenderNode",
     "RenderEdge",
     "RenderGroup",
