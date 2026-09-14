@@ -29,6 +29,46 @@ import re
 # Relation tokens, longest first so multichar symbols match before single one.
 _RELATION_TOKENS = ("-->", "<->", "←→", "←->", "->", "=>", "↔", "←", "→")
 
+# Optional visual-group declaration, e.g. ``[layer] 通信层: macmini, macbook``.
+_GROUP_DECL_RE = re.compile(
+    r"^\s*(?:[-*+]\s*)?\[\s*(layer|lane|cluster)\s*\]\s*([^:：]+?)\s*[:：]\s*(.+?)\s*$",
+    re.IGNORECASE,
+)
+_GROUP_MEMBER_SPLIT_RE = re.compile(r"[,，、;；|]+")
+
+
+def is_group_decl(line: str) -> bool:
+    """True when ``line`` declares a visual group.
+
+    Syntax: ``[layer|lane|cluster] <label>: <name>, <name> ...`` (leading
+    bullet and the Chinese ``：``/``、`` separators are accepted).  The text
+    side only has group semantics when the transcription states them
+    explicitly; the inferer never invents a hierarchy.
+    """
+    return bool(_GROUP_DECL_RE.match(line or ""))
+
+
+def parse_group_decl(line: str) -> dict | None:
+    """Parse a group declaration into ``{kind,label,members}`` (members=labels)."""
+    m = _GROUP_DECL_RE.match(line or "")
+    if not m:
+        return None
+    kind = m.group(1).lower()
+    label = _clean_token(m.group(2))
+    members = [
+        _clean_token(part)
+        for part in _GROUP_MEMBER_SPLIT_RE.split(m.group(3))
+    ]
+    members = [part for part in members if part]
+    if not label:
+        return None
+    return {"kind": kind, "label": label, "members": members}
+
+
+def is_graph_source_line(line: str) -> bool:
+    """A line that carries graph structure: a relation or a group declaration."""
+    return is_relation_line(line) or is_group_decl(line)
+
 
 def _first_relation_op(line: str) -> int | None:
     """Index of the first relation operator in ``line`` (longest match first)."""
@@ -118,13 +158,13 @@ def _split_label(right: str) -> tuple[str, str]:
 
 
 def detect_diagram_markdown(markdown: str) -> bool:
-    """Detector: page(s) contain diagram semantics (arrow or keyword)."""
+    """Detector: page(s) contain diagram semantics (arrow, group or keyword)."""
     if not markdown:
         return False
     if "flow:" in markdown or "diagram" in markdown:
         return True
     for line in markdown.split("\n"):
-        if is_relation_line(line):
+        if is_relation_line(line) or is_group_decl(line):
             return True
         ls = line.strip()
         if any(k in ls for k in ("流程图", "架构图", "架构", "关系图")):
@@ -161,8 +201,15 @@ def infer_flow_from_lines(lines: list[str]) -> tuple[list[dict], list[dict]] | N
 
     Merges a contiguous run of relation lines into ONE flow block — matches how
     a flowchart ``A → B`` / ``B → C`` transcribes as a chain.  Returns None if
-    no line yields a usable two-sided relation.
+    no line yields a usable two-sided relation.  Group declarations are ignored
+    here; use :func:`infer_graph_from_lines` to also resolve groups.
     """
+    return _relations_to_graph(lines)
+
+
+def _relations_to_graph(
+    lines: list[str],
+) -> tuple[list[dict], list[dict]] | None:
     edgelist: list[tuple[str, str, str]] = []  # (src_label, tgt_label, edge_label)
     for raw in lines:
         parts = _relation_parts(raw)
@@ -194,38 +241,75 @@ def infer_flow_from_lines(lines: list[str]) -> tuple[list[dict], list[dict]] | N
     return nodes, edges
 
 
+def infer_graph_from_lines(
+    lines: list[str],
+) -> tuple[list[dict], list[dict], list[dict]] | None:
+    """Build ``(nodes, edges, groups)`` from relation + group-declaration lines.
+
+    Determinism: group declarations are emitted in text order with ids
+    ``g1..gN``; members are resolved by exact node-label match, de-duplicated
+    and ordered by node appearance.  Unresolvable member names are dropped and
+    no group is fabricated when no declaration exists (empty list).
+    """
+    graph = _relations_to_graph(lines)
+    if graph is None:
+        return None
+    nodes, edges = graph
+    node_index = {n["id"]: i for i, n in enumerate(nodes)}
+    label_to_id = {n["label"]: n["id"] for n in nodes}
+    groups: list[dict] = []
+    for raw in lines:
+        decl = parse_group_decl(raw)
+        if decl is None:
+            continue
+        members: list[str] = []
+        for name in decl["members"]:
+            nid = label_to_id.get(name)
+            if nid is None or nid in members:
+                continue
+            members.append(nid)
+        members.sort(key=lambda nid: node_index[nid])
+        groups.append({
+            "id": f"g{len(groups) + 1}",
+            "label": decl["label"],
+            "kind": decl["kind"],
+            "nodes": members,
+        })
+    return nodes, edges, groups
+
+
 def relation_run(lines: list[str], start: int) -> int:
-    """Length of the contiguous run of relation lines beginning at ``start``."""
+    """Length of the contiguous run of graph-source lines at ``start``."""
     k = 0
     i = start
-    while i < len(lines) and is_relation_line(lines[i]):
+    while i < len(lines) and is_graph_source_line(lines[i]):
         k += 1
         i += 1
     return k
 
 
 def relation_lines(lines: list[str]) -> list[str]:
-    """Collect relation-bearing lines across Markdown block boundaries.
+    """Collect graph-source lines (relations and group declarations).
 
     Bullets and headings frequently interrupt a hand-drawn flow transcription.
     The old contiguous-run rule therefore produced one tiny graph per visual
     row.  The graph is a page-level semantic object, so collect all rows and
     let the structure extractor/layout decide how to arrange them.
     """
-    return [line.strip() for line in lines if is_relation_line(line)]
+    return [line.strip() for line in lines if is_graph_source_line(line)]
 
 
 def arrow_flow_block(lines: list[str], start: int) -> dict | None:
-    """One block for the relation run at ``start`` (flow if structured, else
-    caption-only diagram preserving the text).  Returns a block dict matching
-    the IR schema, or None when the line is not a relation line."""
-    if start >= len(lines) or not is_relation_line(lines[start]):
+    """One block for the graph-source run at ``start`` (flow if structured,
+    else caption-only diagram preserving the text).  Returns a block dict
+    matching the IR schema, or None when the line is not graph-bearing."""
+    if start >= len(lines) or not is_graph_source_line(lines[start]):
         return None
     k = relation_run(lines, start)
     run_lines = [lines[i].strip() for i in range(start, start + k)]
-    inferred = infer_flow_from_lines(run_lines)
+    inferred = infer_graph_from_lines(run_lines)
     if inferred is not None:
-        nodes, edges = inferred
+        nodes, edges, groups = inferred
         return {
             "type": "flow",
             "orientation": "LR",
@@ -233,6 +317,7 @@ def arrow_flow_block(lines: list[str], start: int) -> dict | None:
             "edges": edges,
             "caption": "",
             "source": None,
+            "groups": groups,
         }
     # relation-like but not structurally parseable: preserve original text as a
     # caption-only diagram block (no nodes/edges) so nothing is lost.
@@ -247,9 +332,13 @@ def arrow_flow_block(lines: list[str], start: int) -> dict | None:
 
 __all__ = [
     "is_relation_line",
+    "is_group_decl",
+    "is_graph_source_line",
+    "parse_group_decl",
     "parse_relation_line",
     "detect_diagram_markdown",
     "infer_flow_from_lines",
+    "infer_graph_from_lines",
     "relation_run",
     "relation_lines",
     "arrow_flow_block",

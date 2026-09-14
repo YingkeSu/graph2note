@@ -75,12 +75,73 @@ def try_parse_json(raw: str):
     return None
 
 
+GROUP_KINDS = ("layer", "lane", "cluster")
+
+
+def _clean_note(value):
+    """Normalize an optional note: blank/None -> None, else stripped text."""
+    if value is None:
+        return None
+    text = str(value).strip()
+    return text or None
+
+
+def _normalize_groups(raw, order):
+    """Validate/normalize the optional ``groups`` payload.
+
+    Returns ``(groups, ok)``.  Rules (SPEC §1): group ids are unique, ``kind``
+    is one of ``layer``/``lane``/``cluster``, and every member id must exist in
+    ``nodes[]`` (dangling references are rejected).  Membership is a *set*, so
+    duplicate members are dropped and the list is written in node-appearance
+    order (the layout canonicalizer can re-sort later; this keeps the
+    extractor's output deterministic for the same semantic content).
+    ``order`` maps node id -> index in the normalized ``nodes`` list.
+    """
+    if raw is None:
+        return [], True
+    if not isinstance(raw, list):
+        return [], False
+    seen: set[str] = set()
+    groups: list[dict] = []
+    for item in raw:
+        if not isinstance(item, dict) or "id" not in item:
+            return [], False
+        gid = str(item["id"])
+        if not gid or gid in seen:
+            return [], False
+        seen.add(gid)
+        kind = str(item.get("kind", "cluster"))
+        if kind not in GROUP_KINDS:
+            return [], False
+        members_raw = item.get("nodes", [])
+        if not isinstance(members_raw, list):
+            return [], False
+        members: list[str] = []
+        for member in members_raw:
+            mid = str(member)
+            if mid not in order:
+                return [], False
+            if mid not in members:
+                members.append(mid)
+        members.sort(key=lambda mid: order[mid])
+        groups.append({
+            "id": gid,
+            "label": str(item.get("label", "")),
+            "kind": kind,
+            "nodes": members,
+        })
+    return groups, True
+
+
 def validate_diagram_json(data):
-    """Validate a candidate dict into (nodes, edges, caption) or None.
+    """Validate a candidate dict into ``({"nodes","edges","caption","groups"}, verdict)``.
 
     Strict contract: ``nodes``+``edges`` lists, unique node ids, every edge
-    references existing ids, no self-loops, at least one node.  A dict with an
-    ``error`` key is treated as "no_flow" (None + verdict no_flow).
+    references existing ids, no self-loops, at least one node.  Optional
+    ``note`` on nodes and ``style`` on edges are preserved; optional ``groups``
+    must reference existing node ids and use a known ``kind``.  A dict with an
+    ``error`` key is treated as "no_flow" (None + verdict no_flow); any
+    contract violation is ``malformed``.
     """
     if not isinstance(data, dict):
         return None, "malformed"
@@ -98,7 +159,11 @@ def validate_diagram_json(data):
         if nid in ids:
             return None, "malformed"
         ids[nid] = nid
-        ns.append({"id": nid, "label": str(n.get("label", ""))})
+        node = {"id": nid, "label": str(n.get("label", ""))}
+        note = _clean_note(n.get("note"))
+        if note is not None:
+            node["note"] = note
+        ns.append(node)
     es = []
     for e in edges:
         if not isinstance(e, dict):
@@ -108,26 +173,49 @@ def validate_diagram_json(data):
             return None, "malformed"
         if src == tgt:
             return None, "malformed"
-        es.append({"from": src, "to": tgt, "label": str(e.get("label", ""))})
+        style = str(e.get("style", "solid"))
+        if style not in ("solid", "dashed"):
+            return None, "malformed"
+        edge = {"from": src, "to": tgt, "label": str(e.get("label", ""))}
+        if style == "dashed":
+            edge["style"] = style
+        es.append(edge)
     if not ns:
         return None, "malformed"
+    order = {nid: i for i, nid in enumerate(ids)}
+    groups, ok = _normalize_groups(data.get("groups"), order)
+    if not ok:
+        return None, "malformed"
     caption = str(data.get("caption", ""))
-    return (ns, es, caption), "ok"
+    return ({"nodes": ns, "edges": es, "caption": caption, "groups": groups}, "ok")
 
 
 SYSTEM_PROMPT = (
     "你是手稿图表结构化引擎。根据这张图片（手绘流程/架构图或相关区域），"
+    "先识别页面中的分层/泳道/分组结构，再填写节点与边，"
     "输出严格 JSON 对象，只输出该 JSON，不要 Markdown 围栏、不要任何解释文字。\n"
-    '格式：{"caption":"<可选说明>","nodes":[{"id":"n1","label":"节点文本"}...],'
-    '"edges":[{"from":"n1","to":"n2","label":"可选边说明"}...]}\n'
+    '格式：{"caption":"<可选说明>",'
+    '"groups":[{"id":"g1","label":"通信层","kind":"layer",'
+    '"nodes":["n1","n2"]}...],'
+    '"nodes":[{"id":"n1","label":"节点文本","note":"可选旁注"}...],'
+    '"edges":[{"from":"n1","to":"n2","label":"可选边说明",'
+    '"style":"solid|dashed"}...]}\n'
     "要求：\n"
-    "1. 节点 label 原样保留中文与标点，id 自增编号互不重复。\n"
-    "2. 每条边 from/to 必须引用已定义的节点 id；不要自环；方向跟着图中箭头。\n"
-    "3. 一页中可能有多个相互独立的区域；仍输出一个 page-level graph，"
+    "1. 先判层次：若图中存在水平层带、垂直泳道或明显局部簇，用 groups 表达；"
+    "kind 取 layer（水平分层带）/ lane（垂直泳道）/ cluster（局部簇），"
+    "nodes 列出该组成员节点 id，顺序按图中自上而下、自左而右的阅读顺序。\n"
+    "2. 节点 label 原样保留中文与标点，id 自增编号互不重复。"
+    "仅当节点有次级说明/旁注（小字注释、坑点、亮点等）时给出 note，"
+    "不要把自己的主标签塞进 note。\n"
+    "3. 每条边 from/to 必须引用已定义的节点 id；不要自环；方向跟着图中箭头。"
+    "style 缺省为 solid；旁注关联、弱关联或仅属说明性的连线用 dashed。\n"
+    "4. 一页中可能有多个相互独立的区域；仍输出一个 page-level graph，"
     "把每个可见方框/概念作为节点，把每一条明确箭头作为边，不要只挑一条主线。\n"
-    "4. 不要把普通说明、项目符号或问题清单臆造为边；没有箭头的文字只在它是节点标签时保留。\n"
-    "5. 若图中没有可提取的流程/架构关系，直接输出 {\"error\":\"no_flow_extractable\"}。\n"
-    "6. 无法可靠读出的文字不要编造；宁可使用短标签或省略该节点。\n"
+    "5. 不要把普通说明、项目符号、问题清单、目录或旁注文字臆造为图节点或边；"
+    "这类文字若与某节点相关则作为该节点 note，否则忽略。\n"
+    "6. 若图中没有可提取的流程/架构关系，直接输出 {\"error\":\"no_flow_extractable\"}。\n"
+    "7. 无法可靠读出的文字不要编造；宁可使用短标签或省略该节点。"
+    "若无法识别任何层次/分组，groups 合法为空数组 []，严禁编造层次。\n"
     "只输出 JSON："
 )
 
@@ -245,7 +333,7 @@ def extract_diagram_image(
         # (no same-parameters retry), handled after the loop.
 
     verdict = "empty"
-    nodes, edges, caption = [], [], ""
+    nodes, edges, caption, groups = [], [], "", []
     if (last_content or "").strip():
         data = try_parse_json(last_content)
         if data is None:
@@ -253,12 +341,15 @@ def extract_diagram_image(
         else:
             diag, verdict = validate_diagram_json(data)
             if diag is not None:
-                nodes, edges, caption = diag
+                nodes = diag["nodes"]
+                edges = diag["edges"]
+                caption = diag["caption"]
+                groups = diag["groups"]
                 verdict = "ok"
     ok = verdict == "ok"
     result = {
         "ok": ok, "verdict": verdict, "nodes": nodes, "edges": edges,
-        "caption": caption,
+        "caption": caption, "groups": groups,
     }
     meta = {
         "model": model, "provider": provider, "session": sess, "image_size": send_size,
@@ -287,6 +378,7 @@ __all__ = [
     "strip_fences",
     "try_parse_json",
     "validate_diagram_json",
+    "GROUP_KINDS",
     "extract_diagram_image",
     "SYSTEM_PROMPT",
     "USER_PROMPT",

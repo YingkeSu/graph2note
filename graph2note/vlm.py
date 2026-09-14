@@ -669,6 +669,11 @@ def _merge_visual_graph(
         "edges": result.get("edges", []),
         "caption": result.get("caption", ""),
         "source": None,
+        # SPW D1 (authorized minimal seam): forward the visual hierarchy so
+        # groups survive extract -> merge -> IR.  node.note/edge.style already
+        # ride along inside nodes/edges; ``groups`` is a top-level key and
+        # would otherwise be dropped here.
+        "groups": result.get("groups", []),
     })
     obj["blocks"] = kept
     meta = dict(result.get("meta") or {})
