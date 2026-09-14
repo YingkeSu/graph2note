@@ -1,91 +1,126 @@
 # D3 — 渲染与前端呈现（handoff）
 
-Status: **ready-for-review**
-分支：`dev/D3-diagram-render`；基线：本地 `main`（ff 合并至 `916846d`，含 SPEC §1 锚点更正）
-提交：7 个（见下），每逻辑单元一提交；未 push origin，未自审，未合并。
+Status: **ready-for-review**（返工轮 1，处置 F1–F6）
+分支：`dev/D3-diagram-render`；基线：本地 `main`（`916846d`）。**本轮未 rebase**——等调度「D1/D2 已合并」通知后再 rebase 到新 main、删 `_ENGINE_GROUPS_SUPPORT`、用真 D2 engine 复跑（见 §3）。
+提交：10 个（返工 2 个：`6595ef1` `a733266`）；未 push origin，未自审，未合并。
 
-## 1. 改动清单（vs `916846d`，14 文件 +1635/−57）
+> 上一轮 verdict `reject` 的唯一阻断项是 **F1**（分组语义在 engine→renderer 边界被静默丢弃，产品链上分组是 no-op）。返工轮按 `review-spw-D3-verdict.md` §0 + F1–F6 逐项处置，见 §4。
+
+## 1. 改动清单（vs `916846d`，15 文件）
 
 | 提交 | 内容 |
 |---|---|
-| `677d55f` | `graph2note/diagrams/render_semantics.py`（新）：SPEC §1 dict/IR 双形态归一化器 |
-| `abdbf8d` | `graphviz_renderer.py`：`cluster_*` 子图 / `rank=same`（layer）/ 组标题 / note 小字 HTML-like label / dashed 边 |
-| `532827e` | `matplotlib_renderer.py`：分组背景框+组标题 / note 小字 / dashed 箭头 / `build_figure()` 可测接缝 |
-| `b9e8aef` | `tests/test_diagram_render_groups.py` + taxonomy 登记 |
+| `677d55f` | `graph2note/diagrams/render_semantics.py`（新）：SPEC §1 dict/IR 归一化器 |
+| `abdbf8d` | `graphviz_renderer.py`：`cluster_*` / `rank=same`(layer) / 组标题 / note 小字 / dashed |
+| `532827e` | `matplotlib_renderer.py`：分组背景框+组标题 / note 小字 / dashed / `build_figure()` |
+| `b9e8aef` | `tests/test_diagram_render_groups.py` + taxonomy |
 | `2f724e5` | `degrade.py` + `attachments.py` + `render.py`：语义流经导出链 |
-| `27b1ed9` | `webstatic/assets.js`、`views/document.js`、`style.css`：结构图 figure 呈现 + 缩放 |
-| `3923903` | 字号/换行可读性策略修正（ASCII 词不截断） |
+| `27b1ed9` | `assets.js` / `views/document.js` / `style.css`：结构图 figure + 缩放 |
+| `3923903` | 词感知换行（ASCII 不截断） |
+| `6595ef1` | **返工 F1/F2/F3/F4/F6**：语义层改为 D2 layout 纯适配层；边不再去重；共享 accessor；degrade docstring 更正 |
+| `a733266` | **返工 F1**：两个 renderer 消费 `layout=`；新增产品链端到端测试 |
+| `12ddc82` | 上一轮 handoff（docs） |
 
-越界检查：`ir.py`/`diagram.py`/`infer.py`/`_layout.py`/`_canonical.py`/`engine.py`/`index.html`/`router.js`/`api.js`/`state.js`/`digest.py`/`webapp.py`/`store.py` **未改动**（`git diff --name-only 916846d..HEAD` 已核对）。
+领地：新增 `graph2note/diagrams/render_semantics.py`（渲染层新文件）与 `tests/` 新文件；`ir.py`/`diagram.py`/`infer.py`/`_layout.py`/`_canonical.py`/`engine.py`/`index.html`/`router.js`/`api.js`/`state.js`/`digest.py`/`webapp.py`/`store.py` **未改动**。
 
 ## 2. 实现要点（对齐 SPEC §1「渲染」条）
 
-1. **graphviz（首选引擎）**
-   - `groups` → `subgraph cluster_<id>`；`kind=layer` 额外 `rank=same`（层带=同一横排），`lane`/`cluster` 仅作视觉分组；
-   - 组标题 `label` + `fontsize=20`（= `GROUP_FONTSIZE` ≥ `NOTE_FONTSIZE`）；每组固定调色板（`render_semantics.group_colors`），确定性；
-   - `node.note` → HTML-like label 第二行 `<FONT POINT-SIZE="14">`（普通 label 无法混字号），14 < 节点 20；
-   - `edge.style=dashed` → `style=dashed`；solid 边不写 style 属性；
-   - **无 groups/note/dashed 时 DOT 源码与旧渲染器逐字节一致**（测试内嵌旧实现对比 + 基线 PNG sha 锁定）。
-2. **matplotlib（回退引擎）**
-   - 分组背景框：`layer` 通栏横带、`lane` 通高竖带、`cluster` 成员包络框；框+组标题画在边/节点之下（zorder=0/1）；
-   - note 字号 10 < 节点 13；`GROUP_FONTSIZE=13 ≥ NOTE_FONTSIZE=10`；无 note 时 box 高度公式与旧代码逐字符相同 → **无 groups/notes 的 PNG 与基线 sha 完全一致**（`e5f561dd…`，见 §5）；
-   - dashed 边（线+箭头）用独立分支，solid 路径参数不变。
-3. **可读性策略（回应 T-audit 阶段1 的 ~3px 字高）**
-   - 渲染侧：层级块（有 groups 或 note）对长标签做 CJK 感知换行（`wrap_display_label`，ASCII 单词不截断），压缩单排宽度 → 阅读窗按宽缩放后字高更大。**未分组路径不换行，保持字节回归锁定**；`size`/`dpi` 只整体缩放、对“字宽占比”无效，故未采用；
-   - 前端侧：结构图渲染产物包成 `<figure class="g2n-diagram">`（带图注），点击/Enter/Space 打开既有大图查看器（缩放/平移），并在 `style.css` 追加 cursor/边框/图注样式（**只追加**，旧选择器未动）。
-4. **导出链不丢语义**
-   - `DiagramSemantics` 新增 `groups`；`FileAssetWriter.write_diagram` 在此归一化一次并把 `groups/notes/dashed_edges` 记入 `results` 审计（`self.results[i][1]["semantics"]`）；
-   - `render_markdown` 在块带语义时追加一行**不可见 HTML 注释**：`<!-- diagram-semantics: {"dashed_edges":[…],"groups":[…],"notes":{…}} -->`（确定性 JSON、`<`/`>` 转义为 `\u003c`/`\u003e` 防止提前闭合）。无语义的 diagram 输出与旧实现逐字节一致。
-   - **导出格式说明**：图片仍是 `![caption](assets/<doc>-diagram-N.png)`；层级语义以该 HTML 注释随 Markdown（及 vault/zip 导出）保留，渲染不可见。
+1. **graphviz（首选）**：`groups` → `subgraph cluster_<id>`（`kind=layer` 追加 `rank=same`），组标题 + 每组固定调色板；`node.note` → HTML-like label 第二行小一号（14 < 节点 20）；`edge.style=dashed` → `style=dashed`（solid 不写 style）。
+2. **matplotlib（回退）**：分组背景框（layer 通栏 / lane 通高 / cluster 包络）+ 组标题；note 10 < 节点 13；`GROUP_FONTSIZE=13 ≥ NOTE_FONTSIZE=10`；dashed 线+箭头。
+3. **D2 layout 消费（F1/F3，本轮核心）**：
+   - 两个 `render(...)` / `build_digraph(...)` / `build_figure(...)` 增加 `layout: dict | None = None`，符合 D2 handoff「D3 增加 `layout=` 形参后引擎侧零改动自动接线」的契约；
+   - `render_semantics.normalize(nodes, edges, groups, layout)`：**有 layout 时是纯适配层**——组序/kind/members/bbox 与 `positions` 逐字取自 `layout['groups']`/`layout['positions']`（`groups_from_layout`/`positions_from_layout`），不再自行排序、不再降级 kind；无 layout 时保持旧的 node-reading-order 分组；
+   - graphviz 用 layout 的 groups 元数据建 cluster（dot 自算几何）；matplotlib 用 `positions` 放置节点、用 `groups[].bbox` 画背景框（按 orientation 做轴映射），使回退引擎与几何拥有者一致。
+4. **可读性**：层级块 CJK 感知换行（ASCII 词不截断，`wrap_display_label`）；前端结构图 `<figure class="g2n-diagram">` + 图注 + 点击/Enter/Space 打开大图查看器；`style.css` 只追加。
+5. **导出链**：`DiagramSemantics.groups`；`FileAssetWriter.write_diagram` 归一化后把 `groups/notes/dashed_edges` 记入 `results[i]["semantics"]`；`render_markdown` 在块带语义时追加确定性、不可见 sidecar 注释 `<!-- diagram-semantics: {…} -->`（`<`/`>` 转义为 `\u003c`/`\u003e`）。无语义块输出逐字节不变。
 
-## 3. 与 D1/D2 的接线状态（未 rebase 到未合并分支）
+## 3. 与 D1/D2 的接线状态
 
-- 本分支**未** `rebase` 到 `dev/D1-diagram-extract` / `dev/D2-diagram-layout`（二者未合并；调度尚未通知）。渲染器一律按 SPEC §1 JSON 形状（dict）开发，`render_semantics` 同时接受 dict 与 IR 对象，**不 import D1/D2 代码**。
-- `attachments.py` 用 `inspect.signature` 探测 `engine.render_to_png` 是否支持 `groups=`：D2 合并前不传（不报错、`results` 仍记录语义），D2 合并后自动转发。**TODO（D2 合并后）**：改为无条件 `groups=` 关键字并删除探测缓存 `_ENGINE_GROUPS_SUPPORT`。
-- 未知风险：D2 若改为在 engine 内预先算好几何（而非把 `groups` 透传给渲染器），需保留本分支归一化作为绘制输入；D1 若把 `note`/`style` 落到不同字段名，`render_semantics._get` 已按 `from_`/`from`、`note`、`style` 兼容，如字段名不同需加别名。
-- 合并顺序 D1→D2→D3：收到「已合并」通知后执行 `git rebase main`（或 merge），跑全量 + 用真实 `test-images` 三图重跑锚点渲染，并在此文件补记。
+- 本分支仍基于 `main 916846d`（**未 rebase**，未收到合并通知）；按 SPEC §1 dict 形状开发，不 import D1/D2 代码。
+- `attachments.py` 保留 `_ENGINE_GROUPS_SUPPORT` 签名探测：预 D2 不转发 groups 也不报错；D2 合并后自动转发（`engine` 自行算 layout 并转发给声明了 `layout=` 的 renderer）。**收到通知后**：rebase → 删探测（改无条件 `groups=`）→ 用真 D2 engine 复跑全量 + 产品链锚点。
+- **已用一次性集成树验证真实 D1+D2+D3**（`/tmp/d3-int2`，本地 clone，未触碰仓库分支）：D1 `dddc2c7` + D2 `148c846` + 本分支 `a733266`，taxonomy 冲突按并集解决；集成树全量 pytest **exit 0**，`/tmp/d3-int-check.py` 结果见 §4-F1。
 
-## 4. 渲染效果证据（/tmp，offline fixture）
+## 4. 返工处置（F1–F6）
 
-> D1/D2 未合并，锚点用**手写 SPEC §1 fixture**（非真实 VLM 产物），仅证明渲染层行为；真实三图的复验归 T-audit/T-vision。
+### F1（阻断，已修）— 产品链丢分组
+**根因**：D2 的 `engine._renderer_layout_kwargs` 只向声明了 `layout` 形参的 renderer 转发几何；D3 的 `render()` 只加了 `groups=`，没有 `layout=` → `kwargs={}` → 扁平渲染；且 `attachments` 即使在无 D2 时也不转发 groups（单分支 no-op）。测试盲区：导出链测试用了假 engine 且从未断言真实 `FileAssetWriter→engine→renderer` 产物。
 
-- `/tmp/spw-D3/anchors/`（graphviz + matplotlib 各 3 张，均 re-render 字节一致）
-  - `01-requirements-arch.*.png`：3 条 layer 横带 + `macmini` note「亮点：Critical Path 优化 ☆」（`POINT-SIZE=14`）
-  - `02-digitize-pipeline.*.png`：主线 lane + 旁注 cluster + 2 条 dashed 旁注边
-  - `02-digitize-pipeline-increment.*.png`：2 个独立 cluster（原子/增量），**无** `rank=same` → 左右两流程保持可分辨（结构断言通过）
-  - 结构断言输出：`/tmp/spw-D3/anchor-output.txt`
-- 前端：`/tmp/spw-D3/diagram-figure-1440.png`（文档视图 figure + 图注）、`/tmp/spw-D3/audit/*.png`（33 张路由截图）、`/tmp/spw-D3/audit/audit.json`
-- 复现脚本（/tmp，非仓库）：`seed_storage.py`、`render_anchors.py`、`verify_diagram_figure.mjs`、`pw-shim.mjs`
+**处置**：
+1. 两个 renderer 增加 `layout=` 并按其消费（§2.3）；
+2. 保留 `groups=` 供 dict 直调/测试；`_ENGINE_GROUPS_SUPPORT` 仍在（D2 未并入本分支）；
+3. 新增 `tests/test_diagram_engine_integration.py`（11 项）：走**真实产品链** `render_markdown → FileAssetWriter → engine → renderer`，断言
+   - grouped PNG ≠ flat PNG（两引擎）——正是 reviewer 的失败探针；
+   - spy `build_digraph`/`build_figure`，断言引擎确实把 `layout` 传给了 renderer，且 `layout["groups"]`/`positions` 非空；
+   - group/note/dashed 都到达绘制层（DOT 含 3 个 `cluster_` + `style=dashed` + `POINT-SIZE`；matplotlib `drawn==[g1,g2,g3]`）；
+   - `results["semantics"]` 记录 group/note/dashed。
+   D2 未合并时自动安装**严格实现 D2 契约**的 stub engine（同 layout dict 形状 + 同签名转发门），因此缺 `layout=` 会被测试当场抓住；D2 合并后改用真 engine。
+
+**证据（真实 D1+D2+D3 集成树 `/tmp/d3-int2`，reviewer 的 `/tmp/d3-int-check.py`）**：
+
+| | 上一轮（reject 证据） | 返工后 |
+|---|---|---|
+| `graphviz.render` 接受 `layout` | False | **True** |
+| `[graphviz] grouped==flat` | True | **False**（`7afad391…` vs `500a7ba9…`） |
+| `[matplotlib] grouped==flat` | True | **False**（`6e310b72…` vs `0fb23547…`） |
+| `engine groups= → layout present` | True | True |
+| `engine grouped vs flat identical` | True | **False** |
+
+产品链锚点产物（集成树，`FileAssetWriter→engine→renderer`）：`/tmp/spw-D3/anchors-product/*.{graphviz,matplotlib}.png`（6 张，均 re-render 字节一致；increment 两簇 `bbox` 左右相接不重叠）。
+
+### F2（medium，已修）— 重复边导致与基线不一致
+`normalize_edges` 曾对 `(from,to,label,style)` 完全相同的边去重；`_canonical.canonical_edges` 不去重、旧渲染器会画两次。**处置**：删除去重，与 `_canonical` 对齐。旧 handoff 的「无 groups 逐字节一致」表述同时更正为：**在无 groups/note/dashed 的输入上逐字节一致（含完全重复边）**。
+
+**证据（reviewer 的 `/tmp/d3-dup-probe.py`）**：
+
+| | 基线 916846d | 返工后 |
+|---|---|---|
+| graphviz dup vs uniq | `81476346…` vs `cfc48c58…` | **相同值** |
+| matplotlib dup vs uniq | `e55c288d…` vs `f4e04d78…` | **相同值** |
+
+另跑 reviewer 的 no-dup / dup 两套回归探针对拍基线树：`diff` **IDENTICAL**（`/tmp/spw-D3/d3-new*.json`）。
+
+### F3（low，设计，已修）— 与 D2 双源分歧
+**处置**：有 `layout` 时 `render_semantics` 为纯适配层，组序/kind/members/bbox/positions 全以 `layout` 为准（未知 kind 原样保留，不再降级）；无 layout 时才走自身排序。决策：**layout 是唯一几何真源；render_semantics 只做 dict/IR 形状适配与绘制所需最少派生**（换行、调色板、membership first-wins，后者与 D2 `_first_owner` 同规则）。
+
+### F4（low，已修）
+`degrade_required` 的 docstring 不再自称 engine 的「single source of truth」：明确 engine 目前内联 `if nodes or edges`，该 helper 是**兼容性断言锚点**、待 engine 拥有者接线。行为不变。
+
+### F5（low，评审已接受，无改动）
+`attachments.py` 除 `DiagramSemantics` 外改了 `FileAssetWriter.write_diagram`（转发 + `results["semantics"]` 审计）：brief 任务 4 必需，改动最小，已在上一版 handoff §6.6 披露。
+
+### F6（nit，已修）
+三份 dict-or-object 取值助手合并为一份：`attachments.semantics_field`，`render.py` 与 `diagrams/render_semantics.py` 共用。放在 `attachments` 是因为 `render.py` 必须保持无 numpy 依赖（`diagrams/__init__` 会拉 `degrade→numpy`），不能从 `render_semantics` 反向导入。
 
 ## 5. 测试证据
 
-环境：本 worktree 的 `.venv` 只装了基础依赖，故用主仓 venv + `PYTHONPATH` 指向本 worktree：
+环境：本 worktree `.venv` 仅基础依赖，故用主仓 venv + `PYTHONPATH`：
 `PYTHONPATH=$PWD /Users/suyingke/Programs/OHO/graph2note/.venv/bin/python -m pytest …`
 
-- `pytest -q -p no:randomly -W ignore`（**全量**）：**exit 0**，无 failed/error。（本环境下 pytest 的末行 "N passed" 被某测试的 stdout 捕获吞掉，仅见进度点；退出码为准。）
-- 新增测试：`test_diagram_render_groups.py` **18 passed**、`test_diagram_semantics_export.py` **12 passed**、`test_diagram_presentation.py` **4 passed**。
+- **本分支全量** `pytest -q -p no:randomly -W ignore`：**exit 0**（无 failed/error；本环境末行统计被某测试 stdout 捕获吞掉，以退出码为准）。
+- **集成树 `/tmp/d3-int2`（真实 D1+D2+D3）全量**：**exit 0**。
+- 新增/相关测试：`test_diagram_engine_integration.py` **11**、`test_diagram_render_groups.py` **18**、`test_diagram_semantics_export.py` **12**、`test_diagram_presentation.py` **4**；集成树 D3+D1+D2 相关子集 **145 passed**。
 - Node：`node tests/diagram_presentation.cjs` ✓、`node tests/assets_rewrite.cjs` ✓。
 - 回归锁定：
-  - graphviz 无 groups → DOT 源码 == 内嵌旧实现（`test_graphviz_ungrouped_source_matches_legacy_renderer`）；
-  - matplotlib 无 groups/notes → PNG sha == 基线 `e5f561dd3056cedf61d4fd0626141c01c7f26662d1a97021e799401952fb3ced`（matplotlib 3.11.1；版本不符时 skip 并说明）；
-  - 无分组 diagram 的 Markdown 输出逐字节不变（`test_flat_diagram_output_is_unchanged_regression`）。
-- 前端巡检（brief 指定）：
-  `PLAYWRIGHT_MODULE=<…>/playwright/index.js node scripts/frontend_audit.mjs http://127.0.0.1:8795 /tmp/spw-D3/audit`
-  → `{"checks": 33, "findings": []}`（33 路由×宽度：0 pageerror、0 横向溢出、0 控件裁切）。
-- 文档视图端到端（Playwright，离线拦截 CDN 的 marked 为最小 v4-like shim，走**真实** `document.js` 路径）：figure 渲染 ✓、`img` 指向 `/api/documents/…/assets/…-diagram-0.png` ✓、图注 ✓、figure 边框/`cursor:zoom-in` ✓、普通图片仍是裸 `<img>` ✓、点击打开大图查看器且 src 为该图 ✓、0 runtime error。
+  - graphviz 无 groups → DOT 源码 == 内嵌旧实现；
+  - matplotlib 无 groups/notes → PNG sha == 基线 `e5f561dd…`（matplotlib 3.11.1；版本不符 skip）；
+  - 无语义 diagram 的 Markdown 逐字节不变；
+  - 重复边输入与基线树 `diff` IDENTICAL（F2）。
 
 ## 6. 诚实限制
 
-1. **AO 桌面浏览器面板无网络**：index.html 的 marked/KaTeX 来自 CDN，预览在面板内显示「marked 未能加载」，故面板内无法直接看到 figure；已用 Playwright + CDN shim 走真实代码路径验证（§5），并在 AO 面板确认无 pageerror。
-2. 锚点是**手写 fixture**，不代表真实 VLM 抽取质量；真实三图复验需 D1/D2 合并后由 T-audit/T-vision 执行。
-3. `PLAYWRIGHT_MODULE` 需指向 `…/node_modules/playwright/index.js`（Node 25 拒绝目录 ESM import；brief 给的目录路径会 `ERR_UNSUPPORTED_DIR_IMPORT`）。另建了 `/tmp/spw-D3/pw-shim.mjs` 供 `scripts/frontend_audit.mjs` 使用。
-4. matplotlib CJK 组标题 `fontweight="bold"` 在 macOS Arial Unicode 上会打印 `findfont: Failed to find font weight bold`（回退 400），仅日志噪音，不影响产物。
-5. `test_matplotlib_ungrouped_png_matches_baseline_golden` 的 sha 与 matplotlib 版本绑定（PNG 内嵌版本串），换环境会 skip。
-6. `attachments.py` 除 `DiagramSemantics` 外还改了 `FileAssetWriter.write_diagram`（brief 任务清单 4 要求 groups 流经导出链所必需，改动最小：签名探测转发 + results 审计字段），如需严格「仅 DiagramSemantics 段」请评审指示。
+1. **本轮未 rebase**：按调度指示等「D1/D2 已合并」通知；集成验证在 `/tmp/d3-int2` 一次性 clone 完成，**不代表本分支已合并 D1/D2**，也尚未删除 `_ENGINE_GROUPS_SUPPORT`。
+2. F1 的 stub-engine 端到端测试在本分支上执行；真 engine 端到端结论来自 `/tmp/d3-int2`（同源 commit，taxonomy 冲突手工并集）。rebase 后须在真实分支复跑。
+3. `/tmp/d3-int2` 集成树的 taxonomy 冲突解法为并集（D1 2 行 + D2 1 行 + D3 4 行），与 reviewer 的处理一致；合并入 main 时需同样处理。
+4. AO 桌面浏览器面板无网络：index.html 的 marked/KaTeX 来自 CDN，面板内预览显示「marked 未能加载」；上一轮已用 Playwright + CDN shim 走真实 `document.js` 路径验证（本轮前端未改动）。
+5. `PLAYWRIGHT_MODULE` 需指向 `…/node_modules/playwright/index.js`（Node 25 拒绝目录 ESM import）；`/tmp/spw-D3/pw-shim.mjs` 供 `scripts/frontend_audit.mjs` 使用。
+6. matplotlib CJK 组标题 bold 会打印 `findfont: Failed to find font weight bold`（回退 400），仅日志噪音。
+7. matplotlib golden sha 与 matplotlib 版本绑定（PNG 内嵌版本串）。
+8. `attachments.py` 范围偏差见 F5。
+9. 锚点仍是**手写 SPEC §1 fixture**（非真实 VLM 产物）；真实三图的视觉复验归 T-audit/T-vision，且必须用**产品链产物**（`/tmp/spw-D3/anchors-product/` 即该形态）。
 
-## 7. 复验建议（reviewer）
+## 7. 复验建议（fresh reviewer）
 
-1. `PYTHONPATH=$PWD <full-venv>/bin/python -m pytest tests/test_diagram_render_groups.py tests/test_diagram_semantics_export.py tests/test_diagram_presentation.py -q`
+1. `PYTHONPATH=$PWD <full-venv>/bin/python -m pytest tests/test_diagram_engine_integration.py tests/test_diagram_render_groups.py tests/test_diagram_semantics_export.py tests/test_diagram_presentation.py -q`
 2. `node tests/diagram_presentation.cjs`
-3. 看 `/tmp/spw-D3/anchors/*.png`（若被清理，跑 `/tmp/spw-D3/render_anchors.py` 重生成）
-4. 关注点：无分组路径字节回归、sidecar 注释是否为可接受的导出格式、D2 合并后的 `groups=` 接线。
+3. 复跑 reviewer 探针：本分支上 `tests/test_diagram_engine_integration.py::test_product_chain_grouped_render_differs_from_flat[graphviz|matplotlib]` 必过；集成树上跑 `/tmp/d3-int-check.py` 应看到两条 `SAME=False`。
+4. 关注点：F1 的 `layout=` 接线是否会在 rebase 后回退（删 `_ENGINE_GROUPS_SUPPORT` 时）；F2 去重删除是否与 `_canonical` 长期一致；F3 的 layout 单源决策是否被接受。
