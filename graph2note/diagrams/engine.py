@@ -124,7 +124,6 @@ def render_structured(
     )
 
 
-
 def render_to_png(
     nodes: list[Node],
     edges: list[Edge],
