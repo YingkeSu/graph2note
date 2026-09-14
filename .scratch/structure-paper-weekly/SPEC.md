@@ -37,9 +37,12 @@ class DiagramGroup(BaseModel):
 
 ### 验收锚点（三张手稿图）
 
-- 01-requirements-arch：应识别出 ≥2 个水平层带（层间通信/通信层/执行 区域），macmini/macbook/windows laptop 等节点归入对应层；右侧通信方案文字区不得混入图节点（或作为 note/独立块）。
-- 02-digitize-pipeline：阶段主线呈清晰主流向，旁注（如「critical path 优化 ☆」）以 note/虚线弱关联呈现，不与主流程节点同级混排。
-- 复验由 T-audit 用视觉对比执行（见 briefs/T-audit-visual.md）。
+> 2026-09-14 更正（依 T-audit 阶段1 真实证据，报告 `/tmp/spw-T-audit-baseline.md`）：真实产物中「亮点：Critical Path 优化 ☆」出现在 **01** 的通信方案文字区（live IR node `n18`），不在 02；02 上真实存在的旁注区是「调研：」「设计：」。D 轨以本更正后锚点为准。
+
+- 01-requirements-arch：应识别出 ≥2 个水平层带（层间通信/通信层/执行 区域），macmini/macbook/windows laptop 等节点归入对应层；右侧通信方案文字区（含「亮点：Critical Path 优化 ☆」、Questions、Programs 目录等）不得混入图节点（或作为 note/独立块）。
+- 02-digitize-pipeline：阶段主线呈清晰主流向，旁注（「调研：」「设计：」等文字区）以 note/虚线弱关联呈现，不与主流程节点同级混排。
+- 02-digitize-pipeline-increment：原图为左右两张独立流程（原子/增量）；产物应保持两侧可分辨（至少以 groups/子图区分），不得压成一张无区分的散点大图。
+- 复验由 T-audit（几何/结构，判据见 `/tmp/spw-taudit-artifacts/MANIFEST.md` §9）+ T-vision（视觉判读）分执；视觉 verdict 以 T-vision 为准。
 
 ## §2 论文文档契约（I 轨 P1–P3）
 
