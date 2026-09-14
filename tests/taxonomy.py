@@ -99,6 +99,7 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_diagram_groups_ir": "diagrams",  # SPW D1（分层 IR/VLM 契约/文本侧 groups）
     "test_diagram_groups_pipeline": "diagrams",  # SPW D1（extract→merge→IR groups 缝合）
     "test_diagram_group_layout": "diagrams",  # SPW D2（分组感知布局）
+    "test_diagram_render_groups": "diagrams",  # SPW D3（分组/旁注/虚线渲染）
     # 运行配置 / LLM 设置
     "test_config": "config",
     "test_llm_settings": "config",
