@@ -1,0 +1,191 @@
+{
+  "comment": "golden layout — 02-digitize-pipeline / main pipeline + 调研/设计 annotation clusters (SPW D2)",
+  "expected": {
+    "columns": [
+      [
+        "note-design",
+        "parse",
+        "format",
+        "output"
+      ],
+      [
+        "note-research2"
+      ],
+      [
+        "note-research"
+      ],
+      [
+        "input"
+      ]
+    ],
+    "dangling": [],
+    "groups": [
+      {
+        "bbox": {
+          "x0": 0.0,
+          "x1": 0.25,
+          "y0": 0.0,
+          "y1": 0.25
+        },
+        "col_span": [
+          0,
+          0
+        ],
+        "id": "anno-design",
+        "kind": "cluster",
+        "label": "设计：",
+        "members": [
+          "note-design"
+        ],
+        "row_span": [
+          0,
+          0
+        ]
+      },
+      {
+        "bbox": {
+          "x0": 0.25,
+          "x1": 0.75,
+          "y0": 0.0,
+          "y1": 0.25
+        },
+        "col_span": [
+          1,
+          2
+        ],
+        "id": "anno-research",
+        "kind": "cluster",
+        "label": "调研：",
+        "members": [
+          "note-research",
+          "note-research2"
+        ],
+        "row_span": [
+          0,
+          0
+        ]
+      }
+    ],
+    "ncols": 4,
+    "node_groups": {
+      "format": [],
+      "input": [],
+      "note-design": [
+        "anno-design"
+      ],
+      "note-research": [
+        "anno-research"
+      ],
+      "note-research2": [
+        "anno-research"
+      ],
+      "output": [],
+      "parse": []
+    },
+    "nrows": 4,
+    "positions": {
+      "format": {
+        "x": 0.125,
+        "y": 0.625
+      },
+      "input": {
+        "x": 0.875,
+        "y": 0.125
+      },
+      "note-design": {
+        "x": 0.125,
+        "y": 0.125
+      },
+      "note-research": {
+        "x": 0.625,
+        "y": 0.125
+      },
+      "note-research2": {
+        "x": 0.375,
+        "y": 0.125
+      },
+      "output": {
+        "x": 0.125,
+        "y": 0.875
+      },
+      "parse": {
+        "x": 0.125,
+        "y": 0.375
+      }
+    },
+    "rows": [
+      [
+        "note-research2",
+        "note-research",
+        "input",
+        "note-design"
+      ],
+      [
+        "parse"
+      ],
+      [
+        "format"
+      ],
+      [
+        "output"
+      ]
+    ]
+  },
+  "fixture": {
+    "edges": [
+      [
+        "input",
+        "parse"
+      ],
+      [
+        "parse",
+        "format"
+      ],
+      [
+        "format",
+        "output"
+      ],
+      [
+        "note-research",
+        "parse"
+      ],
+      [
+        "note-research2",
+        "parse"
+      ],
+      [
+        "note-design",
+        "format"
+      ]
+    ],
+    "groups": [
+      {
+        "id": "anno-design",
+        "kind": "cluster",
+        "label": "设计：",
+        "nodes": [
+          "note-design"
+        ]
+      },
+      {
+        "id": "anno-research",
+        "kind": "cluster",
+        "label": "调研：",
+        "nodes": [
+          "note-research",
+          "note-research2"
+        ]
+      }
+    ],
+    "nodes": [
+      "format",
+      "input",
+      "note-design",
+      "note-research",
+      "note-research2",
+      "output",
+      "parse"
+    ]
+  },
+  "scenario": "02-digitize-pipeline / main pipeline + 调研/设计 annotation clusters"
+}

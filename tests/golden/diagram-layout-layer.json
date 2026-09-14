@@ -1,0 +1,247 @@
+{
+  "comment": "golden layout — 01-requirements-arch / three horizontal bands (SPW D2)",
+  "expected": {
+    "columns": [
+      [
+        "win-laptop",
+        "comm-layer",
+        "ci-runner"
+      ],
+      [
+        "macmini",
+        "layer-comm",
+        "exec-layer"
+      ],
+      [
+        "macbook",
+        "api-gw"
+      ]
+    ],
+    "dangling": [],
+    "groups": [
+      {
+        "bbox": {
+          "x0": 0.0,
+          "x1": 0.6666666666666666,
+          "y0": 0.33333333333333337,
+          "y1": 0.6666666666666666
+        },
+        "col_span": [
+          0,
+          1
+        ],
+        "id": "g-comm",
+        "kind": "layer",
+        "label": "通信层",
+        "members": [
+          "comm-layer",
+          "layer-comm"
+        ],
+        "row_span": [
+          1,
+          1
+        ]
+      },
+      {
+        "bbox": {
+          "x0": 0.0,
+          "x1": 1.0,
+          "y0": 0.6666666666666667,
+          "y1": 1.0
+        },
+        "col_span": [
+          0,
+          2
+        ],
+        "id": "g-exec",
+        "kind": "layer",
+        "label": "执行层",
+        "members": [
+          "api-gw",
+          "ci-runner",
+          "exec-layer"
+        ],
+        "row_span": [
+          2,
+          2
+        ]
+      },
+      {
+        "bbox": {
+          "x0": 0.0,
+          "x1": 1.0,
+          "y0": 0.0,
+          "y1": 0.3333333333333333
+        },
+        "col_span": [
+          0,
+          2
+        ],
+        "id": "g-machines",
+        "kind": "layer",
+        "label": "层间通信",
+        "members": [
+          "macbook",
+          "macmini",
+          "win-laptop"
+        ],
+        "row_span": [
+          0,
+          0
+        ]
+      }
+    ],
+    "ncols": 3,
+    "node_groups": {
+      "api-gw": [
+        "g-exec"
+      ],
+      "ci-runner": [
+        "g-exec"
+      ],
+      "comm-layer": [
+        "g-comm"
+      ],
+      "exec-layer": [
+        "g-exec"
+      ],
+      "layer-comm": [
+        "g-comm"
+      ],
+      "macbook": [
+        "g-machines"
+      ],
+      "macmini": [
+        "g-machines"
+      ],
+      "win-laptop": [
+        "g-machines"
+      ]
+    },
+    "nrows": 3,
+    "positions": {
+      "api-gw": {
+        "x": 0.8333333333333334,
+        "y": 0.8333333333333334
+      },
+      "ci-runner": {
+        "x": 0.16666666666666666,
+        "y": 0.8333333333333334
+      },
+      "comm-layer": {
+        "x": 0.16666666666666666,
+        "y": 0.5
+      },
+      "exec-layer": {
+        "x": 0.5,
+        "y": 0.8333333333333334
+      },
+      "layer-comm": {
+        "x": 0.5,
+        "y": 0.5
+      },
+      "macbook": {
+        "x": 0.8333333333333334,
+        "y": 0.16666666666666666
+      },
+      "macmini": {
+        "x": 0.5,
+        "y": 0.16666666666666666
+      },
+      "win-laptop": {
+        "x": 0.16666666666666666,
+        "y": 0.16666666666666666
+      }
+    },
+    "rows": [
+      [
+        "win-laptop",
+        "macmini",
+        "macbook"
+      ],
+      [
+        "comm-layer",
+        "layer-comm"
+      ],
+      [
+        "ci-runner",
+        "exec-layer",
+        "api-gw"
+      ]
+    ]
+  },
+  "fixture": {
+    "edges": [
+      [
+        "macmini",
+        "comm-layer"
+      ],
+      [
+        "macbook",
+        "comm-layer"
+      ],
+      [
+        "win-laptop",
+        "comm-layer"
+      ],
+      [
+        "layer-comm",
+        "comm-layer"
+      ],
+      [
+        "comm-layer",
+        "exec-layer"
+      ],
+      [
+        "exec-layer",
+        "api-gw"
+      ],
+      [
+        "exec-layer",
+        "ci-runner"
+      ]
+    ],
+    "groups": [
+      {
+        "id": "g-machines",
+        "kind": "layer",
+        "label": "层间通信",
+        "nodes": [
+          "macmini",
+          "macbook",
+          "win-laptop"
+        ]
+      },
+      {
+        "id": "g-comm",
+        "kind": "layer",
+        "label": "通信层",
+        "nodes": [
+          "layer-comm",
+          "comm-layer"
+        ]
+      },
+      {
+        "id": "g-exec",
+        "kind": "layer",
+        "label": "执行层",
+        "nodes": [
+          "exec-layer",
+          "api-gw",
+          "ci-runner"
+        ]
+      }
+    ],
+    "nodes": [
+      "api-gw",
+      "ci-runner",
+      "comm-layer",
+      "exec-layer",
+      "layer-comm",
+      "macbook",
+      "macmini",
+      "win-laptop"
+    ]
+  },
+  "scenario": "01-requirements-arch / three horizontal bands"
+}

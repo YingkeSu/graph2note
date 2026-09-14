@@ -1,0 +1,181 @@
+{
+  "comment": "golden layout — 02-digitize-pipeline-increment / two independent flows kept distinguishable (SPW D2)",
+  "expected": {
+    "columns": [
+      [
+        "L1",
+        "L2",
+        "L3"
+      ],
+      [
+        "R1",
+        "R2",
+        "R3"
+      ]
+    ],
+    "dangling": [],
+    "groups": [
+      {
+        "bbox": {
+          "x0": 0.0,
+          "x1": 0.5,
+          "y0": 0.0,
+          "y1": 1.0
+        },
+        "col_span": [
+          0,
+          0
+        ],
+        "id": "flow-left",
+        "kind": "cluster",
+        "label": "原子",
+        "members": [
+          "L1",
+          "L2",
+          "L3"
+        ],
+        "row_span": [
+          0,
+          2
+        ]
+      },
+      {
+        "bbox": {
+          "x0": 0.5,
+          "x1": 1.0,
+          "y0": 0.0,
+          "y1": 1.0
+        },
+        "col_span": [
+          1,
+          1
+        ],
+        "id": "flow-right",
+        "kind": "cluster",
+        "label": "增量",
+        "members": [
+          "R1",
+          "R2",
+          "R3"
+        ],
+        "row_span": [
+          0,
+          2
+        ]
+      }
+    ],
+    "ncols": 2,
+    "node_groups": {
+      "L1": [
+        "flow-left"
+      ],
+      "L2": [
+        "flow-left"
+      ],
+      "L3": [
+        "flow-left"
+      ],
+      "R1": [
+        "flow-right"
+      ],
+      "R2": [
+        "flow-right"
+      ],
+      "R3": [
+        "flow-right"
+      ]
+    },
+    "nrows": 3,
+    "positions": {
+      "L1": {
+        "x": 0.25,
+        "y": 0.16666666666666666
+      },
+      "L2": {
+        "x": 0.25,
+        "y": 0.5
+      },
+      "L3": {
+        "x": 0.25,
+        "y": 0.8333333333333334
+      },
+      "R1": {
+        "x": 0.75,
+        "y": 0.16666666666666666
+      },
+      "R2": {
+        "x": 0.75,
+        "y": 0.5
+      },
+      "R3": {
+        "x": 0.75,
+        "y": 0.8333333333333334
+      }
+    },
+    "rows": [
+      [
+        "R1",
+        "L1"
+      ],
+      [
+        "R2",
+        "L2"
+      ],
+      [
+        "R3",
+        "L3"
+      ]
+    ]
+  },
+  "fixture": {
+    "edges": [
+      [
+        "L1",
+        "L2"
+      ],
+      [
+        "L2",
+        "L3"
+      ],
+      [
+        "R1",
+        "R2"
+      ],
+      [
+        "R2",
+        "R3"
+      ]
+    ],
+    "groups": [
+      {
+        "id": "flow-left",
+        "kind": "cluster",
+        "label": "原子",
+        "nodes": [
+          "L1",
+          "L2",
+          "L3"
+        ]
+      },
+      {
+        "id": "flow-right",
+        "kind": "cluster",
+        "label": "增量",
+        "nodes": [
+          "R1",
+          "R2",
+          "R3"
+        ]
+      }
+    ],
+    "nodes": [
+      "L1",
+      "L2",
+      "L3",
+      "R1",
+      "R2",
+      "R3"
+    ]
+  },
+  "scenario": "02-digitize-pipeline-increment / two independent flows kept distinguishable"
+}
