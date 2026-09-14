@@ -102,6 +102,7 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_diagram_render_groups": "diagrams",  # SPW D3（分组/旁注/虚线渲染）
     "test_diagram_semantics_export": "diagrams",  # SPW D3（导出链不丢语义）
     "test_diagram_presentation": "diagrams",  # SPW D3（阅读窗结构图呈现/缩放）
+    "test_diagram_engine_integration": "diagrams",  # SPW D3 返工 F1（产品链布局接线）
     # 运行配置 / LLM 设置
     "test_config": "config",
     "test_llm_settings": "config",

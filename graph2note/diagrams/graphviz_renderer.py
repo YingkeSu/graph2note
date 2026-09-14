@@ -110,10 +110,17 @@ def build_digraph(
     edges,
     *,
     groups=None,
+    layout=None,
     orientation: str = "TB",
 ):
-    """Build the deterministic ``graphviz.Digraph`` for the given semantics."""
-    sem = rs.normalize(nodes, edges, groups)
+    """Build the deterministic ``graphviz.Digraph`` for the given semantics.
+
+    ``layout`` is D2's prepared geometry (``RenderOutcome.layout``).  dot
+    computes its own node geometry, so only the group metadata is consumed:
+    group order/kind/members come from ``layout["groups"]`` (the geometry
+    owner), which keeps the clusters in sync with the reported bboxes.
+    """
+    sem = rs.normalize(nodes, edges, groups, layout)
     g = graphviz.Digraph(format="png", engine="dot")
     rankdir = {"LR": "LR", "TB": "TB", "RL": "RL", "BT": "BT"}.get(
         orientation, "TB"
@@ -169,12 +176,14 @@ def build_digraph(
     return g
 
 
-def render(nodes, edges, out_path: str, *, groups=None, orientation: str = "TB") -> str:
+def render(nodes, edges, out_path: str, *, groups=None, layout=None,
+           orientation: str = "TB") -> str:
     """Render canonical node ids/edge pairs to a deterministic PNG."""
     if not available():
         raise RuntimeError("graphviz/dot is not available")
 
-    g = build_digraph(nodes, edges, groups=groups, orientation=orientation)
+    g = build_digraph(nodes, edges, groups=groups, layout=layout,
+                      orientation=orientation)
 
     directory = os.path.dirname(os.path.abspath(out_path))
     stem = os.path.splitext(os.path.basename(out_path))[0]

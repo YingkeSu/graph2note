@@ -114,7 +114,22 @@ def _wrap_label(label: str, max_units: int = 18) -> str:
 
 
 def _layout_positions(sem: rs.RenderSemantics, orientation: str) -> dict[str, tuple[float, float]]:
-    """Deterministic layered positions in the legacy orientation convention."""
+    """Deterministic positions honouring the legacy orientation convention.
+
+    With a D2 ``layout`` the positions are authoritative (``x`` left->right,
+    ``y`` top->bottom, normalized) and only the requested orientation is
+    applied on top; without one the hand-rolled layered layout is transposed
+    exactly as before.
+    """
+    if sem.positions is not None:
+        pos = dict(sem.positions)
+        if orientation == "BT":
+            return {n: (x, 1.0 - y) for n, (x, y) in pos.items()}
+        if orientation == "LR":
+            return {n: (y, x) for n, (x, y) in pos.items()}
+        if orientation == "RL":
+            return {n: (1.0 - y, x) for n, (x, y) in pos.items()}
+        return pos  # TB: D2's native frame already is top-to-bottom
     nid = [n.id for n in sem.nodes]
     edge_pairs = [(e.from_, e.to) for e in sem.edges]
     lay = LayerLayout(nid, edge_pairs)
@@ -156,10 +171,32 @@ def _box_sizes(sem: rs.RenderSemantics, labels: dict[str, str]):
     return wrapped, notes, box_w, box_h
 
 
+def _bbox_for_orientation(bbox, orientation: str):
+    """Map a D2 bbox (x L->R, y T->B) into the rendered orientation frame."""
+    x0, y0, x1, y1 = bbox
+    if orientation == "BT":
+        x0, y0, x1, y1 = x0, 1.0 - y1, x1, 1.0 - y0
+    elif orientation == "LR":
+        x0, y0, x1, y1 = y0, x0, y1, x1
+    elif orientation == "RL":
+        x0, y0, x1, y1 = 1.0 - y1, x0, 1.0 - y0, x1
+    return min(x0, x1), min(y0, y1), max(x0, x1), max(y0, y1)
+
+
 def _group_extent(group: rs.RenderGroup, members: list[str],
                   pos: dict[str, tuple[float, float]],
-                  box_w: dict[str, float], box_h: dict[str, float]):
-    """(x0, y0, w, h) background box for one group (y0 is the visual top)."""
+                  box_w: dict[str, float], box_h: dict[str, float],
+                  orientation: str = "TB"):
+    """(x0, y0, w, h) background box for one group (y0 is the visual top).
+
+    When the group came from D2's layout its ``bbox`` is authoritative (the
+    same geometry that placed the members); otherwise the box is the member
+    envelope.  ``layer`` spans the full width and ``lane`` the full height.
+    """
+    if group.bbox is not None:
+        x0, y0, x1, y1 = _bbox_for_orientation(group.bbox, orientation)
+        return max(0.0, x0), max(0.0, y0), min(1.0, x1) - max(0.0, x0), \
+            min(1.0, y1) - max(0.0, y0)
     xs = [pos[nid][0] for nid in members]
     ys = [pos[nid][1] for nid in members]
     pad_x = max(box_w[nid] for nid in members) / 2 + 0.03
@@ -178,7 +215,8 @@ def _group_extent(group: rs.RenderGroup, members: list[str],
 
 def _draw_groups(ax, sem: rs.RenderSemantics,
                  pos: dict[str, tuple[float, float]],
-                 box_w: dict[str, float], box_h: dict[str, float]) -> list[str]:
+                 box_w: dict[str, float], box_h: dict[str, float],
+                 orientation: str = "TB") -> list[str]:
     """Draw group backgrounds + titles; returns the drawn group ids in order."""
     membership = sem.membership
     drawn: list[str] = []
@@ -187,7 +225,7 @@ def _draw_groups(ax, sem: rs.RenderSemantics,
         if not members:
             continue
         fill, line = rs.group_colors(index)
-        x0, y0, w, h = _group_extent(group, members, pos, box_w, box_h)
+        x0, y0, w, h = _group_extent(group, members, pos, box_w, box_h, orientation)
         if w <= 0 or h <= 0:
             continue
         ax.add_patch(Rectangle((x0, y0), w, h, facecolor=fill, edgecolor=line,
@@ -205,13 +243,18 @@ def _draw_groups(ax, sem: rs.RenderSemantics,
 # ---------------------------------------------------------------------------
 
 
-def build_figure(nodes, edges, labels=None, *, groups=None,
+def build_figure(nodes, edges, labels=None, *, groups=None, layout=None,
                  orientation: str = "TB"):
-    """Build the deterministic figure; returns ``(fig, ax, drawn_group_ids)``."""
+    """Build the deterministic figure; returns ``(fig, ax, drawn_group_ids)``.
+
+    ``layout`` is D2's prepared geometry: its ``positions`` place the nodes and
+    its per-group ``bbox`` draws the background boxes (authoritative), so the
+    fallback renderer matches the layout engine byte-for-byte.
+    """
     if not _MPL_OK:  # pragma: no cover
         raise RuntimeError("matplotlib is not available")
 
-    sem = rs.normalize(nodes, edges, groups)
+    sem = rs.normalize(nodes, edges, groups, layout)
     text_labels = dict(labels or {})
     for node in sem.nodes:
         text_labels.setdefault(node.id, node.label)
@@ -226,7 +269,7 @@ def build_figure(nodes, edges, labels=None, *, groups=None,
     ax.invert_yaxis()  # top->down flow
     ax.axis("off")
 
-    drawn = _draw_groups(ax, sem, pos, box_w, box_h)
+    drawn = _draw_groups(ax, sem, pos, box_w, box_h, orientation)
 
     for edge in sem.edges:
         x0, y0 = npos[edge.from_]
@@ -255,10 +298,10 @@ def build_figure(nodes, edges, labels=None, *, groups=None,
 
 
 def render(nodes, edges, labels=None, out_path: str = "", *,
-           groups=None, orientation: str = "TB") -> str:
+           groups=None, layout=None, orientation: str = "TB") -> str:
     """Render canonical node ids/edge pairs to a deterministic PNG."""
     fig, _ax, _drawn = build_figure(nodes, edges, labels, groups=groups,
-                                    orientation=orientation)
+                                    layout=layout, orientation=orientation)
     fig.savefig(out_path, dpi=120, facecolor="white",
                 bbox_inches="tight", pad_inches=0.1)
     plt.close("all")
