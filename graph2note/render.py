@@ -24,9 +24,13 @@ from __future__ import annotations
 
 import json
 import re
-from collections.abc import Mapping
 
-from .attachments import AttachmentWriter, DiagramSemantics, PlaceholderAttachmentWriter
+from .attachments import (
+    AttachmentWriter,
+    DiagramSemantics,
+    PlaceholderAttachmentWriter,
+    semantics_field as _sem_get,
+)
 from .ir import DocumentIR, Block, ListItem, TableBlock
 
 
@@ -159,22 +163,6 @@ def _render_diagram(block: Block, index: int, writer: AttachmentWriter, doc_id: 
 # When a block carries hierarchy semantics we append one deterministic,
 # invisible HTML comment describing them, so the .md / vault export keeps the
 # information without changing what the reader sees.
-
-
-def _sem_get(obj, *names, default=None):
-    """Read SPEC §1 dict keys or IR object attributes (first match wins)."""
-    if obj is None:
-        return default
-    if isinstance(obj, Mapping):
-        for name in names:
-            if name in obj:
-                return obj[name]
-        return default
-    for name in names:
-        value = getattr(obj, name, None)
-        if value is not None:
-            return value
-    return default
 
 
 def _diagram_semantics_payload(block: Block) -> dict | None:

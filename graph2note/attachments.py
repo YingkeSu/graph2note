@@ -20,9 +20,32 @@ from __future__ import annotations
 import inspect
 import re
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from pathlib import Path
 
 from .ir import Node, Edge
+
+
+def semantics_field(obj, *names, default=None):
+    """Read a SPEC §1 dict key or an IR/object attribute (first match wins).
+
+    The single "dict-or-object" accessor for diagram semantics, shared by the
+    export sidecar extraction (``render.py``) and the renderer adapter
+    (``diagrams/render_semantics.py``); keeping it here avoids a third copy and
+    keeps both call sites free of optional dependencies (no numpy import).
+    """
+    if obj is None:
+        return default
+    if isinstance(obj, Mapping):
+        for name in names:
+            if name in obj:
+                return obj[name]
+        return default
+    for name in names:
+        value = getattr(obj, name, None)
+        if value is not None:
+            return value
+    return default
 
 
 class DiagramSemantics:
@@ -207,4 +230,5 @@ __all__ = [
     "PlaceholderAttachmentWriter",
     "FileAssetWriter",
     "missing_attachments",
+    "semantics_field",
 ]

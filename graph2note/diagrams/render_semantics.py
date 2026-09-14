@@ -13,25 +13,37 @@ Shape consumed here (all fields optional except ``id``)::
     group = {"id": "g1", "label": "通信层", "kind": "layer",
              "nodes": ["n1", "n2"]}
 
+**Single source of truth**
+
+* No ``layout`` argument (direct renderer call / tests): groups are derived
+  from the ``groups`` input, ordered by node reading position.
+* With ``layout`` (the product chain: D2's engine forwards
+  ``RenderOutcome.layout``), this module is a *pure adapter*: node/edge
+  labels+notes+styles come from the input, while group **order, kind, members
+  and bbox** come verbatim from ``layout["groups"]``.  Nothing is re-sorted or
+  re-classified, so the renderer can never disagree with the geometry D2
+  computed (review F1/F3).  ``layout["positions"]`` is consumed by the
+  matplotlib fallback; graphviz only needs the group metadata.
+
 Normalization is deterministic and defensive:
 
-* nodes/edges/groups are sorted by a content key, so input order never leaks
-  into layout or rendered bytes (FR-020);
+* nodes are sorted by id, edges by ``(from, to, label, style)`` so input order
+  never leaks into layout or rendered bytes (FR-020);
+* edges are **not** de-duplicated - ``_canonical.canonical_edges`` keeps exact
+  duplicates and the pre-SPW renderer drew them, so dropping them here would
+  change ungrouped output (review F2);
 * unknown group members are dropped (the IR layer rejects dangling refs; a
   renderer must not crash on stale/hand-built data);
 * ``style`` values outside ``solid``/``dashed`` degrade to ``solid``;
 * group member lists are de-duplicated and sorted by node id.
-
-Ordering of groups follows the node order (a group's rank is the smallest
-canonical index of its members) so hand-written reading order is preserved
-when the extractor emits the layers top-to-bottom.
 """
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
+
+from ..attachments import semantics_field
 
 GROUP_KINDS = ("layer", "lane", "cluster")
 EDGE_STYLES = ("solid", "dashed")
@@ -147,12 +159,18 @@ class RenderEdge:
 
 @dataclass(frozen=True)
 class RenderGroup:
-    """A visual group (layer band / swim-lane / local cluster)."""
+    """A visual group (layer band / swim-lane / local cluster).
+
+    ``bbox`` is ``(x0, y0, x1, y1)`` in the normalized ``[0,1]²`` frame when
+    the group came from a D2 ``layout`` (authoritative geometry), else ``None``
+    and the fallback derives its own box from member positions.
+    """
 
     id: str
     label: str = ""
     kind: str = "cluster"
     nodes: tuple[str, ...] = ()
+    bbox: tuple[float, float, float, float] | None = None
 
 
 @dataclass(frozen=True)
@@ -162,6 +180,12 @@ class RenderSemantics:
     nodes: list[RenderNode] = field(default_factory=list)
     edges: list[RenderEdge] = field(default_factory=list)
     groups: list[RenderGroup] = field(default_factory=list)
+    # Normalized positions from D2's layout (None for direct renderer calls).
+    positions: dict[str, tuple[float, float]] | None = None
+
+    @property
+    def from_layout(self) -> bool:
+        return self.positions is not None
 
     @property
     def membership(self) -> dict[str, str]:
@@ -181,22 +205,9 @@ class RenderSemantics:
 # field access: SPEC dict shape or IR object
 # ---------------------------------------------------------------------------
 
-
-def _get(obj: Any, *names: str, default: Any = None) -> Any:
-    """Read ``obj`` as a mapping key or an attribute (first match wins)."""
-    if obj is None:
-        return default
-    if isinstance(obj, Mapping):
-        for name in names:
-            if name in obj:
-                return obj[name]
-        return default
-    for name in names:
-        if hasattr(obj, name):
-            value = getattr(obj, name)
-            if value is not None:
-                return value
-    return default
+# Single shared accessor (defined in ``attachments`` so ``render.py`` and the
+# renderer adapter use exactly one implementation) - see review F6.
+_get = semantics_field
 
 
 def _text(value: Any) -> str:
@@ -235,10 +246,11 @@ def normalize_edges(edges: Any, node_ids: set[str] | None = None) -> list[Render
     """SPEC-shaped edges -> deterministic ``list[RenderEdge]``.
 
     ``node_ids`` (when given) restricts edges to known nodes - the same
-    restriction ``_canonical.canonical_edges`` applies before layout.
+    restriction ``_canonical.canonical_edges`` applies before layout.  Exact
+    duplicates are kept: ``_canonical`` keeps them and the pre-SPW renderer
+    drew them, so de-duplicating here would change ungrouped output (F2).
     """
     out: list[RenderEdge] = []
-    seen: set[tuple[str, str, str, str]] = set()
     for raw in edges or []:
         src = _text(_get(raw, "from", "from_"))
         dst = _text(_get(raw, "to"))
@@ -249,16 +261,11 @@ def normalize_edges(edges: Any, node_ids: set[str] | None = None) -> list[Render
         style = _text(_get(raw, "style", default="solid")) or "solid"
         if style not in EDGE_STYLES:
             style = "solid"
-        edge = RenderEdge(
+        out.append(RenderEdge(
             from_=src, to=dst,
             label=_text(_get(raw, "label", default="")),
             style=style,
-        )
-        key = (edge.from_, edge.to, edge.label, edge.style)
-        if key in seen:
-            continue
-        seen.add(key)
-        out.append(edge)
+        ))
     out.sort(key=lambda e: (e.from_, e.to, e.label, e.style))
     return out
 
@@ -277,9 +284,7 @@ def normalize_groups(groups: Any, node_ids: set[str] | None = None) -> list[Rend
         group_id = _text(_get(raw, "id"))
         if not group_id:
             continue
-        kind = _text(_get(raw, "kind", default="cluster")) or "cluster"
-        if kind not in GROUP_KINDS:
-            kind = "cluster"
+        kind = _normalize_kind(_get(raw, "kind", default="cluster"))
         members: set[str] = set()
         for member in _get(raw, "nodes", default=[]) or []:
             member_id = _text(member)
@@ -306,6 +311,64 @@ def _group_order_key(group: RenderGroup, order: dict[str, int]) -> tuple:
             group.label, group.id)
 
 
+def _normalize_kind(kind: Any) -> str:
+    text = _text(kind) or "cluster"
+    return text if text in GROUP_KINDS else "cluster"
+
+
+def groups_from_layout(layout: dict, node_ids: set[str] | None = None) -> list[RenderGroup]:
+    """Adapter for D2's ``RenderOutcome.layout`` (the geometry source).
+
+    Group **order, kind, members and bbox** are taken verbatim from
+    ``layout["groups"]``; nothing is re-sorted or re-classified (review F3).
+    The only defensive step is dropping members that are not in ``nodes[]``.
+    """
+    out: list[RenderGroup] = []
+    for raw in (layout or {}).get("groups") or []:
+        group_id = _text(_get(raw, "id"))
+        if not group_id:
+            continue
+        members: list[str] = []
+        for member in _get(raw, "members", "nodes", default=[]) or []:
+            member_id = _text(member)
+            if not member_id:
+                continue
+            if node_ids is not None and member_id not in node_ids:
+                continue
+            if member_id not in members:
+                members.append(member_id)
+        bbox_raw = _get(raw, "bbox")
+        bbox = None
+        if isinstance(bbox_raw, dict):
+            try:
+                bbox = (float(bbox_raw["x0"]), float(bbox_raw["y0"]),
+                        float(bbox_raw["x1"]), float(bbox_raw["y1"]))
+            except (KeyError, TypeError, ValueError):
+                bbox = None
+        kind = _text(_get(raw, "kind", default="cluster")) or "cluster"
+        out.append(RenderGroup(
+            id=group_id,
+            label=_text(_get(raw, "label", default="")),
+            # D2 preserves unknown kinds verbatim; do the same so the renderer
+            # cannot disagree with the geometry owner.
+            kind=kind,
+            nodes=tuple(members),
+            bbox=bbox,
+        ))
+    return out
+
+
+def positions_from_layout(layout: dict) -> dict[str, tuple[float, float]]:
+    """Adapter for ``layout["positions"]`` (``{id: {x, y}}`` -> ``(x, y)``)."""
+    out: dict[str, tuple[float, float]] = {}
+    for node_id, point in ((layout or {}).get("positions") or {}).items():
+        try:
+            out[str(node_id)] = (float(point["x"]), float(point["y"]))
+        except (KeyError, TypeError, ValueError):
+            continue
+    return out
+
+
 def group_membership(groups: list[RenderGroup]) -> dict[str, str]:
     """Map every member node id to exactly one owning group (first wins).
 
@@ -329,13 +392,29 @@ def normalize(
     nodes: Any,
     edges: Any,
     groups: Any = None,
+    layout: dict | None = None,
 ) -> RenderSemantics:
-    """Normalize a SPEC-shaped (or IR-object) diagram into render semantics."""
+    """Normalize a SPEC-shaped (or IR-object) diagram into render semantics.
+
+    With ``layout`` (D2's prepared geometry) this is a pure adapter: group
+    order/kind/members/bbox and node positions come from the layout, so the
+    renderer cannot diverge from the geometry owner.
+    """
     norm_nodes = normalize_nodes(nodes)
     node_ids = {n.id for n in norm_nodes}
     norm_edges = normalize_edges(edges, node_ids)
-    norm_groups = normalize_groups(groups, node_ids)
-    return RenderSemantics(nodes=norm_nodes, edges=norm_edges, groups=norm_groups)
+    if layout:
+        return RenderSemantics(
+            nodes=norm_nodes,
+            edges=norm_edges,
+            groups=groups_from_layout(layout, node_ids),
+            positions=positions_from_layout(layout),
+        )
+    return RenderSemantics(
+        nodes=norm_nodes,
+        edges=norm_edges,
+        groups=normalize_groups(groups, node_ids),
+    )
 
 
 def from_block(block: Any) -> RenderSemantics:
@@ -361,6 +440,8 @@ __all__ = [
     "normalize_nodes",
     "normalize_edges",
     "normalize_groups",
+    "groups_from_layout",
+    "positions_from_layout",
     "group_membership",
     "normalize",
     "from_block",

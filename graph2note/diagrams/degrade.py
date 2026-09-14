@@ -7,8 +7,9 @@ This path runs no OCR and no text pipeline, so it can never produce mojibake.
 
 D-track compatibility (SPEC §1): ``groups``/``note``/``style`` are *visual*
 semantics.  They must never promote a structure-less block into the structured
-render path, nor push a structured block into degradation - see
-:func:`degrade_required`, the single place that rule is stated.
+render path, nor push a structured block into degradation -
+:func:`degrade_required` is the assertion anchor for that rule (the engine
+owns the actual branch and is expected to call it once wired in).
 """
 
 from __future__ import annotations
@@ -20,13 +21,14 @@ from PIL import Image
 
 
 def degrade_required(nodes, edges, groups=None) -> bool:
-    """True when a block has no structured semantics -> crop source / blank.
+    """Compatibility helper: True when a block has no structured semantics.
 
-    The decision is drawn from ``nodes``/``edges`` only.  ``groups`` (and the
-    ``note``/``style`` extensions) are visual additions: passing them in must
-    not change the outcome.  Stated here once so the renderer-policy tests can
-    assert the compatibility instead of relying on an implicit ``if nodes or
-    edges`` kept in sync by hand.
+    Groups (and the ``note``/``style`` extensions) are visual additions and
+    must never change the degrade decision, so this stays a pure function of
+    ``nodes``/``edges``.  The engine currently inlines the same ``if nodes or
+    edges`` test (``engine.py`` is not D3 territory); this helper is the
+    assertion anchor for that rule and the place the engine can call once its
+    owner wires it in - it is *not* yet the engine's single source of truth.
     """
     return not (list(nodes or []) or list(edges or []))
 
