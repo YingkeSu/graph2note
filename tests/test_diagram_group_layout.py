@@ -186,6 +186,37 @@ def test_lane_members_share_one_vertical_column():
         assert len({col[m] for m in group["members"]}) == 1, group["id"]
 
 
+def test_lane_members_on_the_same_row_overflow_to_free_columns():
+    """Best-effort lane (SPEC "优先同列"): a column holds one member per row.
+
+    Two members of one lane that share a base row cannot occupy the same cell;
+    the second spills into a free column (review F3 blind spot)."""
+    layout = grouped_layout(
+        ["a", "b"], [], [{"id": "L", "kind": "lane", "nodes": ["a", "b"]}]
+    )
+    assert layout["nrows"] == 1
+    assert layout["rows"] == [["b", "a"]]
+    assert layout["columns"] == [["b"], ["a"]]
+    assert layout["groups"][0]["col_span"] == [0, 1]
+
+
+def test_parallel_lanes_on_the_same_row_may_interleave_columns():
+    """Two parallel lanes, two members each on one row: no collision, but the
+    columns alternate.  Locks the documented F3 caveat so D3 never assumes a
+    lane background box is a single column."""
+    layout = grouped_layout(
+        ["a", "b", "c", "d"], [],
+        [{"id": "L1", "kind": "lane", "nodes": ["a", "b"]},
+         {"id": "L2", "kind": "lane", "nodes": ["c", "d"]}],
+    )
+    col = _col_of(layout)
+    assert layout["nrows"] == 1
+    assert {col["a"], col["b"]} == {1, 3}
+    assert {col["c"], col["d"]} == {0, 2}
+    # within a lane the members still never share a column
+    assert col["a"] != col["b"] and col["c"] != col["d"]
+
+
 def test_cluster_members_are_adjacent_in_each_row():
     _, layout = _layout_of("cluster")
     for group in layout["groups"]:
