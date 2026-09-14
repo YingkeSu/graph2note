@@ -11,7 +11,7 @@ from __future__ import annotations
 import json
 from typing import Literal, Optional, Union
 
-from pydantic import BaseModel, ConfigDict, Field, TypeAdapter
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, model_validator
 
 # ---------------------------------------------------------------------------
 # Blocks
@@ -75,12 +75,18 @@ class ImageBlock(BaseModel):
 class Node(BaseModel):
     id: str
     label: str = ""
+    # Optional secondary text (manuscript marginal note); rendered as a small
+    # caption under the node label.  ``None`` means "no note" and keeps the
+    # pre-extension output semantics.
+    note: Optional[str] = None
 
 
 class Edge(BaseModel):
     """A directed connection between two nodes.
 
     The JSON field is ``from`` (mapped from the python field ``from_``).
+    ``style`` marks weak/annotation links (``dashed``) versus the default
+    solid dependency edge.
     """
 
     model_config = ConfigDict(populate_by_name=True)
@@ -88,6 +94,22 @@ class Edge(BaseModel):
     from_: str = Field(alias="from")
     to: str
     label: str = ""
+    style: Literal["solid", "dashed"] = "solid"
+
+
+class DiagramGroup(BaseModel):
+    """A visual grouping (swimlane / layer band / local cluster).
+
+    Membership is by *reference* to ``nodes[].id`` from the owning block; the
+    group does not nest nodes and does not change edge/topology semantics.
+    ``kind`` distinguishes a full-width horizontal ``layer`` band from a
+    vertical ``lane`` and a local ``cluster``.
+    """
+
+    id: str
+    label: str
+    kind: Literal["layer", "lane", "cluster"] = "cluster"
+    nodes: list[str] = Field(default_factory=list)
 
 
 class _DiagramMixin(BaseModel):
@@ -96,12 +118,36 @@ class _DiagramMixin(BaseModel):
     ``source`` is an optional, backward-compatible reference to the original
     manuscript image, used only on the degrade path (when nodes/edges are
     missing the renderer crops and embeds the source instead).
+
+    ``groups`` adds the optional visual hierarchy (layers/lanes/clusters)
+    without changing the flat ``nodes``/``edges`` topology.  Every group
+    member id must exist in ``nodes`` (dangling references are rejected); this
+    is the *only* validation groups participate in.
     """
 
     nodes: list[Node] = Field(default_factory=list)
     edges: list[Edge] = Field(default_factory=list)
     caption: str = ""
     source: Optional[str] = None
+    groups: list[DiagramGroup] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _validate_groups(self) -> "_DiagramMixin":
+        if not self.groups:
+            return self
+        known = {n.id for n in self.nodes}
+        seen: set[str] = set()
+        for group in self.groups:
+            if group.id in seen:
+                raise ValueError(f"duplicate diagram group id '{group.id}'")
+            seen.add(group.id)
+            for member in group.nodes:
+                if member not in known:
+                    raise ValueError(
+                        "diagram group "
+                        f"'{group.id}' references unknown node id '{member}'"
+                    )
+        return self
 
 
 class DiagramBlock(_DiagramMixin):
@@ -215,6 +261,7 @@ __all__ = [
     "ImageBlock",
     "DiagramBlock",
     "FlowBlock",
+    "DiagramGroup",
     "Node",
     "Edge",
     "IRValidationError",
