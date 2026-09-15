@@ -31,6 +31,10 @@ from tests.test_webapp_layout import Element, _DomParser  # reuse the stdlib DOM
 
 TESTS_DIR = Path(__file__).parent
 GRAPH_MODULE = WEBSTATIC / "js" / "views" / "graph-layout.js"
+# X5: the Markdown preview engine is vendored locally (offline panel); the
+# zero-build red line now pins this local module instead of the jsdelivr URL.
+MARKED_VENDOR = "/static/vendor/marked.min.js"
+MARKED_VENDOR_FILE = WEBSTATIC / "vendor" / "marked.min.js"
 
 
 # ---------------------------------------------------------------------------
@@ -206,10 +210,19 @@ def test_zero_build_red_line_holds(dom):
     scripts = [node for node in dom.iter_elements() if node.tag == "script"]
     sources = [node.attrs.get("src") for node in scripts if node.attrs.get("src")]
     # U4 adds no CDN dependency and no build step: the graph engine is a local
-    # module imported by the existing module entry.
-    assert sources.count("https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js") == 1
+    # module imported by the existing module entry.  X5 keeps the red line while
+    # strengthening it for the offline panel: marked is now a LOCAL vendored
+    # module (no marked CDN request at all), so the assertion pins the local
+    # path instead of the jsdelivr URL, and requires the vendored file to exist.
+    assert not any("marked" in src and "cdn" in src for src in sources), sources
+    assert sources.count(MARKED_VENDOR) == 1, sources
+    assert MARKED_VENDOR_FILE.is_file()
+    banner = MARKED_VENDOR_FILE.read_text(encoding="utf-8")[:400]
+    assert "marked v4.3.0" in banner and "MIT Licensed" in banner
     assert "/static/app.js" in sources
-    assert all("katex" in src or "marked" in src or src.startswith("/static/") for src in sources)
+    # KaTeX stays on its existing CDN pin by X5 ruling (fonts would dominate a
+    # local vendor); marked is the only engine that must be offline.
+    assert all("katex" in src or src.startswith("/static/") for src in sources)
     assert GRAPH_MODULE.is_file()
     app = (WEBSTATIC / "app.js").read_text(encoding="utf-8")
     assert "./js/views/graph.js" in app

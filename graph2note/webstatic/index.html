@@ -6,16 +6,30 @@
   <title>graph2note — 手稿电子化</title>
   <link rel="stylesheet" href="/static/style.css" />
   <link rel="stylesheet" href="/static/reading.css" />
-  <!-- Client-side preview: marked (markdown) + KaTeX (math).  CDN is used for a
-       zero-build local tool; a fallback keeps the editor usable if the CDN is
-       unreachable (preview-only degradation, never touches the editor). -->
-  <!-- marked is PINNED to 4.3.0: unmarked "latest" (v12+) changed renderer.image
-       to take a token object; our renderer uses the v4 string signature (and also
-       tolerates the v12+ token object defensively).  KaTeX stays at its
-       existing pin. -->
-  <script src="https://cdn.jsdelivr.net/npm/marked@4.3.0/marked.min.js" onerror="window.__mdMissing=1"></script>
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <!-- Client-side preview: marked (markdown) + KaTeX (math).  This is a
+       zero-build local tool and the desktop/browser panel is offline, so the
+       Markdown engine is vendored locally (X5) instead of pulled from a CDN;
+       the loader keeps a degradation path for the editor (preview-only). -->
+  <!-- marked is PINNED to 4.3.0 and served from /static/vendor/marked.min.js
+       (byte-identical to npm marked@4.3.0's marked.min.js; provenance, license
+       and sha256 live in webstatic/vendor/marked.README.md).  Unpinned
+       "latest" (v12+) changed renderer.image to take a token object; our
+       renderer uses the v4 string signature (and also tolerates the v12+ token
+       object defensively). -->
+  <script src="/static/vendor/marked.min.js" onerror="window.__mdMissing=1"></script>
+  <!-- KaTeX stays on the CDN by decision (X5 ruling): localizing it means
+       shipping katex.min.css + katex.min.js + auto-render.min.js AND every
+       KaTeX font file (~1 MB, 60+ woff2/woff/ttf assets) plus their CSS
+       url() rewrites — a much larger payload than marked and one that still
+       needs a font-serving path.  Math is a secondary preview channel, so it
+       is fetched best-effort and degrades: every KaTeX asset sets an
+       onerror flag (window.__katexMissing) and the preview simply skips math
+       instead of failing (see renderMarkdownInto in js/views/document.js).
+       Markdown preview itself stays fully offline. -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css"
+        onerror="window.__katexMissing=1" />
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"
+          onerror="window.__katexMissing=1"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
           onerror="window.__katexMissing=1"></script>
 </head>
