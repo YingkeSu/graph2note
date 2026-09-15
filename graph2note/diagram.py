@@ -32,9 +32,15 @@ import time
 # ---- purpose-session isolation (issue 14) ------------------------------
 STABLE_SESSION = os.environ.get("GRAPH2NOTE_DIAGRAM_SESSION", "graph2note-diagram-01")
 DEFAULT_MODEL = os.environ.get("GRAPH2NOTE_DIAGRAM_MODEL", "glm-5.3-flash")
-DIAGRAM_MAX_TOKENS = int(os.environ.get("GRAPH2NOTE_DIAGRAM_MAX_TOKENS", "3500"))
+DIAGRAM_MAX_TOKENS = int(os.environ.get("GRAPH2NOTE_DIAGRAM_MAX_TOKENS", "8000"))
 DIAGRAM_RETRY_TOKENS = int(os.environ.get("GRAPH2NOTE_DIAGRAM_RETRY_TOKENS", "10000"))
-DEFAULT_TIMEOUT = 120
+# Client timeout for the diagram vision call.  The legacy 120s default truncated
+# the token-budget upgrade (T-audit F-H: kimi-k2.6 spent ~117s on the empty
+# 3500-token attempt and ~212s on the 10000-token retry, ~= 330s).  The first
+# attempt now starts at 8000 tokens, which at the measured ~30 tok/s could add
+# ~267s before the retry, so the client budget must clear the whole two-attempt
+# worst case (~480s); 600s leaves a margin.  Overridable for other gateways.
+DEFAULT_TIMEOUT = int(os.environ.get("GRAPH2NOTE_DIAGRAM_TIMEOUT", "600"))
 USER_AGENT = "graph2note-diagram/0.1"
 
 
@@ -131,6 +137,36 @@ def _normalize_groups(raw, order):
             "nodes": members,
         })
     return groups, True
+
+
+def _cached_result(cached: str) -> tuple[dict, dict]:
+    """Decode a ``VlmCache`` record into ``(result, meta)``.
+
+    ``VlmCache.get`` returns the whole on-disk record ``{"content": <str>,
+    "meta": {...}}`` and the diagram writer stores the full result (plus its
+    meta) as that content JSON string.  A historic reader looked for a
+    ``result`` key that was never written, so cache hits returned ``meta`` only
+    and silently dropped the graph (T-audit F-G).  Also tolerate a legacy flat
+    record (result fields stored beside ``meta``).
+    """
+    try:
+        rec = json.loads(cached)
+    except (TypeError, json.JSONDecodeError):
+        return {}, {}
+    if not isinstance(rec, dict):
+        return {}, {}
+    meta = dict(rec.get("meta") or {})
+    payload = rec.get("content")
+    data = None
+    if isinstance(payload, str):
+        try:
+            data = json.loads(payload)
+        except json.JSONDecodeError:
+            data = None
+    if isinstance(data, dict) and data:
+        meta = {**dict(data.get("meta") or {}), **meta}
+        return {k: v for k, v in data.items() if k != "meta"}, meta
+    return {k: v for k, v in rec.items() if k not in ("meta", "content")}, meta
 
 
 def validate_diagram_json(data):
@@ -265,10 +301,9 @@ def extract_diagram_image(
     if cache is not None:
         cached = cache.get(image_path, model)
         if cached is not None:
-            rec = json.loads(cached)
-            meta = dict(rec.get("meta") or {})
+            result, meta = _cached_result(cached)
             meta["cached"] = True
-            return {**rec.get("result", {}), "meta": meta}
+            return {**result, "meta": meta}
 
     data_url, send_size = vlm.image_data_url_downscaled(image_path)
     attempts: list[dict] = []
