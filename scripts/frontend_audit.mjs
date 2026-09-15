@@ -10,7 +10,11 @@ const [base = 'http://127.0.0.1:8794', output = '.scratch/frontend-loop/evidence
 await mkdir(output, { recursive: true });
 const browser = await chromium.launch({ headless: true, executablePath: process.env.CHROME_BIN || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' });
 const results = [];
-const routes = ['library','timeline/day','graph','dashboard','inbox','tags','ask','settings','vault-export','upload','repair'];
+// P3: extra routes (e.g. a seeded paper `paper/<id>`) can be appended without
+// touching the default sweep: AUDIT_EXTRA_ROUTES="paper/paper-1,doc/paper-1".
+const extraRoutes = String(process.env.AUDIT_EXTRA_ROUTES || '')
+  .split(',').map((route) => route.trim()).filter(Boolean);
+const routes = ['library','timeline/day','graph','dashboard','inbox','tags','ask','settings','vault-export','upload','repair',...extraRoutes];
 try {
   for (const width of [1440,768,390]) {
     const context = await browser.newContext({viewport:{width,height:900}});
