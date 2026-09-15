@@ -36,7 +36,7 @@ D 轨共享契约：[SPEC.md §1 层次结构图 IR 扩展](SPEC.md)。D2/D3 针
 
 | 编号 | Issue | 分支 | 开发者 | 状态 |
 |---|---|---|---|---|
-| P1 | [论文 PDF 导入管线](issues/P1-paper-pdf-ingest-pipeline.md) | `dev/P1-paper-ingest` | dev-A | 待派发（D 轨收官后串行启动） |
+| P1 | [论文 PDF 导入管线](issues/P1-paper-pdf-ingest-pipeline.md) | `dev/P1-paper-ingest` | dev-A | merged 2026-09-15 @ `ec9b1d6`（fresh reviewer 全项自跑：领地零越界（webapp/store −0、pdflib 未改）、AC1–AC7 全达成、后端 mutation 有牙（去扫描回退 5 红 / 文本路径触发 LLM 4 红 / 破坏 paper.json 持久化 5 红）、合并后全量 pytest 1099 passed；残留 R1 upload.js PDF 拦截仅源码断言（守卫反转不红）、R2 handoff 报数 1096 陈旧） |
 | P2 | [论文元数据与参考文献识别](issues/P2-paper-metadata-references.md) | `dev/P2-paper-meta` | dev-B | 待派发（D 轨收官后串行启动） |
 | P3 | [论文阅读视图与库集成](issues/P3-paper-reading-view.md) | `dev/P3-paper-view` | dev-C | 待派发（D 轨收官后串行启动） |
 | W1 | [周报内容结构与材料策略](issues/W1-digest-content-structure.md) | `dev/W1-digest-content` | dev-D | 待派发（D 轨收官后串行启动） |
