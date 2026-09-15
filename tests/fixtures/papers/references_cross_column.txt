@@ -1,0 +1,7 @@
+References
+
+[1] W. Zhang, L. Chen, and M. Li. Graph neural networks for document under-
+standing. IEEE Transactions on Knowledge and Data Engineering, 2023.
+
+[2] J. Sun and A. Kim. Robust fea-
+ture matching under extreme viewpoint changes. CVPR, 2022.

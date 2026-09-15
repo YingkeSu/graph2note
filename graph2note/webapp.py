@@ -71,8 +71,13 @@ from . import pdflib
 from . import pdfsearch
 from . import pdfqa
 from . import pdfqa_sessions
+from . import papers
 from . import unifiedsearch
 from . import repair as repairlib
+from .papers import citegraph as papers_citegraph
+from .papers import enhance as papers_enhance
+from .papers import metadata as papers_metadata
+from .papers import references as papers_references
 
 DEFAULT_MODEL = os.environ.get("GRAPH2NOTE_MODEL", "glm-5.3-flash")
 MAX_SIZE = 10 * 1024 * 1024  # 10 MB (FR-015)
@@ -2250,6 +2255,329 @@ def create_app(
             "merged_into": restored.get("merged_into"),
             "restored": not bool(restored.get("merged_into")),
         }
+
+    # ---- paper PDF import (SPW I-track / P1; appended /api/papers/* only) ----
+    # The P1 territory rule: this block only APPENDS independent `/api/papers/*`
+    # routes; every route/helper above is untouched.  P2/P3 append their own
+    # `/api/papers/*` handlers next to (never inside) these functions.
+    app.state.paper_jobs: dict[str, papers.PaperJob] = {}
+    app.state.paper_jobs_lock = threading.Lock()
+
+    def _get_paper_job(paper_id: str) -> papers.PaperJob:
+        job = _get_or_load_paper_job(paper_id)
+        if job is None:
+            raise HTTPException(status_code=404, detail="论文任务不存在。")
+        return job
+
+    def _get_or_load_paper_job(paper_id: str) -> papers.PaperJob | None:
+        """Memory first, then the durable paper ``job.json`` (issue 09 AC1)."""
+        with app.state.paper_jobs_lock:
+            job = app.state.paper_jobs.get(paper_id)
+        if job is not None:
+            return job
+        try:
+            work_dir = papers.paper_dir(app.state.store, paper_id)
+        except RuntimeError:
+            return None
+        job = papers.load_job(work_dir)
+        if job is None:
+            return None
+        job.mark_interrupted()
+        papers.save_job(job)
+        with app.state.paper_jobs_lock:
+            existing = app.state.paper_jobs.get(paper_id)
+            if existing is not None:
+                return existing
+            app.state.paper_jobs[paper_id] = job
+        return job
+
+    def _start_paper_job(job: papers.PaperJob, data: bytes | None) -> bool:
+        return papers.start_job(
+            job,
+            store=app.state.store,
+            pdf_bytes=data,
+            router_factory=app.state.router_factory,
+            preprocess=True,
+            model=model,
+            auto_tag_inferrer=getattr(app.state, "auto_tag_inferrer", None),
+        )
+
+    @app.post("/api/papers/import")
+    async def paper_import(file: UploadFile = File(...)):
+        """Upload a paper PDF; import returns immediately and runs in background."""
+        data = await file.read()
+        filename = file.filename or "paper.pdf"
+        # validate synchronously so type/size/page-count/encrypted/corrupt all
+        # surface as actionable 4xx before any async work (reuses pdflib limits)
+        try:
+            total_pages = papers.validate_paper(data, filename)
+        except pdflib.PdfError as exc:
+            raise HTTPException(
+                status_code=_pdf_error_status(exc.kind), detail=str(exc)) from exc
+
+        paper_id = papers.stable_paper_id(data)
+        job = _get_or_load_paper_job(paper_id)
+        if job is None:
+            job = papers.PaperJob(paper_id=paper_id, filename=filename)
+            with app.state.paper_jobs_lock:
+                app.state.paper_jobs[paper_id] = job
+
+        # stable content identity: re-uploading the same bytes resumes the same
+        # job and never re-imports a finished paper (idempotent; issue 08 AC2).
+        with job.lock:
+            job.total_pages = total_pages
+        if job.status == "done" and job.document_id:
+            return {"paper_id": paper_id, "pdf_id": paper_id, "status": "done",
+                    "total_pages": total_pages, "source": job.source,
+                    "document_id": job.document_id, "sections": job.sections_count,
+                    "triggered": False}
+        with job.lock:
+            job.status = "queued"
+            job.error = None
+            job.error_kind = None
+            job._cancelled = False
+        triggered = _start_paper_job(job, data)
+        return {"paper_id": paper_id, "pdf_id": paper_id, "status": job.status,
+                "total_pages": total_pages, "triggered": triggered,
+                "source": job.source}
+
+    @app.get("/api/papers")
+    def paper_list():
+        """Imported papers + status (scope picker / library integration)."""
+        with app.state.paper_jobs_lock:
+            jobs = list(app.state.paper_jobs.values())
+        for job in papers.load_jobs(app.state.store, mark_interrupted=False):
+            if all(existing.paper_id != job.paper_id for existing in jobs):
+                jobs.append(job)
+        jobs.sort(key=lambda item: (item.filename or "", item.paper_id))
+        return [job.summary() for job in jobs]
+
+    @app.get("/api/papers/{paper_id}")
+    def paper_status(paper_id: str):
+        """Job status query (source / document_id / error / progress counts)."""
+        return _get_paper_job(paper_id).public()
+
+    @app.get("/api/papers/{paper_id}/result")
+    def paper_result(paper_id: str):
+        """Read-only import result: sections + full text + page map + P2 slots."""
+        job = _get_paper_job(paper_id)
+        result = papers.result_payload(job, app.state.store)
+        if result is None:
+            raise HTTPException(
+                status_code=409,
+                detail="论文尚未导入完成（或结果缺失），请先查询状态后再取结果。",
+            )
+        return result
+
+    @app.get("/api/papers/{paper_id}/original")
+    def paper_original(paper_id: str):
+        """The durable original PDF of a paper job."""
+        job = _get_paper_job(paper_id)
+        path = pdflib.original_pdf_path(app.state.store, paper_id)
+        if not path.is_file():
+            raise HTTPException(status_code=404, detail="原 PDF 缺失。")
+        return FileResponse(path, media_type="application/pdf",
+                            filename=Path(job.filename).name)
+
+    @app.get("/api/papers/{paper_id}/page/{page_index}")
+    def paper_page(paper_id: str, page_index: int):
+        """Render one original PDF page (section page ranges -> original page)."""
+        job = _get_paper_job(paper_id)
+        if page_index < 0 or (job.total_pages and page_index >= job.total_pages):
+            raise HTTPException(status_code=404, detail="页码超出范围。")
+        try:
+            png = pdflib.render_pdf_page(app.state.store, paper_id, page_index)
+        except FileNotFoundError:
+            raise HTTPException(status_code=404, detail="原 PDF 缺失。") from None
+        except IndexError:
+            raise HTTPException(status_code=404, detail="页码超出范围。") from None
+        except Exception:
+            raise HTTPException(status_code=500, detail="无法渲染该页。") from None
+        return Response(content=png, media_type="image/png")
+
+    @app.post("/api/papers/{paper_id}/retry")
+    def paper_retry(paper_id: str):
+        """Retry/resume a paper import (durable original + idempotent commits)."""
+        job = _get_paper_job(paper_id)
+        original = pdflib.original_pdf_path(app.state.store, paper_id)
+        if not original.is_file():
+            raise HTTPException(status_code=404, detail="原 PDF 缺失，无法重试。")
+        with job.lock:
+            if job._running:
+                return {"paper_id": paper_id, "status": job.status,
+                        "triggered": False, "message": "任务正在处理中，请稍候。"}
+        if job.status == "done" and job.document_id:
+            return {"paper_id": paper_id, "status": job.status, "triggered": False,
+                    "document_id": job.document_id, "message": "任务已完成，无需重试。"}
+        with job.lock:
+            job.status = "queued"
+            job.error = None
+            job.error_kind = None
+            job._cancelled = False
+        triggered = _start_paper_job(job, original.read_bytes())
+        return {"paper_id": paper_id, "status": job.status, "triggered": triggered,
+                "attempts": job.attempts, "max_attempts": job.attempts_cap()}
+    # ---- paper metadata & references (SPW I 轨 P2, append-only segment) -------
+    # ``/api/papers/*`` is shared by P1 (ingest jobs) and P2 (metadata).  This
+    # block is P2's own, independent segment: deterministic parse, manual
+    # correction, reference resolution and an opt-in LLM enhancement seam.
+    # Default is offline; the live planner is only built on explicit request.
+    app.state.paper_meta_planner = None  # injectable seam for tests
+
+    def _paper_payload(document_id: str) -> dict:
+        rec = _get_document(document_id)
+        paper = store.paper_payload(document_id)
+        if paper is None:
+            paper = {}
+        try:
+            meta = papers_metadata.PaperMeta.model_validate(paper.get("meta") or {})
+        except Exception:  # noqa: BLE001 - never fail a read on a legacy slot
+            meta = papers_metadata.PaperMeta()
+        return {
+            "document_id": document_id,
+            "doc_kind": rec.get("doc_kind") or paper.get("source"),
+            "meta": meta.model_dump(),
+            "meta_provenance": paper.get("meta_provenance") or {},
+            "references": paper.get("references") or [],
+            "references_provenance": paper.get("references_provenance") or [],
+            "notes": paper.get("notes") or [],
+        }
+
+    def _library_entries() -> list:
+        return papers_citegraph.library_entries_from_documents(
+            store.list_paper_entries())
+
+    @app.post("/api/papers/parse-metadata")
+    def papers_parse_metadata(body: dict | None = None):
+        """Stateless deterministic parse of the SPEC §2 pure input shape."""
+
+        payload = body or {}
+        front = str(payload.get("front_text") or "")
+        full = str(payload.get("full_text") or "")
+        refs = str(payload.get("references_text") or "")
+        if not front and not full:
+            raise HTTPException(status_code=422,
+                                detail="front_text 或 full_text 至少提供一个。")
+        source = payload.get("source") or "text-layer"
+        if source not in ("text-layer", "vlm", "manual", "none"):
+            raise HTTPException(status_code=422, detail="source 非法。")
+        document = papers_references.parse_paper_text(
+            {"full_text": full, "front_text": front, "references_text": refs},
+            source=source,
+        )
+        return document.model_dump()
+
+    @app.get("/api/papers/{document_id}/metadata")
+    def papers_get_metadata(document_id: str):
+        return _paper_payload(document_id)
+
+    @app.put("/api/papers/{document_id}/metadata")
+    @app.patch("/api/papers/{document_id}/metadata")
+    def papers_update_metadata(document_id: str, body: dict | None = None):
+        """Manual correction: validates the slot and marks it ``manual``."""
+
+        _get_document(document_id)
+        payload = body or {}
+        raw = payload.get("meta", payload)
+        if not isinstance(raw, dict):
+            raise HTTPException(status_code=422, detail="meta 必须是对象。")
+        try:
+            meta = papers_metadata.PaperMeta.model_validate(raw)
+        except Exception as exc:  # noqa: BLE001 - surface the validation reason
+            raise HTTPException(status_code=422,
+                                detail=f"元数据不合法：{exc}") from exc
+        existing = store.paper_payload(document_id) or {}
+        provenance = dict(existing.get("meta_provenance") or {})
+        manual = {"source": "manual", "confidence": "high",
+                  "evidence": "用户手工修正"}
+        fields = set(papers_metadata.PaperMeta.model_fields)
+        for field in raw:
+            if field in fields:
+                provenance[field] = manual
+        if set(raw) - {"source"}:
+            meta.source = "manual"
+        notes = list(existing.get("notes") or [])
+        notes.append("manual-correction")
+        store.set_paper_meta(
+            document_id, meta.model_dump(), provenance=provenance,
+            source=meta.source, notes=notes,
+        )
+        return _paper_payload(document_id)
+
+    @app.get("/api/papers/{document_id}/references")
+    def papers_get_references(document_id: str):
+        return _paper_payload(document_id)
+
+    def _resolve_paper_references(document_id: str) -> dict:
+        existing = store.paper_payload(document_id) or {}
+        refs = [papers_references.PaperReference.model_validate(item)
+                for item in (existing.get("references") or [])]
+        result = papers_citegraph.resolve_references(refs, _library_entries())
+        store.set_paper_references(
+            document_id,
+            [ref.model_dump() for ref in result.references],
+            provenance=list(existing.get("references_provenance") or []),
+        )
+        payload = _paper_payload(document_id)
+        payload["unresolved"] = result.unresolved
+        payload["resolve_notes"] = result.notes
+        return payload
+
+    @app.post("/api/papers/{document_id}/references/resolve")
+    def papers_resolve_references(document_id: str):
+        _get_document(document_id)
+        return _resolve_paper_references(document_id)
+
+    @app.patch("/api/papers/{document_id}/references/{index}")
+    def papers_patch_reference(document_id: str, index: int,
+                               body: dict | None = None):
+        _get_document(document_id)
+        payload = body or {}
+        resolved = payload.get("resolved_document_id")
+        if resolved is not None:
+            resolved = str(resolved)
+            _get_document(resolved)  # a manual target must exist in the library
+        try:
+            store.set_paper_reference_resolution(document_id, index, resolved)
+        except ValueError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        return _paper_payload(document_id)
+
+    @app.post("/api/papers/{document_id}/metadata/enhance")
+    def papers_enhance_metadata(document_id: str, body: dict | None = None):
+        """Optional LLM boost; schema-validated, fill-empty only, never live
+        unless the caller explicitly asks (``live: true``)."""
+
+        _get_document(document_id)
+        existing = store.paper_payload(document_id) or {}
+        meta = papers_metadata.PaperMeta.model_validate(existing.get("meta") or {})
+        provenance = {
+            key: papers_metadata.FieldProvenance.model_validate(value)
+            for key, value in (existing.get("meta_provenance") or {}).items()
+        }
+        result = papers_metadata.PaperMetaResult(
+            meta=meta, provenance=provenance,
+            notes=list(existing.get("notes") or []),
+        )
+        payload = body or {}
+        planner = app.state.paper_meta_planner
+        if planner is None and payload.get("live"):
+            planner = papers_enhance.live_planner()
+        enhanced = papers_enhance.enhance_meta(
+            result,
+            planner=planner,
+            model=payload.get("model"),
+            front_text=str(payload.get("front_text") or ""),
+        )
+        store.set_paper_meta(
+            document_id,
+            enhanced.meta.model_dump(),
+            provenance={key: value.model_dump()
+                        for key, value in enhanced.provenance.items()},
+            source=enhanced.meta.source,
+            notes=list(enhanced.notes),
+        )
+        return _paper_payload(document_id)
 
     # ---- static frontend ------------------------------------------------------
 

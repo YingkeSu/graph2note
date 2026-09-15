@@ -30,4 +30,13 @@ Status: ready
 
 ## Comments
 
-（待 worker 填写交付记录）
+### 2026-09-15 P1 交付（dev-A / 分支 `dev/P1-paper-ingest`，ready-for-review）
+
+提交：`bb464b9`（papers 包 + store 追加）、`6762e6d`（webapp `/api/papers/*` + upload.js 入口）、
+`aefe9e8`（51 个离线用例 + taxonomy 登记）。handoff：[`handoffs/P1-paper-ingest.md`](../handoffs/P1-paper-ingest.md)。
+
+- AC1–AC7 全部达成，证据见 handoff §0/§3；全量 `pytest -p no:warnings` **1096 passed**（基线 1048，新增 51，含 node 套件）。
+- 离线：文本层路径零 LLM（注入即抛错的 router_factory 仍 done）；扫描回退走可注入 router，CI 不触网；本轮**未发起任何 live 调用**。
+- 领地：`webapp.py` +163/−0（纯插入 `/api/papers/*` 段）、`store.py` +143/−0（新方法 + 摘要追加 `doc_kind`）、`upload.js` 追加式；未碰 `pdflib.py`（复用不复制）。
+- 越界补充（已在 handoff §2-3 标注）：`tests/taxonomy.py` 追加登记（元测试强制）、`pyproject.toml` 追加 `graph2note.papers` 包。
+- 待 reviewer：真实论文 PDF 抽样复验（合成 fixture 之外）、扫描版 live VLM 回退通道抽验（通道 `kimi`/`deepseek`，无 key 亦可离线复跑全部用例）。

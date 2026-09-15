@@ -1,0 +1,15 @@
+IEEE Transactions on Knowledge and Data Engineering
+Vol. 35, No. 4, April 2023
+
+Graph Neural Networks for Document Understanding:
+A Comprehensive Survey
+
+Wei Zhang, Li Chen, and Ming Li
+
+Abstract—Document understanding has attracted increasing attention in
+recent years. In this survey, we review graph neural network methods for
+document understanding and organize them into three families.
+
+Index Terms—graph neural networks, document understanding, survey
+
+https://doi.org/10.1109/TKDE.2023.1234567
