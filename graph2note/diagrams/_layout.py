@@ -11,7 +11,9 @@ infinity; ordering only ever depends on node ids (stable tie-breaks).
   never from an ``order`` field the VLM may have produced.  A layer band with
   no incident edge is *flow-isolated* (no structural position): it is anchored
   below every connected band so the reading order is not broken by a phantom
-  top band (T-audit F-C);
+  top band (T-audit F-C).  Only a connected band claims an anchor depth for
+  free nodes, so an isolated band can never drag an unrelated source node into
+  its sunken row (review N1);
 - ``lane``   groups *prefer* one shared vertical column (swimlane) -- each lane
   gets its own column while a base row holds at most one member of that lane;
   extra members landing on the same row overflow into free columns (best
@@ -206,12 +208,20 @@ def grouped_layout(
         (int(isolated[g["id"]]), float(anchors[g["id"]]), 0, g["id"])
         for g in effective
     ]
-    anchor_values = {float(anchors[g["id"]]) for g in effective}
+    # Only a *connected* layer band owns its anchor depth for free nodes.  An
+    # isolated band also has a median depth (usually 0), and letting it claim
+    # ``anchor_row[0.0]`` pulled free source nodes into the sunken band row, so
+    # their out-edges pointed visually upward (review N1).  A free node whose
+    # depth only matches an isolated band now gets its own depth row, ordered
+    # above the sunken bands, and no edge is drawn backwards.
+    connected_anchors = {
+        float(anchors[g["id"]]) for g in effective if not isolated[g["id"]]
+    }
     free_depths = sorted(
         {
             depth[n]
             for n in nid
-            if n not in layer_owner and float(depth[n]) not in anchor_values
+            if n not in layer_owner and float(depth[n]) not in connected_anchors
         }
     )
     entries.extend((0, float(d), 1, f"depth:{d}") for d in free_depths)
@@ -224,7 +234,8 @@ def grouped_layout(
     for idx, (isolated_flag, anchor, rank, key) in enumerate(entries):
         if rank == 0:
             group_row[key] = idx
-            anchor_row.setdefault(anchor, idx)
+            if not isolated_flag:
+                anchor_row.setdefault(anchor, idx)
         else:
             depth_row[int(anchor)] = idx
 

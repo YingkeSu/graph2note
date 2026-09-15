@@ -136,6 +136,37 @@ def test_01_anchor_isolated_band_sinks_into_spec_reading_order():
     assert grouped_layout(node_ids, edges, shuffled) == layout
 
 
+def test_isolated_band_does_not_absorb_a_free_source_node():
+    """Review N1: a free source node (depth 0) must not be dragged into the
+    sunken row of a flow-isolated band that also anchors at depth 0 -- that
+    made the free node's out-edge point visually upward.  Only a *connected*
+    band may claim an anchor depth for free nodes."""
+    groups = [{"id": "g", "kind": "layer", "label": "孤立", "nodes": ["iso"]}]
+    layout = grouped_layout(["a", "b", "iso"], [("a", "b")], groups)
+    row = _row_of(layout)
+    assert row["iso"] == 2          # isolated band still sinks
+    assert row["a"] == 0 and row["b"] == 1
+    assert row["a"] < row["b"]      # a -> b reads downward again
+    # deterministic under input shuffles
+    shuffled = grouped_layout(
+        ["iso", "b", "a"], [("a", "b")],
+        [{"id": "g", "kind": "layer", "label": "孤立", "nodes": ["iso"]}],
+    )
+    assert shuffled == layout
+
+
+def test_connected_band_still_claims_its_anchor_for_free_nodes():
+    """The N1 guard is narrow: a *connected* band anchored at depth 0 keeps
+    absorbing the free source node at the same depth (existing rule)."""
+    layout = grouped_layout(
+        ["a", "b", "c", "d"], [("a", "b"), ("c", "d")],
+        [{"id": "g", "kind": "layer", "nodes": ["c"]}],
+    )
+    row = _row_of(layout)
+    assert row["a"] == row["c"] == 0
+    assert row["b"] == row["d"] == 1
+
+
 def test_02_fixture_uses_the_research_and_design_annotations():
     doc = _golden("cluster")
     labels = {g["label"] for g in doc["fixture"]["groups"]}
