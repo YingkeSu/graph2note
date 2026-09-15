@@ -11,6 +11,14 @@ D-track (SPEC §1) additions
 * ``groups`` (SPEC JSON shape or IR objects) become ``cluster_*`` subgraphs.
   ``kind=layer`` additionally pins its members to ``rank=same`` so a layer band
   stays a single horizontal row; ``lane``/``cluster`` keep the visual grouping.
+* When D2 geometry (``layout``) is present the renderer pins dot's *actual*
+  ranks to ``layout["rows"]`` (one ``rank=same`` group per row plus an
+  invisible ordering spine) and sets ``newrank=true``.  Without this, dot
+  recomputes ranks from the edges alone: a cluster's members can split across
+  ranks (F-A), a zig-zag lane collapses (F-B), a disconnected layer band can
+  share another band's rank (F-C) and annotation clusters drift apart (F-D).
+  The mechanism only activates on the grouped product path, so flat output is
+  byte-identical to the pre-D-track renderer.
 * ``node.note`` renders as a smaller second line *inside* the node box via an
   HTML-like label (plain dot labels cannot mix font sizes).
 * ``edge.style == "dashed"`` draws a dashed edge (weak/annotation link).
@@ -42,7 +50,7 @@ FONTNAME = "Arial Unicode MS"
 NODE_FONTSIZE = 20
 EDGE_FONTSIZE = 14
 NOTE_FONTSIZE = 14
-GROUP_FONTSIZE = 20
+GROUP_FONTSIZE = 24
 
 NOTE_COLOR = "#555b6b"
 
@@ -91,6 +99,40 @@ def html_label(label: str, note: str) -> str:
     )
 
 
+def layout_rows(layout, known_ids) -> list[list[str]]:
+    """D2 rows (top->bottom) restricted to drawn nodes and empty rows dropped.
+
+    Returns ``[]`` when there is no D2 geometry (direct renderer calls).
+    """
+    if not isinstance(layout, dict):
+        return []
+    out: list[list[str]] = []
+    for row in layout.get("rows") or []:
+        items = [str(node_id) for node_id in row if str(node_id) in known_ids]
+        if items:
+            out.append(items)
+    return out
+
+
+def _pin_layout_rows(g, rows: list[list[str]]) -> None:
+    """Pin D2's rows onto dot: one ``rank=same`` per row + invis ordering spine.
+
+    ``rank=same`` keeps every member of a row on a single rank even when they
+    sit in different clusters (requires ``newrank=true``).  For rows that are
+    not connected by a real edge (e.g. a layer band with no incident edges)
+    dot has no reason to order them, so a zero-cost invisible edge enforces the
+    top->bottom reading order D2 derived.  Both are deterministic: rows and
+    their first member come straight from D2's canonical layout.
+    """
+    for row in rows:
+        with g.subgraph() as same_rank:
+            same_rank.attr(rank="same")
+            for node_id in row:
+                same_rank.node(node_id)
+    for upper, lower in zip(rows, rows[1:]):
+        g.edge(upper[0], lower[0], style="invis")
+
+
 def node_attrs(node: rs.RenderNode, *, wrap: bool = False) -> dict:
     """Attribute dict for one node (key order matches the legacy call)."""
     label = wrap_label(node.label) if wrap else (node.label or "")
@@ -127,8 +169,13 @@ def build_digraph(
     )
     g.attr(rankdir=rankdir, dpi="120", nodesep="0.4", ranksep="0.5")
     g.attr(label="", labelloc="t")
+    if sem.groups:
+        # Cross-cluster ``rank=same`` (used below) needs newrank; flat blocks
+        # keep the legacy attribute set byte-for-byte.
+        g.attr(newrank="true")
 
     by_id = {n.id: n for n in sem.nodes}
+    rows = layout_rows(layout, set(by_id))
     membership = sem.membership
     # Hierarchy blocks (groups or notes) wrap labels for reading-pane legibility;
     # a plain flat block keeps the legacy, unwrapped output byte-for-byte.
@@ -173,6 +220,9 @@ def build_digraph(
             attrs["style"] = "dashed"
         g.edge(edge.from_, edge.to, **attrs)
 
+    if sem.groups and rows:
+        _pin_layout_rows(g, rows)
+
     return g
 
 
@@ -203,6 +253,7 @@ __all__ = [
     "available",
     "wrap_label",
     "html_label",
+    "layout_rows",
     "node_attrs",
     "build_digraph",
     "render",
