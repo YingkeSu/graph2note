@@ -121,6 +121,66 @@ def test_sentence_like_reflowed_line_is_not_taken_as_an_author():
     assert result.meta.authors == ["Wei Zhang", "Li Chen"]
 
 
+def test_separate_paragraph_byline_ending_with_a_period_is_preserved():
+    """The sentence heuristic must never drop the line that opened the block."""
+
+    text = (
+        "A Paper Title\n"
+        "\n"
+        "Wei Zhang, Li Chen, Ming Li, and Will Smith.\n"
+        "\n"
+        "Abstract\n"
+        "Body text.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.authors == ["Wei Zhang", "Li Chen", "Ming Li", "Will Smith"]
+    assert result.meta.abstract == "Body text."
+
+
+def test_vlm_superscript_byline_ending_with_a_period_is_preserved():
+    text = (
+        "A Paper Title\n"
+        "\n"
+        "Wei Zhang1, Li Chen2, Ming Li3, and Will Brown1.\n"
+        "\n"
+        "Abstract\n"
+        "Body text.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.authors == ["Wei Zhang", "Li Chen", "Ming Li", "Will Brown"]
+
+
+def test_wrapped_byline_line_with_a_capitalized_hint_name_is_preserved():
+    """``Will`` is a name here, not the prose function word "will"."""
+
+    text = (
+        "A Paper Title\n"
+        "\n"
+        "Wei Zhang, Li Chen, Ming Li, Alice Anderson, Bob Brown,\n"
+        "Carol Clark, David Davis, Eve Evans, Frank Foster, and Will Smith.\n"
+        "\n"
+        "Abstract\n"
+        "Body text.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.authors == [
+        "Wei Zhang", "Li Chen", "Ming Li", "Alice Anderson", "Bob Brown",
+        "Carol Clark", "David Davis", "Eve Evans", "Frank Foster", "Will Smith",
+    ]
+
+
+def test_inline_label_after_a_byline_with_capitalized_hint_names_is_preserved():
+    """A glued ``Abstract—`` must not make capitalized name parts look prose."""
+
+    text = (
+        "A Paper Title\n"
+        "Will Smith, Can The Abstract—We present a robust method, then verify it.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.authors == ["Will Smith", "Can The"]
+    assert result.meta.abstract.startswith("We present a robust method")
+
+
 def test_cjk_author_list_is_unchanged_by_the_abstract_boundary():
     text = (
         "图神经网络文档理解综述\n"

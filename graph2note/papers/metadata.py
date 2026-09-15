@@ -180,21 +180,24 @@ _NAME_TOKEN_RE = re.compile(r"\b[A-Z][a-z]+(?:[-'][A-Za-z]+)?\b")
 _EMAIL_RE = re.compile(r"\S+@\S+")
 _SUPERSCRIPT_RE = re.compile(r"[\d*†‡§¶#]+")
 #: Prose that a reflowed text layer glued onto the author block: sentence-final
-#: punctuation plus function words is a sentence, not a name list.
+#: punctuation plus *lowercase* function words is a sentence, not a name list.
+#: The match is deliberately case-sensitive — a byline may legitimately carry
+#: a name colliding with a hint word (``Will Smith``, ``Can The``), and only
+#: prose spells those words lowercase.
 _SENTENCE_STOP_RE = re.compile(r"[.!?。！？]\s*$")
 _SENTENCE_HINT_RE = re.compile(
     r"\b(?:the|this|these|those|is|are|was|were|has|have|had|which|that|"
-    r"we|our|it|its|can|could|will|would|should|be|been|not|also|however)\b",
-    re.I,
+    r"we|our|it|its|can|could|will|would|should|be|been|not|also|however)\b"
 )
 #: Lowercase prose words that never occur in a byline.  They tell a title that
 #: merely contains "abstract" apart from a real author prefix glued to a label.
+#: Case-sensitive like `_SENTENCE_HINT_RE`, so a byline carrying a name such as
+#: "Will" or "Can" is not read as prose.
 _PROSE_LEAD_RE = re.compile(
     r"\b(?:of|the|this|that|these|those|which|who|is|are|was|were|be|been|"
     r"being|has|have|had|for|with|from|into|onto|about|study|survey|review|"
     r"analysis|paper|approach|method|methods|using|based|toward|towards|via|"
-    r"we|our|it|its|can|could|will|would|should|not|also|however)\b",
-    re.I,
+    r"we|our|it|its|can|could|will|would|should|not|also|however)\b"
 )
 
 
@@ -294,7 +297,10 @@ def _author_lines_before_abstract(lines: list[str]) -> list[str]:
             if head and not _PROSE_LEAD_RE.search(head):
                 kept.append(head)
             break
-        if _looks_like_sentence_line(line):
+        # The sentence heuristic only guards *extra* lines: the first line
+        # already passed ``_looks_like_author_line`` (it is what opened the
+        # author block), so a name such as "Will" must never drop it.
+        if kept and _looks_like_sentence_line(line):
             break
         kept.append(line)
     return kept
