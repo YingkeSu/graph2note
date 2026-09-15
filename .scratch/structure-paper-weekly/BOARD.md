@@ -63,3 +63,22 @@ I 轨共享契约：[SPEC.md §2 论文文档契约](SPEC.md)。P2/P3 针对契�
 - **禁止 `find /Users/suyingke` 等爬盘命令**（单次 15–20 分钟阻塞会话）。前端巡检用 `PLAYWRIGHT_MODULE=/Users/suyingke/.npm/_npx/9833c18b2d85bc59/node_modules/playwright node scripts/frontend_audit.mjs`（备用缓存 `e41f203b7505f1fb`）。
 - 慢工具阻塞 ≠ 冻结；会话卡死先查前台进程。
 - 每页/每逻辑单元一个提交，便于抢救与重放。
+
+## 后续 issue 索引（SPW 双轨评审与终检遗留）
+
+从 D 轨（X1–X6）与 I 轨（Y1–Y6）的评审 verdict 与终检报告中整理的后续 issue；均为 `Status: ready`，文件在 `issues/`。来源：D 轨 `/tmp/spw-final-vision-report.md`、`/tmp/review-spw-D3fix-verdict.md`、`/tmp/review-spw-D5a-verdict.md`、`/tmp/review-spw-D5b-verdict.md`、`/tmp/spw-D5a-done-report.md`；I 轨 `/tmp/review-spw-P1-verdict.md`、`/tmp/review-spw-P2-verdict.md`、`/tmp/review-spw-P3-r2-verdict.md`、`/tmp/review-spw-W2-verdict.md`、`/tmp/spw-P1-done-report.md`、`/tmp/spw-W1-done-report.md`。
+
+| 编号 | 一句话 | 文件 |
+|---|---|---|
+| X1 | kimi diagram 抽取通道长 prompt 下 3/3 空内容（deepseek 3/3 ok），待裁决通道/预算/prompt | [X1-kimi-extract-channel.md](issues/X1-kimi-extract-channel.md) |
+| X2 | 抽取重试缺口：半截 JSON（length + 非空 parse_fail）不触发预算升级重试 | [X2-extract-retry-partial-json.md](issues/X2-extract-retry-partial-json.md) |
+| X3 | mpl 组框相交（01 图 9 对、02inc 2 对），lane×cluster 布局语义层 | [X3-mpl-group-box-intersection.md](issues/X3-mpl-group-box-intersection.md) |
+| X4 | mpl 字宽启发式「1 unit = 半 em」低估中英混排约 12%，文字越自身框 | [X4-mpl-text-width-heuristic.md](issues/X4-mpl-text-width-heuristic.md) |
+| X5 | marked.js 的 jsdelivr CDN 依赖本地化（离线可用性） | [X5-marked-cdn-localize.md](issues/X5-marked-cdn-localize.md) |
+| X6 | D2 密图默认文档视图紧凑度（放大镜链路已救，默认视图不可读） | [X6-dense-diagram-default-view.md](issues/X6-dense-diagram-default-view.md) |
+| Y1 | PATCH /api/papers/{id}/metadata 与 PUT 同为整体替换，静默清字段 | [Y1-patch-put-metadata-replace.md](issues/Y1-patch-put-metadata-replace.md) |
+| Y2 | P1 paper.json 与 P2 record.json.paper 双落点收敛（可选；消费者侧已化解） | [Y2-paper-json-record-json-convergence.md](issues/Y2-paper-json-record-json-convergence.md) |
+| Y3 | upload.js PDF 拦截缺行为级测试（守卫反转不红） | [Y3-upload-pdf-intercept-test.md](issues/Y3-upload-pdf-intercept-test.md) |
+| Y4 | 真实论文样本回归验证（P1 全合成 fixture） | [Y4-real-paper-fixtures.md](issues/Y4-real-paper-fixtures.md) |
+| Y5 | P2 作者切分把摘要并入 authors（合成 PDF 回流文本） | [Y5-author-split-abstract.md](issues/Y5-author-split-abstract.md) |
+| Y6 | W1 周报遗留 R1–R5 汇总（连续体对≈0 / inbox 口径 / meta 体积 / 长材料 JSON 稳定性 / llm_calls=0 的 elapsed） | [Y6-w1-digest-leftovers.md](issues/Y6-w1-digest-leftovers.md) |
