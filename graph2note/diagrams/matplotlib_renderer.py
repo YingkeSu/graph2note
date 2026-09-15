@@ -26,6 +26,18 @@ D5b (dense-diagram) additions
   degrading to weight 400 with a ``findfont`` warning.  The *regular* family
   selection is unchanged, so the ungrouped fallback PNG stays byte-identical.
 
+X3/X4 additions
+---------------
+* Text is measured with the real Agg font metrics (``_text_size_in``) instead
+  of the historical ``1 unit == half an em`` heuristic, which under-measured
+  mixed CJK/Latin labels and let text touch its own node box (D5b F1).
+* Group frames no longer use overlapping member-envelope boxes: when the
+  derived boxes of a figure intersect, each frame becomes the *partition* of
+  its grid domain (one cell belongs to at most one group), so frames may touch
+  but never overlap while every member keeps a frame (live 01 = 9 pairs and
+  02inc = 2 pairs -> 0).  Disjoint-box figures still draw the layout bbox
+  verbatim, so the renderer/geometry contract and golden output are unchanged.
+
 Backward compatibility: with no groups and no notes every drawing call is the
 same as the pre-D-track renderer (same call order, same arguments), so the
 fallback PNG is byte-identical to the existing golden.
@@ -190,18 +202,62 @@ _TITLE_ROW_PAD_IN = 0.02
 _CANVAS_EPS = 1e-6
 
 
-def _text_size_in(text: str, fontsize: float) -> tuple[float, float]:
+def _title_font_properties(fontsize: float):
+    """FontProperties matching the face the group titles are actually drawn in.
+
+    The title layer may switch to a real bold CJK face (D5b), which is a few
+    percent wider than the regular face for mixed CJK/Latin labels; measuring
+    with the regular face would under-size the de-confliction boxes.
+    """
+    if _CJK_BOLD_FAMILY and _CJK_BOLD_WEIGHT:
+        return fm.FontProperties(family=[_CJK_BOLD_FAMILY], size=fontsize,
+                                 weight=_CJK_BOLD_WEIGHT)
+    return fm.FontProperties(size=fontsize)
+
+
+_TEXT_METRIC_RENDERER = None
+
+
+def _text_metric_renderer():
+    """A tiny Agg renderer used only to read real font metrics (in points).
+
+    Created lazily so importing this module never pays for it, and kept for the
+    process lifetime so repeated geometry passes stay cheap.
+    """
+    global _TEXT_METRIC_RENDERER
+    if _TEXT_METRIC_RENDERER is None:
+        from matplotlib.backends.backend_agg import RendererAgg
+        _TEXT_METRIC_RENDERER = RendererAgg(64, 64, _PT_PER_IN)
+    return _TEXT_METRIC_RENDERER
+
+
+def _text_size_in(text: str, fontsize: float,
+                  prop=None) -> tuple[float, float]:
     """(width, height) in inches for a (possibly multi-line) label.
 
-    Width reuses the renderer's ``1 unit == half an em`` convention (a CJK
-    glyph is 2 units == 1 em, ASCII ~1 unit == half an em), so it tracks the
-    CJK font metrics closely without reading font files and stays deterministic
-    across environments.
+    Measures the real Agg font metrics instead of the historical
+    ``1 unit == half an em`` heuristic.  That heuristic underestimated mixed
+    CJK/Latin + full-width punctuation by ~12% (D5b F1: live02 ``n7`` escaped
+    its own box by 3px bbox / 1px ink), because ASCII glyphs are wider than
+    half an em in the selected CJK/Latin faces.  The metric renderer resolves
+    fonts through the same rcParams family list as the drawn text, so the CJK
+    fallback chain and the no-``findfont``-warning property are unchanged.
+    ``prop`` lets the title layer measure the exact bold face it draws.
     """
     if not text:
         return 0.0, 0.0
+    if prop is None:
+        prop = fm.FontProperties(size=fontsize)
+    renderer = _text_metric_renderer()
     lines = text.split("\n")
-    width_pt = max(_label_len(line) for line in lines) / 2.0 * fontsize
+    width_pt = 0.0
+    for line in lines:
+        w, _h, _d = renderer.get_text_width_height_descent(line, prop, False)
+        width_pt = max(width_pt, w)
+    # Height keeps the historical line-box model: matplotlib's multi-line
+    # ``linespacing`` (default 1.2em) is slightly larger than the glyph
+    # metrics returned by the renderer, so the real height would let a wrapped
+    # label/note spill vertically out of its box.
     height_pt = len(lines) * _LINE_SPACING * fontsize
     return width_pt / _PT_PER_IN, height_pt / _PT_PER_IN
 
@@ -255,7 +311,8 @@ def _grouped_geometry(sem: rs.RenderSemantics,
         max_w = max(max_w, width)
         max_h = max(max_h, height)
 
-    title_sizes = [_text_size_in(g.label, GROUP_FONTSIZE)
+    title_sizes = [_text_size_in(g.label, GROUP_FONTSIZE,
+                                 _title_font_properties(GROUP_FONTSIZE))
                    for g in sem.groups if g.label]
     title_h = max((size[1] for size in title_sizes), default=0.0)
 
@@ -407,6 +464,151 @@ def _group_extent(group: rs.RenderGroup, members: list[str],
     return x0, y0, max(0.0, x1 - x0), max(0.0, y1 - y0)
 
 
+def _axis_cells(values: list[float]):
+    """(value -> index, cell boundaries, sorted centres) of a layout axis."""
+    unique = sorted({round(v, 6) for v in values})
+    if not unique:
+        return {}, [], []
+    if len(unique) == 1:
+        return {unique[0]: 0}, [unique[0] - 0.5, unique[0] + 0.5], unique
+    bounds = [unique[0] - (unique[1] - unique[0]) / 2.0]
+    for i in range(1, len(unique)):
+        bounds.append((unique[i - 1] + unique[i]) / 2.0)
+    bounds.append(unique[-1] + (unique[-1] - unique[-2]) / 2.0)
+    return {v: i for i, v in enumerate(unique)}, bounds, unique
+
+
+def _axis_range(centres: list[float], lo: float, hi: float):
+    """Inclusive index range of the centres inside ``[lo, hi]`` (or ``None``)."""
+    inside = [i for i, v in enumerate(centres) if lo - 1e-9 <= v <= hi + 1e-9]
+    return (inside[0], inside[-1]) if inside else None
+
+
+def _merge_cells(cells):
+    """Merge grid cells into maximal rectangles ``(r0, c0, c1, r1)``."""
+    runs: list[list[int]] = []
+    for row, col in sorted(set(cells)):
+        if runs and runs[-1][0] == row and runs[-1][2] + 1 == col:
+            runs[-1][2] = col
+        else:
+            runs.append([row, col, col])
+    merged: list[list[int]] = []
+    for row, c0, c1 in runs:
+        if (merged and merged[-1][1] == c0 and merged[-1][2] == c1
+                and merged[-1][3] + 1 == row):
+            merged[-1][3] = row
+        else:
+            merged.append([row, c0, c1, row])
+    return merged
+
+
+def _group_frame_cells(sem: rs.RenderSemantics,
+                       pos: dict[str, tuple[float, float]],
+                       box_w: dict[str, float], box_h: dict[str, float],
+                       orientation: str):
+    """Disjoint per-group frame rectangles for the drawn figure.
+
+    D5b/D6 left ``_group_extent``'s member *bounding boxes* overlapping when a
+    lane band and one or more clusters shared a row strip, or when clusters
+    interleaved across rows (live 01 = 9 pairs, 02inc = 2 pairs).  Each frame
+    is still the group's domain rectangle (``_group_extent``) snapped to the
+    layout grid, but **every cell belongs to at most one group**: a cell that
+    holds another group's member is never claimed, and among empty cells that
+    two domains could share the earlier group (``sem.groups`` order) wins.
+    The frames therefore form a partition - borders may touch but never
+    intersect - while every member still sits inside its own group's frame.
+
+    Returns ``(rects_by_group, cell_of)`` with normalized ``(x0, y0, w, h)``
+    rectangles (``y0`` is the visual top).
+    """
+    xs = [pos[n.id][0] for n in sem.nodes]
+    ys = [pos[n.id][1] for n in sem.nodes]
+    x_of, x_bounds, x_centres = _axis_cells(xs)
+    y_of, y_bounds, y_centres = _axis_cells(ys)
+    cell_of = {n.id: (y_of[round(pos[n.id][1], 6)],
+                      x_of[round(pos[n.id][0], 6)]) for n in sem.nodes}
+    membership = sem.membership
+    cell_owner = {cell_of[n.id]: membership.get(n.id) for n in sem.nodes}
+
+    claimed: dict[tuple[int, int], str] = {}
+    cells_by_group: dict[str, list[tuple[int, int]]] = {}
+    for group in sem.groups:
+        members = [nid for nid in group.nodes if membership.get(nid) == group.id]
+        if not members:
+            continue
+        x0, y0, w, h = _group_extent(group, members, pos, box_w, box_h,
+                                     orientation)
+        cols = _axis_range(x_centres, x0, x0 + w)
+        rows = _axis_range(y_centres, y0, y0 + h)
+        if cols is None or rows is None:
+            rows = (min(cell_of[m][0] for m in members),
+                    max(cell_of[m][0] for m in members))
+            cols = (min(cell_of[m][1] for m in members),
+                    max(cell_of[m][1] for m in members))
+        owned: list[tuple[int, int]] = []
+        for row in range(rows[0], rows[1] + 1):
+            for col in range(cols[0], cols[1] + 1):
+                cell = (row, col)
+                if cell in claimed:
+                    continue
+                owner = cell_owner.get(cell)
+                if owner is not None and owner != group.id:
+                    continue
+                claimed[cell] = group.id
+                owned.append(cell)
+        cells_by_group[group.id] = owned
+
+    rects_by_group: dict[str, list[tuple[float, float, float, float]]] = {}
+    for group_id, cells in cells_by_group.items():
+        rects = []
+        for r0, c0, c1, r1 in _merge_cells(cells):
+            x0 = x_bounds[c0]
+            y0 = y_bounds[r0]
+            rects.append((x0, y0, x_bounds[c1 + 1] - x0,
+                          y_bounds[r1 + 1] - y0))
+        rects_by_group[group_id] = rects
+    return rects_by_group, cell_of
+
+
+def _rects_intersect(rects) -> bool:
+    """Does any pair of ``(x0, y0, w, h)`` rectangles overlap by area?"""
+    for i, (x0, y0, w, h) in enumerate(rects):
+        for x1, y1, w1, h1 in rects[i + 1:]:
+            ox = min(x0 + w, x1 + w1) - max(x0, x1)
+            oy = min(y0 + h, y1 + h1) - max(y0, y1)
+            if ox > 1e-9 and oy > 1e-9:
+                return True
+    return False
+
+
+def _group_frames(sem: rs.RenderSemantics,
+                  pos: dict[str, tuple[float, float]],
+                  box_w: dict[str, float], box_h: dict[str, float],
+                  orientation: str):
+    """Frame rectangles for every drawable group, keyed by group id.
+
+    When the authoritative/derived boxes are already disjoint the layout bbox
+    is drawn **verbatim** - the D3 contract that the renderer never disagrees
+    with the geometry owner (and the reason golden/flat output is unchanged).
+    Only a figure whose boxes actually intersect takes the X3 partition path,
+    where frames can no longer intersect while every member keeps a frame.
+    """
+    membership = sem.membership
+    naive: dict[str, tuple[float, float, float, float]] = {}
+    for group in sem.groups:
+        members = [nid for nid in group.nodes if membership.get(nid) == group.id]
+        if not members:
+            continue
+        x0, y0, w, h = _group_extent(group, members, pos, box_w, box_h,
+                                     orientation)
+        if w <= 0 or h <= 0:
+            continue
+        naive[group.id] = (x0, y0, w, h)
+    if not _rects_intersect(list(naive.values())):
+        return {group_id: [rect] for group_id, rect in naive.items()}
+    return _group_frame_cells(sem, pos, box_w, box_h, orientation)[0]
+
+
 def _group_title_style(line_color: str):
     """Font kwargs + optional synthetic-bold effect for a group title.
 
@@ -500,10 +702,13 @@ def _draw_groups(ax, sem: rs.RenderSemantics,
                  orientation: str = "TB", title_gap: float | None = None) -> list[str]:
     """Draw group backgrounds + titles; returns the drawn group ids in order.
 
-    ``title_gap`` (normalized, grouped/dense path) moves each title into the
-    strip the geometry reserved above its topmost member box and de-conflicts
-    titles *across groups*; ``None`` keeps the legacy top-left placement for
-    direct renderer calls.
+    Frames come from :func:`_group_frames`: a disjoint set of group boxes is
+    drawn verbatim (layout bbox), while an intersecting figure is partitioned
+    into grid cells so two frames never overlap (X3).  ``title_gap``
+    (normalized, grouped/dense path) moves each title into the strip the
+    geometry reserved above its topmost member box and de-conflicts titles
+    *across groups*; ``None`` keeps the legacy top-left placement for direct
+    renderer calls.
     """
     membership = sem.membership
     # Top of the tallest node box on each grid row: a group title must clear the
@@ -514,32 +719,38 @@ def _draw_groups(ax, sem: rs.RenderSemantics,
         row = round(pos[node.id][1], 6)
         top = pos[node.id][1] - box_h[node.id] / 2
         row_top[row] = min(row_top.get(row, top), top)
+    frame_rects = _group_frames(sem, pos, box_w, box_h, orientation)
     entries = []
     for index, group in enumerate(sem.groups):
         members = [nid for nid in group.nodes if membership.get(nid) == group.id]
         if not members:
             continue
-        fill, line = rs.group_colors(index)
-        x0, y0, w, h = _group_extent(group, members, pos, box_w, box_h, orientation)
-        if w <= 0 or h <= 0:
+        rects = frame_rects.get(group.id) or []
+        if not rects:
             continue
+        fill, line = rs.group_colors(index)
+        # Topmost rectangle (then leftmost) is where the title is anchored, so
+        # it always sits inside its own frame's strip.
+        top_rect = min(rects, key=lambda rect: (rect[1], rect[0]))
         ty = None
         if group.label and title_gap is not None:
             # Anchor the title's *bottom* in the reserved strip so the text
             # grows upward, clear of the row's node boxes.
             ty = min(row_top[round(pos[nid][1], 6)] for nid in members) \
                 - title_gap
-        entries.append((group, fill, line, x0, y0, w, h, ty))
+        entries.append((group, fill, line, rects, top_rect[0], top_rect[1], ty))
 
     anchors: list[tuple[float, float] | None] = [None] * len(entries)
-    titled = [i for i, e in enumerate(entries) if e[7] is not None]
+    titled = [i for i, e in enumerate(entries) if e[6] is not None]
     if titled:
         axes_w_in = ax.get_figure().get_size_inches()[0] * _AXES_FRACTION
         axes_h_in = ax.get_figure().get_size_inches()[1] * _AXES_FRACTION
+        title_prop = _title_font_properties(GROUP_FONTSIZE)
         candidates = []
         for i in titled:
-            group, _fill, _line, x0, _y0, _w, _h, ty = entries[i]
-            text_w, text_h = _text_size_in(group.label, GROUP_FONTSIZE)
+            group, _fill, _line, _rects, x0, _y0, ty = entries[i]
+            text_w, text_h = _text_size_in(group.label, GROUP_FONTSIZE,
+                                           title_prop)
             candidates.append({"tx": x0 + 0.008, "ty": ty,
                                "w": text_w / axes_w_in,
                                "h": text_h / axes_h_in})
@@ -555,9 +766,11 @@ def _draw_groups(ax, sem: rs.RenderSemantics,
 
     drawn: list[str] = []
     for entry, anchor in zip(entries, anchors):
-        group, fill, line, x0, y0, w, h, ty = entry
-        ax.add_patch(Rectangle((x0, y0), w, h, facecolor=fill, edgecolor=line,
-                               linewidth=1.3, alpha=0.45, zorder=0))
+        group, fill, line, rects, x0, y0, ty = entry
+        for rx, ry, rw, rh in rects:
+            ax.add_patch(Rectangle((rx, ry), rw, rh, facecolor=fill,
+                                   edgecolor=line, linewidth=1.3, alpha=0.45,
+                                   zorder=0))
         if group.label:
             if title_gap is None:
                 tx, ty, va = x0 + 0.008, y0 + 0.014, "top"

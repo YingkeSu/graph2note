@@ -21,6 +21,7 @@ import hashlib
 import json
 import os
 import subprocess
+import sys
 import tempfile
 
 import pytest
@@ -363,7 +364,12 @@ def test_matplotlib_groups_draw_background_boxes_and_titles():
     assert drawn == ["g1", "g2", "g3"]
     backgrounds = [p for p in ax.patches
                    if isinstance(p, Rectangle) and p.get_zorder() == 0]
-    assert len(backgrounds) == 3
+    # X3: frames are a partition of each group's grid domain, so a domain that
+    # another group's member cuts through draws as several rectangles.  Every
+    # group still contributes at least one frame, and the three group fills are
+    # all present.
+    assert len(backgrounds) >= 3
+    assert len({p.get_facecolor() for p in backgrounds}) == 3
     texts = [t.get_text() for t in ax.texts]
     for label in ("通信层", "层间通信", "执行层"):
         assert label in texts
@@ -672,3 +678,222 @@ def test_group_title_style_never_requests_a_missing_weight():
         assert kwargs["fontfamily"] == [mpl._CJK_BOLD_FAMILY]
         assert kwargs["fontweight"] == mpl._CJK_BOLD_WEIGHT >= 600
         assert effects is None
+
+
+# ---------------------------------------------------------------------------
+# X3: group frames must not intersect (live 01 = 9 pairs, 02inc = 2 pairs)
+#
+# A lane band and clusters can share a row strip, and clusters can interleave
+# across rows, so the member-envelope frames overlapped.  Frames are now the
+# partition of each group's grid domain: borders may touch, never intersect,
+# and every member still sits inside its own group's frame.
+# ---------------------------------------------------------------------------
+
+_X3_NODES = [{"id": f"n{i}", "label": f"节点{i}"} for i in range(1, 9)]
+
+
+def _x3_overlapping_layout():
+    """Hand-built D2 layout whose group bboxes overlap (live 01/02inc shape).
+
+    The full-width ``lane`` band shares row 0 with both clusters, ``ca``
+    interleaves ``lane``/``cb`` across rows, and ``cb``'s bbox contains
+    ``ca``'s members.  Before X3 these member-envelope boxes intersected in
+    several pairs; the fixture is red without the partition.
+    """
+    return {
+        "positions": {
+            "n1": {"x": 0.85, "y": 0.15},
+            "n2": {"x": 0.15, "y": 0.15},
+            "n3": {"x": 0.50, "y": 0.15},
+            "n4": {"x": 0.50, "y": 0.50},
+            "n5": {"x": 0.15, "y": 0.50},
+            "n6": {"x": 0.85, "y": 0.50},
+            "n7": {"x": 0.15, "y": 0.85},
+            "n8": {"x": 0.85, "y": 0.85},
+        },
+        "groups": [
+            {"id": "lane", "label": "用户侧", "kind": "lane",
+             "members": ["n1", "n2"],
+             "bbox": {"x0": 0.0, "y0": 0.0, "x1": 1.0, "y1": 0.34}},
+            {"id": "ca", "label": "簇 A", "kind": "cluster",
+             "members": ["n3", "n4"],
+             "bbox": {"x0": 0.0, "y0": 0.0, "x1": 0.7, "y1": 0.7}},
+            {"id": "cb", "label": "簇 B", "kind": "cluster",
+             "members": ["n5", "n6", "n7", "n8"],
+             "bbox": {"x0": 0.0, "y0": 0.0, "x1": 1.0, "y1": 1.0}},
+        ],
+    }
+
+
+def _frame_boxes(ax):
+    """Rendered group-frame rectangles (``zorder == 0``) as window extents."""
+    from matplotlib.patches import Rectangle
+    fig = ax.figure
+    fig.canvas.draw()
+    rend = fig.canvas.get_renderer()
+    return [p.get_window_extent(rend) for p in ax.patches
+            if isinstance(p, Rectangle) and p.get_zorder() == 0]
+
+
+def test_group_frames_do_not_intersect_on_overlapping_layout():
+    mpl = _mpl()
+    layout = _x3_overlapping_layout()
+    _fig, ax, drawn = mpl.build_figure(_X3_NODES, [], None, layout=layout)
+    assert drawn == ["lane", "ca", "cb"]
+    frames = _frame_boxes(ax)
+    assert len(frames) >= 3
+    for i, a in enumerate(frames):
+        for b in frames[i + 1:]:
+            assert _overlap(a, b) <= 1.0, (a, b)
+    # the old member-envelope frames really did overlap: the fix is not vacuous
+    envelopes = [
+        (g["bbox"]["x0"], g["bbox"]["y0"], g["bbox"]["x1"], g["bbox"]["y1"])
+        for g in layout["groups"]
+    ]
+    assert any(
+        envelopes[i][0] < envelopes[j][2] and envelopes[i][2] > envelopes[j][0]
+        and envelopes[i][1] < envelopes[j][3] and envelopes[i][3] > envelopes[j][1]
+        for i in range(len(envelopes)) for j in range(i + 1, len(envelopes))
+    )
+
+
+def test_group_frame_rects_partition_the_grid_and_cover_members():
+    """Pure-geometry check: frames are pairwise disjoint and contain members."""
+    mpl = _mpl()
+    layout = _x3_overlapping_layout()
+    sem = rs.normalize(_X3_NODES, [], None, layout=layout)
+    pos = rs.positions_from_layout(layout)
+    rects, _cell_of = mpl._group_frame_cells(sem, pos, {}, {}, "TB")
+    flat = [rect for group_rects in rects.values() for rect in group_rects]
+    assert len(flat) >= 3
+    for i, (x0, y0, w, h) in enumerate(flat):
+        for (x1, y1, w1, h1) in flat[i + 1:]:
+            ox = min(x0 + w, x1 + w1) - max(x0, x1)
+            oy = min(y0 + h, y1 + h1) - max(y0, y1)
+            assert ox * oy <= 1e-12, ((x0, y0, w, h), (x1, y1, w1, h1))
+    membership = sem.membership
+    for node in sem.nodes:
+        owner = membership[node.id]
+        x, y = pos[node.id]
+        assert any(x0 - 1e-9 <= x <= x0 + w + 1e-9
+                   and y0 - 1e-9 <= y <= y0 + h + 1e-9
+                   for x0, y0, w, h in rects[owner]), (node.id, owner)
+
+
+def test_lane_frames_stay_columns_on_golden_fixture():
+    """X3 must not clear overlaps by deleting/hiding frames: on the lane golden
+    each swim-lane still renders as one continuous, column-disjoint frame."""
+    mpl = _mpl()
+    from matplotlib.patches import Rectangle
+    with open(os.path.join(_GOLDEN_DIR, "diagram-layout-lane.json"),
+              encoding="utf-8") as fh:
+        doc = json.load(fh)
+    layout = doc["expected"]
+    nodes = [{"id": n, "label": n} for n in doc["fixture"]["nodes"]]
+    _fig, ax, drawn = mpl.build_figure(nodes, [], None, layout=layout)
+    assert drawn == ["lane-back", "lane-front"]
+    frames = [p for p in ax.patches
+              if isinstance(p, Rectangle) and p.get_zorder() == 0]
+    assert len(frames) == 2  # one rectangle per lane: a real swim-lane column
+    left, right = sorted(frames, key=lambda p: p.get_x())
+    assert left.get_x() + left.get_width() <= right.get_x() + 1e-6
+    # each lane frame spans exactly its layout bbox (verbatim when disjoint)
+    lanes = {g["id"]: g for g in layout["groups"]}
+    for patch, gid in ((left, "lane-back"), (right, "lane-front")):
+        bbox = lanes[gid]["bbox"]
+        assert abs(patch.get_x() - bbox["x0"]) < 1e-6
+        assert abs(patch.get_width() - (bbox["x1"] - bbox["x0"])) < 1e-6
+        assert abs(patch.get_y() - bbox["y0"]) < 1e-6
+
+
+def test_grouped_frame_geometry_is_hash_seed_independent():
+    """X3 determinism: PYTHONHASHSEED variants render identical frames."""
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    script = (
+        "from graph2note.diagrams import matplotlib_renderer as mpl\n"
+        "from matplotlib.patches import Rectangle\n"
+        "NODES = %r\n"
+        "LAYOUT = %r\n"
+        "fig, ax, _drawn = mpl.build_figure(NODES, [], None, layout=LAYOUT)\n"
+        "fig.canvas.draw()\n"
+        "rend = fig.canvas.get_renderer()\n"
+        "data = sorted(round(v, 6) for p in ax.patches\n"
+        "              if isinstance(p, Rectangle) and p.get_zorder() == 0\n"
+        "              for v in p.get_window_extent(rend).bounds)\n"
+        "print(data)\n"
+    ) % (_X3_NODES, _x3_overlapping_layout())
+    digests = set()
+    for seed in ("0", "1", "2"):
+        env = dict(os.environ, PYTHONHASHSEED=seed)
+        proc = subprocess.run(
+            [sys.executable, "-c", script], capture_output=True, text=True,
+            env=env, cwd=root,
+            check=False,
+        )
+        if proc.returncode != 0:
+            raise AssertionError(proc.stderr)
+        digests.add(proc.stdout.strip())
+    assert len(digests) == 1
+
+
+# ---------------------------------------------------------------------------
+# X4: real font metrics (the half-em heuristic under-measured mixed text)
+# ---------------------------------------------------------------------------
+
+
+def test_text_size_uses_real_metrics_not_half_em():
+    """The old ``1 unit = half an em`` width under-measured ASCII glyphs."""
+    mpl = _mpl()
+    text = "LLM 直接转？OCR？路由？"
+    width, height = mpl._text_size_in(text, mpl.NODE_FONTSIZE)
+    heuristic = mpl._label_len(text) / 2.0 * mpl.NODE_FONTSIZE / 72.0
+    assert width > heuristic
+    assert height > 0.0
+
+
+def _mixed_text_fixture():
+    """Mixed CJK/Latin labels, full-width punctuation and notes."""
+    nodes = [
+        {"id": "n1", "label": "LLM 直接转？OCR？路由？",
+         "note": "跨组：Critical Path 优化 ★"},
+        {"id": "n2", "label": "Windows (RDP/TS) 客户端"},
+        {"id": "n3", "label": "a. HTML/CSS；b. markdown→md；c. pdf"},
+        {"id": "n4", "label": "笔记/手册电子化入口"},
+    ]
+    edges = [{"from": "n1", "to": "n2", "label": "下一步"},
+             {"from": "n1", "to": "n3"},
+             {"from": "n2", "to": "n4"}]
+    groups = [
+        {"id": "g1", "label": "调度方案选型", "kind": "layer",
+         "nodes": ["n1", "n2"]},
+        {"id": "g2", "label": "输出与视图", "kind": "cluster",
+         "nodes": ["n3", "n4"]},
+    ]
+    return nodes, edges, groups
+
+
+def test_node_text_has_positive_slack_inside_its_own_box():
+    """X4: no node label/note may escape its own box; slack must exceed 1px."""
+    mpl = _mpl()
+    from matplotlib.patches import Rectangle
+    nodes, edges, groups = _mixed_text_fixture()
+    _fig, ax, _drawn = _render_grouped_via_engine(nodes, edges, groups)
+    fig = ax.figure
+    fig.canvas.draw()
+    rend = fig.canvas.get_renderer()
+    boxes = [p.get_window_extent(rend) for p in ax.patches
+             if isinstance(p, Rectangle) and p.get_zorder() == 3]
+    worst = None
+    for text in ax.texts:
+        if round(text.get_fontsize(), 3) not in (
+                round(mpl.NODE_FONTSIZE, 3), round(mpl.NOTE_FONTSIZE, 3)):
+            continue
+        tb = text.get_window_extent(rend)
+        cx, cy = (tb.x0 + tb.x1) / 2, (tb.y0 + tb.y1) / 2
+        owner = [b for b in boxes if b.x0 <= cx <= b.x1 and b.y0 <= cy <= b.y1]
+        assert len(owner) == 1, text.get_text()
+        b = owner[0]
+        slack = min(tb.x0 - b.x0, b.x1 - tb.x1,
+                    tb.y0 - b.y0, b.y1 - tb.y1)
+        worst = slack if worst is None else min(worst, slack)
+    assert worst is not None and worst >= 1.0, worst
