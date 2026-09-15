@@ -605,6 +605,29 @@
             </div>
           </div>
         </section>
+
+        <!-- Paper reading view (SPW P3, SPEC §2).  A doc_kind=="paper" document
+             opens here (from the Library grid, the unified search panel or the
+             #paper/<id> deep link); read-only over /api/papers/*.  The section
+             body is filled by views/paper.js; every container starts empty so a
+             missing field renders nothing rather than a placeholder. -->
+        <section id="paper-zone" class="paper-zone hidden">
+          <div class="paper-toolbar">
+            <button id="paper-back" class="btn small" type="button">← 返回文档库</button>
+            <span id="paper-status" class="dim paper-status" role="status" aria-live="polite"></span>
+          </div>
+          <div class="paper-layout">
+            <nav id="paper-section-nav" class="paper-nav" aria-label="论文章节导航"></nav>
+            <article class="paper-content">
+              <header id="paper-meta" class="paper-meta" aria-label="论文元数据"></header>
+              <div id="paper-body" class="paper-body"></div>
+              <section id="paper-references-zone" class="paper-references hidden" aria-label="参考文献">
+                <h2 class="paper-references-title">参考文献</h2>
+                <ol id="paper-references" class="paper-references-list"></ol>
+              </section>
+            </article>
+          </div>
+        </section>
       </main>
     </div>
   </div>

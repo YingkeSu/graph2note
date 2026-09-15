@@ -8,6 +8,7 @@ import { state, hideAll } from "./state.js";
 
 const VIEWS = new Map();
 let renderHook = null;
+const renderHooks = [];
 
 export function registerView(name, handler) {
   VIEWS.set(name, handler);
@@ -17,6 +18,13 @@ export function registerView(name, handler) {
    stays free of ui imports. */
 export function onRender(fn) {
   renderHook = fn;
+}
+
+/* P3: additional render observers.  ``onRender`` keeps its single-hook contract
+   for the shell; feature modules that only need to react to a route use this so
+   they never clobber the shell hook. */
+export function subscribeRender(fn) {
+  if (typeof fn === "function") renderHooks.push(fn);
 }
 
 /* In-app navigation.  Same hash -> force re-render (nav click on active view);
@@ -43,6 +51,11 @@ export function parseHash(hash = location.hash) {
       route.panel = true;
     }
     return route;
+  }
+  // P3: explicit paper reading deep link.  `#doc/<id>` also renders the paper
+  // view for a paper document (see views/paper.js), so both entry points work.
+  if (parts[0] === "paper" && parts[1]) {
+    return { name: "paper", id: decodeURIComponent(parts[1]) };
   }
   if (parts[0] === "inbox") return { name: "inbox" };
   if (parts[0] === "settings") return { name: "settings" };
@@ -129,6 +142,7 @@ export function render() {
   state.route = route.name;
   hideAll();
   if (renderHook) renderHook(route);
+  renderHooks.forEach((fn) => fn(route));
   const view = VIEWS.get(route.name) || VIEWS.get("library");
   if (view) view(route);
 }

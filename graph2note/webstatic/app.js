@@ -28,6 +28,7 @@ import "./js/views/dashboard.js";
 import "./js/views/vault.js";
 import "./js/views/upload.js";
 import "./js/views/document.js";
+import "./js/views/paper.js";     // P3 论文阅读视图（复用 #doc 路由，非论文文档保持原路径）
 import "./js/views/repair.js";   // R1 黑图修复报告（zone 由 /static/repair.js 自持）
 
 import "./search-panel.js";        // P3 统一搜索面板（⌘K / 顶栏搜索）
