@@ -114,6 +114,28 @@ def test_01_fixture_covers_the_three_bands_anchor():
     assert {g["kind"] for g in doc["fixture"]["groups"]} == {"layer"}
 
 
+def test_01_anchor_isolated_band_sinks_into_spec_reading_order():
+    """T-audit F-C: the 01 anchor's 执行层 band has no incident edge, so its
+    median depth (0) ties the top band.  Band order must still read
+    层间通信 → 通信层 → 执行层, derived without reading any declared order."""
+    from graph2note import diagram
+    from tests.test_diagram_groups_ir import _ANCHOR_01
+
+    payload, verdict = diagram.validate_diagram_json(_ANCHOR_01)
+    assert verdict == "ok"
+    node_ids = [n["id"] for n in payload["nodes"]]
+    edges = [(e["from"], e["to"]) for e in payload["edges"]]
+    layout = grouped_layout(node_ids, edges, payload["groups"])
+    assert layout["nrows"] == 3
+    assert {g["label"]: g["row_span"][0] for g in layout["groups"]} == {
+        "层间通信": 0, "通信层": 1, "执行层": 2,
+    }
+    # input order (groups and members) can never change the result
+    shuffled = [{**g, "nodes": list(reversed(g["nodes"]))}
+                for g in reversed(payload["groups"])]
+    assert grouped_layout(node_ids, edges, shuffled) == layout
+
+
 def test_02_fixture_uses_the_research_and_design_annotations():
     doc = _golden("cluster")
     labels = {g["label"] for g in doc["fixture"]["groups"]}
