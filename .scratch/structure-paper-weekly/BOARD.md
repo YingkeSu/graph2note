@@ -98,7 +98,7 @@ I 轨共享契约：[SPEC.md §2 论文文档契约](SPEC.md)。P2/P3 针对契�
 | Y3 | ✅ merged `875fbde`（rev-120 APPROVE，verdict `/tmp/review-spw-Y3-verdict.md`） | `dev/Y3-upload-test` @ `26a804f` | upload.js 拦截行为测试；1219 passed |
 | Y4 | 已交付，评审暂缓：**Blocked by Y5-r2**（fixture 是 P2 行为快照，分支本地并入了被 REJECT 的 Y5 基线，须待 Y5-r2 合并后 rebase 再审） | `dev/Y4-real-fixtures` @ `b420df3` | 4 真实论文 67 新例 1292 passed；发现 5 个新 issue 候选（噪声标题/标题吞 byline/authors 混机构/DOI 来源/参考文献欠切分） |
 | X6 | 待派（待 X3X4 合并，共享 renderer/_layout） | — | 裁决：优化默认视图设计使密图可读 |
-| Y6 | 实现中（worker-122） | `dev/Y6-digest-leftovers` | W1 遗留 R1-R5 聚合 |
-| Y2 | 待派（与 Y6 共享 store.py/webapp.py 追加，串行） | — | 裁决 (b)：双落点契约化 + 不变量测试 |
+| Y6 | 已交付，待评审空位 | `dev/Y6-digest-leftovers` @ `52cea75` | R1-R5+R7/R8 全关闭；+15 例；mutation 6/6 红；1239 passed |
+| Y2 | 实现中（worker-125；Y6 最终未碰 store/webapp，无冲突故提前） | `dev/Y2-dualslot-contract` | 裁决 (b)：双落点契约化 + 不变量测试 |
 
 BOARD 行由调度统一登记（前轮并发 reviewer 撞 BOARD 教训）；reviewer 只合代码不碰本文件。
