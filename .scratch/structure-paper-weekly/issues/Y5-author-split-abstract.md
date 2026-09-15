@@ -117,3 +117,36 @@ Status: ready-for-review
   - prose→name（误收，同 R2）：无标签且散文与姓名同段的极端情况仍可能把散文行当作者；真实样本待 Y4 校准。
   - name→prose（误丢，R1 遗漏方向，即 D1）：已由 `kept` 守卫 + `_SENTENCE_HINT_RE` 区分大小写消除，回归用例锁定。
   - 残余：标题前缀本身“像作者行”（如 `Neural Networks,`）且无真实摘要段落时，仍可能把标题尾部当摘要；两遍优先级已覆盖“存在真实摘要”的情形，无真实摘要时由 `_PROSE_LEAD_RE` 兜底；真实 PDF 样本待 Y4。
+
+### Rework R4（D3 修复，Y5）
+
+- 独立 reviewer（会话 `graph2note-128`）三审裁决 **REJECT**，见 `/tmp/review-spw-Y5-r3-verdict.md` §2。D1/D2 均确认已修好；但同一失败类仍存 **D3**：折行标题/副标题的**第二行以 `Abstract`/`摘要：` 开头**时，真实摘要被标题尾部顶替（base 正确、R1/R2/R3 全错，该入口从未被堵上）。
+- D3 最小反例：`Graph Neural Networks for\nAbstract Meaning Representation\n\nWei Zhang, Li Chen\n\nAbstract\nBody text.` —— base `abstract='Body text.'`；R1/R2/R3 `abstract='Meaning Representation'`。其它触发：`Code Models for|Abstract Syntax Trees`、`Attention Is Still All You Need:|Abstract Representations in Transformers`、中文 `一种基于图神经网络的|摘要：方法研究`。
+  根因：`_extract_abstract` 的“规范标签”判定对每行做 `_ABSTRACT_RE.match`，把标题折行后的 `Abstract …` 行当成摘要标签；`_title_lines` 已算出 `title_block` 但未传给 `_extract_abstract`，无法排除标题行。
+- R4 修复（verdict §2.5，与两遍优先级正交）：
+  1. `_extract_abstract(paragraphs, author_lines, title_lines=None)` 新增 `title_lines` 参数；内部 `title_keys = {_clean(l) for l in title_lines or [] if _clean(l)}`，整行扫描时 `if _clean(line) in title_keys: continue`。
+  2. `parse_paper_meta` 调用处把 `_title_lines` 已返回的 `title_block` 传入（已有信息流）。
+  3. 保留 R2/R3 的全部 D1/D2 修复（`kept` 守卫、`_SENTENCE_HINT_RE` 区分大小写、head 护栏 `re.I`、两遍优先级）。
+- R4 新增回归用例（5 项）：
+  - `test_wrapped_title_line_starting_with_abstract_is_not_the_abstract`（verdict 指定文本）
+  - `test_wrapped_title_starting_with_abstract_does_not_shadow_the_abstract`（参数化 `Abstract Syntax Trees` / `Abstract Representations in Transformers` / `Abstract Reasoning`）
+  - `test_wrapped_cjk_title_starting_with_the_abstract_label_is_not_the_abstract`（中文 `摘要：方法研究`）
+- R4 mutation 证据（备份 → 改 → 跑 → 还原，最终工作树干净）：
+
+  | mutation | 结果 |
+  | --- | --- |
+  | 去掉 `if _clean(line) in title_keys: continue` | 全部 5 个 D3 用例 FAIL |
+  | 调用处不传 `title_block` | 全部 5 个 D3 用例 FAIL |
+  | 去掉 `kept` 守卫 | `test_first_byline_line_is_not_dropped_by_the_sentence_heuristic` FAIL |
+  | `_SENTENCE_HINT_RE` 恢复 `re.I` | `test_wrapped_byline_line_with_a_capitalized_hint_name_is_preserved` FAIL |
+  | head 护栏改 `if head:` / `_PROSE_LEAD_RE` 去掉 `re.I` | `test_inline_abstract_inside_a_title_is_not_invented_without_a_real_abstract` FAIL |
+  | 去掉两遍优先级 | `test_authorlike_title_prefix_does_not_shadow_the_real_abstract` FAIL |
+  | `_author_lines_before_abstract` 恒等 | 6 个用例 FAIL |
+
+- R4 全量：`pytest -p no:warnings` → **1230 passed, EXIT=0**（R3 1225 + 新增 5；`tests/test_papers_meta.py` 单文件 53 passed）。
+- **风险披露（补上 R3 遗漏的 D3 方向）**：
+  - **title→abstract（误替代，R3 遗漏方向，即 D3）**：**标题行不像作者行**且**存在真实摘要段落**时，折行标题的 `Abstract` 开头行仍被当标签，真实摘要被顶替（base 正确）。与 R3 已披露的“标题像作者行且无真实摘要”是**不同方向**。R4 用 `title_keys` 排除标题块行，以 5 个用例（含三种英文折行 + 中文 `摘要：`）锁定。
+  - **残余（base 也错，非严格回归，均已记录）**：
+    - 标题行本身“像作者行”（如 `Neural Networks, Abstract Reasoning, and Compositionality`）且无真实摘要段落时，仍会凭空造摘要（base `abstract=''`）。两遍优先级已覆盖“存在行首真实摘要”的情形；无真实摘要时由 `_PROSE_LEAD_RE` 兜底（`A Study Of` 类）。
+    - 同一作者样标题 + 真实摘要**行内粘连**在 byline 后（issue 目标布局）时仍返回标题尾部（base `''`），非严格回归。
+    - byline 段内第 2 行以 `Abstract` 开头、全大写 byline（`_NAME_TOKEN_RE` 要求 `[A-Z][a-z]+`）在 base 四版同样出错。真实 PDF 样本待 Y4。
