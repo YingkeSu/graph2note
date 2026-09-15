@@ -20,12 +20,11 @@
 
 import { el, state } from "../state.js";
 import { api } from "../api.js";
-import { go, registerView, subscribeRender } from "../router.js";
+import { go, registerView } from "../router.js";
 import { esc } from "../utils.js";
 import { renderDocumentRoute } from "./document.js";
 import {
   activeSectionIndex,
-  applyPaperBadges,
   isPaperView,
   normalizePaperView,
   paperMetaHtml,
@@ -178,40 +177,5 @@ if (el.paperBack) {
   el.paperBack.addEventListener("click", () => go("#library"));
 }
 
-/* ---------- library badge fallback (read-only /api/papers index) ---------- */
-
-/* The Library summary may already carry ``doc_kind`` (then library_cards
-   renders the badge).  When only the record knows the kind, decorate the cards
-   from the read-only index; harmless and idempotent when both paths are live. */
-let paperIds = new Set();
-let paperIdsRequest = null;
-
-function ensurePaperIds() {
-  if (!paperIdsRequest) {
-    paperIdsRequest = api("/api/papers")
-      .then((payload) => {
-        const entries = (payload && payload.papers) || [];
-        paperIds = new Set(entries.map((item) => String(item && item.document_id || "")).filter(Boolean));
-      })
-      .catch(() => { paperIds = new Set(); });
-  }
-  return paperIdsRequest;
-}
-
-function decorateLibrary() {
-  if (!el.libraryGrid) return;
-  applyPaperBadges(el.libraryGrid, paperIds, document);
-}
-
-subscribeRender((route) => {
-  if (route.name !== "library") return;
-  paperIdsRequest = null;   // re-read the index on each Library entry
-  void ensurePaperIds().then(decorateLibrary);
-});
-
-if (el.libraryGrid && typeof MutationObserver === "function") {
-  const observer = new MutationObserver(() => {
-    if (paperIds.size) decorateLibrary();
-  });
-  observer.observe(el.libraryGrid, { childList: true });
-}
+/* P1 puts ``doc_kind`` on the ``/api/documents`` summary, so the Library grid
+   badge is rendered directly by ``library_cards`` — no extra index fetch. */

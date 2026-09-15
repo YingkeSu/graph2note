@@ -134,35 +134,18 @@ assert.strictEqual(core.activeSectionIndex([0, 500, 1200], 700), 1);
 assert.strictEqual(core.activeSectionIndex([0, 500, 1200], 99999), 2);
 assert.strictEqual(core.activeSectionIndex([], 10), -1);
 
-// ---- 9) library badge decoration (fallback index) -------------------------
-function fakeDocument() {
-  return {
-    createElement(tag) {
-      return { tagName: tag.toUpperCase(), className: "", textContent: "", title: "",
-        children: [], appendChild(child) { this.children.push(child); } };
-    },
-  };
-}
-function fakeCard(id, hasBadge = false) {
-  const meta = { children: [], appendChild(child) { this.children.push(child); } };
-  return {
-    dataset: { id },
-    _meta: meta,
-    querySelector(selector) {
-      if (selector === ".doc-meta") return meta;
-      if (selector === ".doc-paper-badge") return hasBadge ? { className: "doc-paper-badge" } : null;
-      return null;
-    },
-  };
-}
-const gridCards = [fakeCard("paper-1"), fakeCard("doc-2"), fakeCard("paper-1", true)];
-const grid = { querySelectorAll: () => gridCards };
-const added = core.applyPaperBadges(grid, new Set(["paper-1"]), fakeDocument());
-assert.strictEqual(added, 1, "only the unbadged paper card is decorated (idempotent)");
-assert.strictEqual(gridCards[0]._meta.children.length, 1);
-assert.strictEqual(gridCards[0]._meta.children[0].textContent, "论文");
-assert.strictEqual(gridCards[1]._meta.children.length, 0, "non-paper card untouched");
-assert.strictEqual(core.applyPaperBadges(grid, new Set(), fakeDocument()), 0);
+// ---- 9) the API's 1-based page label wins over the raw 0-based indexes -----
+const labelled = core.normalizeSection({
+  level: 1, title: "S", page_start: 0, page_end: 0, page_label: "p.1",
+});
+assert.strictEqual(labelled.pageStart, 0, "raw P1 index is preserved");
+assert.strictEqual(labelled.pageLabel, "p.1", "display label comes from the API");
+const fallback = core.normalizeSection({ level: 1, title: "S", page_start: 3, page_end: 5 });
+assert.strictEqual(fallback.pageLabel, "p.3–5", "fixtures without page_label fall back");
+// the markup builders re-normalize their input, so normalization must be idempotent
+const rebuilt = core.normalizeSection(labelled);
+assert.strictEqual(rebuilt.pageLabel, "p.1", "page_label survives a second pass");
+assert.strictEqual(rebuilt.pageStart, 0, "raw index survives a second pass");
 
 // ---- 10) library_cards carries the same marker ----------------------------
 assert.strictEqual(cards.isPaperDoc({ doc_kind: "paper" }), true);
@@ -175,7 +158,7 @@ assert.ok(paperCardHtml.includes("doc-paper-badge"), "paper badge in the grid ca
 assert.ok(!cards.cardHtml({ document_id: "d", title: "T" }, escapeHtml).includes("doc-paper-badge"),
   "non-paper cards stay unmarked");
 
-// ---- 11) router: #paper deeplink + extra render hook ----------------------
+// ---- 11) router: #paper deeplink ------------------------------------------
 globalThis.document = {
   querySelector: () => null,
   createElement: () => ({ textContent: "", innerHTML: "" }),
@@ -185,9 +168,5 @@ const router = await load("js/router.js");
 assert.deepStrictEqual(router.parseHash("#paper/p%201"), { name: "paper", id: "p 1" });
 assert.deepStrictEqual(router.parseHash("#paper"), { name: "library" });
 assert.strictEqual(router.parseHash("#doc/p1").name, "doc", "plain doc route unchanged");
-const seen = [];
-router.subscribeRender((route) => seen.push(route.name));
-router.render();
-assert.ok(seen.includes("library"), "extra render hook fires alongside the shell hook");
 
 console.log("paper_view: all assertions passed ✓");

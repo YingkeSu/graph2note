@@ -63,7 +63,7 @@ export function normalizeSection(section) {
   let level = integerOrNull(source.level);
   if (level == null || level < 1) level = 1;
   // Accept both the API's snake_case and this module's own camelCase output so
-  // the builder stays idempotent when handed an already-normalized section.
+  // the builders stay idempotent when handed an already-normalized section.
   const pageStart = integerOrNull(source.page_start != null ? source.page_start : source.pageStart);
   const pageEnd = integerOrNull(source.page_end != null ? source.page_end : source.pageEnd);
   return {
@@ -72,7 +72,10 @@ export function normalizeSection(section) {
     text: typeof source.text === "string" ? source.text : "",
     pageStart,
     pageEnd,
-    pageLabel: pageRangeLabel(pageStart, pageEnd),
+    // The API already sends a 1-based display range (``page_label``); fall back
+    // to the raw indexes only for hand-built fixtures.
+    pageLabel: text(source.page_label) || text(source.pageLabel)
+      || pageRangeLabel(pageStart, pageEnd),
   };
 }
 
@@ -264,35 +267,3 @@ export function referenceListHtml(payload, escape) {
   }).join("");
 }
 
-/* ---------- library badge decoration ---------- */
-
-/** Add a "论文" badge to every library card whose id is in ``paperIds``.
-
-    ``library_cards`` renders the badge directly when the list payload already
-    carries ``doc_kind``; this decorator is the fallback for the read-only
-    ``/api/papers`` index so the marker shows even when only the record (not the
-    summary) knows the kind.  Idempotent: an existing badge is never doubled. */
-export function applyPaperBadges(root, paperIds, ownerDocument) {
-  if (!root || typeof root.querySelectorAll !== "function") return 0;
-  const ids = paperIds instanceof Set ? paperIds : new Set(paperIds || []);
-  if (!ids.size) return 0;
-  const doc = ownerDocument
-    || (typeof document !== "undefined" ? document : null);
-  if (!doc || typeof doc.createElement !== "function") return 0;
-  let added = 0;
-  root.querySelectorAll(".doc-card[data-id]").forEach((card) => {
-    const id = card.dataset ? card.dataset.id : "";
-    if (!id || !ids.has(id)) return;
-    if (typeof card.querySelector === "function" && card.querySelector(".doc-paper-badge")) return;
-    const badge = doc.createElement("span");
-    badge.className = "doc-paper-badge";
-    badge.textContent = "论文";
-    badge.title = "论文文档";
-    const holder = (card.querySelector && card.querySelector(".doc-meta")) || card;
-    if (holder && typeof holder.appendChild === "function") {
-      holder.appendChild(badge);
-      added += 1;
-    }
-  });
-  return added;
-}

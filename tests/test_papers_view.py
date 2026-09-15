@@ -5,11 +5,15 @@ Covers the read-only display layer only (P1/P2 own ingest + recognition):
 1. ``index.html`` DOM: the paper zone lives in the content area with its
    containers, and the zero-build frontend still loads one ES module entry
    (``app.js``) which reaches ``views/paper.js`` + ``paper_view_core.js``.
-2. ``/api/papers/{id}/view`` + ``/api/papers``: SPEC §2 shape normalization over
-   three storage layouts (nested ``paper``, sibling ``paper_*`` keys, and
-   ``metadata.paper``) so the reader is decoupled from P1/P2's landing point;
-   non-paper documents degrade, unknown documents 404, and a fresh
-   ``FileDocumentStore`` reload proves the projection is durable.
+2. ``GET /api/papers/{id}/view`` reads **through the real store seams**: P1's
+   ``save_paper_document`` / ``get_paper_payload`` (sections / full text / page
+   map) and P2's ``set_paper_meta`` / ``set_paper_references`` /
+   ``paper_payload`` (metadata / references).  The file-backed store keeps P1's
+   sections in ``paper.json`` and P2's slots in the ``paper`` key of
+   ``record.json``, so the tests assert the endpoint is wired to the public API
+   rather than to raw record keys (defect-A regression guard).  A second guard
+   asserts P1's ``GET /api/papers`` job-list route is still reachable (P3 must
+   not shadow it).
 3. The pure frontend contract runs under Node (``node tests/paper_view.mjs``).
 
 Zero network, zero LLM.
@@ -44,12 +48,28 @@ PAPER_META = {
     "keywords": ["transformer", "attention"],
     "source": "text-layer",
 }
+# P1 stores 0-based page indexes (see graph2note/papers/model.py).
 PAPER_SECTIONS = [
     {"level": 1, "title": "1 Introduction", "text": "Recurrent models...",
-     "page_start": 1, "page_end": 1},
+     "page_start": 0, "page_end": 0},
     {"level": 2, "title": "1.1 Background", "text": "Background text",
-     "page_start": 1, "page_end": 2},
+     "page_start": 0, "page_end": 1},
 ]
+PAPER_PAGE_MAP = [
+    {"page_index": 0, "page_number": 1, "char_count": 120},
+    {"page_index": 1, "page_number": 2, "char_count": 80},
+]
+# The exact shape ``store.save_paper_document`` persists (P1 PaperPayload).
+PAPER_PAYLOAD = {
+    "schema_version": 1,
+    "source": "text-layer",
+    "sections": PAPER_SECTIONS,
+    "fulltext": "Recurrent models... Background text",
+    "page_map": PAPER_PAGE_MAP,
+    "meta": {},
+    "references": [],
+    "provenance": {"source": "text-layer", "pdf_id": "pdf-1", "sections": 2},
+}
 PAPER_REFERENCES = [
     {"raw": "[1] Bahdanau et al. 2015", "title": "Neural Machine Translation",
      "authors": ["Dzmitry Bahdanau"], "year": 2015, "doi": "",
@@ -59,17 +79,23 @@ PAPER_REFERENCES = [
 ]
 
 
-def _seed(store, document_id: str, **extra):
-    """Insert a document without parsing; returns the live record dict."""
+def _seed_paper(store, document_id: str, paper: dict | None = None):
+    """Commit a paper through P1's real durable API (not a record-key fixture)."""
 
-    record = store.save_document(
-        document_id=document_id, title=f"文件 {document_id}", source_job_id=f"job-{document_id}",
+    return store.save_paper_document(
+        document_id=document_id, title=f"论文 {document_id}", markdown="# t\n",
+        paper=dict(paper if paper is not None else PAPER_PAYLOAD),
+        model="text-layer", ir_json="{}", original_path=None, original_ext=".pdf",
+    )
+
+
+def _seed_note(store, document_id: str):
+    return store.save_document(
+        document_id=document_id, title=f"笔记 {document_id}", source_job_id=f"job-{document_id}",
         model="fixture", markdown=f"# {document_id}\n", ir_json=json.dumps({"blocks": []}),
-        original_path="", original_ext=".pdf", preprocessed_path="",
+        original_path="", original_ext=".jpg", preprocessed_path="",
         preprocessed_raw_path="", assets_dir="", timing_json={},
     )
-    record.update(extra)
-    return record
 
 
 def _client(store):
@@ -118,6 +144,7 @@ def test_paper_view_source_registers_both_routes_and_delegates_non_papers():
     assert "renderDocumentRoute" in source, "non-paper documents keep the existing editor path"
     router = (WEBSTATIC / "js" / "router.js").read_text(encoding="utf-8")
     assert 'parts[0] === "paper"' in router, "#paper/<id> is a first-class parsed route"
+    assert "subscribeRender" not in router, "the redundant render hook was removed"
 
 
 def test_static_serves_paper_modules(tmp_path):
@@ -159,28 +186,59 @@ def test_paper_css_meets_the_reading_baseline():
 
 
 # ---------------------------------------------------------------------------
-# 2) /api/papers/* read-only projection
+# 2) /api/papers/{id}/view reads through P1/P2 public store APIs
 # ---------------------------------------------------------------------------
 
 
-def test_paper_view_returns_spec_shape(tmp_path):
-    store = SessionDocumentStore(tmp_path / "session")
-    _seed(store, "paper-1", doc_kind="paper",
-          paper={"meta": PAPER_META, "sections": PAPER_SECTIONS,
-                 "references": PAPER_REFERENCES})
-    _seed(store, "note-1")
+def test_view_reads_p1_sections_from_the_durable_paper_json(tmp_path):
+    """Defect-A guard: the endpoint must use ``get_paper_payload`` (paper.json).
+
+    For the file-backed store ``record.json`` only carries ``paper_sections`` as
+    a *count*; a raw record reader yields no sections at all.
+    """
+
+    root = tmp_path / "library"
+    store = FileDocumentStore(root)
+    _seed_paper(store, "paper-1", PAPER_PAYLOAD)
+    record = store.get_document("paper-1")
+
+    # the record really is the lossy shape the old reader tripped over
+    assert record["doc_kind"] == "paper"
+    assert record["paper_sections"] == len(PAPER_SECTIONS)
+    assert "sections" not in (record.get("paper") or {})
+    assert (root / "documents" / "paper-1" / "paper.json").is_file()
+
+    body = _client(store).get("/api/papers/paper-1/view").json()
+    assert body["doc_kind"] == "paper"
+    assert [section["title"] for section in body["sections"]] == [
+        "1 Introduction", "1.1 Background"]
+    assert body["sections"][0]["text"] == "Recurrent models..."
+    # raw P1 index is preserved, the display label is 1-based
+    assert body["sections"][0]["page_start"] == 0
+    assert body["sections"][1]["page_label"] == "p.1–2"
+    # P2 has not run yet: it degrades to the empty defaults, never a crash
+    assert body["meta"]["title"] == ""
+    assert body["references"] == []
+
+
+def test_view_combines_p1_sections_with_p2_meta_and_references(tmp_path):
+    """The live integration path: P1 import → P2 metadata/references → view."""
+
+    root = tmp_path / "library"
+    store = FileDocumentStore(root)
+    _seed_paper(store, "paper-1", PAPER_PAYLOAD)
+    store.set_paper_meta("paper-1", PAPER_META)
+    store.set_paper_references("paper-1", PAPER_REFERENCES)
+    _seed_note(store, "note-1")
     client = _client(store)
 
     body = client.get("/api/papers/paper-1/view").json()
-    assert body["document_id"] == "paper-1"
     assert body["doc_kind"] == "paper"
     assert body["meta"]["title"] == "Attention Is All You Need"
     assert body["meta"]["authors"] == ["Ashish Vaswani", "Noam Shazeer"]
     assert body["meta"]["year"] == 2017
     assert body["meta"]["keywords"] == ["transformer", "attention"]
-    assert [section["title"] for section in body["sections"]] == [
-        "1 Introduction", "1.1 Background"]
-    assert body["sections"][1]["page_end"] == 2
+    assert len(body["sections"]) == 2
     assert body["references"][0]["resolved_document_id"] == "doc-ref-1"
     assert body["references"][1]["resolved_document_id"] == ""
 
@@ -188,35 +246,73 @@ def test_paper_view_returns_spec_shape(tmp_path):
     plain = client.get("/api/papers/note-1/view").json()
     assert plain["doc_kind"] == ""
     assert plain["sections"] == [] and plain["references"] == []
-
     assert client.get("/api/papers/does-not-exist/view").status_code == 404
 
 
-def test_paper_view_tolerates_every_documented_storage_layout(tmp_path):
+def test_view_uses_p2_metadata_written_to_the_record_slot(tmp_path):
+    """P2's durable landing is the ``paper`` key of record.json, not paper.json."""
+
+    root = tmp_path / "library"
+    store = FileDocumentStore(root)
+    _seed_paper(store, "paper-1", PAPER_PAYLOAD)
+    store.set_paper_meta("paper-1", PAPER_META)
+    store.set_paper_references("paper-1", PAPER_REFERENCES)
+
+    record = json.loads(
+        (root / "documents" / "paper-1" / "record.json").read_text(encoding="utf-8"))
+    assert record["paper"]["meta"]["title"] == "Attention Is All You Need"
+    assert "sections" not in record["paper"], "P2 slot holds only its own keys"
+    payload = json.loads(
+        (root / "documents" / "paper-1" / "paper.json").read_text(encoding="utf-8"))
+    assert payload["sections"][0]["title"] == "1 Introduction"
+
+    body = _client(FileDocumentStore(root)).get("/api/papers/paper-1/view").json()
+    assert body["meta"]["title"] == "Attention Is All You Need"
+    assert len(body["sections"]) == 2
+
+
+def test_view_is_durable_across_a_file_store_reload(tmp_path):
+    root = tmp_path / "library"
+    store = FileDocumentStore(root)
+    _seed_paper(store, "paper-1", PAPER_PAYLOAD)
+    store.set_paper_meta("paper-1", PAPER_META)
+    store.set_paper_references("paper-1", PAPER_REFERENCES)
+
+    body = _client(FileDocumentStore(root)).get("/api/papers/paper-1/view").json()
+    assert body["meta"]["venue"] == "NeurIPS"
+    assert body["sections"][0]["title"] == "1 Introduction"
+    assert len(body["references"]) == 2
+
+
+def test_view_works_on_the_in_memory_store_too(tmp_path):
     store = SessionDocumentStore(tmp_path / "session")
-    # sibling paper_* keys
-    _seed(store, "sib", doc_kind="paper", paper_meta=PAPER_META,
-          paper_sections=PAPER_SECTIONS, paper_references=PAPER_REFERENCES)
-    # kind nested in the paper blob, no top-level doc_kind
-    _seed(store, "nested", paper={"doc_kind": "paper", "meta": PAPER_META,
-                                  "sections": PAPER_SECTIONS})
-    client = _client(store)
-
-    for document_id in ("sib", "nested"):
-        body = client.get(f"/api/papers/{document_id}/view").json()
-        assert body["doc_kind"] == "paper", document_id
-        assert body["meta"]["title"] == "Attention Is All You Need", document_id
-        assert body["sections"][0]["text"] == "Recurrent models...", document_id
+    _seed_paper(store, "paper-1", PAPER_PAYLOAD)
+    store.set_paper_meta("paper-1", PAPER_META)
+    store.set_paper_references("paper-1", PAPER_REFERENCES)
+    body = _client(store).get("/api/papers/paper-1/view").json()
+    assert body["meta"]["title"] == "Attention Is All You Need"
+    assert len(body["sections"]) == 2
+    assert len(body["references"]) == 2
 
 
-def test_paper_view_skips_malformed_entries_and_coerces_year(tmp_path):
-    store = SessionDocumentStore(tmp_path / "session")
-    _seed(store, "messy", doc_kind="paper", paper={
-        "meta": {"title": "Messy", "year": "2019", "authors": ["A", "", None, 3]},
-        "sections": [{"level": "2", "title": "S", "text": "T"}, "not-a-dict", 7],
-        "references": [None, {"title": "R", "resolved_document_id": 12}],
+def test_view_skips_malformed_entries_and_coerces_year(tmp_path):
+    root = tmp_path / "library"
+    store = FileDocumentStore(root)
+    _seed_paper(store, "messy", {
+        "source": "text-layer",
+        "sections": [{"level": "2", "title": "S", "text": "T"}, "x", 7],
+        "page_map": [], "meta": {}, "references": [], "provenance": {},
     })
-    body = _client(store).get("/api/papers/messy/view").json()
+    # simulate a legacy/hostile P2 slot with wrong types
+    record_path = root / "documents" / "messy" / "record.json"
+    data = json.loads(record_path.read_text(encoding="utf-8"))
+    data["paper"] = {
+        "meta": {"title": "Messy", "year": "2019", "authors": ["A", "", None, 3]},
+        "references": [None, {"title": "R", "resolved_document_id": 12}],
+    }
+    record_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+
+    body = _client(FileDocumentStore(root)).get("/api/papers/messy/view").json()
     assert body["meta"]["year"] == 2019, "numeric-string year is coerced"
     assert body["meta"]["authors"] == ["A"], "blank / non-string authors dropped"
     assert len(body["sections"]) == 1 and body["sections"][0]["level"] == 2
@@ -224,45 +320,33 @@ def test_paper_view_skips_malformed_entries_and_coerces_year(tmp_path):
     assert body["references"][0]["resolved_document_id"] == ""
 
 
-def test_paper_view_is_durable_across_a_file_store_reload(tmp_path):
-    root = tmp_path / "library"
-    store = FileDocumentStore(root)
-    _seed(store, "paper-1")
-    record_path = root / "documents" / "paper-1" / "record.json"
-    data = json.loads(record_path.read_text(encoding="utf-8"))
-    data["doc_kind"] = "paper"
-    data["paper"] = {"meta": PAPER_META, "sections": PAPER_SECTIONS,
-                     "references": PAPER_REFERENCES}
-    record_path.write_text(json.dumps(data, ensure_ascii=False), encoding="utf-8")
+def test_p1_papers_endpoint_is_not_shadowed(tmp_path):
+    """Defect-B guard: P3 must not register a second ``GET /api/papers``.
 
-    reloaded = FileDocumentStore(root)
-    client = _client(reloaded)
-    body = client.get("/api/papers/paper-1/view").json()
-    assert body["doc_kind"] == "paper"
-    assert body["meta"]["venue"] == "NeurIPS"
-    assert body["sections"][0]["page_start"] == 1
+    P1 owns that route and answers with a *list* of paper job summaries.
+    """
+
+    client = _client(SessionDocumentStore(tmp_path / "session"))
+    listing = client.get("/api/papers")
+    assert listing.status_code == 200
+    body = listing.json()
+    assert isinstance(body, list), "P1's /api/papers returns a job-summary list"
+    assert not (isinstance(body, dict) and "papers" in body), "the P3 index is gone"
 
 
-def test_papers_index_lists_only_papers(tmp_path):
+def test_documents_list_exposes_doc_kind_for_the_badge(tmp_path):
     store = SessionDocumentStore(tmp_path / "session")
-    _seed(store, "paper-1", doc_kind="paper", paper={"sections": PAPER_SECTIONS})
-    _seed(store, "note-1")
-    _seed(store, "paper-2", doc_kind="paper")
-    body = _client(store).get("/api/papers").json()
-    assert body["count"] == 2
-    assert {item["document_id"] for item in body["papers"]} == {"paper-1", "paper-2"}
+    _seed_paper(store, "paper-1", PAPER_PAYLOAD)
+    _seed_note(store, "note-1")
+    items = {item["document_id"]: item for item in _client(store).get("/api/documents").json()}
+    assert items["paper-1"]["doc_kind"] == "paper"
+    assert items["note-1"].get("doc_kind") in (None, "")
 
 
-def test_documents_list_contract_is_unchanged(tmp_path):
+def test_view_never_mutates_the_library(tmp_path):
     store = SessionDocumentStore(tmp_path / "session")
-    _seed(store, "note-1")
-    _seed(store, "paper-1", doc_kind="paper", paper={"sections": PAPER_SECTIONS})
+    _seed_paper(store, "paper-1", PAPER_PAYLOAD)
     client = _client(store)
-    items = client.get("/api/documents").json()
-    assert {item["document_id"] for item in items} == {"note-1", "paper-1"}
-    for item in items:
-        assert {"document_id", "title", "metadata", "effective_time"} <= set(item)
-    # the paper view's own endpoint never mutates the library
     before = client.get("/api/documents/paper-1").json()
     client.get("/api/papers/paper-1/view")
     after = client.get("/api/documents/paper-1").json()
