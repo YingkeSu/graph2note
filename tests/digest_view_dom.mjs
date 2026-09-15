@@ -342,6 +342,8 @@ const SECTIONED_META = {
     document_count: 4, new_document_count: 2, parsed_count: 3, failed_count: 1,
     topic_count: 2, tag_count: 3, tagged_count: 3, inbox_in_range: 2,
     inbox_reason_counts: { no_tag: 2 }, continuity_significant: 1, continuity_suggested: 0,
+    inbox_backlog: 5, material_document_count: 3, organized_material_count: 2,
+    pending_material_count: 1,
   },
   sections: [
     { key: "overview", title: "本周概览", source_document_ids: ["doc-a", "doc-b"] },
@@ -439,6 +441,11 @@ assert.ok(statsChips.some((chip) => chip.label === "选入材料" && chip.value 
   "selected material and range total stay distinct (R8)");
 assert.ok(statsChips.some((chip) => chip.label === "Inbox 本期" && chip.title.includes("材料分区")),
   "the Inbox chip carries the R2 caveat");
+assert.ok(statsChips.some((chip) => chip.label === "待整理材料" && chip.value === "1 篇"),
+  "material partition count is a separate chip from the Inbox projection (R2)");
+assert.ok(statsChips.some((chip) => chip.label === "选入材料"
+    && chip.title.includes("material_document_count")),
+  "the selected-material chip names the R8 field");
 
 /* ------------------------------------ 2) sectioned render through the module */
 

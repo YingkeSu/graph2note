@@ -224,8 +224,11 @@ export function digestStatsSummary(meta) {
   };
   push("范围内", stats.document_count != null ? `${stats.document_count} 篇` : "",
     "范围内命中的全部文档（含未被材料预算选入的）");
-  push("选入材料", meta && meta.document_count != null ? `${meta.document_count} 篇` : "",
-    "实际进入本次小结材料的文档（受材料预算裁剪）");
+  const selected = meta && meta.document_count != null
+    ? meta.document_count
+    : stats.material_document_count;
+  push("选入材料", selected != null ? `${selected} 篇` : "",
+    "实际进入本次小结材料的文档（受材料预算裁剪；R8 字段 stats.material_document_count）");
   if (stats.parsed_count != null) {
     push("解析成功", `${stats.parsed_count}/${stats.document_count}`, "正文非空的材料文档");
   }
@@ -236,6 +239,8 @@ export function digestStatsSummary(meta) {
   }
   push("Inbox 本期", stats.inbox_in_range != null ? `${stats.inbox_in_range} 篇` : "",
     DIGEST_VIEW_INBOX_CAVEAT);
+  push("待整理材料", stats.pending_material_count != null ? `${stats.pending_material_count} 篇` : "",
+    "材料分区口径：完全无主题/标签或显式标记的文档；与 Inbox 投影口径不同，不可相加（R2）");
   push("连续体", stats.continuity_significant != null ? `可合并 ${stats.continuity_significant} 对` : "",
     "仅统计显著对；库规模超阈值时不计待确认对");
   return chips;
