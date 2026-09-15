@@ -150,3 +150,55 @@ Status: ready-for-review
     - 标题行本身“像作者行”（如 `Neural Networks, Abstract Reasoning, and Compositionality`）且无真实摘要段落时，仍会凭空造摘要（base `abstract=''`）。两遍优先级已覆盖“存在行首真实摘要”的情形；无真实摘要时由 `_PROSE_LEAD_RE` 兜底（`A Study Of` 类）。
     - 同一作者样标题 + 真实摘要**行内粘连**在 byline 后（issue 目标布局）时仍返回标题尾部（base `''`），非严格回归。
     - byline 段内第 2 行以 `Abstract` 开头、全大写 byline（`_NAME_TOKEN_RE` 要求 `[A-Z][a-z]+`）在 base 四版同样出错。真实 PDF 样本待 Y4。
+
+### Rework R5（D4 修复，Y5）
+
+- 独立 reviewer（会话 `graph2note-130`）四审裁决 **REJECT**，见 `/tmp/review-spw-Y5-r4-verdict.md` §2。D1/D2/D3 确认已修好；但同一失败类仍存 **D4**。
+- D4 最小反例（作者行与摘要不同段）：`Neural Networks, Deep Learning for\nAbstract Reasoning\n\nWei Zhang, Li Chen\n\nAbstract\nBody text.` —— base `abstract='Body text.'`；R1/R2/R3/R4 `abstract='Reasoning'`。
+  根因：`_looks_like_author_line` 把标题行 `Neural Networks, Deep Learning for` 当成作者行（`author_at` 落在标题行），折行后的 `Abstract Reasoning` 行既不在 `title_block` 也不在 `author_lines`，R4 的 `title_keys` 只由 `title_block` 构造 → 漏排 → `_extract_abstract` 把它当 canonical 标签返回标题尾部。即两遍优先级（canonical > inline）不区分“真标签”与“标题行首标签”。
+  其它触发：作者样标题行在**第 2 行**（`Graph Neural Networks for|Neural Networks, Deep Learning|Abstract Reasoning`）、首行含逗号（`Graph Neural Networks, A Survey of|Abstract Meaning Representation`、`Representation Learning, Advances in|Abstract Meaning Representation`）、byline 段内第 2 行 `Abstract reasoning is a hard problem.`。
+- R5 修复（verdict §2.5 方向 1 + 探针例外）：
+  1. `_extract_abstract` 的 canonical 标签改为三级优先：**段首 canonical（`index == 0`）> 段中 canonical（`index > 0`）> inline**。真实摘要通常自成一段（段首），而折行标题行 / byline 第 2 行都在段中，因此后者不再顶替。
+  2. `title_keys` 排除保留，但仅排除**段中**的标题行（`index > 0`）：标题恰为单词 `Abstract`/`摘要` 时，其段落首行不再被跳过，真实摘要段落（同样是段首）可胜出 —— 修复 R4 verdict §4 探针指出的 `abstract=''` 退化。
+  3. D1/D2/D3/两遍优先级/原目标场景修复全部保留。未改 `_looks_like_author_line`；未碰 `references.py`/`citegraph.py`/webapp/P1。
+- R5 新增回归用例（8 项）：
+  - `test_wrapped_title_after_an_authorlike_title_line_is_not_the_abstract`（verdict 指定，D4 最小反例）
+  - `test_authorlike_title_line_does_not_shadow_a_later_abstract_paragraph`（verdict 指定）
+  - `test_authorlike_title_wrap_does_not_shadow_the_abstract`（参数化 `Neural Networks, Deep Learning` 三行 / `Representation Learning, Advances in`）
+  - `test_byline_line_starting_with_abstract_does_not_shadow_the_abstract`（byline 段内第 2 行）
+  - `test_title_and_abstract_in_one_reflowed_paragraph_still_finds_the_abstract`（同段两标签皆段中，锁定 `title_keys` 段中排除）
+  - `test_a_title_that_is_only_the_abstract_label_still_finds_the_abstract`（参数化英文 `Abstract` / 中文 `摘要`，锁定探针例外）
+- R5 五版对照（自跑 `git show` 载入 base/R1/R2/R3/R4 + 工作树 R5）：
+
+  | 输入 | base | R1 | R2 | R3 | R4 | R5 |
+  | --- | --- | --- | --- | --- | --- | --- |
+  | D4 最小反例 | `Body text.` | `Reasoning` | `Reasoning` | `Reasoning` | `Reasoning` | **`Body text.`** ✅ |
+  | D4 作者样标题第 2 行 | `Body text.` | 错 | 错 | 错 | 错 | **`Body text.`** ✅ |
+  | D4 byline 第 2 行 `Abstract` | `Body text.` | 错 | 错 | 错 | 错 | **`Body text.`** ✅ |
+  | 探针 `Abstract` / `摘要` 标题 | `Body text.` | 对 | 对 | 对 | **`''`** | **`Body text.`** ✅ |
+  | D3 五变体 | 对 | 错 | 错 | 错 | 对 | **对** ✅ |
+  | D2 四变体 | 对 | 对 | 错 | 对 | 对 | **对** ✅ |
+  | D1 三变体（authors） | 对 | `[]` | 对 | 对 | 对 | **对** ✅ |
+  | 原目标回流 / 行内粘连 | 错 | 对 | 对 | 对 | 对 | **对** ✅ |
+
+- R5 mutation 证据（备份 → 改 → 跑 → 还原，最终工作树干净）：
+
+  | mutation | 结果 |
+  | --- | --- |
+  | 去掉段首优先层（只保留 mid/inline 候选） | D4 系列 + 探针 + `test_authorlike_title_prefix…` 等 9 项 FAIL |
+  | 首个 canonical 即胜（= R4 行为） | D4 的 5 项 FAIL |
+  | 去掉 `title_keys` 段中排除 | `test_title_and_abstract_in_one_reflowed_paragraph…` FAIL |
+  | 去掉 `index > 0` 探针例外（= R4 探针行为） | `test_a_title_that_is_only_the_abstract_label…` 2 项 FAIL |
+  | 去掉 `kept` 守卫 | `test_first_byline_line_is_not_dropped…` FAIL |
+  | `_SENTENCE_HINT_RE` 恢复 `re.I` | `test_wrapped_byline_line_with_a_capitalized_hint_name…` FAIL |
+  | head 护栏改 `if head:` / `_PROSE_LEAD_RE` 去 `re.I` | `test_inline_abstract_inside_a_title_is_not_invented…` FAIL |
+  | inline 按扫描序返回（R3 前） | `test_authorlike_title_prefix_does_not_shadow…` FAIL |
+  | `_author_lines_before_abstract` 恒等 | 4 项 FAIL |
+
+- R5 全量：`pytest -p no:warnings` → **1238 passed, EXIT=0**（R4 1230 + 新增 8；`tests/test_papers_meta.py` 单文件 61 passed）。
+- **风险披露（补上 D4 方向，并纠正 R3/R4 不准确处）**：
+  - **title→abstract（误替代，R4 遗漏方向，即 D4）**：**标题行被 `_looks_like_author_line` 误判进 `author_lines`**（`author_at` 落在标题行）时，折行标题的 canonical 开头行不在 `title_block` 中，真实摘要（自成一段）被顶替（base 正确）。R5 用「段首 canonical > 段中 canonical > inline」区分标题行与真标签，以 8 个用例锁定，含 byline 段内第 2 行变体。
+  - **探针退化（R4 新引入，已修）**：标题恰为 `Abstract`/`摘要` 时 R4 返回 `''`；R5 的段首例外修复。
+  - **纠正 R3 披露**：R3 §5.5/任务书写「byline 段内第 2 行 `Abstract`、全大写 byline 四版同样出错」——**不准确**。自跑 base 在该 byline 布局下 `abstract='Body text.'`（正确），R1-R4 改错，R5 已修正；仅**全大写 byline**（`_NAME_TOKEN_RE` 要求 `[A-Z][a-z]+`）确实 base 与五版均 `authors=[]`。
+  - **纠正 R4 披露**：R4 把「标题像作者行」残余限定为“且无真实摘要段落”——不完整；D4 是**存在**真实摘要却被顶替，方向不同，已单列。
+  - **残余（base 也错，非严格回归）**：① 作者样标题 + **无**真实摘要 → R5 仍凭空造摘要（base `''`）；② 标题被空行切成两段（`Graph Neural Networks for\n\nAbstract Meaning Representation`）→ 五版均返回标题尾部（base 也错）；③ 作者样标题 + 真实摘要**行内粘连**在 byline 后 → R5 返回标题尾部（base 也 `''`，非严格回归）；④ 全大写 byline → 五版 `authors=[]`。真实 PDF 样本待 Y4。
