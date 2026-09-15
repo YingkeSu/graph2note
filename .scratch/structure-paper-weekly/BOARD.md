@@ -37,7 +37,7 @@ D 轨共享契约：[SPEC.md §1 层次结构图 IR 扩展](SPEC.md)。D2/D3 针
 | 编号 | Issue | 分支 | 开发者 | 状态 |
 |---|---|---|---|---|
 | P1 | [论文 PDF 导入管线](issues/P1-paper-pdf-ingest-pipeline.md) | `dev/P1-paper-ingest` | dev-A | merged 2026-09-15 @ `ec9b1d6`（fresh reviewer 全项自跑：领地零越界（webapp/store −0、pdflib 未改）、AC1–AC7 全达成、后端 mutation 有牙（去扫描回退 5 红 / 文本路径触发 LLM 4 红 / 破坏 paper.json 持久化 5 红）、合并后全量 pytest 1099 passed；残留 R1 upload.js PDF 拦截仅源码断言（守卫反转不红）、R2 handoff 报数 1096 陈旧） |
-| P2 | [论文元数据与参考文献识别](issues/P2-paper-metadata-references.md) | `dev/P2-paper-meta` | dev-B | 待派发（D 轨收官后串行启动） |
+| P2 | [论文元数据与参考文献识别](issues/P2-paper-metadata-references.md) | `dev/P2-paper-meta` | dev-B | merged 2026-09-15 @ `adaff57`（fresh reviewer 全项自跑：领地零越界（webapp/store/taxonomy 删除行 0，papers/ 仅 P2 模块，未 import P1）、SPEC §2 契约逐项（单栏/双栏/arXiv 三排版字段级 + per-field provenance、参考文献定位/编号+作者-年份切分/跨栏 de-hyphenation/保守合并标注、citegraph DOI 优先+ambiguous 不假匹配+确定性、enhance forbid schema+只填空+注入 planner+无 key 降级不抛错）、4 项 mutation 全红（删 de-hyphenation / 放宽 forbid / 去 ambiguous 剔除 / 允许覆盖）、分支树全量 pytest 1088 passed、P1→P2 机械解冲突（__init__ 保 P1、store/webapp/taxonomy 保双方）后合并全量 1139 passed；残留 R1 PATCH `/metadata` 与 PUT 同为整体替换（部分 body 会清空其余字段，建议 P3 接线前修）、R2 P1 `model.py` 与 P2 各自定义同名 `PaperMeta/PaperReference` 待集成收敛、R3 硬连字符行尾拼接 best-effort、R4 `pyproject.toml` packages 未加 `graph2note.papers`、R5 handoff 报数 1087 陈旧） |
 | P3 | [论文阅读视图与库集成](issues/P3-paper-reading-view.md) | `dev/P3-paper-view` | dev-C | 待派发（D 轨收官后串行启动） |
 | W1 | [周报内容结构与材料策略](issues/W1-digest-content-structure.md) | `dev/W1-digest-content` | dev-D | 待派发（D 轨收官后串行启动） |
 | W2 | [周报展示交互与导出](issues/W2-digest-view-export.md) | `dev/W2-digest-view` | dev-D（W1 合并后接续） | 待派发（D 轨收官后串行启动） |
