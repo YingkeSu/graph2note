@@ -47,6 +47,7 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_ask_view": "webapp",  # P2（新文件，问答一级视图）
     "test_papers_ingest": "ingest",  # SPW I/P1（论文导入管线，离线）
     "test_papers_ingest_api": "webapp",  # SPW I/P1（论文导入 API 契约）
+    "test_upload_pdf_intercept": "webapp",  # SPW Y3（upload.js PDF 拦截行为契约，离线 DOM）
     "test_unified_search": "webapp",  # P3 统一检索索引（新文件）
     "test_p3_cross_doc_qa": "webapp",  # P3 跨文档问答（新文件）
     "test_search_panel": "webapp",  # P3 ⌘K 搜索面板（新文件）
