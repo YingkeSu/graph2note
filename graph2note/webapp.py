@@ -1003,6 +1003,150 @@ def create_app(
     def document_get(document_id: str):
         return _get_document(document_id)
 
+    # ---- paper reading view (SPW P3, SPEC §2; /api/papers/* read-only) -------
+
+    # P1/P2 own where the paper payload lands on the record.  This reader accepts
+    # the documented shapes so the display layer stays decoupled from their
+    # commits: a nested ``paper`` dict or sibling ``paper_*`` keys.  Malformed
+    # data never raises — it degrades to an empty projection and the frontend
+    # falls back to the standard document view.
+    def _paper_blob(record: dict) -> dict:
+        if not isinstance(record, dict):
+            return {}
+        for key in ("paper", "paper_view", "paper_payload"):
+            blob = record.get(key)
+            if isinstance(blob, dict):
+                return blob
+        blob: dict = {}
+        for short, full in (("meta", "paper_meta"),
+                            ("sections", "paper_sections"),
+                            ("references", "paper_references")):
+            if record.get(full) is not None:
+                blob[short] = record.get(full)
+        return blob
+
+    def _paper_doc_kind(record: dict, blob: dict) -> str:
+        if not isinstance(record, dict):
+            return ""
+        for source in (record.get("doc_kind"), (blob or {}).get("doc_kind")):
+            kind = str(source or "").strip()
+            if kind:
+                return kind
+        # A populated paper payload (nested blob / sibling paper_* keys) is
+        # itself the marker when the writer did not record an explicit kind.
+        if isinstance(blob, dict) and (
+            isinstance(blob.get("meta"), dict)
+            or isinstance(blob.get("sections"), list)
+            or isinstance(blob.get("references"), list)
+        ):
+            return "paper"
+        return ""
+
+    def _paper_int(value):
+        if isinstance(value, bool):
+            return None
+        if isinstance(value, int):
+            return value
+        if isinstance(value, str) and value.strip().lstrip("-").isdigit():
+            return int(value.strip())
+        return None
+
+    def _paper_text(value) -> str:
+        return value.strip() if isinstance(value, str) else ""
+
+    def _paper_text_list(value) -> list[str]:
+        if not isinstance(value, list):
+            return []
+        return [item.strip() for item in value
+                if isinstance(item, str) and item.strip()]
+
+    def _paper_meta_payload(source) -> dict:
+        meta = source if isinstance(source, dict) else {}
+        return {
+            "title": _paper_text(meta.get("title")),
+            "authors": _paper_text_list(meta.get("authors")),
+            "year": _paper_int(meta.get("year")),
+            "venue": _paper_text(meta.get("venue")),
+            "doi": _paper_text(meta.get("doi")),
+            "abstract": meta.get("abstract").strip()
+            if isinstance(meta.get("abstract"), str) else "",
+            "keywords": _paper_text_list(meta.get("keywords")),
+            "source": _paper_text(meta.get("source")),
+        }
+
+    def _paper_sections_payload(value) -> list[dict]:
+        sections = []
+        if not isinstance(value, list):
+            return sections
+        for item in value:
+            if not isinstance(item, dict):
+                continue
+            level = _paper_int(item.get("level"))
+            sections.append({
+                "level": max(1, level) if level is not None else 1,
+                "title": _paper_text(item.get("title")),
+                "text": item.get("text") if isinstance(item.get("text"), str) else "",
+                "page_start": _paper_int(item.get("page_start")),
+                "page_end": _paper_int(item.get("page_end")),
+            })
+        return sections
+
+    def _paper_references_payload(value) -> list[dict]:
+        references = []
+        if not isinstance(value, list):
+            return references
+        for item in value:
+            if not isinstance(item, dict):
+                continue
+            references.append({
+                "raw": _paper_text(item.get("raw")),
+                "title": _paper_text(item.get("title")),
+                "authors": _paper_text_list(item.get("authors")),
+                "year": _paper_int(item.get("year")),
+                "doi": _paper_text(item.get("doi")),
+                "resolved_document_id": _paper_text(item.get("resolved_document_id")),
+            })
+        return references
+
+    def _paper_view_payload(record: dict) -> dict:
+        blob = _paper_blob(record)
+        meta_source = blob.get("meta") if isinstance(blob.get("meta"), dict) else blob
+        meta = _paper_meta_payload(meta_source)
+        return {
+            "document_id": record.get("document_id"),
+            "doc_kind": _paper_doc_kind(record, blob),
+            "title": record.get("title") or meta.get("title") or "",
+            "meta": meta,
+            "sections": _paper_sections_payload(blob.get("sections")),
+            "references": _paper_references_payload(blob.get("references")),
+        }
+
+    @app.get("/api/papers")
+    def papers_index():
+        """Read-only index of paper documents (library badge fallback)."""
+        papers = []
+        for summary in store.list_documents():
+            document_id = (summary or {}).get("document_id")
+            record = store.get_document(document_id) if document_id else None
+            if not isinstance(record, dict):
+                continue
+            kind = _paper_doc_kind(record, _paper_blob(record))
+            if kind != "paper":
+                continue
+            papers.append({
+                "document_id": record.get("document_id"),
+                "title": record.get("title") or "",
+                "doc_kind": kind,
+            })
+        return {"papers": papers, "count": len(papers)}
+
+    @app.get("/api/papers/{document_id}/view")
+    def paper_view(document_id: str):
+        record = store.get_document(document_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail="文档不存在或已被删除。")
+        return _paper_view_payload(record)
+
     # ---- evolution anchoring (issue S2) -------------------------------------
 
     def _bounded_max_distance(value: int | None) -> int:
