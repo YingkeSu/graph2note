@@ -91,11 +91,11 @@ I 轨共享契约：[SPEC.md §2 论文文档契约](SPEC.md)。P2/P3 针对契�
 |---|---|---|---|
 | Y1 | ✅ merged `f8c6f61`（rev-112 APPROVE，verdict `/tmp/review-spw-Y1-verdict.md`） | `dev/Y1-patch-metadata` @ `5984a5a` | PATCH 部分合并 / PUT 整体替换；1211 passed；残留：documents metadata 同问题另立项 |
 | X2 | ✅ merged `55c8c15`（rev-113 APPROVE，verdict `/tmp/review-spw-X2-verdict.md`） | `dev/X2-extract-retry` @ `81b9ad3` | 半截 JSON 升级重试四分支；1214 passed |
-| X5 | 评审中（rev-114） | `dev/X5-marked-localize` @ `270580f` | marked 4.3.0 本地 vendor，离线探针 10/10 |
-| Y5 | 评审中（rev-115） | `dev/Y5-author-split` @ `acdbc79` | 作者/摘要边界截断 |
+| X5 | ✅ merged `2eb5fed`（rev-114 APPROVE，verdict `/tmp/review-spw-X5-verdict.md`） | `dev/X5-marked-localize` @ `270580f` | marked 4.3.0 本地 vendor，离线探针 10/10 |
+| Y5 | ❌ REJECT（rev-115，verdict `/tmp/review-spw-Y5-verdict.md`）→ 作者-111 返工中 | `dev/Y5-author-split` @ `acdbc79` | D1：含 Will/The/Can + 句末标点的合法 byline 被句子启发式静默清空（不同段场景回归）；目标缺陷本身已修、mutation 有牙 |
 | X1 | 实现中（worker-116，裁决 a 落地） | `dev/X1-deepseek-channel` | X2 已合并解除阻塞 |
 | X3+X4 | 实现中（worker-117，合并单 worker） | `dev/X3X4-mpl-layout` | 共享 matplotlib_renderer.py |
-| Y3 | 实现中（worker-118） | `dev/Y3-upload-test` | upload.js 拦截行为测试 |
+| Y3 | 评审中（rev-120） | `dev/Y3-upload-test` @ `26a804f` | upload.js 拦截行为测试；1219 passed |
 | Y4 | 实现中（worker-119） | `dev/Y4-real-fixtures` | 只读用正式库 17 篇真实论文 |
 | X6 / Y6 / Y2 | 批次三待派（裁决已定） | — | X6 待 X3/X4；Y6/Y2 待 Y1（已合并，解除阻塞） |
 
