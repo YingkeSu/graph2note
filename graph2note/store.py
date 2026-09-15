@@ -809,6 +809,110 @@ class SessionDocumentStore(DocumentStore):
                 out.append(item)
         return out
 
+    # --- paper metadata & references (SPW I 轨 P2, append-only) ---------------
+    def paper_payload(self, document_id: str) -> dict | None:
+        """Return the stored ``paper`` slot (meta + references) or ``None``."""
+
+        rec = self._docs.get(document_id)
+        if rec is None:
+            return None
+        paper = rec.get("paper")
+        return dict(paper) if isinstance(paper, dict) else {}
+
+    def set_paper_meta(
+        self,
+        document_id: str,
+        meta: dict,
+        *,
+        provenance: dict | None = None,
+        source: str | None = None,
+        notes: list | None = None,
+        parse: dict | None = None,
+    ) -> dict | None:
+        """Store validated ``PaperMeta`` (and its provenance) on a record."""
+
+        rec = self._docs.get(document_id)
+        if rec is None:
+            return None
+        paper = rec.get("paper")
+        if not isinstance(paper, dict):
+            paper = {}
+        paper["meta"] = dict(meta)
+        if provenance is not None:
+            paper["meta_provenance"] = provenance
+        if source is not None:
+            paper["source"] = source
+        if notes is not None:
+            paper["notes"] = list(notes)
+        if parse is not None:
+            paper["parse"] = dict(parse)
+        rec["paper"] = paper
+        rec["doc_kind"] = rec.get("doc_kind") or "paper"
+        self._docs[document_id] = rec
+        return self.paper_payload(document_id)
+
+    def set_paper_references(
+        self,
+        document_id: str,
+        references: list[dict],
+        *,
+        provenance: list | None = None,
+    ) -> dict | None:
+        """Store the ``list[PaperReference]`` (and split provenance)."""
+
+        rec = self._docs.get(document_id)
+        if rec is None:
+            return None
+        paper = rec.get("paper")
+        if not isinstance(paper, dict):
+            paper = {}
+        paper["references"] = [dict(item) for item in (references or [])]
+        if provenance is not None:
+            paper["references_provenance"] = list(provenance)
+        rec["paper"] = paper
+        rec["doc_kind"] = rec.get("doc_kind") or "paper"
+        self._docs[document_id] = rec
+        return self.paper_payload(document_id)
+
+    def set_paper_reference_resolution(
+        self,
+        document_id: str,
+        index: int,
+        resolved_document_id: str | None,
+    ) -> dict | None:
+        """Back-fill (or clear) one reference's ``resolved_document_id``."""
+
+        rec = self._docs.get(document_id)
+        if rec is None:
+            return None
+        paper = rec.get("paper")
+        references = paper.get("references") if isinstance(paper, dict) else None
+        if not isinstance(references, list):
+            raise ValueError("该论文尚无参考文献记录。")
+        if index < 0 or index >= len(references):
+            raise ValueError("参考文献序号越界。")
+        references[index]["resolved_document_id"] = resolved_document_id
+        self._docs[document_id] = rec
+        return self.paper_payload(document_id)
+
+    def list_paper_entries(self) -> list[dict]:
+        """Minimal index (document_id/title/doi) for reference resolution."""
+
+        out: list[dict] = []
+        for document_id, rec in self._docs.items():
+            doi = ""
+            paper = rec.get("paper")
+            if isinstance(paper, dict):
+                meta = paper.get("meta")
+                if isinstance(meta, dict) and meta.get("doi"):
+                    doi = str(meta["doi"])
+            out.append({
+                "document_id": document_id,
+                "title": str(rec.get("title") or ""),
+                "doi": doi,
+            })
+        return sorted(out, key=lambda item: item["document_id"])
+
 
 # ---------------------------------------------------------------------------
 # File-system backed (durable) store
@@ -1559,6 +1663,86 @@ class FileDocumentStore(SessionDocumentStore):
         """Summaries of soft-archived documents (issue 03 archive listing)."""
         return [item for item in self.list_documents(include_archived=True)
                 if item.get("merged_into")]
+
+    # --- paper metadata & references (P2, disk-backed) ------------------------
+    def paper_payload(self, document_id: str) -> dict | None:
+        rec = self._read_record(document_id)
+        if rec is None:
+            return None
+        paper = rec.get("paper")
+        return dict(paper) if isinstance(paper, dict) else {}
+
+    def _write_paper(self, document_id: str, paper: dict) -> dict | None:
+        path = self._doc_dir(document_id) / "record.json"
+        rec = self._read_record(document_id)
+        if rec is None:
+            return None
+        rec["paper"] = paper
+        rec["doc_kind"] = rec.get("doc_kind") or "paper"
+        path.write_text(json.dumps(rec, ensure_ascii=False, indent=2),
+                        encoding="utf-8")
+        return dict(paper)
+
+    def set_paper_meta(self, document_id, meta, *, provenance=None,
+                       source=None, notes=None, parse=None) -> dict | None:
+        paper = self.paper_payload(document_id)
+        if paper is None:
+            return None
+        paper["meta"] = dict(meta)
+        if provenance is not None:
+            paper["meta_provenance"] = provenance
+        if source is not None:
+            paper["source"] = source
+        if notes is not None:
+            paper["notes"] = list(notes)
+        if parse is not None:
+            paper["parse"] = dict(parse)
+        return self._write_paper(document_id, paper)
+
+    def set_paper_references(self, document_id, references, *,
+                             provenance=None) -> dict | None:
+        paper = self.paper_payload(document_id)
+        if paper is None:
+            return None
+        paper["references"] = [dict(item) for item in (references or [])]
+        if provenance is not None:
+            paper["references_provenance"] = list(provenance)
+        return self._write_paper(document_id, paper)
+
+    def set_paper_reference_resolution(self, document_id, index,
+                                       resolved_document_id) -> dict | None:
+        paper = self.paper_payload(document_id)
+        if paper is None:
+            return None
+        references = paper.get("references")
+        if not isinstance(references, list):
+            raise ValueError("该论文尚无参考文献记录。")
+        if index < 0 or index >= len(references):
+            raise ValueError("参考文献序号越界。")
+        references[index]["resolved_document_id"] = resolved_document_id
+        return self._write_paper(document_id, paper)
+
+    def list_paper_entries(self) -> list[dict]:
+        docs = self.root / "documents"
+        if not docs.is_dir():
+            return []
+        out: list[dict] = []
+        for path in sorted(docs.iterdir()):
+            rec = self._read_record(path.name)
+            if rec is None:
+                continue
+            doi = ""
+            paper = rec.get("paper")
+            if isinstance(paper, dict):
+                meta = paper.get("meta")
+                if isinstance(meta, dict) and meta.get("doi"):
+                    doi = str(meta["doi"])
+            out.append({
+                "document_id": str(rec.get("document_id") or path.name),
+                "title": str(rec.get("title") or ""),
+                "doi": doi,
+            })
+        return sorted(out, key=lambda item: item["document_id"])
 
 
 def _copy_if_exists(src: str | None, dst: Path) -> None:
