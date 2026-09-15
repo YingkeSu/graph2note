@@ -96,8 +96,8 @@ I 轨共享契约：[SPEC.md §2 论文文档契约](SPEC.md)。P2/P3 针对契�
 | X1 | ✅ merged `f0dd99e`（rev-121 APPROVE，verdict `/tmp/review-spw-X1-verdict.md`） | `dev/X1-deepseek-channel` @ `09a7a9e` | live 3/3 ok；02inc 触发 X2 重试联动验证；其他 purpose 不回归 |
 | X3+X4 | ✅ merged `fd31cf6`（rev-124 APPROVE，verdict `/tmp/review-spw-X3X4-verdict.md`；F4 性能数字口径标注建议，非阻塞） | `dev/X3X4-mpl-layout` @ `b74f0cc` | 组框相交 9/0/2→0/0/0；字宽真实 metrics 越框清零；golden/扁平逐字节不动 |
 | Y3 | ✅ merged `875fbde`（rev-120 APPROVE，verdict `/tmp/review-spw-Y3-verdict.md`） | `dev/Y3-upload-test` @ `26a804f` | upload.js 拦截行为测试；1219 passed |
-| Y4 | 解除阻塞：作者-119 rebase 重整中（最新 main 已含 Y5 最终版，fixture 按 post-Y5 行为校准后送审） | `dev/Y4-real-fixtures` @ `b420df3` | 4 真实论文 67 新例 1292 passed；发现 5 个新 issue 候选（噪声标题/标题吞 byline/authors 混机构/DOI 来源/参考文献欠切分） |
-| X6 | 评审中（rev-131） | `dev/X6-dense-view` @ `d0d987a` | 设计优化：分组画布宽度=阅读宽度函数（720px node 12.86/note 9.89 达标）；换行吸收密度、字号三档不动；golden/扁平逐字节不动；audit 33 检 0 findings |
+| Y4 | R2 重整完成（rebase 到 post-Y5 main + fixture 校准），评审中（rev-133） | `dev/Y4-real-fixtures` @ `52d5475` | 4 真实论文 68 例 1358 passed；bert 双栏摘要丢失新发现（Y5 D3 副作用）已锁定；7 条已知失败口径；5+1 个新 issue 候选待立项 |
+| X6 | ✅ merged `c57c0c0`（rev-131 APPROVE，verdict `/tmp/review-spw-X6-verdict.md`；F1-F6 均非阻塞：凑数断言/docstring 措辞/边界无测试/audit 证据间接/报告措辞过强/词尾硬拆已披露） | `dev/X6-dense-view` @ `f84993b` | 720px node/note 12.86/9.89、15.90/12.23、13.84/10.65 独立复核达标；golden 7/7 逐字段、扁平逐字节；mutation 双红；合并后 1300 passed |
 | Y6 | ✅ merged `285a58a`（rev-126 APPROVE，verdict `/tmp/review-spw-Y6-verdict.md`） | `dev/Y6-digest-leftovers` @ `52cea75` | R1-R5+R7/R8 全关闭；+15 例；mutation 6/6 红 |
 | Y2 | ✅ merged `e3e0003`（rev-129 APPROVE，verdict `/tmp/review-spw-Y2-verdict.md`；F1 SPEC「空占位」措辞与生产默认 PaperMeta 形状精度 nit、F2 live 常量断言建议，均非阻断） | `dev/Y2-dualslot-contract` @ `ada2246..20e043b` | 零运行时代码改动；SPEC §2 双落点契约 + 14 不变量例（防漂移 mutation C1/C2 红）；live 32/32 + 17/17 零模型；合并后 1259 passed |
 
