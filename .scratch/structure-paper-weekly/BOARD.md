@@ -99,6 +99,6 @@ I 轨共享契约：[SPEC.md §2 论文文档契约](SPEC.md)。P2/P3 针对契�
 | Y4 | 已交付，评审暂缓：**Blocked by Y5-r2**（fixture 是 P2 行为快照，分支本地并入了被 REJECT 的 Y5 基线，须待 Y5-r2 合并后 rebase 再审） | `dev/Y4-real-fixtures` @ `b420df3` | 4 真实论文 67 新例 1292 passed；发现 5 个新 issue 候选（噪声标题/标题吞 byline/authors 混机构/DOI 来源/参考文献欠切分） |
 | X6 | 实现中（worker-127；X3X4 已合并解除阻塞） | `dev/X6-dense-view` | 裁决原文「不可读说明设计有问题，优化设计」——不做放大引导绕行；设计决策节为评审重点 |
 | Y6 | ✅ merged `285a58a`（rev-126 APPROVE，verdict `/tmp/review-spw-Y6-verdict.md`） | `dev/Y6-digest-leftovers` @ `52cea75` | R1-R5+R7/R8 全关闭；+15 例；mutation 6/6 红 |
-| Y2 | 实现中（worker-125；Y6 最终未碰 store/webapp，无冲突故提前） | `dev/Y2-dualslot-contract` | 裁决 (b)：双落点契约化 + 不变量测试 |
+| Y2 | 评审中（rev-129） | `dev/Y2-dualslot-contract` @ `ada2246..20e043b` | 零运行时代码改动；SPEC §2 契约 + 14 不变量例；live 32/32 + 17/17；mutation 双红 |
 
 BOARD 行由调度统一登记（前轮并发 reviewer 撞 BOARD 教训）；reviewer 只合代码不碰本文件。
