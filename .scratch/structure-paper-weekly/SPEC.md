@@ -83,8 +83,10 @@ class PaperSection(BaseModel):        # P1 产出
 - 入库文档带 `doc_kind: "paper"`（provenance/meta 字段，具体落点由 P1 定：`store.save_document` 追加式扩展，不改既有签名行为）。
 - P1 产出：`sections: list[PaperSection]` + 全文纯文本 + 页映射；扫描版论文（无文本层）回退现有 VLM 逐页路径并在 provenance 标注 `source: "vlm"`。
 - P2 产出：`PaperMeta` + `references: list[PaperReference]`，输入是「论文全文文本 + 首页文本 + 参考文献区文本」（P2 自建 fixture 开发，不依赖 P1 代码）。
+- P2 产出（手工修正槽位）：`GET` 只读返回归一化 meta + provenance；`PUT` 覆盖整槽，`PATCH` 只合并本次提供的字段（见上）。
 - P3 消费：`doc_kind=="paper"` 文档的 meta/sections/references 只读展示；fixture 驱动开发。
 - 全程确定性优先：文本层抽取与结构切分必须离线确定性可测；LLM 仅作为可选增强（提议 + schema 校验 + 人可改），无 key 环境全链路可用。
+- 手工修正写入语义：`PUT /api/papers/{id}/metadata` 为**整体替换**（未提供的字段回落到 `PaperMeta` 默认空值）；`PATCH /api/papers/{id}/metadata` 为**部分合并**（只覆盖本次请求提供的字段，其余字段连同 provenance 保持既有值）。两者均只把本次提供的字段标 `manual/high`，未知字段与非法值（含非法 `year`）仍 422。
 - 网络：默认不访问外部服务（CrossRef 等在线解析若做，必须可选、可关、测试离线）。
 
 ## §3 周报模块契约（I 轨 W1–W2）

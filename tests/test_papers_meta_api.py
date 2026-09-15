@@ -127,6 +127,117 @@ def test_metadata_validation_rejects_unknown_fields(tmp_path):
     assert bad.status_code == 422
 
 
+# ---------------------------------------------------------------------------
+# PUT (whole-slot replace) vs PATCH (partial merge) — SPEC §2
+# ---------------------------------------------------------------------------
+
+_RICH_META = {
+    "title": "Graph Neural Networks for Document Understanding",
+    "authors": ["A. Author", "B. Author"],
+    "year": 2023,
+    "venue": "IEEE TKDE",
+    "doi": "10.1109/tkde.2023.1234567",
+    "abstract": "We study document understanding.",
+    "keywords": ["gnn", "documents"],
+    "source": "text-layer",
+}
+
+_RICH_PROVENANCE = {
+    "title": {"source": "text-layer", "confidence": "high", "evidence": "front"},
+    "doi": {"source": "text-layer", "confidence": "high", "evidence": "front"},
+    "year": {"source": "text-layer", "confidence": "medium", "evidence": "front"},
+}
+
+_MANUAL = {"source": "manual", "confidence": "high", "evidence": "用户手工修正"}
+
+_PAYLOAD_KEYS = {"document_id", "doc_kind", "meta", "meta_provenance",
+                 "references", "references_provenance", "notes"}
+
+
+def _seed_rich(store: FileDocumentStore, document_id: str) -> None:
+    store.set_paper_meta(document_id, dict(_RICH_META),
+                         provenance=dict(_RICH_PROVENANCE), source="text-layer")
+
+
+def test_patch_metadata_merges_only_the_provided_fields(tmp_path):
+    store, client = _client(tmp_path)
+    _seed_rich(store, "doc-gnn")
+
+    response = client.patch("/api/papers/doc-gnn/metadata",
+                            json={"meta": {"title": "New Title"}})
+    assert response.status_code == 200
+    payload = response.json()
+    assert set(payload) == _PAYLOAD_KEYS  # GET/_paper_payload shape unchanged
+
+    expected = dict(_RICH_META, title="New Title", source="manual")
+    assert payload["meta"] == expected  # every omitted field keeps its value
+
+    provenance = payload["meta_provenance"]
+    assert provenance["title"] == _MANUAL  # only the provided field flips
+    for field, value in _RICH_PROVENANCE.items():
+        if field != "title":
+            assert provenance[field] == value
+    for field in ("authors", "venue", "abstract", "keywords"):
+        assert field not in provenance  # untouched, never invented
+
+    assert store.paper_payload("doc-gnn")["meta"] == expected
+
+    reloaded = FileDocumentStore(tmp_path)
+    client2 = TestClient(create_app(document_store=reloaded, storage_dir=tmp_path))
+    got = client2.get("/api/papers/doc-gnn/metadata").json()
+    assert got["meta"] == expected  # durable reload keeps the merged slot
+    assert got["meta_provenance"] == provenance
+
+
+def test_patch_metadata_accepts_several_fields_without_clearing_the_rest(tmp_path):
+    store, client = _client(tmp_path)
+    _seed_rich(store, "doc-gnn")
+
+    response = client.patch("/api/papers/doc-gnn/metadata", json={"meta": {
+        "authors": ["C. Author"],
+        "year": 2024,
+    }})
+    assert response.status_code == 200
+    meta = response.json()["meta"]
+    assert meta["authors"] == ["C. Author"]
+    assert meta["year"] == 2024
+    assert meta["title"] == _RICH_META["title"]
+    assert meta["venue"] == _RICH_META["venue"]
+    assert meta["doi"] == _RICH_META["doi"]
+    assert meta["abstract"] == _RICH_META["abstract"]
+    assert meta["keywords"] == _RICH_META["keywords"]
+
+
+def test_put_metadata_still_replaces_the_whole_slot(tmp_path):
+    store, client = _client(tmp_path)
+    _seed_rich(store, "doc-gnn")
+
+    response = client.put("/api/papers/doc-gnn/metadata",
+                          json={"meta": {"title": "Only Title"}})
+    assert response.status_code == 200
+    meta = response.json()["meta"]
+    assert meta == {"title": "Only Title", "authors": [], "year": None,
+                    "venue": "", "doi": "", "abstract": "",
+                    "keywords": [], "source": "manual"}
+
+
+def test_metadata_writes_keep_422_and_never_partially_write(tmp_path):
+    store, client = _client(tmp_path)
+    _seed_rich(store, "doc-gnn")
+    before = client.get("/api/papers/doc-gnn/metadata").json()
+
+    for method in (client.put, client.patch):
+        body = {"meta": {"bogus": 1}}
+        assert method("/api/papers/doc-gnn/metadata", json=body).status_code == 422
+        assert method("/api/papers/doc-gnn/metadata",
+                      json={"meta": {"year": "not-a-year"}}).status_code == 422
+        assert method("/api/papers/doc-gnn/metadata",
+                      json={"meta": "nope"}).status_code == 422
+
+    assert client.get("/api/papers/doc-gnn/metadata").json() == before
+    assert store.paper_payload("doc-gnn")["meta"] == _RICH_META
+
+
 def test_unknown_document_is_404(tmp_path):
     _store, client = _client(tmp_path)
     assert client.get("/api/papers/nope/metadata").status_code == 404

@@ -1,6 +1,6 @@
 # Y1 — PATCH /api/papers/{id}/metadata 与 PUT 同为整体替换，静默清字段
 
-Status: ready
+Status: ready-for-review
 
 来源：`/tmp/review-spw-P2-verdict.md` 残留 R1；`/tmp/review-spw-P3-r2-verdict.md` §8；BOARD P2 行残留「R1 PATCH `/metadata` 与 PUT 同为整体替换」。属 I 轨遗留（Y 轨）。
 
@@ -34,5 +34,11 @@ Status: ready
 
 ## Comments
 
+- 交付记录（branch `dev/Y1-patch-metadata`，base `b56e3c4`）：选方案 (a) PATCH 改为部分合并；PUT 保持整体替换。
+  - `graph2note/webapp.py`（P2 `/api/papers/{id}/metadata` 段）：拆出 `_metadata_body`/`_write_paper_meta(..., merge=)` 两个局部辅助；`PUT` → `merge=False`（未提供字段回落默认空值），`PATCH` → `merge=True`（以存储槽为底，仅覆盖本次提供字段，provenance 只对本次字段标 `manual/high`）。未知字段/非法 year 仍在写前 422（Pydantic `extra="forbid"`）。
+  - `tests/test_papers_meta_api.py`：新增 4 个测试（PATCH 单字段逐字段断言 + provenance 逐字段断言 + 新建 store 重读；PATCH 多字段不误清；PUT 整体替换与 PATCH 显式区分；PUT/PATCH 双双 422 且无部分写入）。
+  - `.scratch/structure-paper-weekly/SPEC.md` §2：补一行定义 PUT/PATCH 语义。
+  - 证据：`pytest -p no:warnings` EXIT=0、`1211 passed`（基线 1207 + 4）；mutation 已验——把 PATCH 改回 `merge=False` 后 `test_patch_metadata_merges_only_the_provided_fields`、`test_patch_metadata_accepts_several_fields_without_clearing_the_rest` 双红。
+  - 全仓无其它 PATCH `/api/papers/*/metadata` 消费者（`graph2note/webapp.py` 定义处 + 本测试文件）。未触碰 `/api/documents/{id}/metadata`（既有 PUT/PATCH 别名）。
 - P2 verdict R1 原文：「`PATCH /api/papers/{id}/metadata` 与 PUT 共用同一处理器，语义是**整体替换**。实测 `PATCH {"meta":{"title":"New Title"}}` 会把 authors/year/doi 清空（返回 200 + `source:"manual"`）。... 建议改为与既有槽位合并或仅保留 PUT。」
 - 注意 `webapp.py:1491-1492` 的 `/api/documents/{document_id}/metadata` 也把 PUT/PATCH 挂在同一 handler；那是既有通用文档行为、不属本 issue，若需统一语义另开 issue。
