@@ -45,6 +45,8 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_pdf_qa": "webapp",  # issue 11（新文件）
     "test_pdf_qa_multiturn": "webapp",  # P1（新文件）
     "test_ask_view": "webapp",  # P2（新文件，问答一级视图）
+    "test_papers_ingest": "ingest",  # SPW I/P1（论文导入管线，离线）
+    "test_papers_ingest_api": "webapp",  # SPW I/P1（论文导入 API 契约）
     "test_unified_search": "webapp",  # P3 统一检索索引（新文件）
     "test_p3_cross_doc_qa": "webapp",  # P3 跨文档问答（新文件）
     "test_search_panel": "webapp",  # P3 ⌘K 搜索面板（新文件）
@@ -143,6 +145,7 @@ INTEGRATION_FILES: frozenset[str] = frozenset({
     "test_collection_organize",  # auto-organization 02（相似度/归类/API/CLI）
     "test_timeline_visual",  # U5（新文件，TestClient API 契约）
     "test_continuity_api",  # issue 03（API/CLI/UI 契约）
+    "test_papers_ingest_api",  # SPW I/P1（论文导入 API 契约）
 })
 
 # 成本：slow = 较重（TestClient 全链 / 全链装配 / 图渲染）
@@ -152,6 +155,7 @@ SLOW_FILES: frozenset[str] = frozenset({
     "test_documents",
     "test_e2e_images",
     "test_issue15_diagram",
+    "test_papers_ingest_api",  # SPW I/P1（TestClient 全链导入）
 })
 
 MODULE_NAMES: tuple[str, ...] = tuple(sorted(set(FILE_TO_MODULE.values())))
