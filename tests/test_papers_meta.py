@@ -181,6 +181,80 @@ def test_inline_label_after_a_byline_with_capitalized_hint_names_is_preserved():
     assert result.meta.abstract.startswith("We present a robust method")
 
 
+def test_title_with_a_capitalized_function_word_before_abstract_is_not_the_abstract():
+    """R3/D2: a capitalized title prefix must not turn the title into the abstract."""
+
+    text = (
+        "A Study Of Abstract Meaning Representation, which is used, in NLP\n"
+        "\n"
+        "Wei Zhang, Li Chen\n"
+        "\n"
+        "Abstract\n"
+        "Body text.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.abstract == "Body text."
+    assert "Abstract" not in " ".join(result.meta.authors)
+
+
+@pytest.mark.parametrize(
+    "title",
+    [
+        "Deep Learning For Abstract Reasoning, which is used, in NLP",
+        "Towards Abstract Reasoning, which is used, in NLP",
+        "A Survey Of Abstract Meaning Representation, which is used, in NLP",
+    ],
+)
+def test_capitalized_title_prefix_does_not_turn_the_title_into_the_abstract(title):
+    text = title + "\n\nWei Zhang, Li Chen\n\nAbstract\nBody text.\n"
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.abstract == "Body text."
+    assert "Abstract" not in " ".join(result.meta.authors)
+
+
+def test_authorlike_title_prefix_does_not_shadow_the_real_abstract():
+    """A canonical ``Abstract`` line beats an inline label inside a title."""
+
+    text = (
+        "Neural Networks, Abstract Reasoning, and Compositionality\n"
+        "\n"
+        "Wei Zhang, Li Chen\n"
+        "\n"
+        "Abstract\n"
+        "Body text.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.abstract == "Body text."
+
+
+def test_inline_abstract_inside_a_title_is_not_invented_without_a_real_abstract():
+    """With no real summary present, a title must not be mined for one."""
+
+    text = (
+        "A Study Of Abstract Meaning Representation, which is used, in NLP\n"
+        "\n"
+        "Wei Zhang, Li Chen\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.abstract == ""
+    assert "Abstract" not in " ".join(result.meta.authors)
+
+
+def test_first_byline_line_is_not_dropped_by_the_sentence_heuristic():
+    """The sentence boundary only guards extra lines, never the first byline line."""
+
+    text = (
+        "A Paper Title\n"
+        "\n"
+        "Wei Zhang, Li Chen, and the Ming Li Group.\n"
+        "\n"
+        "Abstract\n"
+        "Body text.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.authors == ["Wei Zhang", "Li Chen", "the Ming Li Group"]
+
+
 def test_cjk_author_list_is_unchanged_by_the_abstract_boundary():
     text = (
         "图神经网络文档理解综述\n"

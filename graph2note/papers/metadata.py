@@ -191,13 +191,16 @@ _SENTENCE_HINT_RE = re.compile(
 )
 #: Lowercase prose words that never occur in a byline.  They tell a title that
 #: merely contains "abstract" apart from a real author prefix glued to a label.
-#: Case-sensitive like `_SENTENCE_HINT_RE`, so a byline carrying a name such as
-#: "Will" or "Can" is not read as prose.
+#: Matched case-insensitively on purpose: a capitalized title prefix such as
+#: "A Study Of" must be rejected as prose.  A real byline is protected first by
+#: `_looks_like_author_line`, so names colliding with a hint word
+#: (``Will Smith``, ``Can The``) survive.
 _PROSE_LEAD_RE = re.compile(
     r"\b(?:of|the|this|that|these|those|which|who|is|are|was|were|be|been|"
     r"being|has|have|had|for|with|from|into|onto|about|study|survey|review|"
     r"analysis|paper|approach|method|methods|using|based|toward|towards|via|"
-    r"we|our|it|its|can|could|will|would|should|not|also|however)\b"
+    r"we|our|it|its|can|could|will|would|should|not|also|however)\b",
+    re.I,
 )
 
 
@@ -292,9 +295,13 @@ def _author_lines_before_abstract(lines: list[str]) -> list[str]:
         match = _ABSTRACT_RE.match(line) or _ABSTRACT_INLINE_RE.search(line)
         if match:
             head = _clean(line[: match.start()])
-            # A head carrying prose words means the line was a title, not a
-            # byline with a glued label; keep nothing from it.
-            if head and not _PROSE_LEAD_RE.search(head):
+            # Keep the head when it still reads as a byline (``Will Smith,
+            # Can The``).  Only drop it as a title when it is *not* author-like
+            # and carries prose words (``A Study Of``), which would otherwise
+            # let the label inside a title become the abstract.
+            if head and (
+                _looks_like_author_line(head) or not _PROSE_LEAD_RE.search(head)
+            ):
                 kept.append(head)
             break
         # The sentence heuristic only guards *extra* lines: the first line
@@ -346,6 +353,20 @@ def _title_lines(paragraphs: list[list[str]]) -> tuple[list[str], list[str], lis
     return first, [], rest
 
 
+def _abstract_block(
+    para: list[str], index: int, line: str, match: "re.Match[str]"
+) -> tuple[str, str]:
+    """Body of an abstract whose label matched in ``line`` plus its evidence."""
+
+    body = _clean(line[match.end():])
+    pieces = [body] if body else []
+    for following in para[index + 1:]:
+        if _STOP_RE.match(following):
+            break
+        pieces.append(following)
+    return _clean(" ".join(pieces)), line[:200]
+
+
 def _extract_abstract(
     paragraphs: list[list[str]], author_lines: Optional[list[str]] = None
 ) -> tuple[str, str]:
@@ -353,12 +374,13 @@ def _extract_abstract(
 
     The label normally heads its own line, but a reflowed text layer may glue
     it after the byline (``… Ming Li Abstract—…``).  An inline label is only
-    accepted when the text before it is one of the known author lines, which
-    keeps a title containing the word "abstract" from being mistaken for the
-    summary.
+    accepted when the text before it is one of the known author lines, and a
+    canonical label that heads its own line always wins: a title such as
+    ``Neural Networks, Abstract Reasoning…`` must not shadow the real summary.
     """
 
     author_keys = {_clean(line) for line in (author_lines or []) if _clean(line)}
+    inline_candidate: Optional[tuple[str, str]] = None
     for para in paragraphs:
         for index, line in enumerate(para):
             match = _ABSTRACT_RE.match(line)
@@ -367,16 +389,14 @@ def _extract_abstract(
                 lead = _clean(line[: inline.start()]) if inline else ""
                 if inline is None or lead not in author_keys:
                     continue
-                match = inline
-            body = _clean(line[match.end():])
-            pieces = [body] if body else []
-            for following in para[index + 1:]:
-                if _STOP_RE.match(following):
-                    break
-                pieces.append(following)
-            text = _clean(" ".join(pieces))
-            if text:
-                return text, line[:200]
+                if inline_candidate is None:
+                    inline_candidate = _abstract_block(para, index, line, inline)
+                continue
+            block = _abstract_block(para, index, line, match)
+            if block[0]:
+                return block
+    if inline_candidate is not None and inline_candidate[0]:
+        return inline_candidate
     return "", ""
 
 
