@@ -83,6 +83,9 @@ GATEWAYS = {
         "models": {
             "parse_visual": ["kimi-k2.6", "kimi-k3"],
             "ir_text": ["kimi-k3", "kimi-k2.6"],
+            # X1（2026-09-15 裁决 a）：kimi 视觉仍是可显式选择的合法通道，但 diagram 用途的
+            # **默认**已在 graph2note/llm_settings.py::DEFAULT_CHANNEL_PROVIDERS 固定到
+            # deepseek 视觉（长 prompt + 手稿下 kimi-k2.6 3/3 finish_reason=length 空内容）。
             "diagram": ["kimi-k2.6", "kimi-k3"],
             "classify": ["kimi-k3", "kimi-k2.6"],
         },

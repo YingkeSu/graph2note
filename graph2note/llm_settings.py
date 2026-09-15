@@ -49,6 +49,14 @@ _ENV_MODEL_KEYS = {
     "classify": "GRAPH2NOTE_CLASSIFY_MODEL",
 }
 
+# X1（维护者裁决 2026-09-15，方案 a）：diagram 抽取的**默认通道**固定为 deepseek 视觉。
+# 证据：长 prompt + 视觉手稿下 kimi/kimi-k2.6 3/3 空内容（``finish_reason=length``,
+# ``content_len=0``, 单次 ~500s），deepseek 视觉同轮 3/3 ok（17/8/13s）。deepseek 网关的
+# diagram 默认模型经 ``DEEPSEEK_MODEL_MAP`` 落到官方视觉别名 ``deepseek-v4-flash-vision-exp``。
+# 只覆盖「未显式配置」的默认值，其余 purpose 仍随 ``GRAPH2NOTE_GATEWAY``；用户/界面在
+# llm-settings.json 中显式写入的 diagram 通道（含 kimi 视觉模型）始终优先。
+DEFAULT_CHANNEL_PROVIDERS = {"diagram": "deepseek"}
+
 # 自定义供应商（issue A3）
 CUSTOM_PROVIDER_PREFIX = "custom-"
 MAX_CUSTOM_PROVIDERS = 24
@@ -258,13 +266,18 @@ def _valid_channel(purpose: str, channel: dict[str, Any],
 def _default_channels(provider: str) -> dict[str, dict[str, str]]:
     channels: dict[str, dict[str, str]] = {}
     for purpose in MODEL_PURPOSES:
+        # X1: a purpose may pin its own default provider (diagram -> deepseek vision
+        # regardless of GRAPH2NOTE_GATEWAY); everything else follows the active gateway.
+        target = DEFAULT_CHANNEL_PROVIDERS.get(purpose, provider)
+        if target not in GATEWAYS:  # custom-provider gateway: no builtin default to pin
+            target = provider
         configured = os.environ.get(_ENV_MODEL_KEYS[purpose], "").strip()
-        supported = _builtin_models(provider, purpose)
-        default = GATEWAYS[provider].get("defaults", {}).get(purpose)
+        supported = _builtin_models(target, purpose)
+        default = GATEWAYS[target].get("defaults", {}).get(purpose)
         model = configured if configured in supported else default
         if not model and supported:
             model = supported[0]
-        channels[purpose] = {"provider": provider, "model": model or ""}
+        channels[purpose] = {"provider": target, "model": model or ""}
     return channels
 
 
@@ -706,6 +719,7 @@ configure_custom_providers(lambda: runtime_settings_store().provider_specs())
 
 __all__ = [
     "CUSTOM_PROVIDER_PREFIX",
+    "DEFAULT_CHANNEL_PROVIDERS",
     "LLMSettingsStore",
     "MODEL_PURPOSES",
     "PURPOSE_LABELS",
