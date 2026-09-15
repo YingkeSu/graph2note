@@ -29,4 +29,8 @@ Status: ready
 
 ## Comments
 
-（待 worker 填写交付记录）
+- 2026-09-15 W1 交付（`dev/W1-digest-content`，基线 `main 3c64d60`）：四节确定性骨架 + 分节 JSON 填充
+  + 统计纯函数 + 材料预算取舍 + 节级缓存；meta 增 `sections`，旧 meta 兼容。handoff：
+  `handoffs/W1-digest-content-structure.md`（ready-for-review）。离线 1096 passed；live 1 次 kimi 文本通道
+  结构验证通过（mode=json）。webapp/telemetry/前端未动。详见 handoff §0/§6（残留 R1 连续体 suggested 口径、
+  R2 Inbox 统计与材料分区口径差异）。
