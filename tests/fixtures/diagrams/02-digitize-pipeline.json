@@ -1,0 +1,126 @@
+{
+  "caption": "笔记/手稿电子化流程：顶部为概要流程，下部为三层处理管线（输入层→解析层→格式化输出层）",
+  "nodes": [
+    {
+      "id": "n1",
+      "label": "输入",
+      "note": "手稿、笔记、论文拆解"
+    },
+    {
+      "id": "n2",
+      "label": "解析",
+      "note": "预设模板、降噪"
+    },
+    {
+      "id": "n3",
+      "label": "格式化输出",
+      "note": "a. HTML/CSS；b. markdown→md；c. pdf"
+    },
+    {
+      "id": "n4",
+      "label": "输出"
+    },
+    {
+      "id": "n5",
+      "label": "输入：手稿、笔记等；(预设)模板"
+    },
+    {
+      "id": "n6",
+      "label": "开关：图 MLLM 接受文稿"
+    },
+    {
+      "id": "n7",
+      "label": "LLM 直接转？OCR？路由？"
+    },
+    {
+      "id": "n8",
+      "label": "CSS / markdown 图",
+      "note": "可做预设模板"
+    },
+    {
+      "id": "n9",
+      "label": "编译"
+    },
+    {
+      "id": "n10",
+      "label": "pdf"
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n2",
+      "label": ""
+    },
+    {
+      "from": "n2",
+      "to": "n3",
+      "label": ""
+    },
+    {
+      "from": "n3",
+      "to": "n4",
+      "label": ""
+    },
+    {
+      "from": "n5",
+      "to": "n7",
+      "label": ""
+    },
+    {
+      "from": "n7",
+      "to": "n8",
+      "label": ""
+    },
+    {
+      "from": "n8",
+      "to": "n9",
+      "label": ""
+    },
+    {
+      "from": "n9",
+      "to": "n10",
+      "label": ""
+    }
+  ],
+  "groups": [
+    {
+      "id": "g1",
+      "label": "顶部概览流程",
+      "kind": "cluster",
+      "nodes": [
+        "n1",
+        "n2",
+        "n3",
+        "n4"
+      ]
+    },
+    {
+      "id": "g2",
+      "label": "输入层",
+      "kind": "layer",
+      "nodes": [
+        "n5",
+        "n6"
+      ]
+    },
+    {
+      "id": "g3",
+      "label": "解析层",
+      "kind": "layer",
+      "nodes": [
+        "n7"
+      ]
+    },
+    {
+      "id": "g4",
+      "label": "格式化输出层",
+      "kind": "layer",
+      "nodes": [
+        "n8",
+        "n9",
+        "n10"
+      ]
+    }
+  ]
+}

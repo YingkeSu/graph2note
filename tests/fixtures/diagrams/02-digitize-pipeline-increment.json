@@ -1,0 +1,376 @@
+{
+  "caption": "手写草图：正文/手稿电子化的「输入→解析→格式化输出→渲染」流程与后端输出/发布结构",
+  "nodes": [
+    {
+      "id": "n1",
+      "label": "输入",
+      "note": "手写、笔记、论文、书籍"
+    },
+    {
+      "id": "n2",
+      "label": "解析",
+      "note": "识别、段落、公式、图表"
+    },
+    {
+      "id": "n3",
+      "label": "输出",
+      "note": "HTML/CSS、Markdown、LaTeX、PDF"
+    },
+    {
+      "id": "n4",
+      "label": "模板解析"
+    },
+    {
+      "id": "n5",
+      "label": "格式化"
+    },
+    {
+      "id": "n6",
+      "label": "渲染"
+    },
+    {
+      "id": "n7",
+      "label": "解析层",
+      "note": "LLM 的调度？OCR？路由"
+    },
+    {
+      "id": "n8",
+      "label": "路由"
+    },
+    {
+      "id": "n9",
+      "label": "格式化的输出",
+      "note": "CSS / Markdown（变量需要用模板住）"
+    },
+    {
+      "id": "n10",
+      "label": "编译"
+    },
+    {
+      "id": "n11",
+      "label": "PDF"
+    },
+    {
+      "id": "n12",
+      "label": "渲染层"
+    },
+    {
+      "id": "n13",
+      "label": "交互化"
+    },
+    {
+      "id": "n14",
+      "label": "组件状态/渲染"
+    },
+    {
+      "id": "n15",
+      "label": "交叉验证"
+    },
+    {
+      "id": "n16",
+      "label": "导出"
+    },
+    {
+      "id": "n17",
+      "label": "交互其它信息"
+    },
+    {
+      "id": "n18",
+      "label": "form → 组件任务"
+    },
+    {
+      "id": "n19",
+      "label": "解析：文本、Markdown、结构"
+    },
+    {
+      "id": "n20",
+      "label": "输出：中间层数 + 自动分类检索（obsidian）"
+    },
+    {
+      "id": "n21",
+      "label": "Markdown 结构"
+    },
+    {
+      "id": "n22",
+      "label": "双链"
+    },
+    {
+      "id": "n23",
+      "label": "folder"
+    },
+    {
+      "id": "n24",
+      "label": "web视图 / folder"
+    },
+    {
+      "id": "n25",
+      "label": "自动生成的网页 / folder"
+    },
+    {
+      "id": "n26",
+      "label": "site 网站的类型"
+    },
+    {
+      "id": "n27",
+      "label": "具体实现在"
+    },
+    {
+      "id": "n28",
+      "label": "obsidian"
+    },
+    {
+      "id": "n29",
+      "label": "上线"
+    },
+    {
+      "id": "n30",
+      "label": "预览"
+    },
+    {
+      "id": "n31",
+      "label": "发布/更新"
+    },
+    {
+      "id": "n32",
+      "label": "file 文件"
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n4",
+      "label": "数入"
+    },
+    {
+      "from": "n4",
+      "to": "n5",
+      "label": ""
+    },
+    {
+      "from": "n5",
+      "to": "n6",
+      "label": ""
+    },
+    {
+      "from": "n1",
+      "to": "n2",
+      "label": ""
+    },
+    {
+      "from": "n2",
+      "to": "n3",
+      "label": ""
+    },
+    {
+      "from": "n2",
+      "to": "n7",
+      "label": ""
+    },
+    {
+      "from": "n7",
+      "to": "n8",
+      "label": ""
+    },
+    {
+      "from": "n3",
+      "to": "n9",
+      "label": ""
+    },
+    {
+      "from": "n9",
+      "to": "n10",
+      "label": ""
+    },
+    {
+      "from": "n10",
+      "to": "n11",
+      "label": ""
+    },
+    {
+      "from": "n9",
+      "to": "n12",
+      "label": ""
+    },
+    {
+      "from": "n12",
+      "to": "n13",
+      "label": ""
+    },
+    {
+      "from": "n12",
+      "to": "n14",
+      "label": ""
+    },
+    {
+      "from": "n12",
+      "to": "n15",
+      "label": ""
+    },
+    {
+      "from": "n12",
+      "to": "n16",
+      "label": ""
+    },
+    {
+      "from": "n12",
+      "to": "n17",
+      "label": ""
+    },
+    {
+      "from": "n18",
+      "to": "n12",
+      "label": ""
+    },
+    {
+      "from": "n14",
+      "to": "n28",
+      "label": ""
+    },
+    {
+      "from": "n16",
+      "to": "n28",
+      "label": ""
+    },
+    {
+      "from": "n19",
+      "to": "n20",
+      "label": ""
+    },
+    {
+      "from": "n19",
+      "to": "n21",
+      "label": ""
+    },
+    {
+      "from": "n20",
+      "to": "n22",
+      "label": ""
+    },
+    {
+      "from": "n22",
+      "to": "n23",
+      "label": ""
+    },
+    {
+      "from": "n32",
+      "to": "n23",
+      "label": ""
+    },
+    {
+      "from": "n23",
+      "to": "n24",
+      "label": ""
+    },
+    {
+      "from": "n23",
+      "to": "n25",
+      "label": ""
+    },
+    {
+      "from": "n25",
+      "to": "n26",
+      "label": ""
+    },
+    {
+      "from": "n26",
+      "to": "n27",
+      "label": ""
+    },
+    {
+      "from": "n27",
+      "to": "n28",
+      "label": ""
+    },
+    {
+      "from": "n24",
+      "to": "n29",
+      "label": ""
+    },
+    {
+      "from": "n29",
+      "to": "n30",
+      "label": ""
+    },
+    {
+      "from": "n30",
+      "to": "n31",
+      "label": ""
+    }
+  ],
+  "groups": [
+    {
+      "id": "g1",
+      "label": "输入与解析",
+      "kind": "layer",
+      "nodes": [
+        "n1",
+        "n2",
+        "n3"
+      ]
+    },
+    {
+      "id": "g2",
+      "label": "模板解析与格式化",
+      "kind": "layer",
+      "nodes": [
+        "n4",
+        "n5",
+        "n6"
+      ]
+    },
+    {
+      "id": "g3",
+      "label": "解析层内部",
+      "kind": "cluster",
+      "nodes": [
+        "n7",
+        "n8"
+      ]
+    },
+    {
+      "id": "g4",
+      "label": "格式化的输出",
+      "kind": "layer",
+      "nodes": [
+        "n9",
+        "n10",
+        "n11"
+      ]
+    },
+    {
+      "id": "g5",
+      "label": "渲染层",
+      "kind": "layer",
+      "nodes": [
+        "n12",
+        "n13",
+        "n14",
+        "n15",
+        "n16",
+        "n17",
+        "n18"
+      ]
+    },
+    {
+      "id": "g6",
+      "label": "输出与发布",
+      "kind": "cluster",
+      "nodes": [
+        "n19",
+        "n20",
+        "n21",
+        "n22",
+        "n23",
+        "n24",
+        "n25",
+        "n26",
+        "n27",
+        "n28",
+        "n29",
+        "n30",
+        "n31",
+        "n32"
+      ]
+    }
+  ]
+}

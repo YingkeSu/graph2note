@@ -41,6 +41,20 @@ X3/X4 additions
 Backward compatibility: with no groups and no notes every drawing call is the
 same as the pre-D-track renderer (same call order, same arguments), so the
 fallback PNG is byte-identical to the existing golden.
+
+X6 (default-view legibility) additions
+--------------------------------------
+* The D5b geometry grew the canvas with the content, which made the dense live
+diagrams 20-23in wide; displayed in the document's 720px reading column their
+10pt note tier collapsed to ~4.5-5px.  The grouped geometry is now bounded by
+``legibility_max_figure_width()`` (the width at which the note tier still
+measures ``DOC_MIN_NOTE_PX`` px at ``DOC_READING_WIDTH_PX``) and absorbs the
+remaining density *vertically* by narrowing the word-aware wrap budget
+(``_compact_text``).  Target labels/notes keep their font tiers; only the
+number of wrapped lines grows.  The canvas floor drops from 12in to
+``_MIN_GROUPED_FIG_W`` (720px at the render DPI) so compact diagrams are not
+padded out, and the horizontal text padding / inter-cell seam are tightened
+(0.07/0.16 -> 0.05/0.10) to make room.
 """
 
 from __future__ import annotations
@@ -185,13 +199,37 @@ def _wrap_label(label: str, max_units: int = 18) -> str:
 
 _PT_PER_IN = 72.0
 _LINE_SPACING = 1.25
-_BOX_PAD_X_IN = 0.07
+_BOX_PAD_X_IN = 0.05
 _BOX_PAD_Y_IN = 0.05
 _TITLE_GAP_IN = 0.05
 _NOTE_GAP_IN = 0.04
-_CELL_GAP_FRAC = 0.16
+# Horizontal seam kept between two neighbouring grid cells (fraction of a
+# cell).  X6 lowered this from 0.16 to 0.10: the reading-width budget (below)
+# needs the slack to keep the widest labels on one line, while a 10% seam still
+# separates the node boxes visually.
+_CELL_GAP_FRAC = 0.10
 _BASE_FIGSIZE = (12.0, 8.0)
 _AXES_FRACTION = 0.96
+
+# --- X6: default-document-view legibility budget -------------------------
+# The reading pane shows a diagram at container width (720px desktop, 390px
+# mobile).  A PNG of ``fontsize`` pt displayed at container width ``C`` shows
+# glyphs of ``fontsize * C / (72 * trimmed_width_in)`` pixels.  D5b solved
+# native overlap by growing the canvas with the content, so the dense live
+# diagrams (21/32 nodes) became 20-23in wide and their 10pt note tier shrank to
+# ~4.5-5px at 720px - the default view was unreadable without the zoom viewer.
+# X6 instead bounds the canvas by the reading width and buys legibility with
+# *height* (more wrapped lines / rows) instead of width, so the default view
+# itself stays legible.
+DOC_READING_WIDTH_PX = 720.0
+DOC_MIN_NOTE_PX = 9.4
+_PNG_PAD_IN = 0.1          # ``render()``'s ``bbox_inches="tight"`` pad
+# 720px at the render DPI: below this the reading pane would up-scale the PNG.
+_MIN_GROUPED_FIG_W = 6.0
+# Per-line wrap budgets tried as the compact fit narrows (CJK counts 2 units).
+# 18 is the historical grouped label budget; the tail is the best effort for a
+# pathologically wide band.
+_COMPACT_WRAP_UNITS = (18, 16, 14, 12, 10, 9, 8, 7, 6, 5, 4, 3, 2)
 # Clearance kept between two group titles that would otherwise share a title
 # strip (slid sideways), and between a stacked title and the strip it left.
 _TITLE_SLIDE_PAD_IN = 0.12
@@ -200,6 +238,39 @@ _TITLE_ROW_PAD_IN = 0.02
 # ``y == 0`` (``ty - text_h`` lands on -1e-18 through float rounding), so the
 # on-canvas check needs a tolerance or that legal anchor is rejected.
 _CANVAS_EPS = 1e-6
+
+
+def legibility_max_figure_width(
+    container_px: float = DOC_READING_WIDTH_PX,
+    min_note_px: float = DOC_MIN_NOTE_PX,
+    note_fontsize: float = NOTE_FONTSIZE,
+) -> float:
+    """Largest figure width (inches) that keeps the note tier legible.
+
+    ``render()`` writes the PNG with ``bbox_inches="tight"`` and a 0.1in pad,
+    and the grouped axes span ``_AXES_FRACTION`` of the figure, so the trimmed
+    PNG width is ``_AXES_FRACTION * fig_w + 2 * _PNG_PAD_IN``.  Solving the
+    display equation ``note_fontsize * container / (72 * trimmed) >= min_note``
+    for ``fig_w`` gives this budget.  The assumption that the drawing fills the
+    axes is conservative (a narrower drawing only displays larger).
+    """
+    trimmed = note_fontsize * container_px / (72.0 * min_note_px)
+    return max(0.0, (trimmed - 2 * _PNG_PAD_IN) / _AXES_FRACTION)
+
+
+def default_view_text_px(
+    fontsize: float,
+    fig_width_in: float,
+    container_px: float = DOC_READING_WIDTH_PX,
+) -> float:
+    """Displayed pixel height of a ``fontsize`` pt tier in the reading pane.
+
+    Inverse of the budget model: a diagram of ``fig_width_in`` inches is
+    trimmed to ``_AXES_FRACTION * fig_width_in + 2 * _PNG_PAD_IN`` and scaled to
+    the container width, so the glyphs land at this many pixels.
+    """
+    trimmed = _AXES_FRACTION * fig_width_in + 2 * _PNG_PAD_IN
+    return fontsize * container_px / (72.0 * max(trimmed, 1e-9))
 
 
 def _title_font_properties(fontsize: float):
@@ -279,10 +350,63 @@ def _grid_dims(pos: dict[str, tuple[float, float]]) -> tuple[int, int]:
     return cells([p[1] for p in pos.values()]), cells([p[0] for p in pos.values()])
 
 
+def _cell_width_in(max_text_w: float) -> float:
+    """Grid-cell width needed to hold text of ``max_text_w`` inches."""
+    return (max_text_w + 2 * _BOX_PAD_X_IN) / (1 - _CELL_GAP_FRAC)
+
+
+def _fits_reading_width(ncols: int, sem: rs.RenderSemantics,
+                        wrapped: dict[str, str], notes: dict[str, str],
+                        max_fig_w: float) -> bool:
+    """Would this text wrap fit ``ncols`` cells inside the reading budget?"""
+    max_w = 0.0
+    for node in sem.nodes:
+        max_w = max(max_w, _text_size_in(wrapped[node.id], NODE_FONTSIZE)[0],
+                    _text_size_in(notes[node.id], NOTE_FONTSIZE)[0])
+    return ncols * _cell_width_in(max_w) / _AXES_FRACTION <= max_fig_w + 1e-9
+
+
+def _compact_text(sem: rs.RenderSemantics, ncols: int,
+                  wrapped: dict[str, str], notes: dict[str, str],
+                  raw_labels: dict[str, str],
+                  max_fig_w: float) -> tuple[dict[str, str], dict[str, str]]:
+    """Narrow the per-line wrap budget until the band fits the reading width.
+
+    Returns the possibly re-wrapped ``(wrapped, notes)`` maps.  The incoming
+    wrap is left untouched whenever it already fits the budget, so diagrams
+    that never hit the dense path render exactly as before.  Otherwise the
+    first (largest) budget from ``_COMPACT_WRAP_UNITS`` that fits is used; the
+    text is re-wrapped from the *raw* label (not the already char-wrapped
+    ``wrapped`` map) with the word-aware ``rs.wrap_display_label``, so Latin
+    words are only split as a last resort.  If even the narrowest budget cannot
+    fit the band (a pathologically wide row) the narrowest wrap is returned and
+    the caller lets the canvas exceed the budget - density, not legibility, is
+    sacrificed.
+    """
+    if _fits_reading_width(ncols, sem, wrapped, notes, max_fig_w):
+        return wrapped, notes
+    compact_wrapped, compact_notes = wrapped, notes
+    for units in _COMPACT_WRAP_UNITS:
+        compact_wrapped = {
+            n.id: rs.wrap_display_label(raw_labels.get(n.id, n.label), units)
+            for n in sem.nodes
+        }
+        compact_notes = {
+            n.id: (rs.wrap_display_label(notes[n.id], units) if notes[n.id]
+                   else "")
+            for n in sem.nodes
+        }
+        if _fits_reading_width(ncols, sem, compact_wrapped, compact_notes,
+                               max_fig_w):
+            return compact_wrapped, compact_notes
+    return compact_wrapped, compact_notes
+
+
 def _grouped_geometry(sem: rs.RenderSemantics,
                       pos: dict[str, tuple[float, float]],
                       wrapped: dict[str, str],
-                      notes: dict[str, str]) -> dict:
+                      notes: dict[str, str],
+                      raw_labels: dict[str, str] | None = None) -> dict:
     """Content-sized figure + node boxes for a grouped diagram.
 
     Solves the T-vision live defect: a fixed canvas collapsed dense diagrams
@@ -290,8 +414,20 @@ def _grouped_geometry(sem: rs.RenderSemantics,
     node text.  Instead of shrinking fonts, every cell is grown to fit the
     widest wrapped label at the fixed tiers and every row keeps a title strip.
     Node positions and group bboxes remain the layout's authoritative geometry.
+
+    X6 adds the default-view legibility budget: the canvas width never exceeds
+    ``legibility_max_figure_width`` when a wrap can fit inside it, and the
+    lower bound drops to ``_MIN_GROUPED_FIG_W`` so a compact diagram is not
+    padded back out to 12in (which alone costs ~1px of the note tier at 720px).
+    Density is absorbed vertically by the compact wrap, so the reading pane's
+    default (non-zoomed) view stays legible.
     """
     nrows, ncols = _grid_dims(pos)
+    max_fig_w = legibility_max_figure_width()
+    if raw_labels is None:
+        raw_labels = {n.id: n.label for n in sem.nodes}
+    wrapped, notes = _compact_text(sem, ncols, wrapped, notes, raw_labels,
+                                   max_fig_w)
 
     label_sizes: dict[str, tuple[float, float]] = {}
     note_sizes: dict[str, tuple[float, float]] = {}
@@ -316,9 +452,9 @@ def _grouped_geometry(sem: rs.RenderSemantics,
                    for g in sem.groups if g.label]
     title_h = max((size[1] for size in title_sizes), default=0.0)
 
-    cell_w_in = (max_w + 2 * _BOX_PAD_X_IN) / (1 - _CELL_GAP_FRAC)
+    cell_w_in = _cell_width_in(max_w)
     cell_h_in = max_h + 2 * _BOX_PAD_Y_IN + 2 * (title_h + _TITLE_GAP_IN)
-    fig_w = max(_BASE_FIGSIZE[0], ncols * cell_w_in / _AXES_FRACTION)
+    fig_w = max(_MIN_GROUPED_FIG_W, ncols * cell_w_in / _AXES_FRACTION)
     fig_h = max(_BASE_FIGSIZE[1], nrows * cell_h_in / _AXES_FRACTION)
     axes_w_in = fig_w * _AXES_FRACTION
     axes_h_in = fig_h * _AXES_FRACTION
@@ -356,6 +492,8 @@ def _grouped_geometry(sem: rs.RenderSemantics,
         "label_dy": label_dy,
         "note_dy": note_dy,
         "title_gap": title_gap_norm,
+        "wrapped": wrapped,
+        "notes": notes,
     }
 
 
@@ -853,11 +991,14 @@ def build_figure(nodes, edges, labels=None, *, groups=None, layout=None,
     title_gap: float | None = None
     avoid_boxes: list[tuple[float, float, float, float]] = []
     if sem.groups:
-        geometry = _grouped_geometry(sem, pos, wrapped, notes)
+        geometry = _grouped_geometry(sem, pos, wrapped, notes, text_labels)
         fig_w, fig_h = geometry["figsize"]
         box_w, box_h = geometry["box_w"], geometry["box_h"]
         label_dy, note_dy = geometry["label_dy"], geometry["note_dy"]
         title_gap = geometry["title_gap"]
+        # X6: the compact fit may have re-wrapped labels/notes to honour the
+        # reading-width budget; draw the text that was actually measured.
+        wrapped, notes = geometry["wrapped"], geometry["notes"]
     else:
         fig_w, fig_h = _BASE_FIGSIZE
     avoid_boxes = [

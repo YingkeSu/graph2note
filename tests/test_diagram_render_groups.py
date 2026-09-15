@@ -560,11 +560,23 @@ def test_dense_grouped_diagram_has_no_artist_overlap():
     _assert_no_overlap(ax)
 
 
-def test_dense_grouped_diagram_grows_the_canvas_with_the_grid():
-    """The whole point: no font shrink, the canvas does the work."""
+def test_dense_grouped_diagram_fits_the_reading_width_not_the_content_width():
+    """X6: density is absorbed vertically, the canvas stays inside the budget.
+
+    D5b grew the canvas with the grid (the 24-node fixture used to be >12in
+    and the live 21/32-node diagrams 20-23in).  X6 caps the width at the
+    reading-width budget and re-wraps the text instead, so the *default*
+    (non-zoomed) document view stays legible.
+    """
+    mpl = _mpl()
     nodes, edges, groups = _dense_fixture()
     _fig, ax, _drawn = _render_grouped_via_engine(nodes, edges, groups)
-    assert tuple(ax.figure.get_size_inches())[0] > 12.0
+    fig_w, fig_h = ax.figure.get_size_inches()
+    assert fig_w <= mpl.legibility_max_figure_width() + 1e-6
+    assert fig_w >= mpl._MIN_GROUPED_FIG_W - 1e-6
+    # the diagram is still content-sized vertically (the compact wrap adds
+    # lines), i.e. it did not just get scaled down wholesale
+    assert fig_h >= mpl._BASE_FIGSIZE[1]
 
 
 # ---------------------------------------------------------------------------
@@ -897,3 +909,119 @@ def test_node_text_has_positive_slack_inside_its_own_box():
                     tb.y0 - b.y0, b.y1 - tb.y1)
         worst = slack if worst is None else min(worst, slack)
     assert worst is not None and worst >= 1.0, worst
+
+
+# ---------------------------------------------------------------------------
+# X6: the default (non-zoomed) document view must itself be legible
+#
+# D5b bought native readability by growing the canvas with the content; the
+# live 01/02inc diagrams reached 20-23in, so at the document's 720px reading
+# width the 10pt note tier collapsed to ~4.5-5px and only the full-screen
+# viewer was readable.  X6 bounds the grouped canvas by the reading width and
+# re-wraps the text, so the *default* view is legible without the viewer.
+# ---------------------------------------------------------------------------
+
+_X6_MIN_LABEL_PX = 11.0
+_DIAGRAM_FIXTURE_DIR = os.path.join(os.path.dirname(__file__),
+                                    "fixtures", "diagrams")
+# Real DeepSeek-vision extracts of the 01/02/02inc structure notes from the
+# live audit (tests/fixtures/diagrams/README.md records provenance).
+_X6_REAL_FIXTURES = (
+    "01-requirements-arch",
+    "02-digitize-pipeline",
+    "02-digitize-pipeline-increment",
+)
+
+
+def _load_diagram_fixture(name):
+    with open(os.path.join(_DIAGRAM_FIXTURE_DIR, f"{name}.json"),
+              encoding="utf-8") as fh:
+        doc = json.load(fh)
+    return doc["nodes"], doc["edges"], doc["groups"]
+
+
+def test_legibility_budget_inverts_the_display_model():
+    """``legibility_max_figure_width`` is the exact inverse of the model."""
+    mpl = _mpl()
+    budget = mpl.legibility_max_figure_width()
+    assert budget == pytest.approx(10.873, abs=0.01)
+    # a diagram at the budget shows the note tier exactly at the floor ...
+    assert mpl.default_view_text_px(mpl.NOTE_FONTSIZE, budget) == \
+        pytest.approx(mpl.DOC_MIN_NOTE_PX)
+    # ... a narrower diagram shows it larger
+    assert mpl.default_view_text_px(mpl.NOTE_FONTSIZE, budget / 2) > \
+        mpl.DOC_MIN_NOTE_PX
+    # the budget is a pure, monotone function of its knobs
+    assert mpl.legibility_max_figure_width(container_px=390) < budget
+    assert mpl.legibility_max_figure_width(min_note_px=12.0) < budget
+    assert mpl.legibility_max_figure_width(min_note_px=8.0) > budget
+    assert mpl.legibility_max_figure_width() == budget  # deterministic
+
+
+@pytest.mark.parametrize("name", _X6_REAL_FIXTURES)
+def test_real_dense_diagram_default_view_is_legible_at_720(name):
+    """The acceptance target, on the real 01/02/02inc extracts.
+
+    Product chain: canonical nodes/edges -> ``prepare_diagram_layout`` ->
+    ``build_figure``.  A 720px reading column then shows the node-label tier
+    >= 11px and the note tier >= 9.4px (D4's 720px yardstick).
+    """
+    mpl = _mpl()
+    nodes, edges, groups = _load_diagram_fixture(name)
+    fig, _ax, _drawn = _render_grouped_via_engine(nodes, edges, groups)
+    fig_w = float(fig.get_size_inches()[0])
+    node_px = mpl.default_view_text_px(mpl.NODE_FONTSIZE, fig_w)
+    note_px = mpl.default_view_text_px(mpl.NOTE_FONTSIZE, fig_w)
+    assert fig_w <= mpl.legibility_max_figure_width() + 1e-6, (name, fig_w)
+    assert node_px >= _X6_MIN_LABEL_PX, (name, fig_w, node_px)
+    assert note_px >= mpl.DOC_MIN_NOTE_PX, (name, fig_w, note_px)
+    # 390px mobile must stay *usable*: the PNG is down-scaled, never widened
+    # past the container (no horizontal overflow), so the layout still holds.
+    assert mpl.default_view_text_px(mpl.NOTE_FONTSIZE, fig_w,
+                                    container_px=390) > 0
+
+
+@pytest.mark.parametrize("name", _X6_REAL_FIXTURES)
+def test_real_dense_diagram_still_has_no_artist_overlap(name):
+    """Re-wrapping must not re-introduce the D5b native overlap."""
+    nodes, edges, groups = _load_diagram_fixture(name)
+    _fig, ax, _drawn = _render_grouped_via_engine(nodes, edges, groups)
+    _assert_no_overlap(ax)
+
+
+def test_compact_fit_is_identity_when_the_diagram_already_fits():
+    """A grouped diagram inside the budget keeps its historical wrap."""
+    mpl = _mpl()
+    sem = rs.normalize(NODES, EDGES, GROUPS)
+    wrapped = {n.id: mpl._wrap_label(n.label) for n in sem.nodes}
+    notes = {n.id: (rs.wrap_display_label(n.note, 16) if n.note else "")
+             for n in sem.nodes}
+    out_w, out_n = mpl._compact_text(sem, 2, wrapped, notes,
+                                     {n.id: n.label for n in sem.nodes},
+                                     mpl.legibility_max_figure_width())
+    assert out_w == wrapped
+    assert out_n == notes
+
+
+def test_compact_fit_narrows_a_wide_band_deterministically():
+    """A wide band is re-wrapped (never scaled) and the result is stable."""
+    mpl = _mpl()
+    nodes, edges, groups = _dense_fixture()
+    sem = rs.normalize(nodes, edges, groups)
+    wrapped = {n.id: mpl._wrap_label(n.label) for n in sem.nodes}
+    notes = {n.id: (rs.wrap_display_label(n.note, 16) if n.note else "")
+             for n in sem.nodes}
+    budget = mpl.legibility_max_figure_width()
+    raw = {n.id: n.label for n in sem.nodes}
+    out_a = mpl._compact_text(sem, 8, wrapped, notes, raw, budget)
+    out_b = mpl._compact_text(sem, 8, wrapped, notes, raw, budget)
+    assert out_a == out_b
+    assert out_a != (wrapped, notes)  # the wide band really was narrowed
+    assert mpl._fits_reading_width(8, sem, out_a[0], out_a[1], budget)
+
+
+def test_flat_path_ignores_the_reading_width_budget():
+    """The ungrouped fallback stays on its byte-locked 12x8in canvas."""
+    mpl = _mpl()
+    fig, _ax, _drawn = mpl.build_figure(SIMPLE_NODES, SIMPLE_EDGES, None)
+    assert tuple(fig.get_size_inches()) == mpl._BASE_FIGSIZE
