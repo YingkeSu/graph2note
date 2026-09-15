@@ -368,7 +368,9 @@ def _abstract_block(
 
 
 def _extract_abstract(
-    paragraphs: list[list[str]], author_lines: Optional[list[str]] = None
+    paragraphs: list[list[str]],
+    author_lines: Optional[list[str]] = None,
+    title_lines: Optional[list[str]] = None,
 ) -> tuple[str, str]:
     """Return ``(abstract body, evidence line)`` for the first abstract block.
 
@@ -377,12 +379,19 @@ def _extract_abstract(
     accepted when the text before it is one of the known author lines, and a
     canonical label that heads its own line always wins: a title such as
     ``Neural Networks, Abstract Reasoning…`` must not shadow the real summary.
+
+    ``title_lines`` are skipped outright: a wrapped title whose second line
+    starts with the label (``Code Models for`` / ``Abstract Syntax Trees``) is
+    title text, not the summary.
     """
 
     author_keys = {_clean(line) for line in (author_lines or []) if _clean(line)}
+    title_keys = {_clean(line) for line in (title_lines or []) if _clean(line)}
     inline_candidate: Optional[tuple[str, str]] = None
     for para in paragraphs:
         for index, line in enumerate(para):
+            if _clean(line) in title_keys:
+                continue
             match = _ABSTRACT_RE.match(line)
             if match is None:
                 inline = _ABSTRACT_INLINE_RE.search(line)
@@ -512,7 +521,7 @@ def parse_paper_meta(
     title_block, author_lines, _rest = _title_lines(paragraphs)
     title = _clean(" ".join(title_block)).rstrip(".")
     authors = _parse_authors(author_lines)
-    abstract, abstract_evidence = _extract_abstract(paragraphs, author_lines)
+    abstract, abstract_evidence = _extract_abstract(paragraphs, author_lines, title_block)
     keywords, keywords_evidence = _extract_keywords(paragraphs)
     doi, doi_evidence = _extract_doi(text, full_text)
     venue, venue_confidence, venue_evidence = _extract_venue(header_lines, text)

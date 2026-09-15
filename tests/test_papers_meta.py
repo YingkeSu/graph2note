@@ -212,6 +212,64 @@ def test_capitalized_title_prefix_does_not_turn_the_title_into_the_abstract(titl
     assert "Abstract" not in " ".join(result.meta.authors)
 
 
+def test_wrapped_title_line_starting_with_abstract_is_not_the_abstract():
+    """R4/D3: a title's wrapped line must not be read as the abstract label."""
+
+    text = (
+        "Graph Neural Networks for\n"
+        "Abstract Meaning Representation\n"
+        "\n"
+        "Wei Zhang, Li Chen\n"
+        "\n"
+        "Abstract\n"
+        "Body text.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.abstract == "Body text."
+    assert result.meta.title == "Graph Neural Networks for Abstract Meaning Representation"
+    assert result.meta.authors == ["Wei Zhang", "Li Chen"]
+
+
+@pytest.mark.parametrize(
+    ("title_first", "title_second"),
+    [
+        ("Code Models for", "Abstract Syntax Trees"),
+        ("Attention Is Still All You Need:", "Abstract Representations in Transformers"),
+        ("Neural Networks for", "Abstract Reasoning"),
+    ],
+)
+def test_wrapped_title_starting_with_abstract_does_not_shadow_the_abstract(
+    title_first, title_second
+):
+    text = (
+        f"{title_first}\n{title_second}\n"
+        "\n"
+        "Wei Zhang, Li Chen\n"
+        "\n"
+        "Abstract\n"
+        "Body text.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.abstract == "Body text."
+    assert result.meta.title == f"{title_first} {title_second}"
+
+
+def test_wrapped_cjk_title_starting_with_the_abstract_label_is_not_the_abstract():
+    text = (
+        "一种基于图神经网络的\n"
+        "摘要：方法研究\n"
+        "\n"
+        "张三、李四\n"
+        "\n"
+        "摘要\n"
+        "本文综述了图神经网络。\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.abstract == "本文综述了图神经网络。"
+    assert result.meta.title == "一种基于图神经网络的 摘要：方法研究"
+    assert result.meta.authors == ["张三", "李四"]
+
+
 def test_authorlike_title_prefix_does_not_shadow_the_real_abstract():
     """A canonical ``Abstract`` line beats an inline label inside a title."""
 
