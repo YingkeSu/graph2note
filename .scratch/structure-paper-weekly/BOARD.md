@@ -92,7 +92,7 @@ I 轨共享契约：[SPEC.md §2 论文文档契约](SPEC.md)。P2/P3 针对契�
 | Y1 | ✅ merged `f8c6f61`（rev-112 APPROVE，verdict `/tmp/review-spw-Y1-verdict.md`） | `dev/Y1-patch-metadata` @ `5984a5a` | PATCH 部分合并 / PUT 整体替换；1211 passed；残留：documents metadata 同问题另立项 |
 | X2 | ✅ merged `55c8c15`（rev-113 APPROVE，verdict `/tmp/review-spw-X2-verdict.md`） | `dev/X2-extract-retry` @ `81b9ad3` | 半截 JSON 升级重试四分支；1214 passed |
 | X5 | ✅ merged `2eb5fed`（rev-114 APPROVE，verdict `/tmp/review-spw-X5-verdict.md`） | `dev/X5-marked-localize` @ `270580f` | marked 4.3.0 本地 vendor，离线探针 10/10 |
-| Y5 | ❌ R2 REJECT（rev-123，verdict `/tmp/review-spw-Y5-r2-verdict.md`）→ 作者-111 R3 返工中 | `dev/Y5-author-split` @ `d88fac5` | D1 已修好；R2 引入 D2：`_PROSE_LEAD_RE` 大小写敏感化关掉标题护栏，大写前缀标题（A Study Of…Abstract…）尾部顶替摘要；修复方向 verdict §2.4 |
+| Y5 | R3 三审中（rev-128，与 111/115/123 均不同会话） | `dev/Y5-author-split` @ `2ca3e70` | D2 修复：head 护栏（作者行优先）+ 摘要标签两遍优先级；+7 回归用例；8 组 mutation；四方向风险披露 |
 | X1 | ✅ merged `f0dd99e`（rev-121 APPROVE，verdict `/tmp/review-spw-X1-verdict.md`） | `dev/X1-deepseek-channel` @ `09a7a9e` | live 3/3 ok；02inc 触发 X2 重试联动验证；其他 purpose 不回归 |
 | X3+X4 | ✅ merged `fd31cf6`（rev-124 APPROVE，verdict `/tmp/review-spw-X3X4-verdict.md`；F4 性能数字口径标注建议，非阻塞） | `dev/X3X4-mpl-layout` @ `b74f0cc` | 组框相交 9/0/2→0/0/0；字宽真实 metrics 越框清零；golden/扁平逐字节不动 |
 | Y3 | ✅ merged `875fbde`（rev-120 APPROVE，verdict `/tmp/review-spw-Y3-verdict.md`） | `dev/Y3-upload-test` @ `26a804f` | upload.js 拦截行为测试；1219 passed |
