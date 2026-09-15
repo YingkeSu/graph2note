@@ -1,0 +1,206 @@
+{
+  "caption": "手绘需求与通信架构笔记的结构化提取",
+  "nodes": [
+    {
+      "id": "n1",
+      "label": "MacBook"
+    },
+    {
+      "id": "n2",
+      "label": "Windows Laptop"
+    },
+    {
+      "id": "n3",
+      "label": "Mac mini"
+    },
+    {
+      "id": "n4",
+      "label": "Windows"
+    },
+    {
+      "id": "n5",
+      "label": "ToDesktop 运行"
+    },
+    {
+      "id": "n6",
+      "label": "其他服务器"
+    },
+    {
+      "id": "n7",
+      "label": "a2a Lite"
+    },
+    {
+      "id": "n8",
+      "label": "任务拆分"
+    },
+    {
+      "id": "n9",
+      "label": "模型/harness路由"
+    },
+    {
+      "id": "n10",
+      "label": "状态管理/任务状态"
+    },
+    {
+      "id": "n11",
+      "label": "节点图"
+    },
+    {
+      "id": "n12",
+      "label": "MoC"
+    },
+    {
+      "id": "n13",
+      "label": "Screen sharing"
+    },
+    {
+      "id": "n14",
+      "label": "Windows (RDP/TS)"
+    },
+    {
+      "id": "n15",
+      "label": "Apple VNC 协议"
+    },
+    {
+      "id": "n16",
+      "label": "Tiger VNC 不支持"
+    },
+    {
+      "id": "n17",
+      "label": "ssh 到 linux"
+    },
+    {
+      "id": "n18",
+      "label": "critical path 优化"
+    },
+    {
+      "id": "n19",
+      "label": "LangGraph"
+    },
+    {
+      "id": "n20",
+      "label": "Codex Session Manager"
+    },
+    {
+      "id": "n21",
+      "label": "Agent Orchestrator"
+    }
+  ],
+  "edges": [
+    {
+      "from": "n1",
+      "to": "n3",
+      "label": ""
+    },
+    {
+      "from": "n2",
+      "to": "n4",
+      "label": ""
+    },
+    {
+      "from": "n6",
+      "to": "n7",
+      "label": "需求"
+    },
+    {
+      "from": "n7",
+      "to": "n8",
+      "label": ""
+    },
+    {
+      "from": "n7",
+      "to": "n9",
+      "label": ""
+    },
+    {
+      "from": "n8",
+      "to": "n10",
+      "label": ""
+    },
+    {
+      "from": "n9",
+      "to": "n10",
+      "label": ""
+    },
+    {
+      "from": "n10",
+      "to": "n11",
+      "label": ""
+    },
+    {
+      "from": "n12",
+      "to": "n13",
+      "label": "Screen sharing"
+    },
+    {
+      "from": "n14",
+      "to": "n12",
+      "label": "RDP/TS"
+    }
+  ],
+  "groups": [
+    {
+      "id": "g1",
+      "label": "常用终端",
+      "kind": "layer",
+      "nodes": [
+        "n1",
+        "n2"
+      ]
+    },
+    {
+      "id": "g2",
+      "label": "通信层",
+      "kind": "layer",
+      "nodes": [
+        "n3",
+        "n4",
+        "n5",
+        "n6"
+      ]
+    },
+    {
+      "id": "g3",
+      "label": "任务调度",
+      "kind": "layer",
+      "nodes": [
+        "n7",
+        "n8",
+        "n9"
+      ]
+    },
+    {
+      "id": "g4",
+      "label": "状态与节点图",
+      "kind": "layer",
+      "nodes": [
+        "n10",
+        "n11"
+      ]
+    },
+    {
+      "id": "g5",
+      "label": "通信源笔记",
+      "kind": "cluster",
+      "nodes": [
+        "n12",
+        "n13",
+        "n14",
+        "n15",
+        "n16",
+        "n17",
+        "n18"
+      ]
+    },
+    {
+      "id": "g6",
+      "label": "调度方案候选",
+      "kind": "cluster",
+      "nodes": [
+        "n19",
+        "n20",
+        "n21"
+      ]
+    }
+  ]
+}
