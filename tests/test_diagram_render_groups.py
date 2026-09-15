@@ -538,6 +538,14 @@ def _assert_no_overlap(ax):
         for box in boxes:
             assert _overlap(tb, box) <= 1.0, (text.get_text(), box)
 
+    # 5) group titles never stack on one another (D6: same-row-band /
+    #    same-left-edge groups used to anchor both titles on the same point)
+    _titles = [(t.get_text(), t.get_window_extent(rend)) for t in ax.texts
+               if round(t.get_fontsize(), 3) == round(mpl.GROUP_FONTSIZE, 3)]
+    for i, (label_a, box_a) in enumerate(_titles):
+        for label_b, box_b in _titles[i + 1:]:
+            assert _overlap(box_a, box_b) <= 1.0, (label_a, label_b, box_a, box_b)
+
 
 def test_dense_grouped_diagram_has_no_artist_overlap():
     nodes, edges, groups = _dense_fixture()
@@ -551,6 +559,96 @@ def test_dense_grouped_diagram_grows_the_canvas_with_the_grid():
     nodes, edges, groups = _dense_fixture()
     _fig, ax, _drawn = _render_grouped_via_engine(nodes, edges, groups)
     assert tuple(ax.figure.get_size_inches())[0] > 12.0
+
+
+# ---------------------------------------------------------------------------
+# D6: group titles must not stack on each other
+#
+# T-vision final report §3: a lane band and a cluster sharing a row band *and*
+# a left edge anchored their titles on the same point (live 01 = 2 pairs,
+# 02inc = 1 pair).  The title layer now de-conflicts across groups; this fixture
+# is that shape in miniature and is red without the fix.
+# ---------------------------------------------------------------------------
+
+
+def _same_left_edge_two_group_layout():
+    """Hand-built D2 layout: lane + cluster, same row band, same left edge.
+
+    Both groups have a member on row ``y=0.25`` (membership is disjoint, as in
+    the live 01 render) and both bboxes start at ``x0=0``, so the historical
+    title anchors coincide.
+    """
+    return {
+        "positions": {
+            "n1": {"x": 0.6, "y": 0.25},
+            "n2": {"x": 0.85, "y": 0.25},
+            "n3": {"x": 0.25, "y": 0.25},
+            "n4": {"x": 0.25, "y": 0.75},
+        },
+        "groups": [
+            {"id": "g1", "label": "用户侧", "kind": "lane",
+             "members": ["n1", "n2"],
+             "bbox": {"x0": 0.0, "y0": 0.0, "x1": 1.0, "y1": 1.0}},
+            {"id": "g2", "label": "调度方案选型", "kind": "cluster",
+             "members": ["n3", "n4"],
+             "bbox": {"x0": 0.0, "y0": 0.0, "x1": 0.5, "y1": 1.0}},
+        ],
+    }
+
+
+_SAME_LEFT_EDGE_NODES = [
+    {"id": "n1", "label": "alpha"},
+    {"id": "n2", "label": "beta"},
+    {"id": "n3", "label": "gamma"},
+    {"id": "n4", "label": "delta"},
+]
+
+
+def _group_title_geometry(ax):
+    """(rendered title boxes, rendered node boxes) as window extents."""
+    mpl = _mpl()
+    from matplotlib.patches import Rectangle
+
+    fig = ax.figure
+    fig.canvas.draw()
+    rend = fig.canvas.get_renderer()
+    titles = [(t.get_text(), t.get_window_extent(rend)) for t in ax.texts
+              if round(t.get_fontsize(), 3) == round(mpl.GROUP_FONTSIZE, 3)]
+    nodes = [p.get_window_extent(rend) for p in ax.patches
+             if isinstance(p, Rectangle) and p.get_zorder() == 3]
+    return titles, nodes
+
+
+def test_same_left_edge_group_titles_are_kept_apart():
+    """Two same-row-band, same-left-edge titles must not overlap."""
+    mpl = _mpl()
+    _fig, ax, drawn = mpl.build_figure(
+        _SAME_LEFT_EDGE_NODES, [], None, layout=_same_left_edge_two_group_layout())
+    assert drawn == ["g1", "g2"]
+    titles, nodes = _group_title_geometry(ax)
+    assert sorted(label for label, _box in titles) == ["用户侧", "调度方案选型"]
+    for i, (label_a, box_a) in enumerate(titles):
+        for label_b, box_b in titles[i + 1:]:
+            assert _overlap(box_a, box_b) <= 1.0, (label_a, label_b)
+    # the moved title must still clear every node box and stay on the canvas
+    for label, box in titles:
+        assert 0.0 <= box.x0 and box.x1 <= ax.figure.bbox.x1 + 1.0, label
+        for node_box in nodes:
+            assert _overlap(box, node_box) <= 1.0, label
+
+
+def test_same_left_edge_group_titles_are_deterministic():
+    mpl = _mpl()
+    layout = _same_left_edge_two_group_layout()
+
+    def anchors():
+        _fig, ax, _drawn = mpl.build_figure(
+            _SAME_LEFT_EDGE_NODES, [], None, layout=layout)
+        return [t.get_position() for t in ax.texts
+                if round(t.get_fontsize(), 3) == round(mpl.GROUP_FONTSIZE, 3)]
+
+    assert anchors() == anchors()
+    assert anchors()[1][0] != anchors()[0][0]  # the second title slid aside
 
 
 def test_group_title_does_not_degrade_weight_silently(caplog):
