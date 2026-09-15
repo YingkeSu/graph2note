@@ -720,9 +720,22 @@ def section_fingerprints(
     }
 
 
+# Reasons that put a document into the 待整理 material even though it carries a
+# topic/tag label (explicit "needs organization" marker / low-confidence signal).
+_PENDING_FLAG_REASONS = ("explicit", "low_confidence")
+
+
 def _is_pending(doc: dict[str, Any]) -> bool:
-    """A material document is 待整理 when it has an Inbox reason."""
-    return bool(doc.get("inbox_reasons"))
+    """待整理 material: no 主题/标签 label at all, or an explicit review flag.
+
+    The Inbox projection (:mod:`graph2note.inbox`) also reports ``no_tag`` for a
+    topiced-but-untagged document; that document still has a 主题脉络, so it stays
+    in the topics material.  The Inbox *statistics* keep the projection verbatim.
+    """
+    reasons = {str(reason) for reason in (doc.get("inbox_reasons") or [])}
+    if reasons.intersection(_PENDING_FLAG_REASONS):
+        return True
+    return not (doc.get("topics") or doc.get("tags"))
 
 
 def assemble_material(
@@ -808,10 +821,11 @@ def build_prompt(
 ) -> str:
     """Sectioned JSON prompt for the narrative sections (schema-validated reply).
 
-    Material is scoped per section: 主题脉络 sees the organized documents, 待整理
-    sees the Inbox documents plus the deterministic statistics.  Only the
-    requested ``sections`` are asked for, which is what makes the per-section
-    cache able to skip exactly the sections that did not change.
+    Material is scoped per section: 主题脉络 sees the documents that carry a
+    主题/标签 label, 待整理 sees the label-less / flagged documents plus the
+    deterministic statistics.  Only the requested ``sections`` are asked for,
+    which is what makes the per-section cache able to skip exactly the sections
+    that did not change.
     """
     requested = [key for key in (sections or NARRATIVE_SECTIONS) if key in NARRATIVE_SECTIONS]
     pending = (

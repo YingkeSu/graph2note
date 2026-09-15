@@ -233,6 +233,39 @@ def test_unstructured_reply_keeps_the_skeleton_and_reports_fallback(tmp_path):
     assert "Inbox 积压" in result["markdown"]
 
 
+def test_material_partition_keeps_a_topiced_document_in_the_topic_scope(tmp_path):
+    """Only label-less / flagged docs are 待整理 material; the Inbox stats keep
+    the UI projection (a topiced-but-untagged doc still counts as Inbox)."""
+    records = [
+        _record("only-topic", "Only topic", date="2026-09-01", topics=["数学"]),
+        _record("only-tag", "Only tag", date="2026-09-02", tags=["记录"]),
+        _record("bare", "Bare", date="2026-09-03"),
+    ]
+    material = digest.assemble_material(records, CUSTOM)
+    assert [d["document_id"] for d in material["organized_documents"]] == [
+        "only-topic", "only-tag"]
+    assert [d["document_id"] for d in material["pending_documents"]] == ["bare"]
+    assert material["stats"]["inbox_in_range"] == 3
+    assert material["stats"]["inbox_reason_counts"] == {
+        "no_tag": 2, "no_topic": 2}
+    assert material["section_fingerprints"]["topics"]
+    assert material["section_fingerprints"]["pending"]
+
+    planner = SectionPlanner()
+    digest.generate_digest(records, CUSTOM, storage_dir=tmp_path, planner=planner)
+    prompt, _model = planner.calls[0]
+    assert '<document id="only-topic"' in prompt[: prompt.index("待整理材料：")]
+    assert '<document id="bare"' in prompt[prompt.index("待整理材料："):]
+
+
+def test_explicit_flag_moves_a_labeled_document_into_pending():
+    flagged = _record("flagged", "Flagged", date="2026-09-02", topics=["数学"], tags=["重点"])
+    flagged["metadata"]["needs_organization"] = True
+    material = digest.assemble_material([flagged], CUSTOM)
+    assert material["pending_documents"] and material["organized_documents"] == []
+    assert material["documents"][0]["inbox_reasons"] == ["explicit"]
+
+
 def test_llm_prompt_scopes_material_per_section(tmp_path):
     planner = SectionPlanner()
     digest.generate_digest(_library(), CUSTOM, storage_dir=tmp_path, planner=planner)
