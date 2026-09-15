@@ -2464,26 +2464,39 @@ def create_app(
     def papers_get_metadata(document_id: str):
         return _paper_payload(document_id)
 
-    @app.put("/api/papers/{document_id}/metadata")
-    @app.patch("/api/papers/{document_id}/metadata")
-    def papers_update_metadata(document_id: str, body: dict | None = None):
-        """Manual correction: validates the slot and marks it ``manual``."""
-
-        _get_document(document_id)
+    def _metadata_body(body: dict | None) -> dict:
         payload = body or {}
         raw = payload.get("meta", payload)
         if not isinstance(raw, dict):
             raise HTTPException(status_code=422, detail="meta 必须是对象。")
+        return raw
+
+    def _write_paper_meta(document_id: str, raw: dict, *, merge: bool) -> None:
+        """Validate and persist one manual metadata write (SPEC §2).
+
+        ``merge=False`` (PUT) replaces the whole slot: every field the request
+        omits falls back to the ``PaperMeta`` default.  ``merge=True`` (PATCH)
+        starts from the stored slot and overwrites only the keys the request
+        provides, so omitted fields keep both their value and their provenance.
+        Unknown fields and invalid values still fail with 422.
+        """
+
+        fields = set(papers_metadata.PaperMeta.model_fields)
+        existing = store.paper_payload(document_id) or {}
+        candidate = dict(raw)
+        if merge:
+            stored = existing.get("meta") or {}
+            base = {key: value for key, value in stored.items() if key in fields}
+            base.update(raw)
+            candidate = base
         try:
-            meta = papers_metadata.PaperMeta.model_validate(raw)
+            meta = papers_metadata.PaperMeta.model_validate(candidate)
         except Exception as exc:  # noqa: BLE001 - surface the validation reason
             raise HTTPException(status_code=422,
                                 detail=f"元数据不合法：{exc}") from exc
-        existing = store.paper_payload(document_id) or {}
         provenance = dict(existing.get("meta_provenance") or {})
         manual = {"source": "manual", "confidence": "high",
                   "evidence": "用户手工修正"}
-        fields = set(papers_metadata.PaperMeta.model_fields)
         for field in raw:
             if field in fields:
                 provenance[field] = manual
@@ -2495,6 +2508,25 @@ def create_app(
             document_id, meta.model_dump(), provenance=provenance,
             source=meta.source, notes=notes,
         )
+
+    @app.put("/api/papers/{document_id}/metadata")
+    def papers_update_metadata(document_id: str, body: dict | None = None):
+        """Manual correction (PUT): replaces the whole metadata slot."""
+
+        _get_document(document_id)
+        _write_paper_meta(document_id, _metadata_body(body), merge=False)
+        return _paper_payload(document_id)
+
+    @app.patch("/api/papers/{document_id}/metadata")
+    def papers_patch_metadata(document_id: str, body: dict | None = None):
+        """Manual correction (PATCH): partial merge into the stored slot.
+
+        Only the fields this request provides are overwritten (and marked
+        ``manual``); everything else keeps its stored value and provenance.
+        """
+
+        _get_document(document_id)
+        _write_paper_meta(document_id, _metadata_body(body), merge=True)
         return _paper_payload(document_id)
 
     @app.get("/api/papers/{document_id}/references")
