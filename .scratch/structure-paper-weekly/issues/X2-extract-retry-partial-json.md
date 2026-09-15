@@ -1,6 +1,6 @@
 # X2 — 抽取重试缺口：半截 JSON 不触发预算升级重试
 
-Status: ready
+Status: ready-for-review
 
 来源：`/tmp/review-spw-D5a-verdict.md` §4.1/§7-R1；`/tmp/spw-final-vision-report.md` §5-2；BOARD D5a 行残留「R1 截断 parse_fail」。属 D 轨遗留（X 轨）。
 
@@ -40,3 +40,19 @@ if attempt == 0 and finish == "length" and not (content or "").strip():
 
 - 与 X1 同源：X1 解决通道可用性（kimi 空内容），本项解决「返回了但截断」的损耗。
 - 现有注释与语义：`No same-parameter retry on empty ... only a finish_reason=length (reasoning exhaustion) triggers one upgraded-budget retry`（`graph2note/diagram.py` 的 docstring）。
+
+### 交付记录（2026，dev/X2-extract-retry）
+
+分支 `dev/X2-extract-retry`（基于 main b56e3c4，未 push；worktree `/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-108`）。
+
+改动：
+- `graph2note/diagram.py`：`extract_diagram_image` 的重试分支拆成三条显式规则——非 `length` 有正文 -> 直接用；`length` + 正文可 `try_parse_json` -> 直接用（不浪费重试）；`attempt==0` 且 `length`（正文为空**或**截断不可解析）-> `continue` 升级 `retry_tokens`（8000→10000）；`length` + 非空不可解析的重试仍失败则 `break` 走既有 `parse_fail` 降级。docstring 同步说明「截断不可解析也重试、其余 parse_fail 不重试」。
+- `tests/test_diagram_retry_partial_json.py`（新文件，7 例，离线 fake `_post`）：①空正文 length 重试（回归护栏）；②非空 length 不可解析 -> 2 次调用、8000→10000、第二次成功则 ok；③非空 length 可解析 -> 1 次调用不重试；④非 length parse_fail -> 1 次调用不重试；⑤重试后仍失败 -> `parse_fail` + `attempts=2` + `retried=true`；另加空正文非 length 不重试、升级重试带「直出 JSON」system 追加两条护栏。
+- `tests/taxonomy.py`：新测试文件登记模块归属 `diagrams`（`tests/test_taxonomy.py` 的覆盖元测试强制要求，1 行）。
+
+证据：
+- 全量 `/Users/suyingke/Programs/OHO/graph2note/.venv/bin/python -m pytest -p no:warnings` -> `1214 passed`，EXIT=0（基线 1207 + 新增 7）。
+- mutation 有牙：把重试条件改回旧行为（`length` 且仅正文为空才重试）后，新文件 3 例变红；只去掉「可解析则不重试」一行的第二处 mutation 让 ③ 变红。
+- 验收逐条证据见 `/tmp/spw-X2-done-report.md`。
+
+截图/演示：无（纯离线重试策略改动，无可视化产物）。

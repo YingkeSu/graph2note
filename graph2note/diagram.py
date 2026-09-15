@@ -288,7 +288,12 @@ def extract_diagram_image(
     can use to funnel to the crop&embed degrade path (renderer source crop).
     No same-parameter retry on empty (Spike 3 rate ~17%); only a
     ``finish_reason=length`` (reasoning exhaustion) triggers one upgraded-budget
-    retry (issues 10/12 alignment).
+    retry (issues 10/12 alignment).  An upgraded retry also covers the
+    *truncated* reply (``finish_reason=length`` with non-empty content that
+    cannot be parsed as JSON, X2): the model ran out of budget mid-answer, so
+    the same answer at the same budget is not worth re-asking, but the wider
+    budget is.  Truncation that still parses, and parse failures with any other
+    ``finish_reason``, are accepted/reported as-is (no same-parameter retry).
     """
     from . import vlm  # lazy: keeps ingest import free of vlm's banner side effects
 
@@ -368,13 +373,20 @@ def extract_diagram_image(
             "content_len": len(content or ""),
             "latency_seconds": round(latency, 2),
         })
-        if (content or "").strip() and finish != "length":
+        stripped = (content or "").strip()
+        if stripped and finish != "length":
             break  # got a reply -> parse it below (no more retries)
-        if attempt == 0 and finish == "length" and not (content or "").strip():
-            continue  # reasoning exhausted with empty content -> one upgraded retry
+        if stripped and finish == "length" and try_parse_json(content) is not None:
+            break  # truncated but still parseable -> use it (retry would be waste)
+        if attempt == 0 and finish == "length":
+            # Reasoning exhausted: either empty content or a *truncated* answer
+            # that no longer parses (X2 / D5a: length + content_len>0 ->
+            # parse_fail with no retry).  The same answer at the same budget is
+            # worthless; the upgraded budget is the only lever, so retry once.
+            continue
         break
-        # empty content with finish_reason NOT length -> degrade immediately
-        # (no same-parameters retry), handled after the loop.
+        # Empty content or unparseable content with finish_reason NOT length ->
+        # degrade immediately (no same-parameters retry), handled after the loop.
 
     verdict = "empty"
     nodes, edges, caption, groups = [], [], "", []
