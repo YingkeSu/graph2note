@@ -54,7 +54,7 @@ P1（`tests/test_papers_ingest*.py`）、P2（`tests/test_papers_meta.py`）目�
 - AC5 ✅ `expected.json.differences_from_synthetic` + README「已知真实排版失败」表；失败指针见下。
 - AC6 ✅ taxonomy 登记；全量绿。
 
-**P2 基线说明**：spawn 时 main（6a45a35）实际 **未含** Y5（BOARD 仍标「待评审」）。为保证 fixture 不锁死 Y5 前行为，本 feature 分支本地合并 `review/Y5-author-split@acdbc79`（并同步 main）作为 P2 基线；仅本地分支操作，未 push。
+**P2 基线说明（R2 已更新）**：R1 时 main 未含 Y5，曾临时本地并入 `review/Y5-author-split@acdbc79`。R2 已 `reset --hard main + cherry-pick Y4-only` 重整到 **Y5 final（main `560fe59` / 后续 `c6c869a`）**，`git diff main..HEAD` 仅含 Y4 领地文件，无任何 Y5 中间态残留。本地分支，未 push。
 
 **发现（未改算法，供另开 issue）**：
 1. P1 结构切分把图/表/坐标轴文字（`Layers`、`+ 16`、`1010`、`1024`、`91.2`）当成标题，16–34 页真实论文产生 42–76 个 section → 建议新 issue「真实排版噪声标题抑制」。
@@ -63,3 +63,13 @@ P1（`tests/test_papers_ingest*.py`）、P2（`tests/test_papers_meta.py`）目�
 4. `doi` 回退 `full_text` 后命中参考文献 DOI（scaling-laws=10.1145/3293883.3295710、deepseek-moe=10.18653/v1/2022）→ 建议新 issue「DOI 只允许首页来源」。
 5. 真实无编号/字母键参考文献被整节并成 3–9 个跨页巨条目（`[ACDE12]`、`[Askell et al., 2021]`）→ 建议新 issue「真实参考文献列表切分」。
 6. venue/keywords 全缺（arXiv 首页无此二者），属预期非缺陷。
+7. **post-Y5(D3) 新发现**：双栏 `bert` 中，被回流标题块吞掉的 `Abstract` 行落入 `title_keys`，`_extract_abstract` 又跳过 `title_keys` 行，真实摘要由 Y5 中间态的「过度捕获」变为终版的**完全丢失**（`abstract-not-found`）；R1–R5 折行标题防护在真实双栏排版下把摘要入口一并挡掉。→ 建议新 issue「双栏摘要入口在 Y5 后丢失」。
+
+### R2 交付记录（rebase + post-Y5 校准）
+
+- **重整方式**：`git reset --hard main(c6c869a)` + `git cherry-pick <Y4-only>`；随后 `git rebase main` 到 Y5-merged BOARD 提交。分支线性：`c6c869a` → `1f2da3c`（Y4）→ `0c7091e`（R2 校准）。`git diff main..HEAD` 仅含 `tests/fixtures/papers/real/`、两个 real 测试、`tests/taxonomy.py`、Y4 issue 文件。
+- **逐条重核 67→68 断言**：仅 **bert** 的 P2 快照变化——`abstract` 由非空→`""`，`notes` 增加 `abstract-not-found`，`provenance.abstract.confidence` high→low，`field_status.abstract` ok→missing，新增 known_failure `abstract-lost-when-label-swallowed-by-title`。其余 3 篇 P1/P2 全部逐字节不变（Y5 只改 metadata，不改 P1 结构）。
+- **口径变化**：R1 报告「#3 authors 混摘要」的 bert 部分仍存在（Y5 final 未修好该双栏排版）；新增「摘要丢失」；原「docs/references 欠切分/噪声标题」不变。
+- **新增断言**：`test_two_column_byline_absorption_drops_the_real_abstract` 专门锁定该机制（若后续修好则变红）。
+- **mutation 证据**：① `structure.MAX_HEADING_CHARS=120→60` → 3 个 P1 真实用例红（section_count 73≠76）；② `_extract_doi` 去掉 full_text 回退 → 6 个 P2 真实用例红（scaling-laws/deepseek-moe）。均已 revert。
+- **全量**：`pytest -p no:warnings` = **1358 passed**（main 1290 + Y4 68）。

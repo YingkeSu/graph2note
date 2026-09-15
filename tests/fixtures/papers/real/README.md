@@ -65,10 +65,11 @@ kind. Per-paper detail lives in each `expected.json`; the common patterns are:
 | --- | --- | --- | --- |
 | 1 | `structure.split_sections` promotes figure/table/axis text (`Layers`, `+ 16`, `1010`, `1024`, `91.2`) to headings — 42–76 sections on 16–34 page papers | all four | new issue: spurious-heading guard for real layouts |
 | 2 | the byline melts into `title` when the text layer merges title/byline/abstract into one block (`scaling-laws`, `bert`) | `metadata._title_lines` | new issue (P2 title/byline boundary) |
-| 3 | affiliation/URL/email fragments land in `authors` (all) and, on two-column pages, abstract sentences do too (`bert`) | `metadata._parse_authors` | Y5 family, not fully covered by Y5 |
+| 3 | affiliation/URL/email fragments land in `authors` (all) and, on two-column pages, abstract sentences do too (`bert`) | `metadata._parse_authors` | Y5 family, **not** fixed by the Y5 final (R1–R5) |
 | 4 | `doi` falls back to `full_text` and picks a DOI out of the reference list (`scaling-laws`, `deepseek-moe`) | `metadata._extract_doi` | new issue (DOI must come from the front page) |
 | 5 | real unnumbered / alphabetic-key reference lists under-split into 3–9 multi-page entries (`[ACDE12]`, `[Askell et al., 2021]`) | `references.split_reference_entries` | new issue (real reference-list splitting) |
 | 6 | `venue`/`keywords` are `missing` on every sample (arXiv preprints carry neither) | `metadata` | expected for this source; not a defect |
+| 7 | **post-Y5 final:** on the two-column `bert` reflow the swallowed `'Abstract'` line is in `title_keys` and `_extract_abstract` skips it, so the real summary is lost entirely (`abstract-not-found`) — the R1–R5 wrapped-title guard also removes the abstract entry point | `metadata._extract_abstract` | new issue (two-column abstract after Y5) |
 
 The under-split in #5 is **conservative**: the entries keep `merged-continuation`
 / `merged-incomplete` / `dehyphenated` / `authors-unparsed` provenance and never
@@ -80,8 +81,9 @@ invent an entry (asserted in
 - No scanned sample: all 17 papers in the source library are born-digital and
   report a full text layer. The image-only fallback path stays covered by the
   injected-router synthetic tests in `tests/test_papers_ingest.py`.
-- The Y5 author/abstract boundary fix is the P2 baseline (merged into this
-  branch; see the Y4 delivery report for why).
+- The P2 baseline is the **merged Y5 final** on `main` (`560fe59`, R1–R5). The
+  fixtures were recalibrated against it; the only snapshot change vs the
+  pre-final baseline is the `bert` abstract (finding #7 above).
 
 ## Offline guarantee
 

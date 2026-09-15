@@ -37,6 +37,7 @@ FAILURE_TAGS = {
     "authors-are-affiliations",
     "authors-are-abstract-fragments",
     "authors-absorb-affiliation",
+    "abstract-lost-when-label-swallowed-by-title",
     "doi-from-references",
     "venue-not-found",
     "keywords-not-found",
@@ -134,6 +135,21 @@ def test_real_meta_is_pure_and_replayable(key):
     first = _meta(key)
     second = _meta(key)
     assert first.model_dump() == second.model_dump()
+
+
+def test_two_column_byline_absorption_drops_the_real_abstract():
+    """Y4 finding on the post-Y5 baseline: the two-column reflow feeds
+    ``'Abstract'`` into ``title_keys`` (the title block swallowed the byline and
+    the label), and ``_extract_abstract`` skips ``title_keys`` lines, so the
+    real summary is lost (``abstract-not-found``).  If a later fix recovers it,
+    this test turns red and the ``bert`` fixture must be recalibrated.
+    """
+    result = _meta("bert")
+    assert result.meta.title.startswith("BERT: Pre-training of Deep Bidirectional")
+    assert "Google AI Language" in result.meta.title  # byline inside the title block
+    assert result.meta.abstract == ""
+    assert "abstract-not-found" in result.notes
+    assert result.provenance["abstract"].confidence == "low"
 
 
 # ---------------------------------------------------------------------------
