@@ -101,3 +101,6 @@ __all__ = [
     "start_job",
     "validate_paper",
 ]
+
+# P2 (SPW I 轨) adds the metadata/references modules in this package:
+#   graph2note.papers.metadata / references / citegraph / enhance

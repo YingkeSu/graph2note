@@ -29,4 +29,11 @@ Status: ready
 
 ## Comments
 
-（待 worker 填写交付记录）
+### 交付记录（worker P2，2026-09-15）
+
+Status: **ready-for-review**。分支 `dev/P2-paper-meta`（基线 main `3c64d60`），handoff：[`handoffs/P2-paper-metadata-references.md`](../handoffs/P2-paper-metadata-references.md)。
+
+- 新包 `graph2note/papers/`：`metadata.py`（首页确定性解析）/ `references.py`（参考文献定位+切分）/ `citegraph.py`（库内关联）/ `enhance.py`（可选 LLM，schema 校验）。
+- 只追加：`webapp.py`（`/api/papers/*` 段）、`store.py`（`paper` 槽位新方法）、`tests/taxonomy.py`（登记）。未改任何既有行。
+- 测试：全量 `pytest -p no:warnings` 1087 passed；P2 新测试 40 passed；`tests/*.mjs` 独立用例全绿（`graph_interaction.mjs` 由其 Python 驱动用例覆盖）。
+- 边界：全程离线；live LLM 通道未调用（`live: true` 才启用，可注入 planner）。与 P1 通过 SPEC §2 契约解耦，未 import P1 代码。

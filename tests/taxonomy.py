@@ -73,6 +73,8 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_collections": "workspace",
     "test_collection_organize": "workspace",  # auto-organization 02（相似度/归类/API/CLI）
     "test_document_metadata": "workspace",
+    "test_papers_meta": "workspace",  # SPW P2（论文元数据/参考文献确定性解析 + citegraph）
+    "test_papers_meta_api": "webapp",  # SPW P2（/api/papers/* + store 契约）
     "test_tags": "workspace",
     "test_autotag": "workspace",  # A1: 识别自动打标签
     "test_tagorg": "workspace",  # auto-organization 01: 标签语义聚类与批量治理
@@ -146,6 +148,7 @@ INTEGRATION_FILES: frozenset[str] = frozenset({
     "test_timeline_visual",  # U5（新文件，TestClient API 契约）
     "test_continuity_api",  # issue 03（API/CLI/UI 契约）
     "test_papers_ingest_api",  # SPW I/P1（论文导入 API 契约）
+    "test_papers_meta_api",  # SPW P2（/api/papers/* + store 契约）
 })
 
 # 成本：slow = 较重（TestClient 全链 / 全链装配 / 图渲染）

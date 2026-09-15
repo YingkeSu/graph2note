@@ -1,0 +1,343 @@
+"""Offline unit contracts for paper metadata & references (SPW I 轨 P2).
+
+Everything here is fixture/golden-driven and deterministic: no network, no LLM
+(an injected stub planner stands in for the optional enhancement seam).
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+import pytest
+
+from graph2note.papers import citegraph, enhance, metadata, references
+
+FIXTURES = Path(__file__).parent / "fixtures" / "papers"
+
+
+def _fixture(name: str) -> str:
+    return (FIXTURES / name).read_text(encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# PaperMeta — three typical front-page layouts
+# ---------------------------------------------------------------------------
+
+def test_single_column_journal_front_page():
+    result = metadata.parse_paper_meta(_fixture("front_single_column.txt"))
+    meta = result.meta
+    assert meta.title == "Graph Neural Networks for Document Understanding: A Comprehensive Survey"
+    assert meta.authors == ["Wei Zhang", "Li Chen", "Ming Li"]
+    assert meta.year == 2023
+    assert meta.venue == "IEEE Transactions on Knowledge and Data Engineering"
+    assert meta.doi == "10.1109/tkde.2023.1234567"
+    assert meta.abstract.startswith("Document understanding has attracted")
+    assert meta.keywords == ["graph neural networks", "document understanding", "survey"]
+    assert meta.source == "text-layer"
+    assert result.provenance["doi"].confidence == "high"
+
+
+def test_two_column_conference_front_page():
+    result = metadata.parse_paper_meta(_fixture("front_two_column.txt"))
+    meta = result.meta
+    assert meta.title == "Robust Feature Matching under Extreme Viewpoint Changes"
+    assert meta.authors == ["Jian Sun", "Alex Kim", "Priya Nair"]
+    assert meta.year == 2022
+    assert meta.venue.endswith("(CVPR)")
+    assert meta.abstract.startswith("We present a robust method")
+    assert meta.keywords == ["feature matching", "viewpoint robustness", "geometric verification"]
+
+
+def test_arxiv_preprint_front_page():
+    result = metadata.parse_paper_meta(_fixture("front_arxiv.txt"))
+    meta = result.meta
+    assert meta.title == "Attention Is Still All You Need: A Revisiting Study"
+    assert meta.authors == ["Emily R. Johnson", "Kenji Tanaka", "Sofia Alvarez"]
+    assert meta.year == 2024
+    assert meta.venue == "arXiv"
+    assert meta.keywords == ["attention", "transformer", "sequence modeling"]
+
+
+def test_title_containing_a_venue_word_is_not_dropped_as_a_header():
+    text = (
+        "Deep Learning for Journal Recommendation\n"
+        "Wei Zhang, Li Chen\n\n"
+        "Abstract\nWe study recommendation.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.title == "Deep Learning for Journal Recommendation"
+    assert result.meta.authors == ["Wei Zhang", "Li Chen"]
+
+
+def test_empty_front_text_is_none_sourced_and_never_invents():
+    result = metadata.parse_paper_meta("")
+    assert result.meta.source == "none"
+    assert result.meta.title == ""
+    assert result.meta.authors == []
+    assert result.notes == ["front-text-empty"]
+    assert all(p.source == "none" for p in result.provenance.values())
+
+
+def test_meta_parse_is_pure_and_replayable():
+    text = _fixture("front_single_column.txt")
+    first = metadata.parse_paper_meta(text)
+    second = metadata.parse_paper_meta(text)
+    assert first.model_dump() == second.model_dump()
+    assert json.loads(first.model_dump_json()) == first.model_dump()
+
+
+def test_parse_paper_text_combines_meta_and_references():
+    full = (
+        _fixture("front_single_column.txt")
+        + "\n\n1 Introduction\nBody text.\n\n"
+        + _fixture("references_numbered.txt")
+    )
+    document = references.parse_paper_text({"full_text": full})
+    assert document.meta.title.startswith("Graph Neural Networks")
+    assert len(document.references) == 3
+    assert document.references[0].resolved_document_id is None
+    assert "references-section:References" in document.notes
+
+
+# ---------------------------------------------------------------------------
+# Reference section location
+# ---------------------------------------------------------------------------
+
+def test_locate_references_prefers_the_last_heading():
+    text = "Contents\nReferences\n1 Introduction\nbody\nReferences\n[1] A. Author. T. 2020.\n"
+    section = references.locate_references_section(text)
+    assert section is not None
+    assert section.text.strip().startswith("[1]")
+
+
+def test_locate_references_chinese_heading():
+    text = "摘要\n本文……\n参考文献\n[1] 张三. 论文标题. 2021.\n"
+    section = references.locate_references_section(text)
+    assert section is not None
+    assert section.heading == "参考文献"
+    assert "[1]" in section.text
+
+
+def test_locate_references_stops_at_appendix():
+    text = "References\n[1] A. Author. Title. 2020.\nAppendix A\nProof.\n"
+    section = references.locate_references_section(text)
+    assert section is not None
+    assert "Appendix" not in section.text
+
+
+def test_locator_returns_none_without_heading():
+    assert references.locate_references_section("Just a body paragraph.") is None
+
+
+# ---------------------------------------------------------------------------
+# Entry splitting and field extraction
+# ---------------------------------------------------------------------------
+
+def test_numbered_reference_entries():
+    parsed = references.parse_references(_fixture("references_numbered.txt"))
+    assert len(parsed.references) == 3
+    assert all(p.style == "numbered" for p in parsed.provenance)
+    first = parsed.references[0]
+    assert first.doi == "10.1109/tkde.2023.1234567"
+    assert first.title == "Graph neural networks for document understanding"
+    assert first.authors == ["W. Zhang", "L. Chen", "M. Li"]
+    assert first.year == 2023
+    assert parsed.references[1].year == 2022
+    assert parsed.references[2].title.startswith("Representation learning")
+
+
+def test_cross_column_breaks_are_rejoined_and_dehyphenated():
+    parsed = references.parse_references(_fixture("references_cross_column.txt"))
+    assert len(parsed.references) == 2
+    first = parsed.references[0]
+    assert "under-\n" not in first.raw
+    assert "understanding" in first.raw
+    assert "dehyphenated" in parsed.provenance[0].notes
+    assert parsed.provenance[0].fragments == 2
+
+
+def test_author_year_entries_split_on_blank_lines():
+    parsed = references.parse_references(_fixture("references_author_year.txt"))
+    assert len(parsed.references) == 2
+    assert all(p.style == "author-year" for p in parsed.provenance)
+    assert parsed.references[0].year == 2023
+    assert parsed.references[0].title == "Graph neural networks for document understanding"
+    assert parsed.references[1].year == 2022
+
+
+def test_missing_numbering_splits_on_leading_initials():
+    parsed = references.parse_references(_fixture("references_missing_numbers.txt"))
+    assert len(parsed.references) == 3
+    assert [r.year for r in parsed.references] == [2023, 2022, 2013]
+    assert parsed.references[0].authors == ["W. Zhang", "L. Chen", "M. Li"]
+
+
+def test_yearless_fragment_is_merged_conservatively_with_provenance():
+    text = (
+        "References\n"
+        "Zhang, W. (2023). Title one. Journal A.\n"
+        "Sun, J. Title two without any year. Conference B.\n"
+    )
+    parsed = references.parse_references(text)
+    assert len(parsed.references) == 1  # never fabricates a year-less second entry
+    assert "merged-incomplete" in parsed.provenance[0].notes
+    assert "Sun, J." in parsed.references[0].raw
+
+
+def test_unparseable_entry_gets_explicit_note_not_fake_fields():
+    entry = references.parse_reference_entry("Some untitled fragment", index=0)
+    assert entry.title == "Some untitled fragment"
+    assert entry.authors == []
+    assert "authors-unparsed" in entry.notes
+    assert "year-not-found" in entry.notes
+
+
+# ---------------------------------------------------------------------------
+# Library linkage / citation graph
+# ---------------------------------------------------------------------------
+
+def test_normalize_title_and_doi():
+    assert metadata.normalize_title("Graph  Neural, Networks!") == "graph neural networks"
+    assert metadata.normalize_title("图神经网络：综述") == "图神经网络 综述"
+    assert metadata.normalize_doi("https://doi.org/10.1109/TKDE.2023.1") == "10.1109/tkde.2023.1"
+    assert metadata.normalize_doi("doi:10.1/ABC.") == "10.1/abc"
+
+
+def _library():
+    return [
+        citegraph.LibraryEntry("doc-a", "Graph Neural Networks for Document Understanding",
+                               "10.1109/TKDE.2023.1234567"),
+        citegraph.LibraryEntry("doc-b", "Robust Feature Matching under Extreme Viewpoint Changes", ""),
+    ]
+
+
+def test_resolve_by_doi_takes_priority_over_title():
+    ref = references.PaperReference(
+        raw="r", title="Robust Feature Matching under Extreme Viewpoint Changes",
+        doi="10.1109/tkde.2023.1234567",
+    )
+    result = citegraph.resolve_references([ref], _library())
+    assert result.references[0].resolved_document_id == "doc-a"
+    assert result.resolutions[0].matched_by == "doi"
+
+
+def test_resolve_by_normalized_title():
+    ref = references.PaperReference(
+        raw="r", title="robust feature  matching, under extreme viewpoint changes!")
+    result = citegraph.resolve_references([ref], _library())
+    assert result.references[0].resolved_document_id == "doc-b"
+    assert result.resolutions[0].matched_by == "title"
+
+
+def test_ambiguous_keys_never_produce_a_false_match():
+    entries = [
+        citegraph.LibraryEntry("doc-1", "Same Title", ""),
+        citegraph.LibraryEntry("doc-2", "Same Title", ""),
+    ]
+    ref = references.PaperReference(raw="r", title="Same Title")
+    result = citegraph.resolve_references([ref], entries)
+    assert result.references[0].resolved_document_id is None
+    assert result.unresolved == 1
+    assert "ambiguous-title-keys:1" in result.notes
+
+
+def test_unresolved_reference_stays_none():
+    ref = references.PaperReference(raw="r", title="Nothing In The Library")
+    result = citegraph.resolve_references([ref], _library())
+    assert result.references[0].resolved_document_id is None
+    assert result.unresolved == 1
+
+
+def test_build_citation_graph_is_deduplicated_and_sorted():
+    sources = [
+        citegraph.CitationSource("doc-a", (
+            references.PaperReference(raw="r1", title="Robust Feature Matching under Extreme Viewpoint Changes"),
+            references.PaperReference(raw="r2", title="Robust Feature Matching under Extreme Viewpoint Changes"),
+        )),
+    ]
+    graph = citegraph.build_citation_graph(sources, _library())
+    assert graph.nodes == ["doc-a", "doc-b"]
+    assert len(graph.edges) == 1
+    assert graph.edges[0].source == "doc-a" and graph.edges[0].target == "doc-b"
+
+
+def test_library_entries_are_read_from_store_records():
+    records = [{
+        "document_id": "doc-x",
+        "title": "Fallback Title",
+        "paper": {"meta": {"title": "Paper Title", "doi": "10.1/x"}},
+    }]
+    entries = citegraph.library_entries_from_documents(records)
+    assert entries[0] == citegraph.LibraryEntry("doc-x", "Paper Title", "10.1/x")
+
+
+# ---------------------------------------------------------------------------
+# Optional LLM enhancement (offline stub seam)
+# ---------------------------------------------------------------------------
+
+def _baseline() -> metadata.PaperMetaResult:
+    return metadata.parse_paper_meta(_fixture("front_arxiv.txt"))
+
+
+def test_enhance_without_planner_keeps_deterministic_result():
+    baseline = _baseline()
+    result = enhance.enhance_meta(baseline, planner=None)
+    assert result.meta.model_dump() == baseline.meta.model_dump()
+    assert "llm-planner-absent" in result.notes
+
+
+def test_enhance_survives_transport_failure_without_key():
+    def boom(prompt, model):
+        raise RuntimeError("no api key")
+
+    result = enhance.enhance_meta(_baseline(), planner=boom)
+    assert result.meta.title == _baseline().meta.title
+    assert any(note.startswith("llm-enhance-failed") for note in result.notes)
+
+
+def test_invalid_proposal_is_rejected():
+    def bad_json(prompt, model):
+        return "not json at all", {}
+
+    result = enhance.enhance_meta(_baseline(), planner=bad_json)
+    assert "llm-proposal-invalid" in result.notes
+
+    assert enhance.validate_meta_proposal({"unknown": 1}) is None
+    assert enhance.validate_meta_proposal({"year": 1200}) is None
+    assert enhance.validate_meta_proposal({"title": 5, "authors": "x"}) is None
+
+
+def test_proposal_never_overrides_deterministic_and_fills_empty_fields():
+    baseline = metadata.parse_paper_meta(_fixture("front_two_column.txt"))
+    assert baseline.meta.doi == ""  # nothing deterministic to keep
+
+    def planner(prompt, model):
+        return json.dumps({
+            "title": "Hijacked",
+            "doi": "https://doi.org/10.1145/1234567",
+            "venue": "Hijacked Venue",
+        }), {}
+
+    result = enhance.enhance_meta(baseline, planner=planner)
+    assert result.meta.title == baseline.meta.title  # deterministic wins
+    assert result.meta.venue == baseline.meta.venue
+    assert result.meta.doi == "10.1145/1234567"  # empty field filled
+    assert result.provenance["doi"].source == "vlm"
+    assert "llm-fields:doi" in result.notes
+
+
+def test_proposal_sets_vlm_source_only_when_baseline_is_empty():
+    baseline = metadata.parse_paper_meta("")
+    assert baseline.meta.source == "none"
+
+    def planner(prompt, model):
+        return '{"title": "Recovered Title"}', {}
+
+    result = enhance.enhance_meta(baseline, planner=planner, source="vlm")
+    assert result.meta.title == "Recovered Title"
+    assert result.meta.source == "vlm"
+
+
+def test_extra_proposal_keys_are_forbidden():
+    assert enhance.validate_meta_proposal({"title": "ok", "extra": 1}) is None

@@ -1,0 +1,12 @@
+arXiv:2402.01234v1 [cs.CL] 2 Feb 2024
+
+Attention Is Still All You Need: A Revisiting Study
+
+Emily R. Johnson, Kenji Tanaka, and Sofia Alvarez
+
+Abstract
+The Transformer architecture remains the dominant approach for sequence
+modeling. In this paper we revisit its core components and analyze the role
+of attention.
+
+Keywords: attention, transformer, sequence modeling
