@@ -148,6 +148,9 @@ def _library_summary_fields(record: dict) -> dict:
         "source_pdf": record.get("source_pdf"),
         "page_number": record.get("page_number"),
         "version_count": len(record.get("versions") or []),
+        # SPW I/P1: papers are regular library documents with a kind marker, so
+        # the list/search views can badge them without a second fetch.
+        "doc_kind": record.get("doc_kind"),
     }
 
 
@@ -316,6 +319,105 @@ class DocumentStore(ABC):
         graph projects as ``manual`` edges; nothing inferred is ever written
         here.
         """
+
+    # --- paper ingest (SPW I-track / P1; append-only) -------------------------
+    def save_paper_document(
+        self,
+        *,
+        document_id: str,
+        title: str,
+        markdown: str,
+        paper: dict,
+        source_job_id: str | None = None,
+        model: str | None = None,
+        ir_json: str = "",
+        original_path: str | None = None,
+        original_ext: str = ".pdf",
+        preprocessed_path: str | None = None,
+        preprocessed_raw_path: str | None = None,
+        assets_dir: str | None = None,
+        timing_json: dict | None = None,
+        metadata: dict | None = None,
+        pg_hash: str = "",
+        source_pdf: str | None = None,
+        pdf_id: str | None = None,
+        page_index: int | None = None,
+        page_number: int | None = None,
+        provenance: str | None = None,
+        provenance_detail: dict | None = None,
+    ) -> dict:
+        """Commit one paper import as a library document (``doc_kind="paper"``).
+
+        Append-only wrapper: it delegates to :meth:`save_document` so every
+        existing caller keeps its exact behaviour, then records ``doc_kind`` and
+        the SPEC §2 paper payload (sections / full text / page map / P2 slots)
+        through :meth:`set_paper_payload`.  The paper text path has no parsed
+        page image, so the image-related arguments are optional here.
+        """
+        record = self.save_document(
+            document_id=document_id,
+            title=title,
+            source_job_id=source_job_id,
+            model=model,
+            markdown=markdown,
+            ir_json=ir_json,
+            original_path=original_path,
+            original_ext=original_ext,
+            preprocessed_path=preprocessed_path,
+            preprocessed_raw_path=preprocessed_raw_path,
+            assets_dir=assets_dir,
+            timing_json=timing_json,
+            metadata=metadata,
+            pg_hash=pg_hash,
+            source_pdf=source_pdf,
+            pdf_id=pdf_id,
+            page_index=page_index,
+            page_number=page_number,
+            provenance=provenance,
+            provenance_detail=provenance_detail,
+        )
+        return self.set_paper_payload(document_id, paper) or record
+
+    def set_paper_payload(self, document_id: str, paper: dict) -> dict | None:
+        """Record ``doc_kind="paper"`` + payload on an existing document.
+
+        Default implementation mutates the record returned by
+        :meth:`get_document` (in-memory stores return the live record); durable
+        stores override it to persist.  Returns the updated record or None.
+        """
+        record = self.get_document(document_id)
+        if record is None:
+            return None
+        record["doc_kind"] = "paper"
+        record["paper"] = dict(paper or {})
+        return record
+
+    def get_paper_payload(self, document_id: str) -> dict | None:
+        """SPEC §2 paper payload (sections/full text/page map) or None.
+
+        Returns None for unknown documents and for non-paper documents, so a
+        caller never confuses an empty paper with a manuscript.
+        """
+        record = self.get_document(document_id)
+        if not record or record.get("doc_kind") != "paper":
+            return None
+        payload = record.get("paper")
+        return dict(payload) if isinstance(payload, dict) else {}
+
+    def update_paper_payload(self, document_id: str, updates: dict) -> dict | None:
+        """Merge ``updates`` into the paper payload without a new version.
+
+        The P2 metadata/reference stage (and manual corrections) can fill its
+        slots here; existing keys are shallow-overwritten by the update.
+        """
+        record = self.get_document(document_id)
+        if not record:
+            return None
+        current = self.get_paper_payload(document_id)
+        if current is None:
+            return None
+        merged = {**current, **dict(updates or {})}
+        return self.set_paper_payload(document_id, merged)
 
 
 # ---------------------------------------------------------------------------
@@ -1559,6 +1661,47 @@ class FileDocumentStore(SessionDocumentStore):
         """Summaries of soft-archived documents (issue 03 archive listing)."""
         return [item for item in self.list_documents(include_archived=True)
                 if item.get("merged_into")]
+
+    # --- paper ingest, durable (SPW I-track / P1; append-only) ---------------
+    def set_paper_payload(self, document_id: str, paper: dict) -> dict | None:
+        """Persist the paper payload: ``doc_kind`` in ``record.json``, the
+        sections/full text in ``paper.json`` beside it.
+
+        Keeping the (potentially long) section body out of ``record.json``
+        leaves the library record cheap to read; ``record.json`` still carries
+        the ``doc_kind`` marker plus a light source/section summary so list and
+        filter views need no extra file read.
+        """
+        base = self._doc_dir(document_id)
+        record = self._load_record_with_metadata(document_id)
+        if record is None:
+            return None
+        payload = dict(paper or {})
+        base.mkdir(parents=True, exist_ok=True)
+        (base / "paper.json").write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        record["doc_kind"] = "paper"
+        record["paper_source"] = payload.get("source")
+        record["paper_sections"] = len(payload.get("sections") or [])
+        (base / "record.json").write_text(
+            json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
+        return self.get_document(document_id)
+
+    def get_paper_payload(self, document_id: str) -> dict | None:
+        """Read the durable paper payload (``paper.json``) or None."""
+        record = self._load_record_with_metadata(document_id)
+        if record is None or record.get("doc_kind") != "paper":
+            return None
+        path = self._doc_dir(document_id) / "paper.json"
+        if path.is_file():
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (OSError, ValueError):
+                data = None
+            if isinstance(data, dict):
+                return data
+        payload = record.get("paper")
+        return dict(payload) if isinstance(payload, dict) else {}
 
 
 def _copy_if_exists(src: str | None, dst: Path) -> None:
