@@ -82,3 +82,20 @@ I 轨共享契约：[SPEC.md §2 论文文档契约](SPEC.md)。P2/P3 针对契�
 | Y4 | 真实论文样本回归验证（P1 全合成 fixture） | [Y4-real-paper-fixtures.md](issues/Y4-real-paper-fixtures.md) |
 | Y5 | P2 作者切分把摘要并入 authors（合成 PDF 回流文本） | [Y5-author-split-abstract.md](issues/Y5-author-split-abstract.md) |
 | Y6 | W1 周报遗留 R1–R5 汇总（连续体对≈0 / inbox 口径 / meta 体积 / 长材料 JSON 稳定性 / llm_calls=0 的 elapsed） | [Y6-w1-digest-leftovers.md](issues/Y6-w1-digest-leftovers.md) |
+
+## X/Y 轮执行状态（2026-09-15 起，用户指令「根据最新的issue反馈，继续更新优化」）
+
+维护者裁决（2026-09-15）：X1 → (a) diagram 默认通道切 deepseek 视觉；X6 → 优化默认视图设计使密图可读（不做放大引导绕行）；Y2 → (b) 保持双落点 + SPEC §2 契约化。
+
+| 编号 | 状态 | 分支 / 合并 | 备注 |
+|---|---|---|---|
+| Y1 | ✅ merged `f8c6f61`（rev-112 APPROVE，verdict `/tmp/review-spw-Y1-verdict.md`） | `dev/Y1-patch-metadata` @ `5984a5a` | PATCH 部分合并 / PUT 整体替换；1211 passed；残留：documents metadata 同问题另立项 |
+| X2 | 评审中（rev-113） | `dev/X2-extract-retry` @ `81b9ad3` | 半截 JSON 升级重试四分支 |
+| X5 | 待评审（队列） | `dev/X5-marked-localize` @ `270580f` | marked 4.3.0 本地 vendor，离线探针 10/10 |
+| Y5 | 待评审（队列） | `dev/Y5-author-split` @ `acdbc79` | 作者/摘要边界截断 |
+| X1 | 批次二待派（裁决已定 a） | — | 与 X2 共享 diagram.py，待 X2 合并 |
+| X3+X4 | 批次二待派（合并单 worker） | — | 共享 matplotlib_renderer.py |
+| Y3 / Y4 | 批次二待派 | — | Y4 可用正式库 17 篇真实论文 |
+| X6 / Y6 / Y2 | 批次三待派（裁决已定） | — | X6 待 X3/X4；Y6/Y2 待 Y1（已合并，解除阻塞） |
+
+BOARD 行由调度统一登记（前轮并发 reviewer 撞 BOARD 教训）；reviewer 只合代码不碰本文件。
