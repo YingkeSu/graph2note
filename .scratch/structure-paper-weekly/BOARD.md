@@ -96,9 +96,30 @@ I 轨共享契约：[SPEC.md §2 论文文档契约](SPEC.md)。P2/P3 针对契�
 | X1 | ✅ merged `f0dd99e`（rev-121 APPROVE，verdict `/tmp/review-spw-X1-verdict.md`） | `dev/X1-deepseek-channel` @ `09a7a9e` | live 3/3 ok；02inc 触发 X2 重试联动验证；其他 purpose 不回归 |
 | X3+X4 | ✅ merged `fd31cf6`（rev-124 APPROVE，verdict `/tmp/review-spw-X3X4-verdict.md`；F4 性能数字口径标注建议，非阻塞） | `dev/X3X4-mpl-layout` @ `b74f0cc` | 组框相交 9/0/2→0/0/0；字宽真实 metrics 越框清零；golden/扁平逐字节不动 |
 | Y3 | ✅ merged `875fbde`（rev-120 APPROVE，verdict `/tmp/review-spw-Y3-verdict.md`） | `dev/Y3-upload-test` @ `26a804f` | upload.js 拦截行为测试；1219 passed |
-| Y4 | R2 重整完成（rebase 到 post-Y5 main + fixture 校准），评审中（rev-133） | `dev/Y4-real-fixtures` @ `52d5475` | 4 真实论文 68 例 1358 passed；bert 双栏摘要丢失新发现（Y5 D3 副作用）已锁定；7 条已知失败口径；5+1 个新 issue 候选待立项 |
+| Y4 | ✅ merged `8b9f915`（rev-133 APPROVE，verdict `/tmp/review-spw-Y4-verdict.md`；F1-F4 均非阻塞文档性瑕疵） | `dev/Y4-real-fixtures` @ `52d5475` | 4 真实论文 68 例；fixture 与真实库 PDF 逐字节重抽一致；零-LLM/离线守卫消融有牙；7 条已知失败复核属实；合并后 1368 passed |
 | X6 | ✅ merged `c57c0c0`（rev-131 APPROVE，verdict `/tmp/review-spw-X6-verdict.md`；F1-F6 均非阻塞：凑数断言/docstring 措辞/边界无测试/audit 证据间接/报告措辞过强/词尾硬拆已披露） | `dev/X6-dense-view` @ `f84993b` | 720px node/note 12.86/9.89、15.90/12.23、13.84/10.65 独立复核达标；golden 7/7 逐字段、扁平逐字节；mutation 双红；合并后 1300 passed |
 | Y6 | ✅ merged `285a58a`（rev-126 APPROVE，verdict `/tmp/review-spw-Y6-verdict.md`） | `dev/Y6-digest-leftovers` @ `52cea75` | R1-R5+R7/R8 全关闭；+15 例；mutation 6/6 红 |
 | Y2 | ✅ merged `e3e0003`（rev-129 APPROVE，verdict `/tmp/review-spw-Y2-verdict.md`；F1 SPEC「空占位」措辞与生产默认 PaperMeta 形状精度 nit、F2 live 常量断言建议，均非阻断） | `dev/Y2-dualslot-contract` @ `ada2246..20e043b` | 零运行时代码改动；SPEC §2 双落点契约 + 14 不变量例（防漂移 mutation C1/C2 红）；live 32/32 + 17/17 零模型；合并后 1259 passed |
 
 BOARD 行由调度统一登记（前轮并发 reviewer 撞 BOARD 教训）；reviewer 只合代码不碰本文件。
+
+## X/Y 轮关账（2026-09-15）
+
+**12/12 全部 APPROVE 并 `--no-ff` 合入本地 main（未 push，push 时机归维护者）**：
+
+Y1 `f8c6f61` · X2 `55c8c15` · X5 `2eb5fed` · Y3 `875fbde` · X1 `f0dd99e` · X3X4 `fd31cf6` · Y6 `285a58a` · Y2 `e3e0003` · Y5 `560fe59`（五轮收敛）· X6 `c57c0c0` · Y4 `8b9f915`。主仓最终全量 **1368 passed**（0 FAILED/ERROR）。
+
+过程记录：Y5 经 R1-R5 五轮（D1→D4 四连缺陷逐轮挖出，五审以六版对照 + 约 1 万组差分 fuzz 证零 base 回归）；Y4 曾因 fixture 快照依赖被 REJECT 的 Y5 中间态而 Blocked，Y5 合并后 rebase + 逐条校准交付。全部会话已清理。
+
+### 下一轮立项（Z 系列，2026-09-15 由调度登记）
+
+| 编号 | 主题 | 来源 | 领地/排期 |
+|---|---|---|---|
+| Z1 | P1 真实排版噪声标题抑制 | Y4 发现 #1 | structure.py，独立 |
+| Z2 | P2 标题边界（标题吞并 byline/摘要） | Y4 发现 #2 | metadata.py，与 Z3/Z6 串行或合并 |
+| Z3 | P2 authors 混机构/URL/邮箱（Y5 补强） | Y4 发现 #3 | metadata.py，与 Z2/Z6 串行或合并 |
+| Z4 | DOI 只允许首页来源 | Y4 发现 #4 | metadata.py 小切口，可并行（避开 Z2/Z3/Z6 函数族） |
+| Z5 | 真实参考文献列表切分 | Y4 发现 #5 | references.py，独立 |
+| Z6 | 摘要标签定位语义化（Y5 F1/F2/残余① + bert 双栏丢失） | Y5-r5 verdict + Y4 发现 #7 | metadata.py，与 Z2/Z3 串行或合并 |
+| Z7 | X6 评审跟进（docstring/边界测试/措辞） | X6 verdict F1/F2/F3/F5 | matplotlib docstring + 测试，独立小项 |
+
