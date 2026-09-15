@@ -375,22 +375,34 @@ def _extract_abstract(
     """Return ``(abstract body, evidence line)`` for the first abstract block.
 
     The label normally heads its own line, but a reflowed text layer may glue
-    it after the byline (``… Ming Li Abstract—…``).  An inline label is only
-    accepted when the text before it is one of the known author lines, and a
-    canonical label that heads its own line always wins: a title such as
-    ``Neural Networks, Abstract Reasoning…`` must not shadow the real summary.
+    it after the byline (``… Ming Li Abstract—…``).  Candidates are ranked so
+    that a title cannot shadow the real summary:
 
-    ``title_lines`` are skipped outright: a wrapped title whose second line
-    starts with the label (``Code Models for`` / ``Abstract Syntax Trees``) is
-    title text, not the summary.
+    1. a canonical label that heads its own paragraph (``index == 0``);
+    2. a canonical label appearing mid-paragraph;
+    3. an inline label glued after a known author line.
+
+    The paragraph-head tier matters because ``_looks_like_author_line`` can
+    claim a title line (``Neural Networks, Deep Learning for``), leaving its
+    wrapped ``Abstract …`` line neither in ``title_lines`` nor in
+    ``author_lines`` — only a real summary that heads its own paragraph can
+    outrank it.  A byline whose second line starts with the label is likewise
+    mid-paragraph, so this tiering keeps the later real summary.
+
+    ``title_lines`` are skipped (except when they head their own paragraph),
+    so a wrapped title such as ``Code Models for`` / ``Abstract Syntax Trees``
+    is not mined for a summary; a title that is exactly the word ``Abstract``
+    still lets the real summary paragraph through.
     """
 
     author_keys = {_clean(line) for line in (author_lines or []) if _clean(line)}
     title_keys = {_clean(line) for line in (title_lines or []) if _clean(line)}
+    head_candidate: Optional[tuple[str, str]] = None
+    mid_candidate: Optional[tuple[str, str]] = None
     inline_candidate: Optional[tuple[str, str]] = None
     for para in paragraphs:
         for index, line in enumerate(para):
-            if _clean(line) in title_keys:
+            if index > 0 and _clean(line) in title_keys:
                 continue
             match = _ABSTRACT_RE.match(line)
             if match is None:
@@ -402,10 +414,16 @@ def _extract_abstract(
                     inline_candidate = _abstract_block(para, index, line, inline)
                 continue
             block = _abstract_block(para, index, line, match)
-            if block[0]:
-                return block
-    if inline_candidate is not None and inline_candidate[0]:
-        return inline_candidate
+            if not block[0]:
+                continue
+            if index == 0:
+                if head_candidate is None:
+                    head_candidate = block
+            elif mid_candidate is None:
+                mid_candidate = block
+    for candidate in (head_candidate, mid_candidate, inline_candidate):
+        if candidate is not None and candidate[0]:
+            return candidate
     return "", ""
 
 

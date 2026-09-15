@@ -270,6 +270,98 @@ def test_wrapped_cjk_title_starting_with_the_abstract_label_is_not_the_abstract(
     assert result.meta.authors == ["张三", "李四"]
 
 
+def test_wrapped_title_after_an_authorlike_title_line_is_not_the_abstract():
+    """R5/D4: the wrapped title line is not in title_block, tiering must save it."""
+
+    text = (
+        "Neural Networks, Deep Learning for\n"
+        "Abstract Reasoning\n"
+        "\n"
+        "Wei Zhang, Li Chen\n"
+        "\n"
+        "Abstract\n"
+        "Body text.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.abstract == "Body text."
+
+
+def test_authorlike_title_line_does_not_shadow_a_later_abstract_paragraph():
+    text = (
+        "Graph Neural Networks, A Survey of\n"
+        "Abstract Meaning Representation\n"
+        "\n"
+        "Wei Zhang, Li Chen\n"
+        "\n"
+        "Abstract\n"
+        "Body text.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.abstract == "Body text."
+
+
+@pytest.mark.parametrize(
+    "title",
+    [
+        "Graph Neural Networks for\nNeural Networks, Deep Learning\nAbstract Reasoning",
+        "Representation Learning, Advances in\nAbstract Meaning Representation",
+    ],
+)
+def test_authorlike_title_wrap_does_not_shadow_the_abstract(title):
+    text = title + "\n\nWei Zhang, Li Chen\n\nAbstract\nBody text.\n"
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.abstract == "Body text."
+
+
+def test_byline_line_starting_with_abstract_does_not_shadow_the_abstract():
+    """A byline's second line is mid-paragraph, so a later paragraph-head wins."""
+
+    text = (
+        "A Paper Title\n"
+        "\n"
+        "Wei Zhang, Li Chen\n"
+        "Abstract reasoning is a hard problem.\n"
+        "\n"
+        "Abstract\n"
+        "Body text.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.abstract == "Body text."
+    assert result.meta.authors == ["Wei Zhang", "Li Chen"]
+
+
+def test_title_and_abstract_in_one_reflowed_paragraph_still_finds_the_abstract():
+    """Both labels are mid-paragraph; the title block line must not win."""
+
+    text = (
+        "Graph Neural Networks for\n"
+        "Abstract Reasoning\n"
+        "Wei Zhang, Li Chen\n"
+        "Abstract\n"
+        "Body text.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.abstract == "Body text."
+    assert result.meta.title == "Graph Neural Networks for Abstract Reasoning"
+    assert result.meta.authors == ["Wei Zhang", "Li Chen"]
+
+
+@pytest.mark.parametrize(
+    ("title", "body"),
+    [
+        ("Abstract", "Body text."),
+        ("摘要", "本文综述了图神经网络。"),
+    ],
+)
+def test_a_title_that_is_only_the_abstract_label_still_finds_the_abstract(title, body):
+    """R4 kept the word ``Abstract`` title out; the paragraph-head real label wins."""
+
+    authors = "Wei Zhang, Li Chen" if title == "Abstract" else "张三、李四"
+    text = f"{title}\n\n{authors}\n\n{title}\n{body}\n"
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.abstract == body
+
+
 def test_authorlike_title_prefix_does_not_shadow_the_real_abstract():
     """A canonical ``Abstract`` line beats an inline label inside a title."""
 
