@@ -39,6 +39,67 @@ def test_settings_snapshot_lists_registered_channels_without_credentials(tmp_pat
         assert "secret" not in provider
 
 
+@pytest.mark.parametrize("gateway", ["opencode", "deepseek", "kimi"])
+def test_diagram_default_channel_is_deepseek_vision_for_every_gateway(
+    tmp_path, monkeypatch, gateway
+):
+    """X1 (裁决 a): diagram 默认通道固定 deepseek 视觉，其余 purpose 随 GRAPH2NOTE_GATEWAY。"""
+    from eval.gateway import map_model
+
+    monkeypatch.setenv("GRAPH2NOTE_GATEWAY", gateway)
+    path = tmp_path / "llm-settings.json"
+    configure_settings_path(path)
+    store = LLMSettingsStore(path)
+
+    # diagram 默认走 deepseek 网关的 diagram 默认模型（"glm-5.3-flash"），
+    # 线上经 DEEPSEEK_MODEL_MAP 落到官方视觉别名；与活动网关无关。
+    assert store.resolve("diagram") == {"provider": "deepseek", "model": "glm-5.3-flash"}
+    assert map_model("glm-5.3-flash", "deepseek") == "deepseek-v4-flash-vision-exp"
+    # 其他 purpose 不受 X1 影响（不回归）：仍随活动网关的默认。
+    for purpose in ("parse_visual", "ir_text", "classify"):
+        assert store.resolve(purpose)["provider"] == gateway
+
+
+def test_explicit_diagram_channel_still_beats_the_deepseek_default(tmp_path, monkeypatch):
+    """显式配置的 diagram 通道（含 kimi 视觉）优先于 X1 默认，不被静默改写。"""
+    monkeypatch.setenv("GRAPH2NOTE_GATEWAY", "kimi")
+    path = tmp_path / "llm-settings.json"
+    configure_settings_path(path)
+    store = LLMSettingsStore(path)
+
+    store.update({"channels": {"diagram": {"provider": "kimi", "model": "kimi-k2.6"}}})
+    assert LLMSettingsStore(path).resolve("diagram") == {
+        "provider": "kimi", "model": "kimi-k2.6",
+    }
+
+
+def test_default_diagram_channel_routes_the_live_extractor_to_deepseek(tmp_path, monkeypatch):
+    """端到端：kimi 网关下未显式配置时，抽取实际以 provider=deepseek 发出。"""
+    from pathlib import Path
+
+    from graph2note import diagram, vlm
+
+    monkeypatch.setenv("GRAPH2NOTE_GATEWAY", "kimi")
+    configure_settings_path(tmp_path / "llm-settings.json")
+    image = Path(__file__).resolve().parents[1] / "test-images" / "01-requirements-arch.jpg"
+    captured = {}
+
+    monkeypatch.setattr(vlm, "load_api_key", lambda *_args, **_kwargs: "fixture")
+
+    def fake_post(_payload, **kwargs):
+        captured.update(kwargs)
+        captured["model"] = _payload["model"]
+        return {"choices": [{"message": {"content": '{"nodes":[{"id":"a","label":"A"}],"edges":[]}'}}]}
+
+    monkeypatch.setattr(diagram, "_post", fake_post)
+    result = diagram.extract_diagram_image(str(image), model=None)
+
+    assert result["meta"]["provider"] == "deepseek"
+    assert result["meta"]["model"] == "glm-5.3-flash"
+    assert captured["provider"] == "deepseek"
+    assert result["verdict"] == "ok"
+
+
 def test_settings_update_rejects_unknown_values_and_persists_valid_values(tmp_path, monkeypatch):
     monkeypatch.setenv("GRAPH2NOTE_GATEWAY", "opencode")
     path = tmp_path / "llm-settings.json"
