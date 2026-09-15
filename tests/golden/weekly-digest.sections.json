@@ -1,0 +1,12 @@
+{
+  "sections": {
+    "topics": {
+      "markdown": "### 代数与编码\n\n- 概率降序排列、分组赋码、即时唯一可译。\n- 编码过程被整理为可逐步复算的步骤。",
+      "source_document_ids": ["doc-a", "doc-not-in-material"]
+    },
+    "pending": {
+      "markdown": "### 建议\n\n- 给「实验备忘」补上主题与标签后归档。",
+      "source_document_ids": ["doc-b"]
+    }
+  }
+}
