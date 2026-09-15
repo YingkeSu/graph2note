@@ -76,7 +76,44 @@ Status: ready-for-review
   | 恢复 `_PROSE_LEAD_RE` 的 `re.I` | `test_inline_label_after_a_byline_with_capitalized_hint_names_is_preserved` FAIL |
 
 - R2 全量：`pytest -p no:warnings` → **1218 passed, EXIT=0**（R1 1214 + 新增 4；`tests/test_papers_meta.py` 单文件 41 passed）。
-- **风险披露（补全，两个方向）**：
+- **风险披露（R2 当时记为“补全两方向”；R2 verdict 指出仍遗漏 `_PROSE_LEAD_RE` 改大小写导致的 title→abstract 方向，见下方 R3 风险披露）**：
   - prose→name（误收）：无 `Abstract`/`摘要` 标签且散文与姓名同段的极端情况，仍可能把散文行当作者，或把含冷门提示词的标题尾部误当摘要；靠标签边界 + 小写判据收敛，真实样本待 Y4 校准。
   - name→prose（误丢，R1 遗漏方向，即 D1）：合法 byline 被句子判据整行丢弃导致 `authors=[]`。R2 用「`kept` 非空守卫 + 区分大小写」双保险消除，并以 4 个回归用例锁定，覆盖姓名/提示词碰撞（Will/Can/The）与 VLM 上标 + 句号风格。
   - 残余：`_SENTENCE_HINT_RE` 只认小写功能词，句首大写的纯散文行（如 `We present a novel approach.` 且无其它小写提示词）不再被判为句子；此类行通常不满足 `_looks_like_author_line`，且摘要标签路径已独立覆盖。
+
+### Rework R3（D2 修复，Y5）
+
+- 独立 reviewer（会话 `graph2note-123`）复审裁决 **REJECT**，见 `/tmp/review-spw-Y5-r2-verdict.md` §2。D1 确认已修好；但 R2 引入新回归 **D2**。
+- D2 最小反例（作者行与摘要不同段）：`A Study Of Abstract Meaning Representation, which is used, in NLP\n\nWei Zhang, Li Chen\n\nAbstract\nBody text.` —— base/R1 `abstract='Body text.'`，R2 `abstract='Meaning Representation, which is used, in NLP'`（标题尾部顶替真实摘要）。
+  根因：R2 把 `_PROSE_LEAD_RE` 改区分大小写后，标题式大写前缀 `A Study Of`/`Deep Learning For`/`Towards` 不再命中散文词，被当作 byline 前缀保留 → `author_keys` 非空 → `_extract_abstract` 接受标题里的 “Abstract” 作为标签。该改动对 D1 修复并非必需，只为过 R2 新用例；原 `test_a_title_containing_the_word_abstract...` 因文本用小写 `of` 而侥幸通过（测试盲区）。
+- R3 修复（采用 verdict §2.4 方向 1 + 额外健壮性）：
+  1. `_PROSE_LEAD_RE` 恢复 `re.I`；head 仅当 **不像作者行** 时才按散文丢弃：
+     `if head and (_looks_like_author_line(head) or not _PROSE_LEAD_RE.search(head))`
+     —— `Will Smith, Can The`（作者行）保留；`A Study Of`/`Deep Learning For`/`Towards`（非作者行 + 大写散文词）丢弃。
+  2. `_extract_abstract` 改为「先找行首标签，再退回行内标签」两遍：自成一行的 `Abstract`/`摘要` 永远优先，避免标题内的行内 “Abstract” 遮蔽真实摘要（同使 `Neural Networks, Abstract Reasoning…` 这类作者样标题前缀不再误发）。
+  保留 R2 的 D1 修复（`kept` 守卫 + `_SENTENCE_HINT_RE` 区分大小写），未改 `_looks_like_author_line`。
+- R3 新增回归用例（7）：
+  - `test_title_with_a_capitalized_function_word_before_abstract_is_not_the_abstract`（verdict 指定文本）
+  - `test_capitalized_title_prefix_does_not_turn_the_title_into_the_abstract`（参数化 `Deep Learning For` / `Towards` / `A Survey Of` 三个变体）
+  - `test_authorlike_title_prefix_does_not_shadow_the_real_abstract`（`Neural Networks, Abstract Reasoning…`，锁定两遍优先级）
+  - `test_inline_abstract_inside_a_title_is_not_invented_without_a_real_abstract`（无真实摘要时不得从标题造摘要，锁定 head 散文护栏）
+  - `test_first_byline_line_is_not_dropped_by_the_sentence_heuristic`（锁定 R2 的 `kept` 守卫，回应 R2 verdict §3-M1 覆盖缺口）
+- R3 mutation 证据（备份 → 改 → 跑 → 还原，最终工作树干净）：
+
+  | mutation | 结果 |
+  | --- | --- |
+  | 去掉 `kept` 守卫 | `test_first_byline_line_is_not_dropped_by_the_sentence_heuristic` FAIL |
+  | 恢复 `_SENTENCE_HINT_RE` 的 `re.I` | `test_wrapped_byline_line_with_a_capitalized_hint_name_is_preserved` FAIL |
+  | head 护栏改 `if head:` | `test_inline_abstract_inside_a_title_is_not_invented_without_a_real_abstract` FAIL |
+  | `_PROSE_LEAD_RE` 去掉 `re.I`（= R2 行为） | 同上 FAIL |
+  | 去掉两遍优先级（行内按扫描序返回） | `test_authorlike_title_prefix_does_not_shadow_the_real_abstract` FAIL |
+  | `_author_lines_before_abstract` 恒等（去掉摘要边界） | 9 个用例 FAIL（含全部 D2 variant） |
+  | `_extract_abstract` 只看 `para[0]` | 3 个用例 FAIL |
+  | R2 旧 head 护栏（`re.I` + `not search`） | `test_inline_label_after_a_byline_with_capitalized_hint_names_is_preserved` FAIL |
+
+- R3 全量：`pytest -p no:warnings` → **1225 passed, EXIT=0**（R2 1218 + 新增 7；`tests/test_papers_meta.py` 单文件 48 passed）。
+- **风险披露（补上 R2 遗漏的 `_PROSE_LEAD_RE` 方向）**：
+  - **title→abstract（误替代，R2 遗漏方向，即 D2）**：`_PROSE_LEAD_RE` 大小写敏感化会让标题式大写前缀被当作者前缀，使标题内 “abstract” 被当作摘要标签、真实摘要被顶替。R3 恢复 `re.I` 并用 `_looks_like_author_line` 优先保护 byline，同时两遍优先级以行首标签胜出；以 7 个用例（含大写前缀标题、无摘要标题、作者样标题前缀）锁定。
+  - prose→name（误收，同 R2）：无标签且散文与姓名同段的极端情况仍可能把散文行当作者；真实样本待 Y4 校准。
+  - name→prose（误丢，R1 遗漏方向，即 D1）：已由 `kept` 守卫 + `_SENTENCE_HINT_RE` 区分大小写消除，回归用例锁定。
+  - 残余：标题前缀本身“像作者行”（如 `Neural Networks,`）且无真实摘要段落时，仍可能把标题尾部当摘要；两遍优先级已覆盖“存在真实摘要”的情形，无真实摘要时由 `_PROSE_LEAD_RE` 兜底；真实 PDF 样本待 Y4。
