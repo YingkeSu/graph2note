@@ -70,11 +70,11 @@ registerView("upload", renderUpload);
 const PAPER_POLL_MS = Math.max(POLL_MS || 1000, 800);
 const PAPER_STATES = new Set(["done", "failed", "interrupted"]);
 
-function isPdfFile(file) {
+export function isPdfFile(file) {
   return !!file && /\.pdf$/i.test(file.name || "");
 }
 
-function paperFileFromEvent(event) {
+export function paperFileFromEvent(event) {
   if (event.type === "drop") {
     const files = event.dataTransfer && event.dataTransfer.files;
     return files && files[0];
@@ -83,16 +83,25 @@ function paperFileFromEvent(event) {
   return files && files[0];
 }
 
-function interceptPaperFile(event) {
+/* Pure decision the interceptor is built on: the event must originate on the
+   upload zone (`change` on the hidden file input, `drop` on the card or one
+   of its children) and carry a PDF. Images keep the unchanged image path.
+   `zone` is injected so the offline DOM contract can pin the matrix without a
+   browser. */
+export function shouldInterceptPaperEvent(event, zone) {
   const onZone = event.type === "drop"
-    ? (event.target === el.uploadCard || el.uploadCard.contains(event.target))
-    : event.target === el.fileInput;
-  if (!onZone) return;
-  const file = paperFileFromEvent(event);
-  if (!isPdfFile(file)) return;  // images keep the unchanged image path
+    ? (event.target === zone.uploadCard || zone.uploadCard.contains(event.target))
+    : event.target === zone.fileInput;
+  if (!onZone) return false;
+  return isPdfFile(paperFileFromEvent(event));
+}
+
+export function interceptPaperFile(event) {
+  const zone = { uploadCard: el.uploadCard, fileInput: el.fileInput };
+  if (!shouldInterceptPaperEvent(event, zone)) return;
   event.preventDefault();
   event.stopPropagation();  // capture phase: the image handlers never see a PDF
-  startPaperUpload(file);
+  startPaperUpload(paperFileFromEvent(event));
 }
 
 async function startPaperUpload(file) {
