@@ -18,7 +18,10 @@ Coverage:
 from __future__ import annotations
 
 import hashlib
+import json
 import os
+import subprocess
+import tempfile
 
 import pytest
 
@@ -137,12 +140,15 @@ def test_from_block_accepts_spec_json_dict():
     assert sem.has_notes and sem.has_dashed
 
 
-def test_font_size_rule_group_at_least_note_below_label():
+def test_font_size_three_tiers_group_above_label_above_note():
+    """SPEC §1: group title > node label > note, strictly decreasing."""
     gv = pytest.importorskip("graph2note.diagrams.graphviz_renderer")
     mpl = pytest.importorskip("graph2note.diagrams.matplotlib_renderer")
     for mod in (gv, mpl):
-        assert mod.NOTE_FONTSIZE < mod.NODE_FONTSIZE
-        assert mod.GROUP_FONTSIZE >= mod.NOTE_FONTSIZE
+        assert mod.GROUP_FONTSIZE > mod.NODE_FONTSIZE > mod.NOTE_FONTSIZE > 0
+    # reference ladders (values may be tuned; the strict order is the contract)
+    assert (gv.GROUP_FONTSIZE, gv.NODE_FONTSIZE, gv.NOTE_FONTSIZE) == (24, 20, 14)
+    assert (mpl.GROUP_FONTSIZE, mpl.NODE_FONTSIZE, mpl.NOTE_FONTSIZE) == (15, 13, 10)
 
 
 def test_label_wrapping_keeps_ascii_words_whole():
@@ -220,7 +226,12 @@ def test_graphviz_ungrouped_source_matches_legacy_renderer():
     for e in SIMPLE_EDGES:
         g.edge(e["from"], e["to"], label=e["label"] or "",
                fontname=gv.FONTNAME, fontsize="14")
-    assert gv.build_digraph(SIMPLE_NODES, SIMPLE_EDGES).source == g.source
+    src = gv.build_digraph(SIMPLE_NODES, SIMPLE_EDGES).source
+    assert src == g.source
+    # flat path never picks up the grouped-path additions (byte-level lock)
+    assert "newrank" not in src
+    assert "POINT-SIZE" not in src
+    assert "rank=same" not in src
 
 
 def test_graphviz_groups_render_deterministic_png(tmp_path):
@@ -229,6 +240,107 @@ def test_graphviz_groups_render_deterministic_png(tmp_path):
     p2 = gv.render(NODES, EDGES, str(tmp_path / "b.png"), groups=GROUPS)
     assert os.path.getsize(p1) > 0
     assert _sha(p1) == _sha(p2)
+
+
+# ---------------------------------------------------------------------------
+# graphviz: dot's *actual* ranks must equal D2's rows
+# (T-audit F-A/F-B/F-C/F-D: cluster members split, lane zig-zag collapsed,
+#  disconnected layer band merged, annotation clusters drifting)
+# ---------------------------------------------------------------------------
+
+_GOLDEN_DIR = os.path.join(os.path.dirname(__file__), "golden")
+_LAYOUT_FIXTURES = ("layer", "lane", "cluster", "increment")
+
+
+def _layout_fixture(name):
+    with open(os.path.join(_GOLDEN_DIR, f"diagram-layout-{name}.json"),
+              encoding="utf-8") as fh:
+        return json.load(fh)["fixture"]
+
+
+def _d1_anchor_payloads():
+    """The three SPEC §1 anchors, read from D1's own test module (no copy)."""
+    from graph2note import diagram
+    from tests.test_diagram_groups_ir import (
+        _ANCHOR_01, _ANCHOR_02, _ANCHOR_02_INCREMENT,
+    )
+
+    payloads = []
+    for anchor in (_ANCHOR_01, _ANCHOR_02, _ANCHOR_02_INCREMENT):
+        payload, verdict = diagram.validate_diagram_json(anchor)
+        assert verdict == "ok"
+        payloads.append(payload)
+    return payloads
+
+
+def _dot_ranks(source: str, orientation: str) -> dict[str, int]:
+    """Parse ``dot -Tplain`` into ``{node_id: rank_index}``.
+
+    ``rank_index 0`` is the first rank in the reading direction (top for TB,
+    left for LR), so it lines up with ``layout["rows"][0]``.
+    """
+    with tempfile.TemporaryDirectory() as directory:
+        dot_path = os.path.join(directory, "graph.dot")
+        with open(dot_path, "w", encoding="utf-8") as fh:
+            fh.write(source)
+        proc = subprocess.run(["dot", "-Tplain", dot_path],
+                              capture_output=True, text=True)
+    assert proc.returncode == 0, proc.stderr
+    coord: dict[str, float] = {}
+    for line in proc.stdout.splitlines():
+        parts = line.split()
+        if parts and parts[0] == "node":
+            name = parts[1].strip('"')
+            coord[name] = (float(parts[2]) if orientation in ("LR", "RL")
+                           else float(parts[3]))
+    order = sorted(set(coord.values()), reverse=orientation in ("TB", "RL"))
+    index = {value: i for i, value in enumerate(order)}
+    return {name: index[value] for name, value in coord.items()}
+
+
+def _assert_dot_ranks_equal_rows(node_ids, edge_pairs, groups):
+    """dot's ranks (pinned to the D2 layout) must equal D2's rows exactly."""
+    gv = _gv()
+    from graph2note.diagrams._layout import grouped_layout
+
+    layout = grouped_layout(node_ids, edge_pairs, groups)
+    row_of = {n: i for i, row in enumerate(layout["rows"]) for n in row}
+    nodes = [{"id": n, "label": n} for n in node_ids]
+    edges = [{"from": s, "to": t} for s, t in edge_pairs]
+    # orientation is pinned to TB (the product-chain default) so the fixture's
+    # missing ``orientation`` cannot flip the reading axis across engines.
+    source = gv.build_digraph(nodes, edges, groups=groups, layout=layout,
+                              orientation="TB").source
+    ranks = _dot_ranks(source, "TB")
+    assert {n: ranks.get(n) for n in row_of} == row_of
+    # every D2 row is exactly one dot rank (no collapsed/phantom rows)
+    assert len(set(ranks.values())) == layout["nrows"]
+    return layout
+
+
+@pytest.mark.parametrize("name", _LAYOUT_FIXTURES)
+def test_dot_ranks_match_d2_rows_for_layout_fixtures(name):
+    fx = _layout_fixture(name)
+    _assert_dot_ranks_equal_rows(fx["nodes"], [tuple(e) for e in fx["edges"]],
+                                 fx["groups"])
+
+
+def test_dot_ranks_match_d2_rows_for_d1_anchors():
+    for payload in _d1_anchor_payloads():
+        _assert_dot_ranks_equal_rows(
+            [n["id"] for n in payload["nodes"]],
+            [(e["from"], e["to"]) for e in payload["edges"]],
+            payload["groups"],
+        )
+
+
+def test_newrank_is_only_on_the_grouped_path():
+    """The flat path must stay byte-identical: no newrank, no rank spine."""
+    gv = _gv()
+    flat = gv.build_digraph(SIMPLE_NODES, SIMPLE_EDGES).source
+    assert "newrank" not in flat
+    grouped = gv.build_digraph(NODES, EDGES, groups=GROUPS).source
+    assert "newrank=true" in grouped
 
 
 # ---------------------------------------------------------------------------

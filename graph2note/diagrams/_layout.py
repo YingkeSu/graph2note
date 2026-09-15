@@ -8,7 +8,10 @@ infinity; ordering only ever depends on node ids (stable tie-breaks).
 
 - ``layer``  groups share one horizontal band (one row, top-to-bottom reading
   order); band order is derived deterministically from the graph structure,
-  never from an ``order`` field the VLM may have produced;
+  never from an ``order`` field the VLM may have produced.  A layer band with
+  no incident edge is *flow-isolated* (no structural position): it is anchored
+  below every connected band so the reading order is not broken by a phantom
+  top band (T-audit F-C);
 - ``lane``   groups *prefer* one shared vertical column (swimlane) -- each lane
   gets its own column while a base row holds at most one member of that lane;
   extra members landing on the same row overflow into free columns (best
@@ -184,12 +187,24 @@ def grouped_layout(
         g["id"]: (_median([depth[m] for m in g["nodes"]]) if g["nodes"] else None)
         for g in layer_groups
     }
+    # A layer band with no incident edge has no structural position: its median
+    # depth is 0, identical to the top band, so band order would interleave it
+    # with the first connected band (T-audit F-C: 01 anchor rendered the
+    # isolated 执行层 band on the top band).  Sink such flow-isolated bands
+    # below every connected band -- deterministic and input-order independent,
+    # so the derived reading order stays continuous.  The anchor is unchanged.
+    incident = {n for pair in edge_pairs for n in pair}
+    isolated = {
+        g["id"]: not any(m in incident for m in g["nodes"])
+        for g in layer_groups
+    }
     effective = sorted(
         (g for g in layer_groups if g["nodes"]),
-        key=lambda g: (anchors[g["id"]], g["id"]),
+        key=lambda g: (isolated[g["id"]], anchors[g["id"]], g["id"]),
     )
-    entries: list[tuple[float, int, str]] = [
-        (float(anchors[g["id"]]), 0, g["id"]) for g in effective
+    entries: list[tuple[int, float, int, str]] = [
+        (int(isolated[g["id"]]), float(anchors[g["id"]]), 0, g["id"])
+        for g in effective
     ]
     anchor_values = {float(anchors[g["id"]]) for g in effective}
     free_depths = sorted(
@@ -199,19 +214,19 @@ def grouped_layout(
             if n not in layer_owner and float(depth[n]) not in anchor_values
         }
     )
-    entries.extend((float(d), 1, f"depth:{d}") for d in free_depths)
-    entries.sort(key=lambda e: (e[0], e[1], e[2]))
+    entries.extend((0, float(d), 1, f"depth:{d}") for d in free_depths)
+    entries.sort(key=lambda e: (e[0], e[1], e[2], e[3]))
 
     rows: list[list[str]] = [[] for _ in entries]
     group_row: dict[str, int] = {}
     anchor_row: dict[float, int] = {}
     depth_row: dict[int, int] = {}
-    for idx, (score, rank, key) in enumerate(entries):
+    for idx, (isolated_flag, anchor, rank, key) in enumerate(entries):
         if rank == 0:
             group_row[key] = idx
-            anchor_row.setdefault(score, idx)
+            anchor_row.setdefault(anchor, idx)
         else:
-            depth_row[int(score)] = idx
+            depth_row[int(anchor)] = idx
 
     for n in nid:
         owner = layer_owner.get(n)

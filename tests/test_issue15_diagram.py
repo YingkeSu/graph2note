@@ -338,6 +338,86 @@ def test_extract_diagram_length_exhaustion_upgrades_once(monkeypatch):
     assert calls[1]["max_tokens"] == diagram.DIAGRAM_RETRY_TOKENS
 
 
+def test_extract_diagram_defaults_clear_the_budget_upgrade(monkeypatch):
+    """F-H: kimi-k2.6 needs ~330s for the 3500->10000 upgrade sequence, so the
+    default client timeout must clear it and the first-attempt budget is widened
+    (while still staying below the retry budget, so the upgrade is a real one)."""
+    assert diagram.DEFAULT_TIMEOUT >= 420
+    assert 3500 < diagram.DIAGRAM_MAX_TOKENS < diagram.DIAGRAM_RETRY_TOKENS
+
+    seen = []
+
+    def fake_post(payload, *, key, sess, timeout, provider=None):
+        seen.append((payload["max_tokens"], timeout))
+        if payload["max_tokens"] == diagram.DIAGRAM_MAX_TOKENS:
+            return {"choices": [{"message": {"content": ""},
+                                 "finish_reason": "length"}],
+                    "usage": {}, "cost": "0"}
+        return {"choices": [{"message": {"content": json.dumps(
+            {"nodes": [{"id": "n1", "label": "X"}], "edges": []})},
+            "finish_reason": "stop"}], "usage": {}, "cost": "0"}
+
+    monkeypatch.setattr("graph2note.diagram._post", fake_post)
+    monkeypatch.setattr(vlm, "load_api_key", lambda: "k")
+    res = diagram.extract_diagram_image(str(IMG01), session="s")
+    assert res["ok"] is True and res["meta"]["retried"] is True
+    assert [mt for mt, _ in seen] == [diagram.DIAGRAM_MAX_TOKENS,
+                                      diagram.DIAGRAM_RETRY_TOKENS]
+    assert all(timeout == diagram.DEFAULT_TIMEOUT for _, timeout in seen)
+
+
+def test_visual_graph_stage_keeps_the_diagram_timeout_floor(monkeypatch):
+    """The specialist graph call must not inherit the shorter text timeout."""
+    captured = {}
+
+    def fake_extract(image_path, **kwargs):
+        captured.update(kwargs)
+        return {"ok": False, "verdict": "http_error", "nodes": [], "edges": [],
+                "caption": "", "meta": {}}
+
+    monkeypatch.setattr(diagram, "extract_diagram_image", fake_extract)
+    markdown = "输入 → 解析"
+    text_ir, _ = vlm._ir_from_markdown(markdown, "x", key="k", sess="s",
+                                       max_tokens=100, timeout=30)
+    vlm._merge_visual_graph(text_ir, markdown, str(IMG01), model="m",
+                            api_key="k", session="s", timeout=30)
+    assert captured["timeout"] >= diagram.DEFAULT_TIMEOUT
+
+
+def test_extract_diagram_cache_hit_keeps_the_structure(monkeypatch, tmp_path):
+    """F-G (pre-existing since 09a6d92): the cache-hit branch read a ``result``
+    key that was never written, so a second parse silently dropped the graph."""
+    good = json.dumps({
+        "caption": "抽取的网络",
+        "nodes": [{"id": "n1", "label": "A"}, {"id": "n2", "label": "B"},
+                  {"id": "n3", "label": "C"}],
+        "edges": [{"from": "n1", "to": "n2", "label": ""}],
+        "groups": [{"id": "g1", "label": "层", "kind": "layer",
+                    "nodes": ["n1", "n2"]}],
+    })
+    calls = []
+
+    def fake_gw(payload, **_kw):
+        calls.append(payload)
+        return {"choices": [{"message": {"content": good},
+                             "finish_reason": "stop"}],
+                "usage": {}, "cost": "0"}
+
+    monkeypatch.setattr("graph2note.diagram._post", lambda payload, **k: fake_gw(payload))
+    monkeypatch.setattr(vlm, "load_api_key", lambda: "k")
+    cache = vlm.VlmCache(str(tmp_path / "cache"))
+    first = diagram.extract_diagram_image(str(IMG01), session="s", cache=cache)
+    assert first["ok"] is True and len(first["nodes"]) == 3
+    second = diagram.extract_diagram_image(str(IMG01), session="s", cache=cache)
+    assert len(calls) == 1                       # second call was a cache hit
+    assert second["meta"]["cached"] is True
+    assert second["ok"] is True
+    assert second["nodes"] == first["nodes"]
+    assert second["edges"] == first["edges"]
+    assert second["groups"] == first["groups"]
+    assert second["caption"] == first["caption"]
+
+
 # ---------------- AC6: FR-020 determinism -------------------------------------
 
 def test_flow_render_byte_identical(tmp_path):

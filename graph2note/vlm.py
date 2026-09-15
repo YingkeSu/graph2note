@@ -638,7 +638,12 @@ def _merge_visual_graph(
             model=graph_model,
             api_key=api_key if (diagram_provider or provider) == provider else None,
             session=session,
-            timeout=timeout,
+            # The diagram vision call owns a larger client budget than the text
+            # stages: kimi-k2.6 needs the whole 3500-token-attempt + 10000-token
+            # -retry sequence (~330s, T-audit F-H).  ``call_ir`` passes the shared
+            # text timeout (120s) here, which used to truncate the specialist
+            # call; never go below the diagram default.
+            timeout=max(timeout, diagram.DEFAULT_TIMEOUT),
             provider=diagram_provider or provider,
         )
     except Exception as exc:  # defensive boundary: graph extraction is optional
