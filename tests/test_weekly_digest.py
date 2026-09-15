@@ -33,6 +33,9 @@ from graph2note.telemetry import build_stats
 from graph2note.webapp import create_app
 
 GOLDEN = (Path(__file__).parent / "golden" / "weekly-digest.golden.md").read_text(encoding="utf-8")
+# W1: the sectioned JSON reply golden (SPEC §3 four-section skeleton)
+SECTIONS_GOLDEN = (Path(__file__).parent / "golden" / "weekly-digest.sections.json").read_text(
+    encoding="utf-8")
 
 
 # ---------------------------------------------------------------------------
@@ -251,13 +254,20 @@ def test_long_content_is_truncated_at_the_explicit_limit():
     assert "已截断" in doc["content"]
 
 
-def test_render_digest_markdown_appends_linked_sources():
+def test_render_digest_markdown_keeps_skeleton_and_appends_linked_sources():
     docs = [
         {"document_id": "doc-a", "title": "A"},
         {"document_id": "doc b", "title": "B, 标题"},
     ]
-    markdown = digest.render_digest_markdown("# 小结\n\n正文", docs)
-    assert markdown.startswith("# 小结")
+    sections = [
+        {"key": key, "title": title, "markdown": f"{title} 正文"}
+        for key, title in digest.SECTION_DEFS
+    ]
+    markdown = digest.render_digest_markdown(CUSTOM, sections, docs)
+    assert markdown.startswith("# 本周小结")
+    # the four-section skeleton is present in fixed order
+    positions = [markdown.index(f"## {title}") for _, title in digest.SECTION_DEFS]
+    assert positions == sorted(positions)
     assert "## 来源" in markdown
     assert "[A](#doc/doc-a)（`doc-a`）" in markdown
     assert "[B, 标题](#doc/doc%20b)（`doc b`）" in markdown
@@ -510,7 +520,10 @@ def test_full_chain_offline_golden_plan_to_api_and_ui(tmp_path):
     assert [d["document_id"] for d in payload["documents"]] == ["doc-a", "doc-b"]
     assert "content" not in payload["documents"][0]
     assert payload["markdown"].startswith("# 本周小结")
+    for _key, title in digest.SECTION_DEFS:
+        assert f"## {title}" in payload["markdown"]
     assert "## 来源" in payload["markdown"]
+    assert [s["key"] for s in payload["sections"]] == [k for k, _ in digest.SECTION_DEFS]
     digest_id = payload["digest"]["digest_id"]
     assert len(planner.calls) == 1
 
@@ -549,6 +562,55 @@ def test_full_chain_offline_golden_plan_to_api_and_ui(tmp_path):
     assert "该范围内没有材料" in javascript        # explicit empty state
     assert "renderMarkdownInto" in client.get("/static/js/views/document.js").text
     assert "强制重新生成" in html
+
+
+def test_api_digest_meta_exposes_sections_for_w2(tmp_path):
+    """W1 -> W2 contract: meta.json carries sections with per-section provenance."""
+    planner = RecordingPlanner(reply=SECTIONS_GOLDEN)
+    _store, _storage, client = _digest_app(tmp_path, planner)
+    created = client.post("/api/digests", json={
+        "range": "custom", "from": "2026-09-01", "to": "2026-09-07"})
+    assert created.status_code == 200
+    payload = created.json()
+    meta = payload["digest"]
+    expected_keys = ["overview", "topics", "highlights", "pending"]
+    assert [section["key"] for section in meta["sections"]] == expected_keys
+    assert [section["key"] for section in payload["sections"]] == expected_keys
+    assert meta["sections"][0]["source_document_ids"] == ["doc-a", "doc-b"]
+    assert meta["sections"][2]["source_document_ids"] == ["doc-a", "doc-b"]
+    assert meta["llm_mode"] == "json"
+    assert meta["stats"]["document_count"] == 2
+
+    # the same structure is served after a reload (W2 consumes the meta)
+    one = client.get(f"/api/digests/{meta['digest_id']}")
+    assert one.status_code == 200
+    assert one.json()["meta"]["sections"] == meta["sections"]
+    assert one.json()["markdown"] == payload["markdown"]
+    assert "## 主题脉络" in one.json()["markdown"]
+
+
+def test_api_serves_legacy_digest_meta_without_sections(tmp_path):
+    """A pre-W1 meta.json (no ``sections``) must still list and load."""
+    planner = RecordingPlanner()
+    _store, storage, client = _digest_app(tmp_path, planner)
+    directory = Path(storage) / "digests"
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / "dg-legacy-1.meta.json").write_text(json.dumps({
+        "schema_version": 1, "generator": "digest-1", "digest_id": "dg-legacy-1",
+        "created_at": "2026-09-08T10:00:00", "document_count": 1,
+        "document_ids": ["doc-a"], "fingerprint": "legacy", "usage": {},
+    }, ensure_ascii=False), encoding="utf-8")
+    (directory / "dg-legacy-1.md").write_text("# 本周小结\n\n旧格式。", encoding="utf-8")
+
+    listing = client.get("/api/digests")
+    assert listing.status_code == 200
+    assert [m["digest_id"] for m in listing.json()["digests"]] == ["dg-legacy-1"]
+
+    one = client.get("/api/digests/dg-legacy-1")
+    assert one.status_code == 200
+    assert "sections" not in one.json()["meta"]
+    assert one.json()["markdown"].startswith("# 本周小结")
+    assert digest.meta_sections(one.json()["meta"]) == []
 
 
 def test_api_empty_range_returns_explicit_empty_state(tmp_path):

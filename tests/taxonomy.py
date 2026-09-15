@@ -69,6 +69,8 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_incremental_export": "notes",
     "test_classify_moc": "notes",
     "test_weekly_digest": "notes",  # issue A2（每周小结）
+    "test_digest_structure": "notes",  # SPW W1（四节骨架/分节来源/节级缓存）
+    "test_digest_budget": "notes",  # SPW W1（确定性统计 + 材料预算取舍）
     # knowledge-workspace（collections/graph/inbox/metadata/tags/timeline/telemetry）
     "test_collections": "workspace",
     "test_collection_organize": "workspace",  # auto-organization 02（相似度/归类/API/CLI）
