@@ -94,9 +94,11 @@ I 轨共享契约：[SPEC.md §2 论文文档契约](SPEC.md)。P2/P3 针对契�
 | X5 | ✅ merged `2eb5fed`（rev-114 APPROVE，verdict `/tmp/review-spw-X5-verdict.md`） | `dev/X5-marked-localize` @ `270580f` | marked 4.3.0 本地 vendor，离线探针 10/10 |
 | Y5 | R2 返工交付（报告 `/tmp/spw-Y5-r2-report.md`），待评审空位 | `dev/Y5-author-split` @ `d88fac5` | D1 修复：kept 非空守卫 + hint 词区分大小写；+4 回归用例；6 组 mutation；风险双方向披露补全 |
 | X1 | 评审中（rev-121，含 live 复核） | `dev/X1-deepseek-channel` @ `09a7a9e` | live 3/3 ok；02inc 空 length 触发 X2 重试后成功（跨修复联动验证） |
-| X3+X4 | 实现中（worker-117，合并单 worker） | `dev/X3X4-mpl-layout` | 共享 matplotlib_renderer.py |
+| X3+X4 | 已交付，待评审空位（队列：Y5-r2 → X3X4 → Y4） | `dev/X3X4-mpl-layout` @ `b74f0cc` | 组框相交 9/0/2→0/0/0；字宽真实 metrics 越框清零；golden/扁平逐字节不动；1224 passed |
 | Y3 | 评审中（rev-120） | `dev/Y3-upload-test` @ `26a804f` | upload.js 拦截行为测试；1219 passed |
 | Y4 | 已交付，评审暂缓：**Blocked by Y5-r2**（fixture 是 P2 行为快照，分支本地并入了被 REJECT 的 Y5 基线，须待 Y5-r2 合并后 rebase 再审） | `dev/Y4-real-fixtures` @ `b420df3` | 4 真实论文 67 新例 1292 passed；发现 5 个新 issue 候选（噪声标题/标题吞 byline/authors 混机构/DOI 来源/参考文献欠切分） |
-| X6 / Y6 / Y2 | 批次三待派（裁决已定） | — | X6 待 X3/X4；Y6/Y2 待 Y1（已合并，解除阻塞） |
+| X6 | 待派（待 X3X4 合并，共享 renderer/_layout） | — | 裁决：优化默认视图设计使密图可读 |
+| Y6 | 实现中（worker-122） | `dev/Y6-digest-leftovers` | W1 遗留 R1-R5 聚合 |
+| Y2 | 待派（与 Y6 共享 store.py/webapp.py 追加，串行） | — | 裁决 (b)：双落点契约化 + 不变量测试 |
 
 BOARD 行由调度统一登记（前轮并发 reviewer 撞 BOARD 教训）；reviewer 只合代码不碰本文件。
