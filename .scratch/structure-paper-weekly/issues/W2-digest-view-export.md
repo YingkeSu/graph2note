@@ -29,4 +29,10 @@ Status: ready（开发在 W1 合并后启动，fixture 驱动可提前备料）
 
 ## Comments
 
-（待 worker 填写交付记录）
+### W2 交付记录（dev/W2-digest-view，ready-for-review，2026-09-15）
+
+- 分节视图（消费 W1 `meta.sections`：nav 锚点 + 每节正文 + 来源 chips + 统计条）/ 旧 meta 整篇回退两条路径都有证据。
+- 导出改为**前端 Blob**（未动 `webapp.py`/`index.html`；导出按钮与状态动作行由 JS 建在既有容器内），文件名 `weekly-digest_<from>_<to>_<日期>.md`。
+- R2 口径差异与 R8 同名异义在统计条用可见文本区分；失败/空/生成中三态均有可操作按钮（另含历史加载失败内联重试）。
+- 证据：全量 pytest 1192 passed；`node tests/digest_view_dom.mjs` 全绿；`frontend_audit.mjs` 33 checks / 0 findings（1440/768/390）；live 对比度最差 5.52、无 <12px 辅助字号、390px 无溢出。
+- 详见 [handoffs/W2-digest-view-export.md](../handoffs/W2-digest-view-export.md)。
