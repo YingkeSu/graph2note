@@ -92,12 +92,12 @@ I 轨共享契约：[SPEC.md §2 论文文档契约](SPEC.md)。P2/P3 针对契�
 | Y1 | ✅ merged `f8c6f61`（rev-112 APPROVE，verdict `/tmp/review-spw-Y1-verdict.md`） | `dev/Y1-patch-metadata` @ `5984a5a` | PATCH 部分合并 / PUT 整体替换；1211 passed；残留：documents metadata 同问题另立项 |
 | X2 | ✅ merged `55c8c15`（rev-113 APPROVE，verdict `/tmp/review-spw-X2-verdict.md`） | `dev/X2-extract-retry` @ `81b9ad3` | 半截 JSON 升级重试四分支；1214 passed |
 | X5 | ✅ merged `2eb5fed`（rev-114 APPROVE，verdict `/tmp/review-spw-X5-verdict.md`） | `dev/X5-marked-localize` @ `270580f` | marked 4.3.0 本地 vendor，离线探针 10/10 |
-| Y5 | ❌ R3 REJECT（rev-128，verdict `/tmp/review-spw-Y5-r3-verdict.md`）→ 作者-111 R4 返工中 | `dev/Y5-author-split` @ `2ca3e70` | D3：折行标题次行以 Abstract/摘要 开头被当行首标签，真实摘要被顶替（R1 起三版全错、入口从未堵）；修复方向已原型验证零回归（title_lines 传入排除标题块行） |
+| Y5 | ❌ R4 REJECT（rev-130，verdict `/tmp/review-spw-Y5-r4-verdict.md`）→ 作者-111 R5 返工中 | `dev/Y5-author-split` @ `93e3e27` | D4：作者样标题行被 `_looks_like_author_line` 误判进 author_lines → title_block 不含折行 Abstract 行 → title_keys 漏排除 → 真实摘要被顶替（base 正确、R1-R4 全错，同失败类第 4 例）；方向：段首 canonical > 段中 canonical > inline（reviewer 原型验证 53/53 绿） |
 | X1 | ✅ merged `f0dd99e`（rev-121 APPROVE，verdict `/tmp/review-spw-X1-verdict.md`） | `dev/X1-deepseek-channel` @ `09a7a9e` | live 3/3 ok；02inc 触发 X2 重试联动验证；其他 purpose 不回归 |
 | X3+X4 | ✅ merged `fd31cf6`（rev-124 APPROVE，verdict `/tmp/review-spw-X3X4-verdict.md`；F4 性能数字口径标注建议，非阻塞） | `dev/X3X4-mpl-layout` @ `b74f0cc` | 组框相交 9/0/2→0/0/0；字宽真实 metrics 越框清零；golden/扁平逐字节不动 |
 | Y3 | ✅ merged `875fbde`（rev-120 APPROVE，verdict `/tmp/review-spw-Y3-verdict.md`） | `dev/Y3-upload-test` @ `26a804f` | upload.js 拦截行为测试；1219 passed |
 | Y4 | 已交付，评审暂缓：**Blocked by Y5-r2**（fixture 是 P2 行为快照，分支本地并入了被 REJECT 的 Y5 基线，须待 Y5-r2 合并后 rebase 再审） | `dev/Y4-real-fixtures` @ `b420df3` | 4 真实论文 67 新例 1292 passed；发现 5 个新 issue 候选（噪声标题/标题吞 byline/authors 混机构/DOI 来源/参考文献欠切分） |
-| X6 | 实现中（worker-127；X3X4 已合并解除阻塞） | `dev/X6-dense-view` | 裁决原文「不可读说明设计有问题，优化设计」——不做放大引导绕行；设计决策节为评审重点 |
+| X6 | 评审中（rev-131） | `dev/X6-dense-view` @ `d0d987a` | 设计优化：分组画布宽度=阅读宽度函数（720px node 12.86/note 9.89 达标）；换行吸收密度、字号三档不动；golden/扁平逐字节不动；audit 33 检 0 findings |
 | Y6 | ✅ merged `285a58a`（rev-126 APPROVE，verdict `/tmp/review-spw-Y6-verdict.md`） | `dev/Y6-digest-leftovers` @ `52cea75` | R1-R5+R7/R8 全关闭；+15 例；mutation 6/6 红 |
 | Y2 | ✅ merged `e3e0003`（rev-129 APPROVE，verdict `/tmp/review-spw-Y2-verdict.md`；F1 SPEC「空占位」措辞与生产默认 PaperMeta 形状精度 nit、F2 live 常量断言建议，均非阻断） | `dev/Y2-dualslot-contract` @ `ada2246..20e043b` | 零运行时代码改动；SPEC §2 双落点契约 + 14 不变量例（防漂移 mutation C1/C2 红）；live 32/32 + 17/17 零模型；合并后 1259 passed |
 
