@@ -478,3 +478,151 @@ def test_excerpt_budget_is_exact(limit):
 def test_excerpt_truncates_with_an_ellipsis_at_the_limit():
     assert digest.document_excerpt("123456789", limit=5) == "1234…"
     assert len(digest.document_excerpt("123456789", limit=1)) == 1
+
+
+# ---------------------------------------------------------------------------
+# Y6 leftovers R3/R4/R5/R7/R8
+# ---------------------------------------------------------------------------
+
+
+def _long_library(count: int, *, distinct_labels: bool = False) -> list[dict]:
+    """A material set at/over ``MAX_DOCS`` with long (truncated) content."""
+    records = []
+    for index in range(count):
+        label = f"{index:03d}"
+        records.append(_record(
+            f"long-{label}",
+            f"长材料 {label}",
+            date="2026-09-02",
+            content="# 长材料\n" + "正文内容。" * 500,          # > MAX_DOC_CHARS
+            topics=[f"主题{label if distinct_labels else index % 4}"],
+            tags=[f"标签{label if distinct_labels else index % 3}"],
+        ))
+    return records
+
+
+# --- R4: long-material JSON stability / fallback ---------------------------
+
+
+def test_long_material_json_reply_keeps_the_four_sections(tmp_path):
+    planner = SectionPlanner()
+    result = digest.generate_digest(
+        _long_library(digest.MAX_DOCS), CUSTOM, storage_dir=tmp_path, planner=planner)
+    assert result["status"] == "ok" and result["llm_calls"] == 1
+    assert result["digest"]["llm_mode"] == "json"
+    assert [section["key"] for section in result["sections"]] == SECTION_KEYS
+    material_ids = set(result["digest"]["document_ids"])
+    assert len(material_ids) == digest.MAX_DOCS
+    for section in result["sections"]:
+        assert set(section["source_document_ids"]) <= material_ids
+    prompt, _model = planner.calls[0]
+    assert prompt.count("<document id=") == digest.MAX_DOCS
+    assert "已截断" in prompt          # per-document content budget still applied
+
+
+@pytest.mark.parametrize("reply", [
+    '{"sections": {"topics": {"markdown": "要点", "source_document_ids": ["long-000"]',
+    "```json\n{\"sections\": {\"topics\": \"半截\"\n```",
+    "本周全部是散文，没有任何 JSON 结构，也没有一个花括号。",
+    "[1, 2, 3]",
+    '{"sections": {"topics": {"markdown": ["not", "a", "string"]}}}',
+    '{"sections": {"topics": {"markdown": "", "source_document_ids": []}}}',
+])
+def test_long_material_malformed_replies_still_yield_four_sections(tmp_path, reply):
+    planner = SectionPlanner(reply)
+    result = digest.generate_digest(
+        _long_library(digest.MAX_DOCS), CUSTOM, storage_dir=tmp_path, planner=planner)
+    assert result["status"] == "ok" and result["llm_calls"] == 1
+    for _key, title in digest.SECTION_DEFS:
+        assert f"## {title}" in result["markdown"]
+    assert "## 来源" in result["markdown"]
+
+
+# --- R3: meta size budget + verbose-list policy ----------------------------
+
+
+def test_meta_size_is_bounded_and_verbose_lists_are_capped(tmp_path):
+    records = _long_library(digest.MAX_DOCS, distinct_labels=True)
+    planner = SectionPlanner()
+    result = digest.generate_digest(records, CUSTOM, storage_dir=tmp_path, planner=planner)
+    meta = result["digest"]
+    payload = json.dumps(meta, ensure_ascii=False).encode("utf-8")
+    assert len(payload) <= digest.MAX_META_BYTES
+    # the true totals survive; only the verbose (W2-unused) label lists are capped
+    assert meta["stats"]["topic_count"] == digest.MAX_DOCS
+    assert len(meta["stats"]["topics"]) == digest.META_STATS_LIST_LIMIT
+    assert meta["stats"]["topics_truncated"] is True
+    assert meta["stats"]["tags_truncated"] is True
+    assert len(meta["budget"]["topics"]) == digest.META_STATS_LIST_LIMIT
+    assert meta["budget"]["topics_truncated"] is True
+    assert len(meta["budget"]["per_topic_kept"]) == digest.META_STATS_LIST_LIMIT
+    assert meta["budget"]["per_topic_kept_truncated"] is True
+    # the in-memory material keeps the full lists for rendering
+    material = digest.assemble_material(records, CUSTOM)
+    assert len(material["stats"]["topics"]) == digest.MAX_DOCS
+
+
+# --- R5: elapsed semantics under llm_calls=0 -------------------------------
+
+
+def test_elapsed_scope_separates_model_time_from_cache_only(tmp_path):
+    planner = SectionPlanner()
+    first = digest.generate_digest(_library(), CUSTOM, storage_dir=tmp_path, planner=planner)
+    assert first["digest"]["llm_calls"] == 1
+    assert first["digest"]["elapsed_scope"] == "model"
+
+    bumped = _library()
+    for record in bumped:
+        record["latest_version_id"] = "v2"
+    second = digest.generate_digest(bumped, CUSTOM, storage_dir=tmp_path, planner=planner)
+    assert second["llm_calls"] == 0
+    assert second["digest"]["elapsed"] == 0.0
+    assert second["digest"]["elapsed_scope"] == "none"
+
+
+# --- R7: GENERATOR_VERSION must stay inside the whole-report fingerprint ----
+
+
+def test_generator_version_is_part_of_the_report_fingerprint(monkeypatch):
+    documents = digest.assemble_material(_library(), CUSTOM)["documents"]
+    baseline = digest.compute_fingerprint(CUSTOM, documents)
+    monkeypatch.setattr(digest, "GENERATOR_VERSION", digest.GENERATOR_VERSION + "-next")
+    assert digest.compute_fingerprint(CUSTOM, documents) != baseline
+
+
+def test_generator_version_bump_invalidates_the_whole_report_cache(tmp_path, monkeypatch):
+    planner = SectionPlanner()
+    first = digest.generate_digest(_library(), CUSTOM, storage_dir=tmp_path, planner=planner)
+    monkeypatch.setattr(digest, "GENERATOR_VERSION", digest.GENERATOR_VERSION + "-next")
+    second = digest.generate_digest(_library(), CUSTOM, storage_dir=tmp_path, planner=planner)
+    assert second["fingerprint"] != first["fingerprint"]
+    assert second["cached"] is False and second["generated"] is True
+    # the old digest is still reachable by its own (old-generator) fingerprint
+    assert digest.find_cached(tmp_path, first["fingerprint"])["digest_id"] == \
+        first["digest"]["digest_id"]
+
+
+# --- R8: range-scoped vs material-scoped counts stay distinct ---------------
+
+
+def test_range_total_and_material_count_are_distinct_and_labelled(tmp_path):
+    records = _long_library(digest.MAX_DOCS + 5)
+    material = digest.assemble_material(records, CUSTOM)
+    stats = material["stats"]
+    assert stats["document_count"] == digest.MAX_DOCS + 5          # in-range total
+    assert stats["material_document_count"] == digest.MAX_DOCS     # selected by budget
+    assert stats["omitted_count"] == 5
+    assert stats["organized_material_count"] + stats["pending_material_count"] == \
+        stats["material_document_count"]
+
+    planner = SectionPlanner()
+    result = digest.generate_digest(records, CUSTOM, storage_dir=tmp_path, planner=planner)
+    meta = result["digest"]
+    assert meta["document_count"] == digest.MAX_DOCS
+    assert len(meta["document_ids"]) == digest.MAX_DOCS
+    assert meta["stats"]["document_count"] == digest.MAX_DOCS + 5
+    assert meta["stats"]["material_document_count"] == digest.MAX_DOCS
+    overview = next(s for s in meta["sections"] if s["key"] == "overview")
+    # 概览 is range-scoped by design: its provenance includes the trimmed docs
+    assert len(overview["source_document_ids"]) == digest.MAX_DOCS + 5
+    assert set(meta["document_ids"]) <= set(overview["source_document_ids"])

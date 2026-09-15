@@ -15,6 +15,8 @@ monkeypatches the text gateway to explode and still passes.
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from graph2note import digest
@@ -275,6 +277,75 @@ def test_continuity_suggested_tier_is_skipped_above_the_size_cap(monkeypatch):
     stats = digest.compute_stats(_library(), CUSTOM)
     assert stats["continuity_suggested_counted"] is False
     assert "库规模超阈值" in digest.render_pending_stats_body(stats)
+
+
+# --- Y6 R1: the 待确认 tier needs IR, which production records do not carry ---
+
+
+def _ir_json(*blocks):
+    return json.dumps({"document_type": "note", "blocks": list(blocks)},
+                      ensure_ascii=False)
+
+
+def _ir_record(document_id, ir_json, *, pg_hash="0" * 16):
+    record = _record(document_id, date="2026-09-02", content="正文" * 20,
+                     topics=["主题"], tags=["标签"])
+    record["versions"] = [{"version_id": "v1", "ir_json": ir_json}]
+    record["pg_hash"] = pg_hash
+    return record
+
+
+def test_continuity_suggested_is_marked_inapplicable_without_ir():
+    """The store projection (webapp/CLI) carries no IR: the suggested tier is
+    not zero, it is *not applicable* -- and the report says so."""
+    stats = digest.compute_stats(_library(), CUSTOM)
+    assert stats["continuity_suggested"] == 0
+    assert stats["continuity_suggested_applicable"] is False
+    body = digest.render_pending_stats_body(stats)
+    assert "待确认 0 对（未提供 IR 材料，待确认对不适用）" in body
+    # R2: the Inbox projection is exposed under its explicit alias too
+    assert stats["inbox_backlog"] == stats["inbox_pending"] == 2
+
+
+def test_continuity_suggested_counts_when_records_carry_ir():
+    a = _ir_record("a", _ir_json(
+        {"type": "heading", "level": 1, "text": "章一"},
+        {"type": "paragraph", "text": "甲"},
+        {"type": "paragraph", "text": "重叠甲"},
+        {"type": "paragraph", "text": "重叠乙"},
+    ))
+    b = _ir_record("b", _ir_json(
+        {"type": "paragraph", "text": "重叠甲"},
+        {"type": "paragraph", "text": "重叠乙"},
+        {"type": "paragraph", "text": "末段"},
+    ))
+    stats = digest.compute_stats([a, b], CUSTOM)
+    assert stats["continuity_suggested"] == 1
+    assert stats["continuity_suggested_applicable"] is True
+    body = digest.render_pending_stats_body(stats)
+    assert "待确认 1 对" in body and "不适用" not in body
+
+
+# --- Y6 R2: Inbox projection vs material partition are distinct fields -------
+
+
+def test_inbox_projection_and_material_partition_are_distinct_fields():
+    records = [
+        _record("topiced", date="2026-09-02", topics=["数学"]),  # Inbox (no_tag) but organized
+        _record("bare", date="2026-09-03"),                       # Inbox and 待整理 material
+    ]
+    material = digest.assemble_material(records, CUSTOM)
+    stats = material["stats"]
+    # the projection counts both docs, including the 只缺标签 one ...
+    assert stats["inbox_backlog"] == stats["inbox_pending"] == 2
+    assert stats["inbox_in_range"] == 2
+    # ... while only the label-less document enters the 待整理 material partition
+    assert stats["pending_material_count"] == 1
+    assert stats["organized_material_count"] == 1
+    assert [d["document_id"] for d in material["pending_documents"]] == ["bare"]
+    body = digest.render_pending_stats_body(stats)
+    assert "待整理材料：本期 1 篇" in body
+    assert "不可相加" in body
 
 
 # ---------------------------------------------------------------------------

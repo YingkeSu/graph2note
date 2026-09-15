@@ -68,8 +68,9 @@ from . import continuity, inbox
 SCHEMA_VERSION = 2
 GENERATOR_VERSION = "digest-2"
 # Bumped whenever the section instructions / output schema change, so a cached
-# section written by an older prompt is never reused.
-SECTION_PROMPT_VERSION = "digest-sections-1"
+# section written by an older prompt is never reused.  (R1/R2 added wording to
+# the 待整理 statistics block fed to the model.)
+SECTION_PROMPT_VERSION = "digest-sections-2"
 
 # ---------------------------------------------------------------------------
 # The deterministic four-section skeleton (SPEC §3).  Order is fixed and is the
@@ -118,10 +119,20 @@ PENDING_STAT_KEYS: tuple[str, ...] = (
     "inbox_pending",
     "inbox_in_range",
     "inbox_reason_counts",
+    "pending_material_count",
     "continuity_significant",
     "continuity_suggested",
     "continuity_suggested_counted",
+    "continuity_suggested_applicable",
 )
+
+# ---------------------------------------------------------------------------
+# Metadata size policy (R3).  The persisted meta.json caps the verbose
+# topic/tag *lists* (the true totals stay in ``topic_count`` / ``tag_count``)
+# and is regression-guarded to stay well under this per-digest byte budget.
+# ---------------------------------------------------------------------------
+META_STATS_LIST_LIMIT = 50
+MAX_META_BYTES = 262144  # 256 KiB per digest meta
 
 # Output budget for one digest.  Reasoning-heavy text models (kimi-k3) spend
 # part of this budget on reasoning tokens, so it is deliberately larger than a
@@ -451,21 +462,42 @@ def apply_material_budget(
 
 
 def _inbox_stats(records: list[dict[str, Any]]) -> dict[str, Any]:
-    """Library-wide Inbox backlog (pure projection, no model)."""
+    """Library-wide Inbox backlog (pure projection, no model).
+
+    R2: ``inbox_backlog`` is the explicit name for the Inbox *projection* 口径
+    (a 只缺标签 document still counts); ``inbox_pending`` is kept as the
+    historical alias.  The material partition count
+    (``pending_material_count``) is a *different* number and is filled by
+    :func:`assemble_material`.
+    """
     items = inbox.build_inbox(records)
-    return {"inbox_pending": len(items)}
+    return {"inbox_pending": len(items), "inbox_backlog": len(items)}
 
 
 def _continuity_stats(records: list[dict[str, Any]]) -> dict[str, Any]:
-    """Continuity pairs (pure, zero LLM); the O(n²) tier is size-capped."""
+    """Continuity pairs (pure, zero LLM); the O(n²) tier is size-capped.
+
+    R1: the 待确认 (suggested) tier additionally needs parsed IR on the records
+    (``document_ir``).  The production store projection (webapp/CLI ->
+    ``store.get_document``) carries no IR, so ``continuity_suggested`` stays 0
+    there *by construction*.  ``continuity_suggested_applicable`` records
+    whether the statistic could be evaluated at all, so the report can say
+    「不适用」 instead of silently printing a misleading 0.
+    """
     counted = len(records) <= CONTINUITY_SUGGESTED_MAX_DOCS
     pairs = continuity.detect_continuity(records, include_suggested=counted)
     significant = sum(1 for p in pairs if p.get("tier") == continuity.SIGNIFICANT)
     suggested = sum(1 for p in pairs if p.get("tier") == continuity.SUGGESTED)
+    ir_available = any(
+        continuity.document_ir(record) is not None
+        for record in records
+        if isinstance(record, dict)
+    )
     return {
         "continuity_significant": significant,
         "continuity_suggested": suggested,
         "continuity_suggested_counted": counted,
+        "continuity_suggested_applicable": ir_available,
     }
 
 
@@ -661,7 +693,20 @@ def render_pending_stats_body(stats: dict[str, Any]) -> str:
             for reason, title_count in sorted(reason_counts.items())
         )
         lines.append(f"  - 原因：{detail}")
-    counted_note = "" if stats.get("continuity_suggested_counted", True) else "（库规模超阈值，仅统计显著对）"
+    pending_material = stats.get("pending_material_count")
+    if pending_material is not None:
+        lines.append(
+            f"- 待整理材料：本期 {int(pending_material)} 篇（材料分区口径：完全无 主题/标签"
+            "或显式标记；与上面的 Inbox 投影口径不同，不可相加）"
+        )
+    counted = stats.get("continuity_suggested_counted", True)
+    applicable = stats.get("continuity_suggested_applicable", True)
+    if not counted:
+        counted_note = "（库规模超阈值，仅统计显著对）"
+    elif not applicable:
+        counted_note = "（未提供 IR 材料，待确认对不适用）"
+    else:
+        counted_note = ""
     lines.append(
         f"- 连续体：可直接合并 {int(stats.get('continuity_significant') or 0)} 对，"
         f"待确认 {int(stats.get('continuity_suggested') or 0)} 对{counted_note}"
@@ -765,13 +810,19 @@ def assemble_material(
         })
 
     stats = compute_stats(recs, range_spec, entries=entries)
+    pending_documents = [d for d in documents if _is_pending(d)]
+    organized_documents = [d for d in documents if not _is_pending(d)]
     stats.update({
         "omitted_count": budget["omitted"],
         "max_docs": budget["max_docs"],
         "topic_floor": budget["topic_floor"],
+        # R8: ``document_count`` above is the in-range total; these make the
+        # material-scoped counts explicit so the same-named quantities can
+        # never be confused in meta.
+        "material_document_count": len(documents),
+        "organized_material_count": len(organized_documents),
+        "pending_material_count": len(pending_documents),
     })
-    pending_documents = [d for d in documents if _is_pending(d)]
-    organized_documents = [d for d in documents if not _is_pending(d)]
     fingerprints = section_fingerprints(
         range_spec, organized_documents, pending_documents, stats
     )
@@ -1235,6 +1286,44 @@ def find_cached(storage_dir: str | Path, fingerprint: str) -> dict[str, Any] | N
     return None
 
 
+def _bounded_list(values: Any, limit: int) -> tuple[Any, bool]:
+    if isinstance(values, list) and len(values) > limit:
+        return list(values[:limit]), True
+    return values, False
+
+
+def _meta_stats_view(stats: dict[str, Any]) -> dict[str, Any]:
+    """R3: cap the verbose list fields persisted inside ``meta.json``.
+
+    The true totals stay in ``topic_count`` / ``tag_count``; only the (W2-unused)
+    label lists are truncated, so a library with thousands of distinct topics
+    cannot inflate every stored digest meta.
+    """
+    out = dict(stats or {})
+    for key in ("topics", "tags"):
+        trimmed, truncated = _bounded_list(out.get(key), META_STATS_LIST_LIMIT)
+        out[key] = trimmed
+        if truncated:
+            out[f"{key}_truncated"] = True
+    return out
+
+
+def _meta_budget_view(budget: dict[str, Any]) -> dict[str, Any]:
+    """R3: same cap for the budget report's per-topic labels."""
+    out = dict(budget or {})
+    out["topics"], topics_truncated = _bounded_list(
+        out.get("topics"), META_STATS_LIST_LIMIT)
+    if topics_truncated:
+        out["topics_truncated"] = True
+    kept = out.get("per_topic_kept")
+    if isinstance(kept, dict) and len(kept) > META_STATS_LIST_LIMIT:
+        out["per_topic_kept"] = {
+            key: kept[key] for key in sorted(kept)[:META_STATS_LIST_LIMIT]
+        }
+        out["per_topic_kept_truncated"] = True
+    return out
+
+
 def _new_digest_id(storage_dir: str | Path, created_at: str, fingerprint: str) -> str:
     base = "dg-" + (re.sub(r"[^0-9]", "", created_at) or "0")
     digest_id = f"{base}-{fingerprint[:8]}"
@@ -1267,6 +1356,10 @@ def save_digest(
     ``sections`` is the W2 contract (``[{key, title, source_document_ids}]``);
     ``llm_calls`` records the *actual* model calls of this generation, which can
     be 0 when every narrative section was reused from the section cache.
+    ``elapsed`` is therefore only meaningful together with ``elapsed_scope``:
+    it is model wall-time (``"model"``) or exactly the absence of a model call
+    (``"none"``, R5).  Verbose meta lists are bounded (R3, see
+    :data:`META_STATS_LIST_LIMIT`).
     """
     directory = digests_dir(storage_dir)
     directory.mkdir(parents=True, exist_ok=True)
@@ -1303,15 +1396,19 @@ def save_digest(
             }
             for section in (sections or [])
         },
-        "stats": stats,
-        "budget": material.get("budget") or {},
+        "stats": _meta_stats_view(stats),
+        "budget": _meta_budget_view(material.get("budget") or {}),
         "llm_mode": llm_mode,
         "model": model,
         "provider": provider,
         "session": session,
         "usage": usage or {},
         "llm_calls": int(llm_calls),
+        # R5: ``elapsed`` only ever measures model time, so a cache-only
+        # generation (``llm_calls=0``) records 0.0 and ``elapsed_scope`` says
+        # why -- never confuse it with a 1-call total that happened to be fast.
         "elapsed": round(float(elapsed or 0.0), 3),
+        "elapsed_scope": "model" if int(llm_calls) else "none",
         "content_chars": len(markdown or ""),
     }
     _markdown_path(storage_dir, digest_id).write_text(markdown or "", encoding="utf-8")
@@ -1637,6 +1734,8 @@ __all__ = [
     "MAX_DOCS",
     "TOPIC_FLOOR",
     "MAX_DOC_CHARS",
+    "META_STATS_LIST_LIMIT",
+    "MAX_META_BYTES",
     "CONTINUITY_SUGGESTED_MAX_DOCS",
     "HIGHLIGHT_LIMIT",
     "HIGHLIGHT_CHARS",
