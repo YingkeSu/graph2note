@@ -163,6 +163,39 @@ def test_system_prompt_declares_hierarchy_contract():
     assert "[]" in prompt
 
 
+def test_system_prompt_activates_the_note_channel():
+    """D5a (T-vision live §7-1): evaluative short phrases must become the
+    related node's ``note``, never a peer node (01 had notes=0 while
+    「Tiger VNC 不支持」/「critical path 优化」were flattened into nodes)."""
+    prompt = diagram.SYSTEM_PROMPT
+    for token in ("警告", "坑", "不支持", "注意", "风险", "限制",
+                  "亮点", "优化", "评价性短句", "note"):
+        assert token in prompt
+    # an explicit "do not create a node" rule plus the 01 anchor examples
+    assert "不建节点" in prompt
+    assert "不要为它新建节点" in prompt
+    assert "Tiger VNC 不支持" in prompt
+    assert "Critical Path 优化" in prompt
+
+
+def test_system_prompt_activates_the_dashed_channel():
+    """D5a (T-vision live §7-2): weak/optional/cross-group references must be
+    emitted as ``style: "dashed"`` edges (live dashed was 0/3)."""
+    prompt = diagram.SYSTEM_PROMPT
+    for token in ("参考", "可选", "备选", "弱引用", "跨组", "dashed"):
+        assert token in prompt
+    assert 'style:"dashed"' in prompt
+    assert '"label":"参考","style":"dashed"' in prompt  # 02 anchor example
+
+
+def test_system_prompt_forbids_dropping_weak_relations():
+    """D5a (T-vision live §7-4): a drawn 参考/虚线 relation must be preserved
+    as a dashed edge or a note, not dropped (02 lost its 参考 association)."""
+    prompt = diagram.SYSTEM_PROMPT
+    assert "不得整条丢弃" in prompt
+    assert "不得因为「不是主流程」而省略" in prompt
+
+
 def test_validate_keeps_flat_contract_shape():
     payload, verdict = diagram.validate_diagram_json({
         "caption": "c",
