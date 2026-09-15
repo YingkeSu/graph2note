@@ -120,6 +120,7 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_custom_llm_provider_api": "webapp",  # issue A3（设置 API/UI）
     # 文档库持久化
     "test_store_bridge": "store",
+    "test_papers_meta_dualslot": "store",  # SPW Y2（P1 paper.json / P2 record.json.paper 双落点契约）
     # CLI 入口
     "test_cli": "cli",
     "test_semantic_diff_cli": "cli",  # issue S1（diff 子命令）
