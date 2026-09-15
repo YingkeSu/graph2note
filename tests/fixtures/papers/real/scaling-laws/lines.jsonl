@@ -1,0 +1,2364 @@
+{"p": 0, "s": 17.2, "b": true, "t": "Scaling Laws for Neural Language Models"}
+{"p": 0, "s": 10.0, "b": true, "t": "Jared Kaplan ∗"}
+{"p": 0, "s": 10.0, "b": false, "t": "Johns Hopkins University, OpenAI"}
+{"p": 0, "s": 10.0, "b": false, "t": "jaredk@jhu.edu"}
+{"p": 0, "s": 10.0, "b": true, "t": "Sam McCandlish∗"}
+{"p": 0, "s": 10.0, "b": false, "t": "OpenAI"}
+{"p": 0, "s": 10.0, "b": false, "t": "sam@openai.com"}
+{"p": 0, "s": 10.0, "b": true, "t": "Tom Henighan"}
+{"p": 0, "s": 10.0, "b": false, "t": "OpenAI"}
+{"p": 0, "s": 10.0, "b": false, "t": "henighan@openai.com"}
+{"p": 0, "s": 10.0, "b": true, "t": "Tom B. Brown"}
+{"p": 0, "s": 10.0, "b": false, "t": "OpenAI"}
+{"p": 0, "s": 10.0, "b": false, "t": "tom@openai.com"}
+{"p": 0, "s": 10.0, "b": true, "t": "Benjamin Chess"}
+{"p": 0, "s": 10.0, "b": false, "t": "OpenAI"}
+{"p": 0, "s": 10.0, "b": false, "t": "bchess@openai.com"}
+{"p": 0, "s": 10.0, "b": true, "t": "Rewon Child"}
+{"p": 0, "s": 10.0, "b": false, "t": "OpenAI"}
+{"p": 0, "s": 10.0, "b": false, "t": "rewon@openai.com"}
+{"p": 0, "s": 10.0, "b": true, "t": "Scott Gray"}
+{"p": 0, "s": 10.0, "b": false, "t": "OpenAI"}
+{"p": 0, "s": 10.0, "b": false, "t": "scott@openai.com"}
+{"p": 0, "s": 10.0, "b": true, "t": "Alec Radford"}
+{"p": 0, "s": 10.0, "b": false, "t": "OpenAI"}
+{"p": 0, "s": 10.0, "b": false, "t": "alec@openai.com"}
+{"p": 0, "s": 10.0, "b": true, "t": "Jeffrey Wu"}
+{"p": 0, "s": 10.0, "b": false, "t": "OpenAI"}
+{"p": 0, "s": 10.0, "b": false, "t": "jeffwu@openai.com"}
+{"p": 0, "s": 10.0, "b": true, "t": "Dario Amodei"}
+{"p": 0, "s": 10.0, "b": false, "t": "OpenAI"}
+{"p": 0, "s": 10.0, "b": false, "t": "damodei@openai.com"}
+{"p": 0, "s": 12.0, "b": true, "t": "Abstract"}
+{"p": 0, "s": 10.0, "b": false, "t": "We study empirical scaling laws for language model performance on the cross-entropy loss."}
+{"p": 0, "s": 10.0, "b": false, "t": "The loss scales as a power-law with model size, dataset size, and the amount of compute"}
+{"p": 0, "s": 10.0, "b": false, "t": "used for training, with some trends spanning more than seven orders of magnitude. Other"}
+{"p": 0, "s": 10.0, "b": false, "t": "architectural details such as network width or depth have minimal effects within a wide"}
+{"p": 0, "s": 10.0, "b": false, "t": "range. Simple equations govern the dependence of overﬁtting on model/dataset size and the"}
+{"p": 0, "s": 10.0, "b": false, "t": "dependence of training speed on model size. These relationships allow us to determine the"}
+{"p": 0, "s": 10.0, "b": false, "t": "optimal allocation of a ﬁxed compute budget. Larger models are signiﬁcantly more sample-"}
+{"p": 0, "s": 10.0, "b": false, "t": "efﬁcient, such that optimally compute-efﬁcient training involves training very large models"}
+{"p": 0, "s": 10.0, "b": false, "t": "on a relatively modest amount of data and stopping signiﬁcantly before convergence."}
+{"p": 0, "s": 9.0, "b": false, "t": "∗Equal contribution."}
+{"p": 0, "s": 9.0, "b": false, "t": "Contributions:"}
+{"p": 0, "s": 9.0, "b": false, "t": "Jared Kaplan and Sam McCandlish led the research."}
+{"p": 0, "s": 9.0, "b": false, "t": "Tom Henighan contributed the LSTM ex-"}
+{"p": 0, "s": 9.0, "b": false, "t": "periments."}
+{"p": 0, "s": 9.0, "b": false, "t": "Tom Brown, Rewon Child, and Scott Gray, and Alec Radford developed the optimized Transformer"}
+{"p": 0, "s": 9.0, "b": false, "t": "implementation. Jeff Wu, Benjamin Chess, and Alec Radford developed the text datasets. Dario Amodei provided"}
+{"p": 0, "s": 9.0, "b": false, "t": "guidance throughout the project."}
+{"p": 0, "s": 20.0, "b": false, "t": "arXiv:2001.08361v1  [cs.LG]  23 Jan 2020"}
+{"p": 1, "s": 12.0, "b": true, "t": "Contents"}
+{"p": 1, "s": 10.0, "b": true, "t": "1"}
+{"p": 1, "s": 10.0, "b": true, "t": "Introduction"}
+{"p": 1, "s": 10.0, "b": true, "t": "2"}
+{"p": 1, "s": 10.0, "b": true, "t": "2"}
+{"p": 1, "s": 10.0, "b": true, "t": "Background and Methods"}
+{"p": 1, "s": 10.0, "b": true, "t": "6"}
+{"p": 1, "s": 10.0, "b": true, "t": "3"}
+{"p": 1, "s": 10.0, "b": true, "t": "Empirical Results and Basic Power Laws"}
+{"p": 1, "s": 10.0, "b": true, "t": "7"}
+{"p": 1, "s": 10.0, "b": true, "t": "4"}
+{"p": 1, "s": 10.0, "b": true, "t": "Charting the Inﬁnite Data Limit and Overﬁtting"}
+{"p": 1, "s": 10.0, "b": true, "t": "10"}
+{"p": 1, "s": 10.0, "b": true, "t": "5"}
+{"p": 1, "s": 10.0, "b": true, "t": "Scaling Laws with Model Size and Training Time"}
+{"p": 1, "s": 10.0, "b": true, "t": "12"}
+{"p": 1, "s": 10.0, "b": true, "t": "6"}
+{"p": 1, "s": 10.0, "b": true, "t": "Optimal Allocation of the Compute Budget"}
+{"p": 1, "s": 10.0, "b": true, "t": "14"}
+{"p": 1, "s": 10.0, "b": true, "t": "7"}
+{"p": 1, "s": 10.0, "b": true, "t": "Related Work"}
+{"p": 1, "s": 10.0, "b": true, "t": "18"}
+{"p": 1, "s": 10.0, "b": true, "t": "8"}
+{"p": 1, "s": 10.0, "b": true, "t": "Discussion"}
+{"p": 1, "s": 10.0, "b": true, "t": "18"}
+{"p": 1, "s": 10.0, "b": true, "t": "Appendices"}
+{"p": 1, "s": 10.0, "b": true, "t": "20"}
+{"p": 1, "s": 10.0, "b": true, "t": "A Summary of Power Laws"}
+{"p": 1, "s": 10.0, "b": true, "t": "20"}
+{"p": 1, "s": 10.0, "b": true, "t": "B"}
+{"p": 1, "s": 10.0, "b": true, "t": "Empirical Model of Compute-Efﬁcient Frontier"}
+{"p": 1, "s": 10.0, "b": true, "t": "20"}
+{"p": 1, "s": 10.0, "b": true, "t": "C Caveats"}
+{"p": 1, "s": 10.0, "b": true, "t": "22"}
+{"p": 1, "s": 10.0, "b": true, "t": "D Supplemental Figures"}
+{"p": 1, "s": 10.0, "b": true, "t": "23"}
+{"p": 1, "s": 12.0, "b": true, "t": "1"}
+{"p": 1, "s": 12.0, "b": true, "t": "Introduction"}
+{"p": 1, "s": 10.0, "b": false, "t": "Language provides a natural domain for the study of artiﬁcial intelligence, as the vast majority of reason-"}
+{"p": 1, "s": 10.0, "b": false, "t": "ing tasks can be efﬁciently expressed and evaluated in language, and the world’s text provides a wealth of"}
+{"p": 1, "s": 10.0, "b": false, "t": "data for unsupervised learning via generative modeling. Deep learning has recently seen rapid progress in lan-"}
+{"p": 1, "s": 10.0, "b": false, "t": "guage modeling, with state of the art models [RNSS18, DCLT18, YDY+19, LOG+19, RSR+19] approaching"}
+{"p": 1, "s": 10.0, "b": false, "t": "human-level performance on many speciﬁc tasks [WPN+19], including the composition of coherent multi-"}
+{"p": 1, "s": 10.0, "b": false, "t": "paragraph prompted text samples [RWC+19]."}
+{"p": 1, "s": 10.0, "b": false, "t": "One might expect language modeling performance to depend on model architecture, the size of neural models,"}
+{"p": 1, "s": 10.0, "b": false, "t": "the computing power used to train them, and the data available for this training process. In this work we will"}
+{"p": 1, "s": 10.0, "b": false, "t": "empirically investigate the dependence of language modeling loss on all of these factors, focusing on the"}
+{"p": 1, "s": 10.0, "b": false, "t": "Transformer architecture [VSP+17, LSP+18]. The high ceiling and low ﬂoor for performance on language"}
+{"p": 1, "s": 10.0, "b": false, "t": "tasks allows us to study trends over more than seven orders of magnitude in scale."}
+{"p": 1, "s": 10.0, "b": false, "t": "Throughout we will observe precise power-law scalings for performance as a function of training time, con-"}
+{"p": 1, "s": 10.0, "b": false, "t": "text length, dataset size, model size, and compute budget."}
+{"p": 1, "s": 10.0, "b": true, "t": "1.1"}
+{"p": 1, "s": 10.0, "b": true, "t": "Summary"}
+{"p": 1, "s": 10.0, "b": false, "t": "Our key ﬁndings for Transformer language models are are as follows:"}
+{"p": 1, "s": 9.0, "b": false, "t": "2Here we display predicted compute when using a sufﬁciently small batch size. See Figure 13 for comparison to the"}
+{"p": 1, "s": 9.0, "b": false, "t": "purely empirical data."}
+{"p": 1, "s": 10.0, "b": false, "t": "2"}
+{"p": 2, "s": 9.6, "b": false, "t": "Dataset Size "}
+{"p": 2, "s": 8.2, "b": false, "t": "tokens"}
+{"p": 2, "s": 9.6, "b": false, "t": "Parameters "}
+{"p": 2, "s": 8.2, "b": false, "t": "non-embedding"}
+{"p": 2, "s": 9.6, "b": false, "t": "Compute "}
+{"p": 2, "s": 8.2, "b": false, "t": "PF-days, non-embedding"}
+{"p": 2, "s": 8.6, "b": false, "t": "Test Loss"}
+{"p": 2, "s": 10.0, "b": true, "t": "Figure 1"}
+{"p": 2, "s": 10.0, "b": false, "t": "Language modeling performance improves smoothly as we increase the model size, datasetset"}
+{"p": 2, "s": 10.0, "b": false, "t": "size, and amount of compute2 used for training. For optimal performance all three factors must be scaled"}
+{"p": 2, "s": 10.0, "b": false, "t": "up in tandem. Empirical performance has a power-law relationship with each individual factor when not"}
+{"p": 2, "s": 10.0, "b": false, "t": "bottlenecked by the other two."}
+{"p": 2, "s": 10.0, "b": true, "t": "Performance depends strongly on scale, weakly on model shape:"}
+{"p": 2, "s": 10.0, "b": false, "t": "Model performance depends most"}
+{"p": 2, "s": 10.0, "b": false, "t": "strongly on scale, which consists of three factors: the number of model parameters N (excluding embed-"}
+{"p": 2, "s": 10.0, "b": false, "t": "dings), the size of the dataset D, and the amount of compute C used for training. Within reasonable limits,"}
+{"p": 2, "s": 10.0, "b": false, "t": "performance depends very weakly on other architectural hyperparameters such as depth vs. width. (Section"}
+{"p": 2, "s": 10.0, "b": false, "t": "3)"}
+{"p": 2, "s": 10.0, "b": true, "t": "Smooth power laws:"}
+{"p": 2, "s": 10.0, "b": false, "t": "Performance has a power-law relationship with each of the three scale factors"}
+{"p": 2, "s": 10.0, "b": false, "t": "N, D, C when not bottlenecked by the other two, with trends spanning more than six orders of magnitude"}
+{"p": 2, "s": 10.0, "b": false, "t": "(see Figure 1). We observe no signs of deviation from these trends on the upper end, though performance"}
+{"p": 2, "s": 10.0, "b": false, "t": "must ﬂatten out eventually before reaching zero loss. (Section 3)"}
+{"p": 2, "s": 10.0, "b": true, "t": "Universality of overﬁtting:"}
+{"p": 2, "s": 10.0, "b": false, "t": "Performance improves predictably as long as we scale up N and D in tandem,"}
+{"p": 2, "s": 10.0, "b": false, "t": "but enters a regime of diminishing returns if either N or D is held ﬁxed while the other increases. The"}
+{"p": 2, "s": 10.0, "b": false, "t": "performance penalty depends predictably on the ratio N 0.74/D, meaning that every time we increase the"}
+{"p": 2, "s": 10.0, "b": false, "t": "model size 8x, we only need to increase the data by roughly 5x to avoid a penalty. (Section 4)"}
+{"p": 2, "s": 10.0, "b": true, "t": "Universality of training:"}
+{"p": 2, "s": 10.0, "b": false, "t": "Training curves follow predictable power-laws whose parameters are roughly"}
+{"p": 2, "s": 10.0, "b": false, "t": "independent of the model size. By extrapolating the early part of a training curve, we can roughly predict the"}
+{"p": 2, "s": 10.0, "b": false, "t": "loss that would be achieved if we trained for much longer. (Section 5)"}
+{"p": 2, "s": 10.0, "b": true, "t": "Transfer improves with test performance:"}
+{"p": 2, "s": 10.0, "b": false, "t": "When we evaluate models on text with a different distribution"}
+{"p": 2, "s": 10.0, "b": false, "t": "than they were trained on, the results are strongly correlated to those on the training validation set with"}
+{"p": 2, "s": 10.0, "b": false, "t": "a roughly constant offset in the loss – in other words, transfer to a different distribution incurs a constant"}
+{"p": 2, "s": 10.0, "b": false, "t": "penalty but otherwise improves roughly in line with performance on the training set. (Section 3.2.2)"}
+{"p": 2, "s": 10.0, "b": true, "t": "Sample efﬁciency:"}
+{"p": 2, "s": 10.0, "b": false, "t": "Large models are more sample-efﬁcient than small models, reaching the same level of"}
+{"p": 2, "s": 10.0, "b": false, "t": "performance with fewer optimization steps (Figure 2) and using fewer data points (Figure 4)."}
+{"p": 2, "s": 10.0, "b": true, "t": "Convergence is inefﬁcient:"}
+{"p": 2, "s": 10.0, "b": false, "t": "When working within a ﬁxed compute budget C but without any other restric-"}
+{"p": 2, "s": 10.0, "b": false, "t": "tions on the model size N or available data D, we attain optimal performance by training very large models"}
+{"p": 2, "s": 10.0, "b": false, "t": "and stopping signiﬁcantly short of convergence (see Figure 3). Maximally compute-efﬁcient training would"}
+{"p": 2, "s": 10.0, "b": false, "t": "therefore be far more sample efﬁcient than one might expect based on training small models to convergence,"}
+{"p": 2, "s": 10.0, "b": false, "t": "with data requirements growing very slowly as D ∼C0.27 with training compute. (Section 6)"}
+{"p": 2, "s": 10.0, "b": true, "t": "Optimal batch size:"}
+{"p": 2, "s": 10.0, "b": false, "t": "The ideal batch size for training these models is roughly a power of the loss only,"}
+{"p": 2, "s": 10.0, "b": false, "t": "and continues to be determinable by measuring the gradient noise scale [MKAT18]; it is roughly 1-2 million"}
+{"p": 2, "s": 10.0, "b": false, "t": "tokens at convergence for the largest models we can train. (Section 5.1)"}
+{"p": 2, "s": 10.0, "b": false, "t": "Taken together, these results show that language modeling performance improves smoothly and predictably"}
+{"p": 2, "s": 10.0, "b": false, "t": "as we appropriately scale up model size, data, and compute. We expect that larger language models will"}
+{"p": 2, "s": 10.0, "b": false, "t": "perform better and be more sample efﬁcient than current models."}
+{"p": 2, "s": 10.0, "b": false, "t": "3"}
+{"p": 3, "s": 8.5, "b": true, "t": "Larger models require fewer samples "}
+{"p": 3, "s": 8.5, "b": false, "t": "to reach the same performance"}
+{"p": 3, "s": 5.6, "b": false, "t": "10"}
+{"p": 3, "s": 5.6, "b": false, "t": "8"}
+{"p": 3, "s": 5.6, "b": false, "t": "6"}
+{"p": 3, "s": 5.6, "b": false, "t": "4"}
+{"p": 3, "s": 8.5, "b": false, "t": "The optimal model size grows smoothly "}
+{"p": 3, "s": 8.5, "b": false, "t": "with the loss target and compute budget"}
+{"p": 3, "s": 6.2, "b": false, "t": "Line color indicates "}
+{"p": 3, "s": 6.2, "b": false, "t": "number of parameters"}
+{"p": 3, "s": 5.6, "b": false, "t": "107"}
+{"p": 3, "s": 5.6, "b": false, "t": "109"}
+{"p": 3, "s": 5.6, "b": false, "t": "1011"}
+{"p": 3, "s": 6.8, "b": false, "t": "Tokens Processed"}
+{"p": 3, "s": 6.8, "b": false, "t": "Compute (PF-days)"}
+{"p": 3, "s": 5.6, "b": false, "t": "10-9"}
+{"p": 3, "s": 5.6, "b": false, "t": "10-6"}
+{"p": 3, "s": 5.6, "b": false, "t": "10-3"}
+{"p": 3, "s": 5.6, "b": false, "t": "100"}
+{"p": 3, "s": 6.8, "b": false, "t": "Test Loss"}
+{"p": 3, "s": 6.8, "b": false, "t": "Compute-eﬃcient "}
+{"p": 3, "s": 6.8, "b": false, "t": "training stops far "}
+{"p": 3, "s": 6.8, "b": false, "t": "short of convergence"}
+{"p": 3, "s": 5.6, "b": false, "t": "103"}
+{"p": 3, "s": 5.6, "b": false, "t": "109"}
+{"p": 3, "s": 5.6, "b": false, "t": "106"}
+{"p": 3, "s": 6.8, "b": false, "t": "103 Params"}
+{"p": 3, "s": 6.8, "b": false, "t": "109 Params"}
+{"p": 3, "s": 5.6, "b": false, "t": "10"}
+{"p": 3, "s": 5.6, "b": false, "t": "8"}
+{"p": 3, "s": 5.6, "b": false, "t": "6"}
+{"p": 3, "s": 5.6, "b": false, "t": "4"}
+{"p": 3, "s": 10.0, "b": true, "t": "Figure 2"}
+{"p": 3, "s": 10.0, "b": false, "t": "We show a series of language model training runs, with models ranging in size from 103 to 109"}
+{"p": 3, "s": 10.0, "b": false, "t": "parameters (excluding embeddings)."}
+{"p": 3, "s": 9.1, "b": false, "t": "100x Batch Size"}
+{"p": 3, "s": 9.1, "b": false, "t": "<10x Serial Steps"}
+{"p": 3, "s": 9.1, "b": false, "t": ">1,000,000x Model Size"}
+{"p": 3, "s": 7.8, "b": false, "t": "Data requirements "}
+{"p": 3, "s": 7.8, "b": false, "t": "grow relatively slowly"}
+{"p": 3, "s": 7.8, "b": false, "t": "Optimal model size "}
+{"p": 3, "s": 7.8, "b": false, "t": "increases very quickly"}
+{"p": 3, "s": 7.8, "b": false, "t": "Minimum serial steps "}
+{"p": 3, "s": 7.8, "b": false, "t": "increases negligibly"}
+{"p": 3, "s": 10.0, "b": true, "t": "Figure 3"}
+{"p": 3, "s": 10.0, "b": false, "t": "As more compute becomes available, we can choose how much to allocate towards training larger"}
+{"p": 3, "s": 10.0, "b": false, "t": "models, using larger batches, and training for more steps. We illustrate this for a billion-fold increase in"}
+{"p": 3, "s": 10.0, "b": false, "t": "compute. For optimally compute-efﬁcient training, most of the increase should go towards increased model"}
+{"p": 3, "s": 10.0, "b": false, "t": "size. A relatively small increase in data is needed to avoid reuse. Of the increase in data, most can be used to"}
+{"p": 3, "s": 10.0, "b": false, "t": "increase parallelism through larger batch sizes, with only a very small increase in serial training time required."}
+{"p": 3, "s": 10.0, "b": true, "t": "1.2"}
+{"p": 3, "s": 10.0, "b": true, "t": "Summary of Scaling Laws"}
+{"p": 3, "s": 10.0, "b": false, "t": "The test loss of a Transformer trained to autoregressively model language can be predicted using a power-law"}
+{"p": 3, "s": 10.0, "b": false, "t": "when performance is limited by only either the number of non-embedding parameters N, the dataset size D,"}
+{"p": 3, "s": 10.0, "b": false, "t": "or the optimally allocated compute budget Cmin (see Figure 1):"}
+{"p": 3, "s": 10.0, "b": false, "t": "1. For models with a limited number of parameters, trained to convergence on sufﬁciently large"}
+{"p": 3, "s": 10.0, "b": false, "t": "datasets:"}
+{"p": 3, "s": 10.0, "b": false, "t": "L(N) = (Nc/N)αN ; αN ∼0.076,"}
+{"p": 3, "s": 10.0, "b": false, "t": "Nc ∼8.8 × 1013 (non-embedding parameters)"}
+{"p": 3, "s": 10.0, "b": false, "t": "(1.1)"}
+{"p": 3, "s": 10.0, "b": false, "t": "2. For large models trained with a limited dataset with early stopping:"}
+{"p": 3, "s": 10.0, "b": false, "t": "L(D) = (Dc/D)αD ; αD ∼0.095,"}
+{"p": 3, "s": 10.0, "b": false, "t": "Dc ∼5.4 × 1013 (tokens)"}
+{"p": 3, "s": 10.0, "b": false, "t": "(1.2)"}
+{"p": 3, "s": 10.0, "b": false, "t": "3. When training with a limited amount of compute, a sufﬁciently large dataset, an optimally-sized"}
+{"p": 3, "s": 10.0, "b": false, "t": "model, and a sufﬁciently small batch size (making optimal3 use of compute):"}
+{"p": 3, "s": 10.0, "b": false, "t": "L(Cmin) ="}
+{"p": 3, "s": 10.0, "b": false, "t": "\u0000"}
+{"p": 3, "s": 7.0, "b": false, "t": "Cmin"}
+{"p": 3, "s": 7.0, "b": false, "t": "c"}
+{"p": 3, "s": 7.0, "b": false, "t": "/Cmin"}
+{"p": 3, "s": 5.0, "b": false, "t": "\u0001αmin"}
+{"p": 3, "s": 5.0, "b": false, "t": "C"}
+{"p": 3, "s": 7.0, "b": false, "t": "; αmin"}
+{"p": 3, "s": 7.0, "b": false, "t": "C"}
+{"p": 3, "s": 10.0, "b": false, "t": "∼0.050,"}
+{"p": 3, "s": 7.0, "b": false, "t": "Cmin"}
+{"p": 3, "s": 7.0, "b": false, "t": "c"}
+{"p": 3, "s": 10.0, "b": false, "t": "∼3.1 × 108 (PF-days)"}
+{"p": 3, "s": 10.0, "b": false, "t": "(1.3)"}
+{"p": 3, "s": 9.0, "b": false, "t": "3We also observe an empirical power-law trend with the training compute C (Figure 1) while training at ﬁxed batch"}
+{"p": 3, "s": 9.0, "b": false, "t": "size, but it is the trend with Cmin that should be used to make predictions. They are related by equation (5.5)."}
+{"p": 3, "s": 10.0, "b": false, "t": "4"}
+{"p": 4, "s": 6.0, "b": false, "t": "107"}
+{"p": 4, "s": 6.0, "b": false, "t": "108"}
+{"p": 4, "s": 6.0, "b": false, "t": "109"}
+{"p": 4, "s": 6.0, "b": false, "t": "1010"}
+{"p": 4, "s": 6.0, "b": false, "t": "Tokens in Dataset"}
+{"p": 4, "s": 6.0, "b": false, "t": "2.5"}
+{"p": 4, "s": 6.0, "b": false, "t": "3.0"}
+{"p": 4, "s": 6.0, "b": false, "t": "3.5"}
+{"p": 4, "s": 6.0, "b": false, "t": "4.0"}
+{"p": 4, "s": 6.0, "b": false, "t": "4.5"}
+{"p": 4, "s": 6.0, "b": false, "t": "Loss"}
+{"p": 4, "s": 7.1, "b": false, "t": "Loss vs Model and Dataset Size"}
+{"p": 4, "s": 6.0, "b": false, "t": "Params"}
+{"p": 4, "s": 4.3, "b": false, "t": "708M"}
+{"p": 4, "s": 4.3, "b": false, "t": "302M"}
+{"p": 4, "s": 4.3, "b": false, "t": "85M"}
+{"p": 4, "s": 4.3, "b": false, "t": "3M"}
+{"p": 4, "s": 4.3, "b": false, "t": "25M"}
+{"p": 4, "s": 4.3, "b": false, "t": "393.2K"}
+{"p": 4, "s": 6.0, "b": false, "t": "104"}
+{"p": 4, "s": 6.0, "b": false, "t": "105"}
+{"p": 4, "s": 6.0, "b": false, "t": "Estimated Smin"}
+{"p": 4, "s": 6.0, "b": false, "t": "2.4"}
+{"p": 4, "s": 6.0, "b": false, "t": "2.8"}
+{"p": 4, "s": 6.0, "b": false, "t": "3.2"}
+{"p": 4, "s": 6.0, "b": false, "t": "3.6"}
+{"p": 4, "s": 6.0, "b": false, "t": "4.0"}
+{"p": 4, "s": 6.0, "b": false, "t": "4.4"}
+{"p": 4, "s": 6.0, "b": false, "t": "Loss"}
+{"p": 4, "s": 7.3, "b": false, "t": "Loss vs Model Size and Training Steps"}
+{"p": 4, "s": 6.0, "b": false, "t": "106"}
+{"p": 4, "s": 6.0, "b": false, "t": "107"}
+{"p": 4, "s": 6.0, "b": false, "t": "108"}
+{"p": 4, "s": 6.0, "b": false, "t": "Parameters (non-embed)"}
+{"p": 4, "s": 10.0, "b": true, "t": "Figure 4"}
+{"p": 4, "s": 10.0, "b": true, "t": "Left: The early-stopped test loss L(N, D) varies predictably with the dataset size D and model"}
+{"p": 4, "s": 10.0, "b": true, "t": "size N according to Equation (1.5). Right: After an initial transient period, learning curves for all model"}
+{"p": 4, "s": 10.0, "b": false, "t": "sizes N can be ﬁt with Equation (1.6), which is parameterized in terms of Smin, the number of steps when"}
+{"p": 4, "s": 10.0, "b": false, "t": "training at large batch size (details in Section 5.1)."}
+{"p": 4, "s": 10.0, "b": false, "t": "These relations hold across eight orders of magnitude in Cmin, six orders of magnitude in N, and over two"}
+{"p": 4, "s": 10.0, "b": false, "t": "orders of magnitude in D. They depend very weakly on model shape and other Transformer hyperparameters"}
+{"p": 4, "s": 10.0, "b": false, "t": "(depth, width, number of self-attention heads), with speciﬁc numerical values associated with the Webtext2"}
+{"p": 4, "s": 10.0, "b": false, "t": "training set [RWC+19]. The power laws αN, αD, αmin"}
+{"p": 4, "s": 7.0, "b": false, "t": "C"}
+{"p": 4, "s": 10.0, "b": false, "t": "specify the degree of performance improvement"}
+{"p": 4, "s": 10.0, "b": false, "t": "expected as we scale up N, D, or Cmin; for example, doubling the number of parameters yields a loss that"}
+{"p": 4, "s": 10.0, "b": false, "t": "is smaller by a factor 2−αN = 0.95. The precise numerical values of Nc, Cmin"}
+{"p": 4, "s": 7.0, "b": false, "t": "c"}
+{"p": 4, "s": 10.0, "b": false, "t": ", and Dc depend on the"}
+{"p": 4, "s": 10.0, "b": false, "t": "vocabulary size and tokenization and hence do not have a fundamental meaning."}
+{"p": 4, "s": 10.0, "b": false, "t": "The critical batch size, which determines the speed/efﬁciency tradeoff for data parallelism ([MKAT18]), also"}
+{"p": 4, "s": 10.0, "b": false, "t": "roughly obeys a power law in L:"}
+{"p": 4, "s": 10.0, "b": false, "t": "Bcrit (L) ="}
+{"p": 4, "s": 10.0, "b": false, "t": "B∗"}
+{"p": 4, "s": 7.0, "b": false, "t": "L1/αB ,"}
+{"p": 4, "s": 10.0, "b": false, "t": "B∗∼2 · 108 tokens, αB ∼0.21"}
+{"p": 4, "s": 10.0, "b": false, "t": "(1.4)"}
+{"p": 4, "s": 10.0, "b": false, "t": "Equation (1.1) and (1.2) together suggest that as we increase the model size, we should increase the dataset"}
+{"p": 4, "s": 10.0, "b": false, "t": "size sublinearly according to D ∝N"}
+{"p": 4, "s": 5.0, "b": false, "t": "αN"}
+{"p": 4, "s": 10.0, "b": false, "t": "αD ∼N 0.74. In fact, we ﬁnd that there is a single equation combining"}
+{"p": 4, "s": 10.0, "b": false, "t": "(1.1) and (1.2) that governs the simultaneous dependence on N and D and governs the degree of overﬁtting:"}
+{"p": 4, "s": 10.0, "b": false, "t": "L(N, D) ="}
+{"p": 4, "s": 10.0, "b": false, "t": "\"\u0012Nc"}
+{"p": 4, "s": 10.0, "b": false, "t": "N"}
+{"p": 4, "s": 5.0, "b": false, "t": "\u0013 αN"}
+{"p": 4, "s": 10.0, "b": false, "t": "αD + Dc"}
+{"p": 4, "s": 10.0, "b": false, "t": "D"}
+{"p": 4, "s": 10.0, "b": false, "t": "#αD"}
+{"p": 4, "s": 10.0, "b": false, "t": "(1.5)"}
+{"p": 4, "s": 10.0, "b": false, "t": "with ﬁts pictured on the left in ﬁgure 4. We conjecture that this functional form may also parameterize the"}
+{"p": 4, "s": 10.0, "b": false, "t": "trained log-likelihood for other generative modeling tasks."}
+{"p": 4, "s": 10.0, "b": false, "t": "When training a given model for a ﬁnite number of parameter update steps S in the inﬁnite data limit, after"}
+{"p": 4, "s": 10.0, "b": false, "t": "an initial transient period, the learning curves can be accurately ﬁt by (see the right of ﬁgure 4)"}
+{"p": 4, "s": 10.0, "b": false, "t": "L(N, S) ="}
+{"p": 4, "s": 10.0, "b": false, "t": "\u0012Nc"}
+{"p": 4, "s": 10.0, "b": false, "t": "N"}
+{"p": 4, "s": 10.0, "b": false, "t": "\u0013αN"}
+{"p": 4, "s": 10.0, "b": false, "t": "+"}
+{"p": 4, "s": 10.0, "b": false, "t": "\u0012"}
+{"p": 4, "s": 10.0, "b": false, "t": "Sc"}
+{"p": 4, "s": 10.0, "b": false, "t": "Smin(S)"}
+{"p": 4, "s": 10.0, "b": false, "t": "\u0013αS"}
+{"p": 4, "s": 10.0, "b": false, "t": "(1.6)"}
+{"p": 4, "s": 10.0, "b": false, "t": "where Sc ≈2.1 × 103 and αS ≈0.76, and Smin(S) is the minimum possible number of optimization steps"}
+{"p": 4, "s": 10.0, "b": false, "t": "(parameter updates) estimated using Equation (5.4)."}
+{"p": 4, "s": 10.0, "b": false, "t": "When training within a ﬁxed compute budget C, but with no other constraints, Equation (1.6) leads to the"}
+{"p": 4, "s": 10.0, "b": false, "t": "prediction that the optimal model size N, optimal batch size B, optimal number of steps S, and dataset size"}
+{"p": 4, "s": 10.0, "b": false, "t": "D should grow as"}
+{"p": 4, "s": 10.0, "b": false, "t": "N ∝Cαmin"}
+{"p": 4, "s": 5.0, "b": false, "t": "C"}
+{"p": 4, "s": 7.0, "b": false, "t": "/αN ,"}
+{"p": 4, "s": 10.0, "b": false, "t": "B ∝Cαmin"}
+{"p": 4, "s": 5.0, "b": false, "t": "C"}
+{"p": 4, "s": 7.0, "b": false, "t": "/αB,"}
+{"p": 4, "s": 10.0, "b": false, "t": "S ∝Cαmin"}
+{"p": 4, "s": 5.0, "b": false, "t": "C"}
+{"p": 4, "s": 7.0, "b": false, "t": "/αS,"}
+{"p": 4, "s": 10.0, "b": false, "t": "D = B · S"}
+{"p": 4, "s": 10.0, "b": false, "t": "(1.7)"}
+{"p": 4, "s": 10.0, "b": false, "t": "with"}
+{"p": 4, "s": 7.0, "b": false, "t": "αmin"}
+{"p": 4, "s": 7.0, "b": false, "t": "C"}
+{"p": 4, "s": 10.0, "b": false, "t": "= 1/ (1/αS + 1/αB + 1/αN)"}
+{"p": 4, "s": 10.0, "b": false, "t": "(1.8)"}
+{"p": 4, "s": 10.0, "b": false, "t": "which closely matches the empirically optimal results N ∝C0.73"}
+{"p": 4, "s": 7.0, "b": false, "t": "min , B ∝C0.24"}
+{"p": 4, "s": 10.0, "b": false, "t": "min , and S ∝C0.03"}
+{"p": 4, "s": 10.0, "b": false, "t": "min . As the"}
+{"p": 4, "s": 10.0, "b": false, "t": "computational budget C increases, it should be spent primarily on larger models, without dramatic increases"}
+{"p": 4, "s": 10.0, "b": false, "t": "in training time or dataset size (see Figure 3). This also implies that as models grow larger, they become"}
+{"p": 4, "s": 10.0, "b": false, "t": "increasingly sample efﬁcient. In practice, researchers typically train smaller models for longer than would"}
+{"p": 4, "s": 10.0, "b": false, "t": "5"}
+{"p": 5, "s": 10.0, "b": false, "t": "be maximally compute-efﬁcient because of hardware constraints. Optimal performance depends on total"}
+{"p": 5, "s": 10.0, "b": false, "t": "compute as a power law (see Equation (1.3))."}
+{"p": 5, "s": 10.0, "b": false, "t": "We provide some basic theoretical motivation for Equation (1.5), an analysis of learning curve ﬁts and their"}
+{"p": 5, "s": 10.0, "b": false, "t": "implications for training time, and a breakdown of our results per token. We also make some brief compar-"}
+{"p": 5, "s": 10.0, "b": false, "t": "isons to LSTMs and recurrent Transformers [DGV+18]."}
+{"p": 5, "s": 10.0, "b": true, "t": "1.3"}
+{"p": 5, "s": 10.0, "b": true, "t": "Notation"}
+{"p": 5, "s": 10.0, "b": false, "t": "We use the following notation:"}
+{"p": 5, "s": 10.0, "b": false, "t": "• L – the cross entropy loss in nats. Typically it will be averaged over the tokens in a context, but in"}
+{"p": 5, "s": 10.0, "b": false, "t": "some cases we report the loss for speciﬁc tokens within the context."}
+{"p": 5, "s": 10.0, "b": false, "t": "• N – the number of model parameters, excluding all vocabulary and positional embeddings"}
+{"p": 5, "s": 10.0, "b": false, "t": "• C ≈6NBS – an estimate of the total non-embedding training compute, where B is the batch size,"}
+{"p": 5, "s": 10.0, "b": false, "t": "and S is the number of training steps (ie parameter updates). We quote numerical values in PF-days,"}
+{"p": 5, "s": 10.0, "b": false, "t": "where one PF-day = 1015 × 24 × 3600 = 8.64 × 1019 ﬂoating point operations."}
+{"p": 5, "s": 10.0, "b": false, "t": "• D – the dataset size in tokens"}
+{"p": 5, "s": 10.0, "b": false, "t": "• Bcrit – the critical batch size [MKAT18], deﬁned and discussed in Section 5.1. Training at the"}
+{"p": 5, "s": 10.0, "b": false, "t": "critical batch size provides a roughly optimal compromise between time and compute efﬁciency."}
+{"p": 5, "s": 10.0, "b": false, "t": "• Cmin – an estimate of the minimum amount of non-embedding compute to reach a given value of"}
+{"p": 5, "s": 10.0, "b": false, "t": "the loss. This is the training compute that would be used if the model were trained at a batch size"}
+{"p": 5, "s": 10.0, "b": false, "t": "much less than the critical batch size."}
+{"p": 5, "s": 10.0, "b": false, "t": "• Smin – an estimate of the minimal number of training steps needed to reach a given value of the loss."}
+{"p": 5, "s": 10.0, "b": false, "t": "This is also the number of training steps that would be used if the model were trained at a batch size"}
+{"p": 5, "s": 10.0, "b": false, "t": "much greater than the critical batch size."}
+{"p": 5, "s": 10.0, "b": false, "t": "• αX – power-law exponents for the scaling of the loss as L(X) ∝1/XαX where X can be any of"}
+{"p": 5, "s": 10.0, "b": false, "t": "N, D, C, S, B, Cmin."}
+{"p": 5, "s": 12.0, "b": true, "t": "2"}
+{"p": 5, "s": 12.0, "b": true, "t": "Background and Methods"}
+{"p": 5, "s": 10.0, "b": false, "t": "We train language models on WebText2, an extended version of the WebText [RWC+19] dataset, tokenized"}
+{"p": 5, "s": 10.0, "b": false, "t": "using byte-pair encoding [SHB15] with a vocabulary size nvocab = 50257. We optimize the autoregres-"}
+{"p": 5, "s": 10.0, "b": false, "t": "sive log-likelihood (i.e. cross-entropy loss) averaged over a 1024-token context, which is also our principal"}
+{"p": 5, "s": 10.0, "b": false, "t": "performance metric. We record the loss on the WebText2 test distribution and on a selection of other text"}
+{"p": 5, "s": 10.0, "b": false, "t": "distributions. We primarily train decoder-only [LSP+18, RNSS18] Transformer [VSP+17] models, though"}
+{"p": 5, "s": 10.0, "b": false, "t": "we also train LSTM models and Universal Transformers [DGV+18] for comparison."}
+{"p": 5, "s": 10.0, "b": true, "t": "2.1"}
+{"p": 5, "s": 10.0, "b": true, "t": "Parameter and Compute Scaling of Transformers"}
+{"p": 5, "s": 10.0, "b": false, "t": "We parameterize the Transformer architecture using hyperparameters nlayer (number of layers), dmodel (di-"}
+{"p": 5, "s": 10.0, "b": false, "t": "mension of the residual stream), dﬀ(dimension of the intermediate feed-forward layer), dattn (dimension of"}
+{"p": 5, "s": 10.0, "b": false, "t": "the attention output), and nheads (number of attention heads per layer). We include nctx tokens in the input"}
+{"p": 5, "s": 10.0, "b": false, "t": "context, with nctx = 1024 except where otherwise noted."}
+{"p": 5, "s": 10.0, "b": false, "t": "We use N to denote the model size, which we deﬁne as the number of non-embedding parameters"}
+{"p": 5, "s": 7.0, "b": false, "t": "N ≈2dmodelnlayer (2dattn + dﬀ)"}
+{"p": 5, "s": 7.0, "b": false, "t": "= 12nlayerd2"}
+{"p": 5, "s": 7.0, "b": false, "t": "model"}
+{"p": 5, "s": 10.0, "b": false, "t": "with the standard"}
+{"p": 5, "s": 7.0, "b": false, "t": "dattn = dﬀ/4 = dmodel"}
+{"p": 5, "s": 10.0, "b": false, "t": "(2.1)"}
+{"p": 5, "s": 10.0, "b": false, "t": "where we have excluded biases and other sub-leading terms. Our models also have nvocabdmodel parameters"}
+{"p": 5, "s": 10.0, "b": false, "t": "in an embedding matrix, and use nctxdmodel parameters for positional embeddings, but we do not include"}
+{"p": 5, "s": 10.0, "b": false, "t": "these when discussing the ‘model size’ N; we will see that this produces signiﬁcantly cleaner scaling laws."}
+{"p": 5, "s": 10.0, "b": false, "t": "Evaluating a forward pass of the Transformer involves roughly"}
+{"p": 5, "s": 7.0, "b": false, "t": "Cforward ≈2N + 2nlayernctxdmodel"}
+{"p": 5, "s": 10.0, "b": false, "t": "(2.2)"}
+{"p": 5, "s": 10.0, "b": false, "t": "add-multiply operations, where the factor of two comes from the multiply-accumulate operation used in"}
+{"p": 5, "s": 10.0, "b": false, "t": "matrix multiplication. A more detailed per-operation parameter and compute count is included in Table 1."}
+{"p": 5, "s": 10.0, "b": false, "t": "6"}
+{"p": 6, "s": 10.0, "b": true, "t": "Operation"}
+{"p": 6, "s": 10.0, "b": true, "t": "Parameters"}
+{"p": 6, "s": 10.0, "b": true, "t": "FLOPs per Token"}
+{"p": 6, "s": 10.0, "b": false, "t": "Embed"}
+{"p": 6, "s": 7.0, "b": false, "t": "(nvocab + nctx) dmodel"}
+{"p": 6, "s": 7.0, "b": false, "t": "4dmodel"}
+{"p": 6, "s": 10.0, "b": false, "t": "Attention: QKV"}
+{"p": 6, "s": 7.0, "b": false, "t": "nlayerdmodel3dattn"}
+{"p": 6, "s": 7.0, "b": false, "t": "2nlayerdmodel3dattn"}
+{"p": 6, "s": 10.0, "b": false, "t": "Attention: Mask"}
+{"p": 6, "s": 10.0, "b": false, "t": "—"}
+{"p": 6, "s": 7.0, "b": false, "t": "2nlayernctxdattn"}
+{"p": 6, "s": 10.0, "b": false, "t": "Attention: Project"}
+{"p": 6, "s": 7.0, "b": false, "t": "nlayerdattndmodel"}
+{"p": 6, "s": 7.0, "b": false, "t": "2nlayerdattndembd"}
+{"p": 6, "s": 10.0, "b": false, "t": "Feedforward"}
+{"p": 6, "s": 7.0, "b": false, "t": "nlayer2dmodeldﬀ"}
+{"p": 6, "s": 7.0, "b": false, "t": "2nlayer2dmodeldﬀ"}
+{"p": 6, "s": 10.0, "b": false, "t": "De-embed"}
+{"p": 6, "s": 10.0, "b": false, "t": "—"}
+{"p": 6, "s": 7.0, "b": false, "t": "2dmodelnvocab"}
+{"p": 6, "s": 10.0, "b": true, "t": "Total (Non-Embedding)"}
+{"p": 6, "s": 7.0, "b": false, "t": "N = 2dmodelnlayer (2dattn + dﬀ)"}
+{"p": 6, "s": 7.0, "b": false, "t": "Cforward = 2N + 2nlayernctxdattn"}
+{"p": 6, "s": 10.0, "b": true, "t": "Table 1"}
+{"p": 6, "s": 10.0, "b": false, "t": "Parameter counts and compute (forward pass) estimates for a Transformer model. Sub-leading"}
+{"p": 6, "s": 10.0, "b": false, "t": "terms such as nonlinearities, biases, and layer normalization are omitted."}
+{"p": 6, "s": 10.0, "b": false, "t": "For contexts and models with dmodel > nctx/12, the context-dependent computational cost per token is a"}
+{"p": 6, "s": 10.0, "b": false, "t": "relatively small fraction of the total compute. Since we primarily study models where dmodel ≫nctx/12,"}
+{"p": 6, "s": 10.0, "b": false, "t": "we do not include context-dependent terms in our training compute estimate. Accounting for the backwards"}
+{"p": 6, "s": 10.0, "b": false, "t": "pass (approximately twice the compute as the forwards pass), we then deﬁne the estimated non-embedding"}
+{"p": 6, "s": 10.0, "b": false, "t": "compute as C ≈6N ﬂoating point operators per training token."}
+{"p": 6, "s": 10.0, "b": true, "t": "2.2"}
+{"p": 6, "s": 10.0, "b": true, "t": "Training Procedures"}
+{"p": 6, "s": 10.0, "b": false, "t": "Unless otherwise noted, we train models with the Adam optimizer [KB14] for a ﬁxed 2.5 × 105 steps with"}
+{"p": 6, "s": 10.0, "b": false, "t": "a batch size of 512 sequences of 1024 tokens. Due to memory constraints, our largest models (more than"}
+{"p": 6, "s": 10.0, "b": false, "t": "1B parameters) were trained with Adafactor [SS18]. We experimented with a variety of learning rates and"}
+{"p": 6, "s": 10.0, "b": false, "t": "schedules, as discussed in Appendix D.6. We found that results at convergence were largely independent of"}
+{"p": 6, "s": 10.0, "b": false, "t": "learning rate schedule. Unless otherwise noted, all training runs included in our data used a learning rate"}
+{"p": 6, "s": 10.0, "b": false, "t": "schedule with a 3000 step linear warmup followed by a cosine decay to zero."}
+{"p": 6, "s": 10.0, "b": true, "t": "2.3"}
+{"p": 6, "s": 10.0, "b": true, "t": "Datasets"}
+{"p": 6, "s": 10.0, "b": false, "t": "We train our models on an extended version of the WebText dataset described in [RWC+19]. The original"}
+{"p": 6, "s": 10.0, "b": false, "t": "WebText dataset was a web scrape of outbound links from Reddit through December 2017 which received at"}
+{"p": 6, "s": 10.0, "b": false, "t": "least 3 karma. In the second version, WebText2, we added outbound Reddit links from the period of January"}
+{"p": 6, "s": 10.0, "b": false, "t": "to October 2018, also with a minimum of 3 karma. The karma threshold served as a heuristic for whether"}
+{"p": 6, "s": 10.0, "b": false, "t": "people found the link interesting or useful. The text of the new links was extracted with the Newspaper3k"}
+{"p": 6, "s": 10.0, "b": false, "t": "python library. In total, the dataset consists of 20.3M documents containing 96 GB of text and 1.62 × 1010"}
+{"p": 6, "s": 10.0, "b": false, "t": "words (as deﬁned by wc). We then apply the reversible tokenizer described in [RWC+19], which yields"}
+{"p": 6, "s": 10.0, "b": false, "t": "2.29 × 1010 tokens. We reserve 6.6 × 108 of these tokens for use as a test set, and we also test on similarly-"}
+{"p": 6, "s": 10.0, "b": false, "t": "prepared samples of Books Corpus [ZKZ+15], Common Crawl [Fou], English Wikipedia, and a collection"}
+{"p": 6, "s": 10.0, "b": false, "t": "of publicly-available Internet Books."}
+{"p": 6, "s": 12.0, "b": true, "t": "3"}
+{"p": 6, "s": 12.0, "b": true, "t": "Empirical Results and Basic Power Laws"}
+{"p": 6, "s": 10.0, "b": false, "t": "To characterize language model scaling we train a wide variety of models, varying a number of factors"}
+{"p": 6, "s": 10.0, "b": false, "t": "including:"}
+{"p": 6, "s": 10.0, "b": false, "t": "• Model size (ranging in size from 768 to 1.5 billion non-embedding parameters)"}
+{"p": 6, "s": 10.0, "b": false, "t": "• Dataset size (ranging from 22 million to 23 billion tokens)"}
+{"p": 6, "s": 10.0, "b": false, "t": "• Shape (including depth, width, attention heads, and feed-forward dimension)"}
+{"p": 6, "s": 10.0, "b": false, "t": "• Context length (1024 for most runs, though we also experiment with shorter contexts)"}
+{"p": 6, "s": 10.0, "b": false, "t": "• Batch size (219 for most runs, but we also vary it to measure the critical batch size)"}
+{"p": 6, "s": 10.0, "b": false, "t": "7"}
+{"p": 7, "s": 7.3, "b": true, "t": "Feed-Forward Ratio (dff / dmodel) "}
+{"p": 7, "s": 7.3, "b": false, "t": "50M Parameters"}
+{"p": 7, "s": 7.3, "b": true, "t": "Aspect Ratio (dmodel / nlayer)"}
+{"p": 7, "s": 7.3, "b": true, "t": "Attention Head Dimension (dmodel / nhead) "}
+{"p": 7, "s": 7.3, "b": false, "t": "25M Parameters"}
+{"p": 7, "s": 5.2, "b": false, "t": "10%"}
+{"p": 7, "s": 5.2, "b": false, "t": "8%"}
+{"p": 7, "s": 5.2, "b": false, "t": "6%"}
+{"p": 7, "s": 5.2, "b": false, "t": "4%"}
+{"p": 7, "s": 5.2, "b": false, "t": "2%"}
+{"p": 7, "s": 5.2, "b": false, "t": "0%"}
+{"p": 7, "s": 7.3, "b": false, "t": "Loss Increase"}
+{"p": 7, "s": 6.3, "b": false, "t": "A wide range of architectures "}
+{"p": 7, "s": 6.3, "b": false, "t": "achieve similar performance"}
+{"p": 7, "s": 6.3, "b": false, "t": "22% additional compute "}
+{"p": 7, "s": 6.3, "b": false, "t": "compensates for 1% loss increase"}
+{"p": 7, "s": 10.0, "b": true, "t": "Figure 5"}
+{"p": 7, "s": 10.0, "b": false, "t": "Performance depends very mildly on model shape when the total number of non-embedding"}
+{"p": 7, "s": 10.0, "b": false, "t": "parameters N is held ﬁxed. The loss varies only a few percent over a wide range of shapes. Small differences"}
+{"p": 7, "s": 10.0, "b": false, "t": "in parameter counts are compensated for by using the ﬁt to L(N) as a baseline. Aspect ratio in particular can"}
+{"p": 7, "s": 10.0, "b": false, "t": "vary by a factor of 40 while only slightly impacting performance; an (nlayer, dmodel) = (6, 4288) reaches a"}
+{"p": 7, "s": 10.0, "b": false, "t": "loss within 3% of the (48, 1600) model used in [RWC+19]."}
+{"p": 7, "s": 6.5, "b": false, "t": "106"}
+{"p": 7, "s": 6.5, "b": false, "t": "107"}
+{"p": 7, "s": 6.5, "b": false, "t": "108"}
+{"p": 7, "s": 6.5, "b": false, "t": "109"}
+{"p": 7, "s": 6.5, "b": false, "t": "Parameters (with embedding)"}
+{"p": 7, "s": 6.5, "b": false, "t": "2"}
+{"p": 7, "s": 6.5, "b": false, "t": "3"}
+{"p": 7, "s": 6.5, "b": false, "t": "4"}
+{"p": 7, "s": 6.5, "b": false, "t": "5"}
+{"p": 7, "s": 6.5, "b": false, "t": "6"}
+{"p": 7, "s": 6.5, "b": false, "t": "7"}
+{"p": 7, "s": 6.5, "b": false, "t": "Test Loss"}
+{"p": 7, "s": 6.5, "b": false, "t": "0 Layer"}
+{"p": 7, "s": 6.5, "b": false, "t": "1 Layer"}
+{"p": 7, "s": 6.5, "b": false, "t": "2 Layers"}
+{"p": 7, "s": 6.5, "b": false, "t": "3 Layers"}
+{"p": 7, "s": 6.5, "b": false, "t": "6 Layers"}
+{"p": 7, "s": 6.5, "b": false, "t": "> 6 Layers"}
+{"p": 7, "s": 6.5, "b": false, "t": "103"}
+{"p": 7, "s": 6.5, "b": false, "t": "104"}
+{"p": 7, "s": 6.5, "b": false, "t": "105"}
+{"p": 7, "s": 6.5, "b": false, "t": "106"}
+{"p": 7, "s": 6.5, "b": false, "t": "107"}
+{"p": 7, "s": 6.5, "b": false, "t": "108"}
+{"p": 7, "s": 6.5, "b": false, "t": "109"}
+{"p": 7, "s": 6.5, "b": false, "t": "Parameters (non-embedding)"}
+{"p": 7, "s": 6.5, "b": false, "t": "2"}
+{"p": 7, "s": 6.5, "b": false, "t": "3"}
+{"p": 7, "s": 6.5, "b": false, "t": "4"}
+{"p": 7, "s": 6.5, "b": false, "t": "5"}
+{"p": 7, "s": 6.5, "b": false, "t": "6"}
+{"p": 7, "s": 6.5, "b": false, "t": "7"}
+{"p": 7, "s": 6.5, "b": false, "t": "Test Loss"}
+{"p": 7, "s": 6.5, "b": false, "t": "1 Layer"}
+{"p": 7, "s": 6.5, "b": false, "t": "2 Layers"}
+{"p": 7, "s": 6.5, "b": false, "t": "3 Layers"}
+{"p": 7, "s": 6.5, "b": false, "t": "6 Layers"}
+{"p": 7, "s": 6.5, "b": false, "t": "> 6 Layers"}
+{"p": 7, "s": 10.0, "b": true, "t": "Figure 6"}
+{"p": 7, "s": 10.0, "b": true, "t": "Left: When we include embedding parameters, performance appears to depend strongly on the"}
+{"p": 7, "s": 10.0, "b": true, "t": "number of layers in addition to the number of parameters. Right: When we exclude embedding parameters,"}
+{"p": 7, "s": 10.0, "b": false, "t": "the performance of models with different depths converge to a single trend. Only models with fewer than 2"}
+{"p": 7, "s": 10.0, "b": false, "t": "layers or with extreme depth-to-width ratios deviate signiﬁcantly from the trend."}
+{"p": 7, "s": 10.0, "b": false, "t": "In this section we will display data along with empirically-motivated ﬁts, deferring theoretical analysis to"}
+{"p": 7, "s": 10.0, "b": false, "t": "later sections."}
+{"p": 7, "s": 10.0, "b": true, "t": "3.1"}
+{"p": 7, "s": 10.0, "b": true, "t": "Approximate Transformer Shape and Hyperparameter Independence"}
+{"p": 7, "s": 10.0, "b": false, "t": "Transformer performance depends very weakly on the shape parameters nlayer, nheads, and dﬀwhen we hold"}
+{"p": 7, "s": 10.0, "b": false, "t": "the total non-embedding parameter count N ﬁxed. To establish these results we trained models with ﬁxed"}
+{"p": 7, "s": 10.0, "b": false, "t": "size while varying a single hyperparameter. This was simplest for the case of nheads. When varying nlayer,"}
+{"p": 7, "s": 10.0, "b": false, "t": "we simultaneously varied dmodel while keeping N ≈12nlayerd2"}
+{"p": 7, "s": 10.0, "b": false, "t": "model ﬁxed. Similarly, to vary dﬀat ﬁxed"}
+{"p": 7, "s": 10.0, "b": false, "t": "model size we also simultaneously varied the dmodel parameter, as required by the parameter counts in Table"}
+{"p": 7, "s": 10.0, "b": false, "t": "1. Independence of nlayers would follow if deeper Transformers effectively behave as ensembles of shallower"}
+{"p": 7, "s": 10.0, "b": false, "t": "models, as has been suggested for ResNets [VWB16]. The results are shown in Figure 5."}
+{"p": 7, "s": 10.0, "b": true, "t": "3.2"}
+{"p": 7, "s": 10.0, "b": true, "t": "Performance with Non-Embedding Parameter Count N"}
+{"p": 7, "s": 10.0, "b": false, "t": "In Figure 6 we display the performance of a wide variety of models, ranging from small models with shape"}
+{"p": 7, "s": 10.0, "b": false, "t": "(nlayer, dmodel) = (2, 128) through billion-parameter models, ranging in shape from (6, 4288) through"}
+{"p": 7, "s": 10.0, "b": false, "t": "(207, 768). Here we have trained to near convergence on the full WebText2 dataset and observe no over-"}
+{"p": 7, "s": 10.0, "b": false, "t": "ﬁtting (except possibly for the very largest models)."}
+{"p": 7, "s": 10.0, "b": false, "t": "As shown in Figure 1, we ﬁnd a steady trend with non-embedding parameter count N, which can be ﬁt to the"}
+{"p": 7, "s": 10.0, "b": false, "t": "ﬁrst term of Equation (1.5), so that"}
+{"p": 7, "s": 10.0, "b": false, "t": "L(N) ≈"}
+{"p": 7, "s": 10.0, "b": false, "t": "\u0012Nc"}
+{"p": 7, "s": 10.0, "b": false, "t": "N"}
+{"p": 7, "s": 10.0, "b": false, "t": "\u0013αN"}
+{"p": 7, "s": 10.0, "b": false, "t": "(3.1)"}
+{"p": 7, "s": 10.0, "b": false, "t": "8"}
+{"p": 8, "s": 6.6, "b": true, "t": "LSTM plateaus after <100 tokens "}
+{"p": 8, "s": 6.6, "b": true, "t": "Transformer improves through the whole context"}
+{"p": 8, "s": 4.4, "b": false, "t": "2M"}
+{"p": 8, "s": 4.4, "b": false, "t": "200M"}
+{"p": 8, "s": 4.4, "b": false, "t": "3M"}
+{"p": 8, "s": 4.4, "b": false, "t": "300M"}
+{"p": 8, "s": 5.3, "b": false, "t": "5"}
+{"p": 8, "s": 5.3, "b": false, "t": "4"}
+{"p": 8, "s": 5.3, "b": false, "t": "3"}
+{"p": 8, "s": 5.3, "b": false, "t": "2"}
+{"p": 8, "s": 5.3, "b": false, "t": "6"}
+{"p": 8, "s": 6.2, "b": false, "t": "Token Index in Context"}
+{"p": 8, "s": 6.6, "b": false, "t": "103"}
+{"p": 8, "s": 6.6, "b": false, "t": "102"}
+{"p": 8, "s": 6.6, "b": false, "t": "101"}
+{"p": 8, "s": 6.6, "b": true, "t": "Transformers asymptotically outperform LSTMs "}
+{"p": 8, "s": 6.6, "b": false, "t": "due to improved use of long contexts"}
+{"p": 8, "s": 5.3, "b": false, "t": "3.6"}
+{"p": 8, "s": 5.3, "b": false, "t": "4.2"}
+{"p": 8, "s": 5.3, "b": false, "t": "3.0"}
+{"p": 8, "s": 5.3, "b": false, "t": "2.4"}
+{"p": 8, "s": 5.3, "b": false, "t": "4.8"}
+{"p": 8, "s": 5.3, "b": false, "t": "5.4"}
+{"p": 8, "s": 6.6, "b": false, "t": "105"}
+{"p": 8, "s": 6.6, "b": false, "t": "108"}
+{"p": 8, "s": 6.6, "b": false, "t": "106"}
+{"p": 8, "s": 6.6, "b": false, "t": "107"}
+{"p": 8, "s": 6.6, "b": false, "t": "109"}
+{"p": 8, "s": 6.2, "b": false, "t": "Parameters (non-embedding)"}
+{"p": 8, "s": 5.8, "b": false, "t": "Transformers"}
+{"p": 8, "s": 5.8, "b": false, "t": "LSTMs"}
+{"p": 8, "s": 5.3, "b": false, "t": "1 Layer"}
+{"p": 8, "s": 5.3, "b": false, "t": "2 Layers"}
+{"p": 8, "s": 5.3, "b": false, "t": "4 Layers"}
+{"p": 8, "s": 5.8, "b": false, "t": "Test Loss"}
+{"p": 8, "s": 5.8, "b": false, "t": "Per-token "}
+{"p": 8, "s": 5.8, "b": false, "t": "Test Loss"}
+{"p": 8, "s": 4.4, "b": false, "t": "Parameters:"}
+{"p": 8, "s": 4.4, "b": false, "t": "400K"}
+{"p": 8, "s": 4.4, "b": false, "t": "400K"}
+{"p": 8, "s": 10.0, "b": true, "t": "Figure 7"}
+{"p": 8, "s": 10.0, "b": false, "t": "To observe these trends it is crucial to study performance as a function of N; if we instead use the total"}
+{"p": 8, "s": 10.0, "b": false, "t": "parameter count (including the embedding parameters) the trend is somewhat obscured (see Figure 6). This"}
+{"p": 8, "s": 10.0, "b": false, "t": "suggests that the embedding matrix can be made smaller without impacting performance, as has been seen in"}
+{"p": 8, "s": 10.0, "b": false, "t": "recent work [LCG+19]."}
+{"p": 8, "s": 10.0, "b": false, "t": "Although these models have been trained on the WebText2 dataset, their test loss on a variety of other datasets"}
+{"p": 8, "s": 10.0, "b": false, "t": "is also a power-law in N with nearly identical power, as shown in Figure 8."}
+{"p": 8, "s": 10.0, "b": true, "t": "3.2.1"}
+{"p": 8, "s": 10.0, "b": true, "t": "Comparing to LSTMs and Universal Transformers"}
+{"p": 8, "s": 10.0, "b": false, "t": "In Figure 7 we compare LSTM and Transformer performance as a function of non-embedding parameter"}
+{"p": 8, "s": 10.0, "b": false, "t": "count N. The LSTMs were trained with the same dataset and context length. We see from these ﬁgures"}
+{"p": 8, "s": 10.0, "b": false, "t": "that the LSTMs perform as well as Transformers for tokens appearing early in the context, but cannot match"}
+{"p": 8, "s": 10.0, "b": false, "t": "the Transformer performance for later tokens. We present power-law relationships between performance and"}
+{"p": 8, "s": 10.0, "b": false, "t": "context position Appendix D.5, where increasingly large powers for larger models suggest improved ability"}
+{"p": 8, "s": 10.0, "b": false, "t": "to quickly recognize patterns."}
+{"p": 8, "s": 10.0, "b": false, "t": "We also compare the performance of standard Transformers to recurrent Transformers [DGV+18] in Figure"}
+{"p": 8, "s": 10.0, "b": false, "t": "17 in the appendix. These models re-use parameters, and so perform slightly better as a function of N, at the"}
+{"p": 8, "s": 10.0, "b": false, "t": "cost of additional compute per-parameter."}
+{"p": 8, "s": 10.0, "b": true, "t": "3.2.2"}
+{"p": 8, "s": 10.0, "b": true, "t": "Generalization Among Data Distributions"}
+{"p": 8, "s": 10.0, "b": false, "t": "We have also tested our models on a set of additional text data distributions. The test loss on these datasets"}
+{"p": 8, "s": 10.0, "b": false, "t": "as a function of model size is shown in Figure 8; in all cases the models were trained only on the WebText2"}
+{"p": 8, "s": 10.0, "b": false, "t": "dataset. We see that the loss on these other data distributions improves smoothly with model size, in direct"}
+{"p": 8, "s": 10.0, "b": false, "t": "parallel with the improvement on WebText2. We ﬁnd that generalization depends almost exclusively on the"}
+{"p": 8, "s": 10.0, "b": false, "t": "in-distribution validation loss, and does not depend on the duration of training or proximity to convergence."}
+{"p": 8, "s": 10.0, "b": false, "t": "We also observe no dependence on model depth (see Appendix D.8)."}
+{"p": 8, "s": 10.0, "b": true, "t": "3.3"}
+{"p": 8, "s": 10.0, "b": true, "t": "Performance with Dataset Size and Compute"}
+{"p": 8, "s": 10.0, "b": false, "t": "We display empirical trends for the test loss as a function of dataset size D (in tokens) and training compute"}
+{"p": 8, "s": 10.0, "b": false, "t": "C in Figure 1."}
+{"p": 8, "s": 10.0, "b": false, "t": "For the trend with D we trained a model with (nlayer, nembd) = (36, 1280) on ﬁxed subsets of the WebText2"}
+{"p": 8, "s": 10.0, "b": false, "t": "dataset. We stopped training once the test loss ceased to decrease. We see that the resulting test losses can be"}
+{"p": 8, "s": 10.0, "b": false, "t": "ﬁt with simple power-law"}
+{"p": 8, "s": 10.0, "b": false, "t": "L(D) ≈"}
+{"p": 8, "s": 10.0, "b": false, "t": "\u0012Dc"}
+{"p": 8, "s": 10.0, "b": false, "t": "D"}
+{"p": 8, "s": 10.0, "b": false, "t": "\u0013αD"}
+{"p": 8, "s": 10.0, "b": false, "t": "(3.2)"}
+{"p": 8, "s": 10.0, "b": false, "t": "in the dataset size. The data and ﬁt appear in Figure 1."}
+{"p": 8, "s": 10.0, "b": false, "t": "The total amount of non-embedding compute used during training can be estimated as C = 6NBS, where"}
+{"p": 8, "s": 10.0, "b": false, "t": "B is the batch size, S is the number of parameter updates, and the factor of 6 accounts for the forward and"}
+{"p": 8, "s": 10.0, "b": false, "t": "backward passes. Thus for a given value of C we can scan over all models with various N to ﬁnd the model"}
+{"p": 8, "s": 10.0, "b": false, "t": "9"}
+{"p": 9, "s": 7.0, "b": false, "t": "104"}
+{"p": 9, "s": 7.0, "b": false, "t": "105"}
+{"p": 9, "s": 7.0, "b": false, "t": "106"}
+{"p": 9, "s": 7.0, "b": false, "t": "107"}
+{"p": 9, "s": 7.0, "b": false, "t": "108"}
+{"p": 9, "s": 7.0, "b": false, "t": "109"}
+{"p": 9, "s": 7.0, "b": false, "t": "Parameters (non-embedding)"}
+{"p": 9, "s": 7.0, "b": false, "t": "3"}
+{"p": 9, "s": 7.0, "b": false, "t": "4"}
+{"p": 9, "s": 7.0, "b": false, "t": "5"}
+{"p": 9, "s": 7.0, "b": false, "t": "6"}
+{"p": 9, "s": 7.0, "b": false, "t": "7"}
+{"p": 9, "s": 7.0, "b": false, "t": "Test Loss"}
+{"p": 9, "s": 5.0, "b": false, "t": "WebText2 (Test)"}
+{"p": 9, "s": 5.0, "b": false, "t": "Internet Books"}
+{"p": 9, "s": 5.0, "b": false, "t": "Books"}
+{"p": 9, "s": 5.0, "b": false, "t": "Wikipedia"}
+{"p": 9, "s": 5.0, "b": false, "t": "Common Crawl"}
+{"p": 9, "s": 7.0, "b": false, "t": "2.5"}
+{"p": 9, "s": 7.0, "b": false, "t": "3.0"}
+{"p": 9, "s": 7.0, "b": false, "t": "3.5"}
+{"p": 9, "s": 7.0, "b": false, "t": "4.0"}
+{"p": 9, "s": 7.0, "b": false, "t": "4.5"}
+{"p": 9, "s": 7.0, "b": false, "t": "5.0"}
+{"p": 9, "s": 7.0, "b": false, "t": "Test Loss on Training Distribution"}
+{"p": 9, "s": 7.0, "b": false, "t": "2.5"}
+{"p": 9, "s": 7.0, "b": false, "t": "3.0"}
+{"p": 9, "s": 7.0, "b": false, "t": "3.5"}
+{"p": 9, "s": 7.0, "b": false, "t": "4.0"}
+{"p": 9, "s": 7.0, "b": false, "t": "4.5"}
+{"p": 9, "s": 7.0, "b": false, "t": "5.0"}
+{"p": 9, "s": 7.0, "b": false, "t": "Loss on Other Distribution"}
+{"p": 9, "s": 5.0, "b": false, "t": "Books during training"}
+{"p": 9, "s": 5.0, "b": false, "t": "Wikipedia during training"}
+{"p": 9, "s": 5.0, "b": false, "t": "Books at convergence"}
+{"p": 9, "s": 5.0, "b": false, "t": "Wikipedia at convergence"}
+{"p": 9, "s": 10.0, "b": true, "t": "Figure 8"}
+{"p": 9, "s": 10.0, "b": true, "t": "Left: Generalization performance to other data distributions improves smoothly with model size,"}
+{"p": 9, "s": 10.0, "b": true, "t": "with only a small and very slowly growing offset from the WebText2 training distribution. Right: Gener-"}
+{"p": 9, "s": 10.0, "b": false, "t": "alization performance depends only on training distribution performance, and not on the phase of training."}
+{"p": 9, "s": 10.0, "b": false, "t": "We compare generalization of converged models (points) to that of a single large model (dashed curves) as it"}
+{"p": 9, "s": 10.0, "b": false, "t": "trains."}
+{"p": 9, "s": 10.0, "b": false, "t": "with the best performance on step S ="}
+{"p": 9, "s": 7.0, "b": false, "t": "C"}
+{"p": 9, "s": 10.0, "b": false, "t": "6BS . Note that in these results the batch size B remains ﬁxed for"}
+{"p": 9, "s": 10.0, "b": false, "t": "all models, which means that these empirical results are not truly optimal. We will account for this in later"}
+{"p": 9, "s": 10.0, "b": false, "t": "sections using an adjusted Cmin to produce cleaner trends."}
+{"p": 9, "s": 10.0, "b": false, "t": "The result appears as the heavy black line on the left-hand plot in Figure 1. It can be ﬁt with"}
+{"p": 9, "s": 10.0, "b": false, "t": "L(C) ≈"}
+{"p": 9, "s": 10.0, "b": false, "t": "\u0012Cc"}
+{"p": 9, "s": 10.0, "b": false, "t": "C"}
+{"p": 9, "s": 10.0, "b": false, "t": "\u0013αC"}
+{"p": 9, "s": 10.0, "b": false, "t": "(3.3)"}
+{"p": 9, "s": 10.0, "b": false, "t": "The ﬁgure also includes images of individual learning curves to clarify when individual models are optimal."}
+{"p": 9, "s": 10.0, "b": false, "t": "We will study the optimal allocation of compute more closely later on. The data strongly suggests that sample"}
+{"p": 9, "s": 10.0, "b": false, "t": "efﬁciency improves with model size, and we also illustrate this directly in Figure 19 in the appendix."}
+{"p": 9, "s": 12.0, "b": true, "t": "4"}
+{"p": 9, "s": 12.0, "b": true, "t": "Charting the Inﬁnite Data Limit and Overﬁtting"}
+{"p": 9, "s": 10.0, "b": false, "t": "In Section 3 we found a number of basic scaling laws for language modeling performance. Here we will"}
+{"p": 9, "s": 10.0, "b": false, "t": "study the performance of a model of size N trained on a dataset with D tokens while varying N and D"}
+{"p": 9, "s": 10.0, "b": false, "t": "simultaneously. We will empirically demonstrate that the optimally trained test loss accords with the scaling"}
+{"p": 9, "s": 10.0, "b": false, "t": "law of Equation (1.5). This provides guidance on how much data we would need to train models of increasing"}
+{"p": 9, "s": 10.0, "b": false, "t": "size while keeping overﬁtting under control."}
+{"p": 9, "s": 10.0, "b": true, "t": "4.1"}
+{"p": 9, "s": 10.0, "b": true, "t": "Proposed L(N, D) Equation"}
+{"p": 9, "s": 10.0, "b": false, "t": "We have chosen the parameterization (1.5) (repeated here for convenience):"}
+{"p": 9, "s": 10.0, "b": false, "t": "L(N, D) ="}
+{"p": 9, "s": 10.0, "b": false, "t": "\"\u0012Nc"}
+{"p": 9, "s": 10.0, "b": false, "t": "N"}
+{"p": 9, "s": 5.0, "b": false, "t": "\u0013 αN"}
+{"p": 9, "s": 10.0, "b": false, "t": "αD + Dc"}
+{"p": 9, "s": 10.0, "b": false, "t": "D"}
+{"p": 9, "s": 10.0, "b": false, "t": "#αD"}
+{"p": 9, "s": 10.0, "b": false, "t": "(4.1)"}
+{"p": 9, "s": 10.0, "b": false, "t": "using three principles:"}
+{"p": 9, "s": 10.0, "b": false, "t": "1. Changes in vocabulary size or tokenization are expected to rescale the loss by an overall factor. The"}
+{"p": 9, "s": 10.0, "b": false, "t": "parameterization of L(N, D) (and all models of the loss) must naturally allow for such a rescaling."}
+{"p": 9, "s": 10.0, "b": false, "t": "2. Fixing D and sending N →∞, the overall loss should approach L(D). Conversely, ﬁxing N and"}
+{"p": 9, "s": 10.0, "b": false, "t": "sending D →∞the loss must approach L(N)."}
+{"p": 9, "s": 10.0, "b": false, "t": "3. L(N, D) should be analytic at D = ∞, so that it has a series expansion in 1/D with integer powers."}
+{"p": 9, "s": 10.0, "b": false, "t": "Theoretical support for this principle is signiﬁcantly weaker than for the ﬁrst two."}
+{"p": 9, "s": 10.0, "b": false, "t": "Our choice of L(N, D) satisﬁes the ﬁrst requirement because we can rescale Nc, Dc with changes in the"}
+{"p": 9, "s": 10.0, "b": false, "t": "vocabulary. This also implies that the values of Nc, Dc have no fundamental meaning."}
+{"p": 9, "s": 10.0, "b": false, "t": "10"}
+{"p": 10, "s": 6.0, "b": false, "t": "106"}
+{"p": 10, "s": 6.0, "b": false, "t": "107"}
+{"p": 10, "s": 6.0, "b": false, "t": "108"}
+{"p": 10, "s": 6.0, "b": false, "t": "109"}
+{"p": 10, "s": 6.0, "b": false, "t": "Params (non-embed)"}
+{"p": 10, "s": 6.0, "b": false, "t": "2.5"}
+{"p": 10, "s": 6.0, "b": false, "t": "3.0"}
+{"p": 10, "s": 6.0, "b": false, "t": "3.5"}
+{"p": 10, "s": 6.0, "b": false, "t": "4.0"}
+{"p": 10, "s": 6.0, "b": false, "t": "4.5"}
+{"p": 10, "s": 6.0, "b": false, "t": "Test Loss"}
+{"p": 10, "s": 7.2, "b": false, "t": "Data Size Bottleneck"}
+{"p": 10, "s": 6.0, "b": false, "t": "Data Size"}
+{"p": 10, "s": 4.3, "b": false, "t": "21M"}
+{"p": 10, "s": 4.3, "b": false, "t": "43M"}
+{"p": 10, "s": 4.3, "b": false, "t": "86M"}
+{"p": 10, "s": 4.3, "b": false, "t": "172M"}
+{"p": 10, "s": 4.3, "b": false, "t": "344M"}
+{"p": 10, "s": 4.3, "b": false, "t": "688M"}
+{"p": 10, "s": 4.3, "b": false, "t": "1.4B"}
+{"p": 10, "s": 4.3, "b": false, "t": "22.0B"}
+{"p": 10, "s": 6.0, "b": false, "t": "10"}
+{"p": 10, "s": 4.2, "b": false, "t": "4"}
+{"p": 10, "s": 6.0, "b": false, "t": "10"}
+{"p": 10, "s": 4.2, "b": false, "t": "3"}
+{"p": 10, "s": 6.0, "b": false, "t": "10"}
+{"p": 10, "s": 4.2, "b": false, "t": "2"}
+{"p": 10, "s": 6.0, "b": false, "t": "10"}
+{"p": 10, "s": 4.2, "b": false, "t": "1"}
+{"p": 10, "s": 6.0, "b": false, "t": "N"}
+{"p": 10, "s": 4.2, "b": false, "t": "N/"}
+{"p": 10, "s": 6.0, "b": false, "t": "D/D"}
+{"p": 10, "s": 6.0, "b": false, "t": "0.0"}
+{"p": 10, "s": 6.0, "b": false, "t": "0.1"}
+{"p": 10, "s": 6.0, "b": false, "t": "0.2"}
+{"p": 10, "s": 6.0, "b": false, "t": "0.3"}
+{"p": 10, "s": 6.0, "b": false, "t": "0.4"}
+{"p": 10, "s": 6.0, "b": false, "t": "0.5"}
+{"p": 10, "s": 6.0, "b": false, "t": "L/L(D ="}
+{"p": 10, "s": 6.0, "b": false, "t": ")"}
+{"p": 10, "s": 6.0, "b": false, "t": "1"}
+{"p": 10, "s": 7.2, "b": false, "t": "Overfitting"}
+{"p": 10, "s": 6.0, "b": false, "t": "Data Size"}
+{"p": 10, "s": 4.3, "b": false, "t": "21M"}
+{"p": 10, "s": 4.3, "b": false, "t": "43M"}
+{"p": 10, "s": 4.3, "b": false, "t": "86M"}
+{"p": 10, "s": 4.3, "b": false, "t": "172M"}
+{"p": 10, "s": 4.3, "b": false, "t": "344M"}
+{"p": 10, "s": 4.3, "b": false, "t": "688M"}
+{"p": 10, "s": 4.3, "b": false, "t": "1.4B"}
+{"p": 10, "s": 4.3, "b": false, "t": "22.0B"}
+{"p": 10, "s": 10.0, "b": true, "t": "Figure 9"}
+{"p": 10, "s": 10.0, "b": false, "t": "The early-stopped test loss L(N, D) depends predictably on the dataset size D and model size N"}
+{"p": 10, "s": 10.0, "b": true, "t": "according to Equation (1.5). Left: For large D, performance is a straight power law in N. For a smaller ﬁxed"}
+{"p": 10, "s": 10.0, "b": false, "t": "D, performance stops improving as N increases and the model begins to overﬁt. (The reverse is also true,"}
+{"p": 10, "s": 10.0, "b": true, "t": "see Figure 4.) Right: The extent of overﬁtting depends predominantly on the ratio N"}
+{"p": 10, "s": 5.0, "b": false, "t": "αN"}
+{"p": 10, "s": 10.0, "b": false, "t": "αD /D, as predicted in"}
+{"p": 10, "s": 10.0, "b": false, "t": "equation (4.3). The line is our ﬁt to that equation."}
+{"p": 10, "s": 10.0, "b": false, "t": "Since we stop training early when the test loss ceases to improve and optimize all models in the same way, we"}
+{"p": 10, "s": 10.0, "b": false, "t": "expect that larger models should always perform better than smaller models. But with ﬁxed ﬁnite D, we also"}
+{"p": 10, "s": 10.0, "b": false, "t": "do not expect any model to be capable of approaching the best possible loss (ie the entropy of text). Similarly,"}
+{"p": 10, "s": 10.0, "b": false, "t": "a model with ﬁxed size will be capacity-limited. These considerations motivate our second principle. Note"}
+{"p": 10, "s": 10.0, "b": false, "t": "that knowledge of L(N) at inﬁnite D and L(D) at inﬁnite N fully determines all the parameters in L(N, D)."}
+{"p": 10, "s": 10.0, "b": false, "t": "The third principle is more speculative. There is a simple and general reason one might expect overﬁtting"}
+{"p": 10, "s": 10.0, "b": false, "t": "to scale ∝1/D at very large D. Overﬁtting should be related to the variance or the signal-to-noise ratio"}
+{"p": 10, "s": 10.0, "b": false, "t": "of the dataset [AS17], and this scales as 1/D. This expectation should hold for any smooth loss function,"}
+{"p": 10, "s": 10.0, "b": false, "t": "since we expect to be able to expand the loss about the D →∞limit. However, this argument assumes that"}
+{"p": 10, "s": 10.0, "b": false, "t": "1/D corrections dominate over other sources of variance, such as the ﬁnite batch size and other limits on the"}
+{"p": 10, "s": 10.0, "b": false, "t": "efﬁcacy of optimization. Without empirical conﬁrmation, we would not be very conﬁdent of its applicability."}
+{"p": 10, "s": 10.0, "b": false, "t": "Our third principle explains the asymmetry between the roles of N and D in Equation (1.5). Very similar"}
+{"p": 10, "s": 10.0, "b": false, "t": "symmetric expressions4 are possible, but they would not have a 1/D expansion with integer powers, and"}
+{"p": 10, "s": 10.0, "b": false, "t": "would require the introduction of an additional parameter."}
+{"p": 10, "s": 10.0, "b": false, "t": "In any case, we will see that our equation for L(N, D) ﬁts the data well, which is the most important justiﬁ-"}
+{"p": 10, "s": 10.0, "b": false, "t": "cation for our L(N, D) ansatz."}
+{"p": 10, "s": 10.0, "b": true, "t": "4.2"}
+{"p": 10, "s": 10.0, "b": true, "t": "Results"}
+{"p": 10, "s": 10.0, "b": false, "t": "We regularize all our models with 10% dropout, and by tracking test loss and stopping once it is no longer"}
+{"p": 10, "s": 10.0, "b": false, "t": "decreasing. The results are displayed in Figure 9, including a ﬁt to the four parameters αN, αD, Nc, Dc in"}
+{"p": 10, "s": 10.0, "b": false, "t": "Equation (1.5):"}
+{"p": 10, "s": 10.0, "b": false, "t": "Parameter"}
+{"p": 10, "s": 10.0, "b": false, "t": "αN"}
+{"p": 10, "s": 10.0, "b": false, "t": "αD"}
+{"p": 10, "s": 10.0, "b": false, "t": "Nc"}
+{"p": 10, "s": 10.0, "b": false, "t": "Dc"}
+{"p": 10, "s": 10.0, "b": false, "t": "Value"}
+{"p": 10, "s": 10.0, "b": false, "t": "0.076"}
+{"p": 10, "s": 10.0, "b": false, "t": "0.103"}
+{"p": 10, "s": 10.0, "b": false, "t": "6.4 × 1013"}
+{"p": 10, "s": 10.0, "b": false, "t": "1.8 × 1013"}
+{"p": 10, "s": 10.0, "b": true, "t": "Table 2"}
+{"p": 10, "s": 10.0, "b": false, "t": "Fits to L(N, D)"}
+{"p": 10, "s": 10.0, "b": false, "t": "We obtain an excellent ﬁt, with the exception of the runs where the dataset has been reduced by a factor of"}
+{"p": 10, "s": 10.0, "b": false, "t": "1024, to about 2 × 107 tokens. With such a small dataset, an epoch consists of only 40 parameter updates."}
+{"p": 10, "s": 10.0, "b": false, "t": "Perhaps such a tiny dataset represents a different regime for language modeling, as overﬁtting happens very"}
+{"p": 10, "s": 10.0, "b": false, "t": "early in training (see Figure 16). Also note that the parameters differ very slightly from those obtained in"}
+{"p": 10, "s": 10.0, "b": false, "t": "Section 3, as here we are ﬁtting the full L(N, D) rather than just L(N, ∞) or L(∞, D)."}
+{"p": 10, "s": 10.0, "b": false, "t": "To chart the borderlands of the inﬁnite data limit, we can directly study the extent of overﬁtting. For all but"}
+{"p": 10, "s": 10.0, "b": false, "t": "the largest models, we see no sign of overﬁtting when training with the full 22B token WebText2 dataset,"}
+{"p": 10, "s": 10.0, "b": false, "t": "so we can take it as representative of D = ∞. Thus we can compare ﬁnite D to the inﬁnite data limit by"}
+{"p": 10, "s": 9.0, "b": false, "t": "4For example, one might have used L(N, D) ="}
+{"p": 10, "s": 9.0, "b": false, "t": "\u0002\u0000 Nc"}
+{"p": 10, "s": 6.0, "b": false, "t": "N"}
+{"p": 10, "s": 9.0, "b": false, "t": "\u0001αN +"}
+{"p": 10, "s": 9.0, "b": false, "t": "\u0000 Dc"}
+{"p": 10, "s": 6.0, "b": false, "t": "D"}
+{"p": 10, "s": 9.0, "b": false, "t": "\u0001αD\u0003β, but this does not have a 1/D expansion."}
+{"p": 10, "s": 10.0, "b": false, "t": "11"}
+{"p": 11, "s": 8.7, "b": false, "t": "101"}
+{"p": 11, "s": 8.7, "b": false, "t": "3 × 100"}
+{"p": 11, "s": 8.7, "b": false, "t": "4 × 100"}
+{"p": 11, "s": 8.7, "b": false, "t": "6 × 100"}
+{"p": 11, "s": 8.7, "b": false, "t": "WebText2 Train Loss"}
+{"p": 11, "s": 8.7, "b": false, "t": "103"}
+{"p": 11, "s": 8.7, "b": false, "t": "104"}
+{"p": 11, "s": 8.7, "b": false, "t": "105"}
+{"p": 11, "s": 8.7, "b": false, "t": "106"}
+{"p": 11, "s": 8.7, "b": false, "t": "Critical Batch Size (Tokens)"}
+{"p": 11, "s": 10.5, "b": false, "t": "Critical Batch Size vs. Performance"}
+{"p": 11, "s": 6.2, "b": false, "t": "Empirical Bcrit, N = 3M"}
+{"p": 11, "s": 6.2, "b": false, "t": "Empirical Bcrit, N = 85M"}
+{"p": 11, "s": 6.2, "b": false, "t": "Bcrit = 2.1 × 108 tokens L"}
+{"p": 11, "s": 4.4, "b": false, "t": "4.8"}
+{"p": 11, "s": 6.2, "b": false, "t": "Noise Scale Measurement"}
+{"p": 11, "s": 10.0, "b": true, "t": "Figure 10"}
+{"p": 11, "s": 10.0, "b": false, "t": "The critical batch size Bcrit follows a power law in the loss as performance increase, and does"}
+{"p": 11, "s": 10.0, "b": false, "t": "not depend directly on the model size. We ﬁnd that the critical batch size approximately doubles for every"}
+{"p": 11, "s": 10.0, "b": false, "t": "13% decrease in loss. Bcrit is measured empirically from the data shown in Figure 18, but it is also roughly"}
+{"p": 11, "s": 10.0, "b": false, "t": "predicted by the gradient noise scale, as in [MKAT18]."}
+{"p": 11, "s": 10.0, "b": false, "t": "deﬁning"}
+{"p": 11, "s": 10.0, "b": false, "t": "δL(N, D) ≡L(N, D)"}
+{"p": 11, "s": 10.0, "b": false, "t": "L(N, ∞) −1"}
+{"p": 11, "s": 10.0, "b": false, "t": "(4.2)"}
+{"p": 11, "s": 10.0, "b": false, "t": "and studying it as a function of N, D. In fact, we see empirically that δL depends only a speciﬁc combination"}
+{"p": 11, "s": 10.0, "b": false, "t": "of N and D, as shown in Figure 16. This follows from the scaling law of Equation (1.5), which implies"}
+{"p": 11, "s": 10.0, "b": false, "t": "δL ≈"}
+{"p": 11, "s": 10.0, "b": false, "t": "1 +"}
+{"p": 11, "s": 10.0, "b": false, "t": "\u0012 N"}
+{"p": 11, "s": 10.0, "b": false, "t": "Nc"}
+{"p": 11, "s": 5.0, "b": false, "t": "\u0013 αN"}
+{"p": 11, "s": 5.0, "b": false, "t": "αD Dc"}
+{"p": 11, "s": 10.0, "b": false, "t": "D"}
+{"p": 11, "s": 10.0, "b": false, "t": "!αD"}
+{"p": 11, "s": 10.0, "b": false, "t": "−1"}
+{"p": 11, "s": 10.0, "b": false, "t": "(4.3)"}
+{"p": 11, "s": 10.0, "b": false, "t": "Note that at large D this formula also has a series expansion in powers of 1/D."}
+{"p": 11, "s": 10.0, "b": false, "t": "We estimate that the variation in the loss with different random seeds is roughly 0.02, which means that to"}
+{"p": 11, "s": 10.0, "b": false, "t": "avoid overﬁtting when training to within that threshold of convergence we require"}
+{"p": 11, "s": 10.0, "b": false, "t": "D ≳(5 × 103) N 0.74"}
+{"p": 11, "s": 10.0, "b": false, "t": "(4.4)"}
+{"p": 11, "s": 10.0, "b": false, "t": "With this relation, models smaller than 109 parameters can be trained with minimal overﬁtting on the 22B"}
+{"p": 11, "s": 10.0, "b": false, "t": "token WebText2 dataset, but our largest models will encounter some mild overﬁtting. More generally, this"}
+{"p": 11, "s": 10.0, "b": false, "t": "relation shows that dataset size may grow sub-linearly in model size while avoiding overﬁtting. Note however"}
+{"p": 11, "s": 10.0, "b": false, "t": "that this does not typically represent maximally compute-efﬁcient training. We should also emphasize that"}
+{"p": 11, "s": 10.0, "b": false, "t": "we have not optimized regularization (eg the dropout probability) while varying dataset and model size."}
+{"p": 11, "s": 12.0, "b": true, "t": "5"}
+{"p": 11, "s": 12.0, "b": true, "t": "Scaling Laws with Model Size and Training Time"}
+{"p": 11, "s": 10.0, "b": false, "t": "In this section we will demonstrate that a simple scaling law provides a good description for the loss as a"}
+{"p": 11, "s": 10.0, "b": false, "t": "function of model size N and training time. First we will explain how to use the results of [MKAT18] to"}
+{"p": 11, "s": 10.0, "b": false, "t": "deﬁne a universal training step Smin, which accounts for the fact that most of our models have not been"}
+{"p": 11, "s": 10.0, "b": false, "t": "trained at an optimal batch size. Then we will demonstrate that we can ﬁt the model size and training time"}
+{"p": 11, "s": 10.0, "b": false, "t": "dependence of the loss using Equation (1.6). Later we will use these results to predict the optimal allocation"}
+{"p": 11, "s": 10.0, "b": false, "t": "of training compute between model size and training time, and then conﬁrm that prediction."}
+{"p": 11, "s": 10.0, "b": true, "t": "5.1"}
+{"p": 11, "s": 10.0, "b": true, "t": "Adjustment for Training at Bcrit(L)"}
+{"p": 11, "s": 10.0, "b": false, "t": "A simple empirical theory for the batch size dependence of training was developed in [MKAT18] (see also"}
+{"p": 11, "s": 10.0, "b": false, "t": "[SLA+18, ZLN+19]). It was argued that there is a critical batch size Bcrit for training; for B up to Bcrit"}
+{"p": 11, "s": 10.0, "b": false, "t": "the batch size can be increased with very minimal degradation in compute-efﬁciency, whereas for B > Bcrit"}
+{"p": 11, "s": 10.0, "b": false, "t": "increases in B result in diminishing returns. It was also argued that the gradient noise scale provides a simple"}
+{"p": 11, "s": 10.0, "b": false, "t": "12"}
+{"p": 12, "s": 10.0, "b": false, "t": "prediction for Bcrit, and that neither depends directly on model size except through the value of the loss that"}
+{"p": 12, "s": 10.0, "b": false, "t": "has been attained. These results can be used to predict how training time and compute will vary with the"}
+{"p": 12, "s": 10.0, "b": false, "t": "batch size. To utilize both training time and compute as effectively as possible, it is best to train with a batch"}
+{"p": 12, "s": 10.0, "b": false, "t": "size B ≈Bcrit. Training at B ≫Bcrit minimizes the number of training steps, while B ≪Bcrit minimizes"}
+{"p": 12, "s": 10.0, "b": false, "t": "the use of compute."}
+{"p": 12, "s": 10.0, "b": false, "t": "More speciﬁcally, it was demonstrated that for a wide variety of neural network tasks, the number of training"}
+{"p": 12, "s": 10.0, "b": false, "t": "steps S and the number of data examples processed E = BS satisfy the simple relation"}
+{"p": 12, "s": 10.0, "b": false, "t": "\u0012 S"}
+{"p": 12, "s": 7.0, "b": false, "t": "Smin"}
+{"p": 12, "s": 10.0, "b": false, "t": "−1"}
+{"p": 12, "s": 10.0, "b": false, "t": "\u0013 \u0012 E"}
+{"p": 12, "s": 7.0, "b": false, "t": "Emin"}
+{"p": 12, "s": 10.0, "b": false, "t": "−1"}
+{"p": 12, "s": 10.0, "b": false, "t": "\u0013"}
+{"p": 12, "s": 10.0, "b": false, "t": "= 1"}
+{"p": 12, "s": 10.0, "b": false, "t": "(5.1)"}
+{"p": 12, "s": 10.0, "b": false, "t": "when training to any ﬁxed value of the loss L. Here Smin is the minimum number of steps necessary to reach"}
+{"p": 12, "s": 10.0, "b": false, "t": "L, while Emin is the minimum number of data examples that must be processed."}
+{"p": 12, "s": 10.0, "b": false, "t": "We demonstrate the relation (5.1) for Transformers in Figure 18 in the appendix. This relation deﬁnes the"}
+{"p": 12, "s": 10.0, "b": false, "t": "critical batch size"}
+{"p": 12, "s": 7.0, "b": false, "t": "Bcrit(L) ≡Emin"}
+{"p": 12, "s": 7.0, "b": false, "t": "Smin"}
+{"p": 12, "s": 10.0, "b": false, "t": "(5.2)"}
+{"p": 12, "s": 10.0, "b": false, "t": "which is a function of the target value of the loss. Training at the critical batch size makes a roughly optimal"}
+{"p": 12, "s": 10.0, "b": false, "t": "time/compute tradeoff, requiring 2Smin training steps and processing E = 2Emin data examples."}
+{"p": 12, "s": 10.0, "b": false, "t": "In Figure 10 we have plotted the critical batch size and gradient noise scale5 as a function of training loss for"}
+{"p": 12, "s": 10.0, "b": false, "t": "two different models. We see that Bcrit(L) is independent of model size, and only depends on the loss L. So"}
+{"p": 12, "s": 10.0, "b": false, "t": "the predictions of [MKAT18] continue to hold for Transformer language models. The critical batch size can"}
+{"p": 12, "s": 10.0, "b": false, "t": "be ﬁt with a power-law in the loss"}
+{"p": 12, "s": 10.0, "b": false, "t": "Bcrit(L) ≈"}
+{"p": 12, "s": 10.0, "b": false, "t": "B∗"}
+{"p": 12, "s": 7.0, "b": false, "t": "L1/αB"}
+{"p": 12, "s": 10.0, "b": false, "t": "(5.3)"}
+{"p": 12, "s": 10.0, "b": false, "t": "where B∗≈2 × 108 and αB ≈0.21."}
+{"p": 12, "s": 10.0, "b": false, "t": "We have chosen this parameterization for Bcrit(L) because as the loss approaches its minimum value Lmin,"}
+{"p": 12, "s": 10.0, "b": false, "t": "the gradient noise scale is expected to diverge, and we expect Bcrit to track this noise scale. We do not"}
+{"p": 12, "s": 10.0, "b": false, "t": "know Lmin, as we see no sign that our models are approaching it, but Lmin > 0 since the entropy of natural"}
+{"p": 12, "s": 10.0, "b": false, "t": "language is non-zero. Since apparently Lmin is much smaller than the values of L we have achieved, we used"}
+{"p": 12, "s": 10.0, "b": false, "t": "a parameterization where Bcrit diverges as L →0."}
+{"p": 12, "s": 10.0, "b": false, "t": "We will use Bcrit(L) to estimate the relation between the number of training steps S while training at batch"}
+{"p": 12, "s": 10.0, "b": false, "t": "size B = 219 tokens and the number of training steps while training at B ≫Bcrit. This is simply"}
+{"p": 12, "s": 10.0, "b": false, "t": "Smin(S) ≡"}
+{"p": 12, "s": 10.0, "b": false, "t": "S"}
+{"p": 12, "s": 10.0, "b": false, "t": "1 + Bcrit(L)/B"}
+{"p": 12, "s": 10.0, "b": false, "t": "(minimum steps, at B ≫Bcrit)"}
+{"p": 12, "s": 10.0, "b": false, "t": "(5.4)"}
+{"p": 12, "s": 10.0, "b": false, "t": "for any given target value L for the loss. This also deﬁnes a critical value of the compute needed to train to L"}
+{"p": 12, "s": 10.0, "b": false, "t": "with a model of size N if we were to train at B ≪Bcrit(L). This is"}
+{"p": 12, "s": 10.0, "b": false, "t": "Cmin(C) ≡"}
+{"p": 12, "s": 10.0, "b": false, "t": "C"}
+{"p": 12, "s": 10.0, "b": false, "t": "1 + B/Bcrit(L)"}
+{"p": 12, "s": 10.0, "b": false, "t": "(minimum compute, at B ≪Bcrit)"}
+{"p": 12, "s": 10.0, "b": false, "t": "(5.5)"}
+{"p": 12, "s": 10.0, "b": false, "t": "where C = 6NBS estimates the (non-embedding) compute used at batch size B."}
+{"p": 12, "s": 10.0, "b": true, "t": "5.2"}
+{"p": 12, "s": 10.0, "b": true, "t": "Results for L(N, Smin) and Performance with Model Size and Compute"}
+{"p": 12, "s": 10.0, "b": false, "t": "Now we will use Smin deﬁned in Equation (5.4) to obtain a simple and universal ﬁt for the dependence of the"}
+{"p": 12, "s": 10.0, "b": false, "t": "loss on model size and training time in the inﬁnite data limit. We will ﬁt the stable, Adam-optimized training"}
+{"p": 12, "s": 10.0, "b": false, "t": "runs using Equation (1.6), repeated here for convenience:"}
+{"p": 12, "s": 10.0, "b": false, "t": "L(N, Smin) ="}
+{"p": 12, "s": 10.0, "b": false, "t": "\u0012Nc"}
+{"p": 12, "s": 10.0, "b": false, "t": "N"}
+{"p": 12, "s": 10.0, "b": false, "t": "\u0013αN"}
+{"p": 12, "s": 10.0, "b": false, "t": "+"}
+{"p": 12, "s": 10.0, "b": false, "t": "\u0012 Sc"}
+{"p": 12, "s": 7.0, "b": false, "t": "Smin"}
+{"p": 12, "s": 10.0, "b": false, "t": "\u0013αS"}
+{"p": 12, "s": 10.0, "b": false, "t": "(5.6)"}
+{"p": 12, "s": 10.0, "b": false, "t": "for the loss. We include all training steps after the warmup period of the learning rate schedule, and ﬁnd a ﬁt"}
+{"p": 12, "s": 10.0, "b": false, "t": "to the data with the parameters:"}
+{"p": 12, "s": 9.0, "b": false, "t": "5Although the critical batch size roughly matches the gradient noise scale, we are using a direct measurements of"}
+{"p": 12, "s": 9.0, "b": false, "t": "Bcrit from Figures 18 and 10 for all our later analyses."}
+{"p": 12, "s": 10.0, "b": false, "t": "13"}
+{"p": 13, "s": 6.9, "b": false, "t": "104"}
+{"p": 13, "s": 6.9, "b": false, "t": "106"}
+{"p": 13, "s": 6.9, "b": false, "t": "108"}
+{"p": 13, "s": 6.9, "b": false, "t": "Parameters (non-embedding)"}
+{"p": 13, "s": 6.9, "b": false, "t": "2"}
+{"p": 13, "s": 6.9, "b": false, "t": "3"}
+{"p": 13, "s": 6.9, "b": false, "t": "4"}
+{"p": 13, "s": 6.9, "b": false, "t": "5"}
+{"p": 13, "s": 6.9, "b": false, "t": "6"}
+{"p": 13, "s": 6.9, "b": false, "t": "7"}
+{"p": 13, "s": 6.9, "b": false, "t": "8"}
+{"p": 13, "s": 6.9, "b": false, "t": "Test Loss"}
+{"p": 13, "s": 8.3, "b": false, "t": "Performance vs Compute Budget"}
+{"p": 13, "s": 6.9, "b": false, "t": "10"}
+{"p": 13, "s": 4.8, "b": false, "t": "5"}
+{"p": 13, "s": 6.9, "b": false, "t": "10"}
+{"p": 13, "s": 4.8, "b": false, "t": "4"}
+{"p": 13, "s": 6.9, "b": false, "t": "10"}
+{"p": 13, "s": 4.8, "b": false, "t": "3"}
+{"p": 13, "s": 6.9, "b": false, "t": "10"}
+{"p": 13, "s": 4.8, "b": false, "t": "2"}
+{"p": 13, "s": 6.9, "b": false, "t": "10"}
+{"p": 13, "s": 4.8, "b": false, "t": "1"}
+{"p": 13, "s": 6.9, "b": false, "t": "100"}
+{"p": 13, "s": 6.9, "b": false, "t": "PF-dayss"}
+{"p": 13, "s": 6.9, "b": false, "t": "106"}
+{"p": 13, "s": 6.9, "b": false, "t": "107"}
+{"p": 13, "s": 6.9, "b": false, "t": "108"}
+{"p": 13, "s": 6.9, "b": false, "t": "109"}
+{"p": 13, "s": 6.9, "b": false, "t": "Parameters (non-embedding)"}
+{"p": 13, "s": 6.9, "b": false, "t": "2.4"}
+{"p": 13, "s": 6.9, "b": false, "t": "3.0"}
+{"p": 13, "s": 6.9, "b": false, "t": "3.6"}
+{"p": 13, "s": 6.9, "b": false, "t": "4.2"}
+{"p": 13, "s": 6.9, "b": false, "t": "4.8"}
+{"p": 13, "s": 6.9, "b": false, "t": "5.4"}
+{"p": 13, "s": 6.9, "b": false, "t": "Test Loss"}
+{"p": 13, "s": 8.3, "b": false, "t": "Performance vs Steps"}
+{"p": 13, "s": 6.9, "b": false, "t": "104"}
+{"p": 13, "s": 6.9, "b": false, "t": "105"}
+{"p": 13, "s": 6.9, "b": false, "t": "Steps"}
+{"p": 13, "s": 10.0, "b": true, "t": "Figure 11"}
+{"p": 13, "s": 10.0, "b": false, "t": "When we hold either total compute or number of training steps ﬁxed, performance follows"}
+{"p": 13, "s": 10.0, "b": false, "t": "L(N, S) from Equation (5.6). Each value of compute budget has an associated optimal model size that"}
+{"p": 13, "s": 10.0, "b": false, "t": "maximizes performance. Mediocre ﬁts at small S are unsurprising, as the power-law equation for the learning"}
+{"p": 13, "s": 10.0, "b": false, "t": "curves breaks down very early in training."}
+{"p": 13, "s": 10.0, "b": false, "t": "Parameter"}
+{"p": 13, "s": 10.0, "b": false, "t": "αN"}
+{"p": 13, "s": 10.0, "b": false, "t": "αS"}
+{"p": 13, "s": 10.0, "b": false, "t": "Nc"}
+{"p": 13, "s": 10.0, "b": false, "t": "Sc"}
+{"p": 13, "s": 10.0, "b": false, "t": "Value"}
+{"p": 13, "s": 10.0, "b": false, "t": "0.077"}
+{"p": 13, "s": 10.0, "b": false, "t": "0.76"}
+{"p": 13, "s": 10.0, "b": false, "t": "6.5 × 1013"}
+{"p": 13, "s": 10.0, "b": false, "t": "2.1 × 103"}
+{"p": 13, "s": 10.0, "b": true, "t": "Table 3"}
+{"p": 13, "s": 10.0, "b": false, "t": "Fits to L(N, S)"}
+{"p": 13, "s": 10.0, "b": false, "t": "With these parameters, we obtain the learning curve ﬁts in Figure 4. Though the ﬁts are imperfect, we believe"}
+{"p": 13, "s": 10.0, "b": false, "t": "they are quite compelling given the simplicity of Equation (5.6)."}
+{"p": 13, "s": 10.0, "b": false, "t": "The data and ﬁts can be visualized in a different and more interesting way, as shown in Figure 11. There we"}
+{"p": 13, "s": 10.0, "b": false, "t": "study the test loss as a function of model size while ﬁxing either the total non-embedding compute C used"}
+{"p": 13, "s": 10.0, "b": false, "t": "in training, or the number of steps S. For the ﬁts we use Equation (5.5) and (5.4) along with the parameters"}
+{"p": 13, "s": 10.0, "b": false, "t": "above and Equation (5.6)."}
+{"p": 13, "s": 10.0, "b": false, "t": "The power-law dependence of the loss on Smin reﬂects the interplay of optimizer dynamics and the loss"}
+{"p": 13, "s": 10.0, "b": false, "t": "landscape. Since the ﬁts are best late in training, when the loss may be approximately quadratic, the power-"}
+{"p": 13, "s": 10.0, "b": false, "t": "law should provide information about the spectrum of the Hessian of the loss. Its universality suggests that"}
+{"p": 13, "s": 10.0, "b": false, "t": "the Hessian eigenvalue density is roughly independent of model size."}
+{"p": 13, "s": 10.0, "b": true, "t": "5.3"}
+{"p": 13, "s": 10.0, "b": true, "t": "Lower Bound on Early Stopping Step"}
+{"p": 13, "s": 10.0, "b": false, "t": "The results for L(N, Smin) can be used to derive a lower-bound (and rough estimate) of the step at which"}
+{"p": 13, "s": 10.0, "b": false, "t": "early stopping should occur when training is data limited. It is motivated by the idea that ﬁnite and inﬁnite D"}
+{"p": 13, "s": 10.0, "b": false, "t": "learning curves for a given model will be very similar until we reach Smin ≈Sstop. Thus overﬁtting should"}
+{"p": 13, "s": 10.0, "b": false, "t": "be proportional to the correction from simply ending training at Sstop. This will underestimate Sstop, because"}
+{"p": 13, "s": 10.0, "b": false, "t": "in reality the test loss will decrease more slowly when we have a ﬁnite D, and therefore we will require more"}
+{"p": 13, "s": 10.0, "b": false, "t": "training steps to reach the optimal test loss at ﬁnite D. This line of reasoning leads to the inequality"}
+{"p": 13, "s": 10.0, "b": false, "t": "Sstop(N, D) ≳"}
+{"p": 13, "s": 10.0, "b": false, "t": "Sc"}
+{"p": 13, "s": 10.0, "b": false, "t": "[L(N, D) −L(N, ∞)]1/αS"}
+{"p": 13, "s": 10.0, "b": false, "t": "(5.7)"}
+{"p": 13, "s": 10.0, "b": false, "t": "where L(N, ∞) is the converged loss, evaluated with inﬁnite available data. This inequality and its com-"}
+{"p": 13, "s": 10.0, "b": false, "t": "parison to the empirical data is displayed in Figure 16 in the appendix. In that ﬁgure, the values of Sstop"}
+{"p": 13, "s": 10.0, "b": false, "t": "and L(N, D) are empirical (though Sstop is adjusted to mimic training at B ≫Bcrit), while L(N, ∞) is"}
+{"p": 13, "s": 10.0, "b": false, "t": "computed from the ﬁt to L(N, D) evaluated at D = ∞."}
+{"p": 13, "s": 12.0, "b": true, "t": "6"}
+{"p": 13, "s": 12.0, "b": true, "t": "Optimal Allocation of the Compute Budget"}
+{"p": 13, "s": 10.0, "b": false, "t": "We displayed the empirical trend of performance as a function of the computation used during training in"}
+{"p": 13, "s": 10.0, "b": false, "t": "the top-right of Figure 1. However, this result involved training at a ﬁxed batch size B, whereas we know"}
+{"p": 13, "s": 10.0, "b": false, "t": "14"}
+{"p": 14, "s": 7.2, "b": false, "t": "Models between 0.6x and 2.2x the "}
+{"p": 14, "s": 7.2, "b": false, "t": "optimal size can be trained with a "}
+{"p": 14, "s": 7.2, "b": false, "t": "20% larger compute budget"}
+{"p": 14, "s": 7.2, "b": false, "t": "Smaller models require "}
+{"p": 14, "s": 7.2, "b": false, "t": "more steps to train, while "}
+{"p": 14, "s": 7.2, "b": false, "t": "larger models require fewer"}
+{"p": 14, "s": 7.2, "b": false, "t": "Our framework does not "}
+{"p": 14, "s": 7.2, "b": false, "t": "capture early training dynamics"}
+{"p": 14, "s": 10.0, "b": true, "t": "Figure 12"}
+{"p": 14, "s": 10.0, "b": true, "t": "Left: Given a ﬁxed compute budget, a particular model size is optimal, though somewhat larger"}
+{"p": 14, "s": 10.0, "b": true, "t": "or smaller models can be trained with minimal additional compute. Right: Models larger than the compute-"}
+{"p": 14, "s": 10.0, "b": false, "t": "efﬁcient size require fewer steps to train, allowing for potentially faster training if sufﬁcient additional paral-"}
+{"p": 14, "s": 10.0, "b": false, "t": "lelism is possible. Note that this equation should not be trusted for very large models, as it is only valid in the"}
+{"p": 14, "s": 10.0, "b": false, "t": "power-law region of the learning curve, after initial transient effects."}
+{"p": 14, "s": 7.3, "b": false, "t": "10"}
+{"p": 14, "s": 5.1, "b": false, "t": "8"}
+{"p": 14, "s": 7.3, "b": false, "t": "10"}
+{"p": 14, "s": 5.1, "b": false, "t": "6"}
+{"p": 14, "s": 7.3, "b": false, "t": "10"}
+{"p": 14, "s": 5.1, "b": false, "t": "4"}
+{"p": 14, "s": 7.3, "b": false, "t": "10"}
+{"p": 14, "s": 5.1, "b": false, "t": "2"}
+{"p": 14, "s": 7.3, "b": false, "t": "100"}
+{"p": 14, "s": 7.3, "b": false, "t": "Compute (PF-days), non-embedding"}
+{"p": 14, "s": 7.3, "b": false, "t": "2"}
+{"p": 14, "s": 7.3, "b": false, "t": "3"}
+{"p": 14, "s": 7.3, "b": false, "t": "4"}
+{"p": 14, "s": 7.3, "b": false, "t": "5"}
+{"p": 14, "s": 7.3, "b": false, "t": "6"}
+{"p": 14, "s": 7.3, "b": false, "t": "7"}
+{"p": 14, "s": 7.3, "b": false, "t": "Test Loss"}
+{"p": 14, "s": 7.3, "b": false, "t": "L = (Cmin/2.3 108)"}
+{"p": 14, "s": 5.1, "b": false, "t": "0.050"}
+{"p": 14, "s": 7.3, "b": false, "t": "L = (C/2.0 107)"}
+{"p": 14, "s": 5.1, "b": false, "t": "0.057"}
+{"p": 14, "s": 10.0, "b": true, "t": "Figure 13"}
+{"p": 14, "s": 10.0, "b": false, "t": "When adjusting performance to simulate training far below the critical batch size, we ﬁnd a"}
+{"p": 14, "s": 10.0, "b": false, "t": "somewhat altered power law for L(Cmin) when compared with the fully empirical results. The conspicuous"}
+{"p": 14, "s": 10.0, "b": false, "t": "lump at 10−5 PF-days marks the transition from 1-layer to 2-layer networks; we exclude 1-layer networks"}
+{"p": 14, "s": 10.0, "b": false, "t": "in the power-law ﬁts. It is the L(Cmin) trend that we expect to provide a reliable extrapolation for larger"}
+{"p": 14, "s": 10.0, "b": false, "t": "compute."}
+{"p": 14, "s": 10.0, "b": false, "t": "that in fact we could train more efﬁciently6 by training at the batch size Bcrit discussed in Section 5.1."}
+{"p": 14, "s": 10.0, "b": false, "t": "Large and small values of the loss could have been achieved with fewer samples or fewer steps, respectively,"}
+{"p": 14, "s": 10.0, "b": false, "t": "and correcting for this inefﬁciency by standardizing to the critical batch size results in cleaner and more"}
+{"p": 14, "s": 10.0, "b": false, "t": "predictable trends."}
+{"p": 14, "s": 10.0, "b": false, "t": "In this section we will adjust for this oversight. More importantly, we will use the results of Section 5"}
+{"p": 14, "s": 10.0, "b": false, "t": "to determine the optimal allocation of compute between model size N and the quantity of data processed"}
+{"p": 14, "s": 10.0, "b": false, "t": "during training, namely 2BcritSmin. We will determine this allocation both empirically and theoretically, by"}
+{"p": 14, "s": 10.0, "b": false, "t": "using the equation for L(N, Smin), and we will demonstrate that these methods agree."}
+{"p": 14, "s": 10.0, "b": true, "t": "6.1"}
+{"p": 14, "s": 10.0, "b": true, "t": "Optimal Performance and Allocations"}
+{"p": 14, "s": 10.0, "b": false, "t": "Let us ﬁrst study the loss as a function of the optimally allocated compute from Equation (5.5). The result is"}
+{"p": 14, "s": 10.0, "b": false, "t": "plotted in Figure 13, along with a power-law ﬁt. We see that as compared to the compute plot of Figure 1, the"}
+{"p": 14, "s": 10.0, "b": false, "t": "new ﬁt with Cmin is somewhat improved."}
+{"p": 14, "s": 10.0, "b": false, "t": "Given L(Cmin), it is natural to ask for the optimal model size N(Cmin) that provides the minimal loss with a"}
+{"p": 14, "s": 10.0, "b": false, "t": "given quantity of training compute. The optimal model size is shown in Figure 14. We observe that N(Cmin)"}
+{"p": 14, "s": 9.0, "b": false, "t": "6One might ask why we did not simply train at Bcrit in the ﬁrst place. The reason is that it depends not only on the"}
+{"p": 14, "s": 9.0, "b": false, "t": "model but also on the target value of the loss we wish to achieve, and so is a moving target."}
+{"p": 14, "s": 10.0, "b": false, "t": "15"}
+{"p": 15, "s": 7.0, "b": false, "t": "10"}
+{"p": 15, "s": 4.9, "b": false, "t": "7"}
+{"p": 15, "s": 7.0, "b": false, "t": "10"}
+{"p": 15, "s": 4.9, "b": false, "t": "5"}
+{"p": 15, "s": 7.0, "b": false, "t": "10"}
+{"p": 15, "s": 4.9, "b": false, "t": "3"}
+{"p": 15, "s": 7.0, "b": false, "t": "10"}
+{"p": 15, "s": 4.9, "b": false, "t": "1"}
+{"p": 15, "s": 7.0, "b": false, "t": "Compute (PF-days), non-embedding"}
+{"p": 15, "s": 7.0, "b": false, "t": "103"}
+{"p": 15, "s": 7.0, "b": false, "t": "105"}
+{"p": 15, "s": 7.0, "b": false, "t": "107"}
+{"p": 15, "s": 7.0, "b": false, "t": "Parameters (non-embedding)"}
+{"p": 15, "s": 7.0, "b": false, "t": "N = (1.3 109) C0.73"}
+{"p": 15, "s": 4.9, "b": false, "t": "min"}
+{"p": 15, "s": 7.0, "b": false, "t": "N = (1.6 109) C0.88"}
+{"p": 15, "s": 7.0, "b": false, "t": "10"}
+{"p": 15, "s": 4.9, "b": false, "t": "7"}
+{"p": 15, "s": 7.0, "b": false, "t": "10"}
+{"p": 15, "s": 4.9, "b": false, "t": "5"}
+{"p": 15, "s": 7.0, "b": false, "t": "10"}
+{"p": 15, "s": 4.9, "b": false, "t": "3"}
+{"p": 15, "s": 7.0, "b": false, "t": "10"}
+{"p": 15, "s": 4.9, "b": false, "t": "1"}
+{"p": 15, "s": 7.0, "b": false, "t": "Compute (PF-days), excluding embeddings"}
+{"p": 15, "s": 7.0, "b": false, "t": "0"}
+{"p": 15, "s": 7.0, "b": false, "t": "5000"}
+{"p": 15, "s": 7.0, "b": false, "t": "10000"}
+{"p": 15, "s": 7.0, "b": false, "t": "15000"}
+{"p": 15, "s": 7.0, "b": false, "t": "Steps"}
+{"p": 15, "s": 7.0, "b": false, "t": "Smin (adjusted)"}
+{"p": 15, "s": 7.0, "b": false, "t": "Smin = (5.4 103) C0.03"}
+{"p": 15, "s": 4.9, "b": false, "t": "min"}
+{"p": 15, "s": 7.0, "b": false, "t": "S (fixed-batch)"}
+{"p": 15, "s": 10.0, "b": true, "t": "Figure 14"}
+{"p": 15, "s": 10.0, "b": true, "t": "Left: Each value of the compute budget Cmin has an associated optimal model size N. Optimal"}
+{"p": 15, "s": 10.0, "b": false, "t": "model size grows very rapidly with Cmin, increasing by 5x for each 10x increase in compute. The number"}
+{"p": 15, "s": 10.0, "b": false, "t": "of data examples processed makes up the remainder of the increase, growing relatively modestly by only 2x."}
+{"p": 15, "s": 10.0, "b": true, "t": "Right: The batch-adjusted number of optimization steps also grows very slowly, if at all, meaning that most"}
+{"p": 15, "s": 10.0, "b": false, "t": "of the growth in data examples processed can be used for increased batch sizes."}
+{"p": 15, "s": 10.0, "b": false, "t": "can be ﬁt very well with a power-law"}
+{"p": 15, "s": 7.0, "b": false, "t": "N(Cmin) ∝(Cmin)0.73."}
+{"p": 15, "s": 10.0, "b": false, "t": "(6.1)"}
+{"p": 15, "s": 10.0, "b": false, "t": "In Figure 12, we show the effect of training models of sub-optimal sizes (see Appendix B.4)."}
+{"p": 15, "s": 10.0, "b": false, "t": "By deﬁnition Cmin ≡6NBcritS, and so we can use N(Cmin) to extract further results. In particular, since"}
+{"p": 15, "s": 10.0, "b": false, "t": "prior ﬁts show B ∝L−4.8 and L ∝C−0.05"}
+{"p": 15, "s": 7.0, "b": false, "t": "min"}
+{"p": 15, "s": 10.0, "b": false, "t": ", we can conclude that Bcrit ∝C0.24"}
+{"p": 15, "s": 10.0, "b": false, "t": "min . This leads us to conclude"}
+{"p": 15, "s": 10.0, "b": false, "t": "that the optimal number of steps will only grow very slowly with compute, as"}
+{"p": 15, "s": 7.0, "b": false, "t": "Smin ∝(Cmin)0.03,"}
+{"p": 15, "s": 10.0, "b": false, "t": "(6.2)"}
+{"p": 15, "s": 10.0, "b": false, "t": "matching the empirical results in Figure 14. In fact the measured exponent is sufﬁciently small that our results"}
+{"p": 15, "s": 10.0, "b": false, "t": "may even be consistent with an exponent of zero."}
+{"p": 15, "s": 10.0, "b": false, "t": "Thus we conclude that as we scale up language modeling with an optimal allocation of computation, we"}
+{"p": 15, "s": 10.0, "b": false, "t": "should predominantly increase the model size N, while simultaneously scaling up the batch size via B ∝"}
+{"p": 15, "s": 10.0, "b": false, "t": "Bcrit with negligible increase in the number of serial steps. Since compute-efﬁcient training uses relatively"}
+{"p": 15, "s": 10.0, "b": false, "t": "few optimization steps, additional work on speeding up early training dynamics may be warranted."}
+{"p": 15, "s": 10.0, "b": true, "t": "6.2"}
+{"p": 15, "s": 10.0, "b": true, "t": "Predictions from L(N, Smin)"}
+{"p": 15, "s": 10.0, "b": false, "t": "The results for L(Cmin) and the allocations can be predicted from the L(N, Smin) equation obtained in"}
+{"p": 15, "s": 10.0, "b": false, "t": "Section 5. Given our equation for L(N, Smin), we can substitute Smin = Cmin"}
+{"p": 15, "s": 10.0, "b": false, "t": "6NB and then ﬁnd the minimum"}
+{"p": 15, "s": 10.0, "b": false, "t": "of the loss as a function of N, while ﬁxing the training compute. We carry out this procedure in detail in"}
+{"p": 15, "s": 10.0, "b": false, "t": "Appendix B, where we also provide some additional predictions."}
+{"p": 15, "s": 10.0, "b": false, "t": "For the loss as a function of training compute, we predict that"}
+{"p": 15, "s": 10.0, "b": false, "t": "L(Cmin) ="}
+{"p": 15, "s": 7.0, "b": false, "t": "\u0012Cmin"}
+{"p": 15, "s": 7.0, "b": false, "t": "c"}
+{"p": 15, "s": 7.0, "b": false, "t": "Cmin"}
+{"p": 15, "s": 5.0, "b": false, "t": "\u0013αmin"}
+{"p": 15, "s": 5.0, "b": false, "t": "C"}
+{"p": 15, "s": 10.0, "b": false, "t": "(6.3)"}
+{"p": 15, "s": 10.0, "b": false, "t": "where"}
+{"p": 15, "s": 7.0, "b": false, "t": "αmin"}
+{"p": 15, "s": 7.0, "b": false, "t": "C"}
+{"p": 15, "s": 10.0, "b": false, "t": "≡"}
+{"p": 15, "s": 10.0, "b": false, "t": "1"}
+{"p": 15, "s": 10.0, "b": false, "t": "1/αS + 1/αB + 1/αN"}
+{"p": 15, "s": 10.0, "b": false, "t": "≈0.054"}
+{"p": 15, "s": 10.0, "b": false, "t": "(6.4)"}
+{"p": 15, "s": 10.0, "b": false, "t": "in excellent agreement with the exponent of Figure 13. We also predict that"}
+{"p": 15, "s": 10.0, "b": false, "t": "N(Cmin) ∝(Cmin)αmin"}
+{"p": 15, "s": 5.0, "b": false, "t": "C"}
+{"p": 15, "s": 7.0, "b": false, "t": "/αN ≈(Cmin)0.71"}
+{"p": 15, "s": 10.0, "b": false, "t": "(6.5)"}
+{"p": 15, "s": 10.0, "b": false, "t": "which also matches the scaling of Figure 14 to within a few percent. Our scaling laws provide a predictive"}
+{"p": 15, "s": 10.0, "b": false, "t": "framework for the performance of language modeling."}
+{"p": 15, "s": 10.0, "b": false, "t": "16"}
+{"p": 16, "s": 7.8, "b": false, "t": "The intersection point is sensitive to "}
+{"p": 16, "s": 7.8, "b": false, "t": "the precise power-law parameters"}
+{"p": 16, "s": 10.0, "b": true, "t": "Figure 15"}
+{"p": 16, "s": 10.0, "b": false, "t": "Far beyond the model sizes we study empirically, we ﬁnd a contradiction between our equations"}
+{"p": 16, "s": 10.0, "b": false, "t": "for L(Cmin) and L(D) due to the slow growth of data needed for compute-efﬁcient training. The intersection"}
+{"p": 16, "s": 10.0, "b": false, "t": "marks the point before which we expect our predictions to break down. The location of this point is highly"}
+{"p": 16, "s": 10.0, "b": false, "t": "sensitive to the precise exponents from our power-law ﬁts."}
+{"p": 16, "s": 10.0, "b": true, "t": "6.3"}
+{"p": 16, "s": 10.0, "b": true, "t": "Contradictions and a Conjecture"}
+{"p": 16, "s": 10.0, "b": false, "t": "We observe no signs of deviation from straight power-law trends at large values of compute, data, or model"}
+{"p": 16, "s": 10.0, "b": false, "t": "size. Our trends must eventually level off, though, since natural language has non-zero entropy."}
+{"p": 16, "s": 10.0, "b": false, "t": "Indeed, the trends for compute-efﬁcient training described in this section already contain an apparent contra-"}
+{"p": 16, "s": 10.0, "b": false, "t": "diction. At scales several orders of magnitude above those documented here, the performance predicted by"}
+{"p": 16, "s": 10.0, "b": false, "t": "the L(Cmin) scaling law decreases below what should be possible given the slow growth in training data with"}
+{"p": 16, "s": 10.0, "b": false, "t": "compute. This implies that our scaling laws must break down before this point, but we conjecture that the"}
+{"p": 16, "s": 10.0, "b": false, "t": "intersection point has a deeper meaning: it provides an estimate of the point at which Transformer language"}
+{"p": 16, "s": 10.0, "b": false, "t": "models reach maximal performance."}
+{"p": 16, "s": 10.0, "b": false, "t": "Since the amount of data used by compute-efﬁcient training grows slowly with the compute budget, the"}
+{"p": 16, "s": 10.0, "b": false, "t": "performance predicted by L(Cmin) eventually hits a lower bound set by the L(D) power law (see Figure 15)."}
+{"p": 16, "s": 10.0, "b": false, "t": "Let us work this out in more detail."}
+{"p": 16, "s": 10.0, "b": false, "t": "To keep overﬁtting under control, the results of Section 4 imply that we should scale the dataset size as"}
+{"p": 16, "s": 7.0, "b": false, "t": "D ∝N 0.74 ∝C0.54"}
+{"p": 16, "s": 7.0, "b": false, "t": "min"}
+{"p": 16, "s": 10.0, "b": false, "t": "(6.6)"}
+{"p": 16, "s": 10.0, "b": false, "t": "where we have used the compute-efﬁcient N(Cmin) from Figure 14."}
+{"p": 16, "s": 10.0, "b": false, "t": "Let us compare this to the data requirements of compute-efﬁcient training. If we train at the critical batch"}
+{"p": 16, "s": 10.0, "b": false, "t": "size (i.e. C = 2Cmin) and never re-use data during training, we ﬁnd that data usage grows with compute as"}
+{"p": 16, "s": 10.0, "b": false, "t": "D(Cmin) ="}
+{"p": 16, "s": 7.0, "b": false, "t": "2Cmin"}
+{"p": 16, "s": 10.0, "b": false, "t": "6N(Cmin) ≈"}
+{"p": 16, "s": 10.0, "b": false, "t": "\u0000"}
+{"p": 16, "s": 10.0, "b": false, "t": "4 × 1010 tokens"}
+{"p": 16, "s": 10.0, "b": false, "t": "\u0001"}
+{"p": 16, "s": 10.0, "b": false, "t": "(Cmin/PF-Day)0.26"}
+{"p": 16, "s": 10.0, "b": false, "t": "(6.7)"}
+{"p": 16, "s": 10.0, "b": false, "t": "This is the maximum rate at which the dataset size can productively grow with compute, since it means that"}
+{"p": 16, "s": 10.0, "b": false, "t": "we are only training for a single epoch. But it grows the dataset much more slowly than in Equation (6.6)."}
+{"p": 16, "s": 10.0, "b": false, "t": "It appears to imply that compute-efﬁcient training will eventually run into a problem with overﬁtting, even if"}
+{"p": 16, "s": 10.0, "b": false, "t": "the training process never re-uses any data!"}
+{"p": 16, "s": 10.0, "b": false, "t": "According to Figure 1, we expect that when we are bottlenecked by the dataset size (ie by overﬁtting), the"}
+{"p": 16, "s": 10.0, "b": false, "t": "loss should scale as L(D) ∝D−0.095. This implies that the loss would scale with compute as L(D(Cmin)) ∝"}
+{"p": 16, "s": 7.0, "b": false, "t": "C−0.03"}
+{"p": 16, "s": 7.0, "b": false, "t": "min"}
+{"p": 16, "s": 10.0, "b": false, "t": "once we are data-limited. Once again, we have a contradiction, as this will eventually intersect with"}
+{"p": 16, "s": 10.0, "b": false, "t": "our prediction for L(Cmin) from Figure 13, where we found a scaling L(Cmin) ∝C−0.050"}
+{"p": 16, "s": 7.0, "b": false, "t": "min"}
+{"p": 16, "s": 10.0, "b": false, "t": "."}
+{"p": 16, "s": 10.0, "b": false, "t": "The intersection point of L(D(Cmin)) and L(Cmin) occurs at"}
+{"p": 16, "s": 10.0, "b": false, "t": "C∗∼104 PF-Days"}
+{"p": 16, "s": 10.0, "b": false, "t": "N ∗∼1012 parameters,"}
+{"p": 16, "s": 10.0, "b": false, "t": "D∗∼1012 tokens,"}
+{"p": 16, "s": 10.0, "b": false, "t": "L∗∼1.7 nats/token"}
+{"p": 16, "s": 10.0, "b": false, "t": "(6.8)"}
+{"p": 16, "s": 10.0, "b": false, "t": "though the numerical values are highly uncertain, varying by an order or magnitude in either direction de-"}
+{"p": 16, "s": 10.0, "b": false, "t": "pending on the precise values of the exponents from the power-law ﬁts. The most obvious interpretation is"}
+{"p": 16, "s": 10.0, "b": false, "t": "that our scaling laws break down at or before we reach this point, which is still many orders of magnitude"}
+{"p": 16, "s": 10.0, "b": false, "t": "away in both compute and model size."}
+{"p": 16, "s": 10.0, "b": false, "t": "17"}
+{"p": 17, "s": 10.0, "b": false, "t": "One might also conjecture that this intersection point has a deeper meaning. If we cannot increase the model"}
+{"p": 17, "s": 10.0, "b": false, "t": "size beyond N ∗without qualitatively different data requirements, perhaps this means that once we reach"}
+{"p": 17, "s": 10.0, "b": false, "t": "C∗"}
+{"p": 17, "s": 10.0, "b": false, "t": "min and N ∗, we have extracted all of the reliable information available in natural language data. In this"}
+{"p": 17, "s": 10.0, "b": false, "t": "interpretation, L∗would provide a rough estimate for the entropy-per-token7 of natural language. In this"}
+{"p": 17, "s": 10.0, "b": false, "t": "scenario, we would expect the loss trend to level off at or before L∗."}
+{"p": 17, "s": 10.0, "b": false, "t": "We can guess at the functional form of L(Cmin) as it levels off by considering a version of our training"}
+{"p": 17, "s": 10.0, "b": false, "t": "dataset with added noise. For example, we could append a random string of tokens to each context shown"}
+{"p": 17, "s": 10.0, "b": false, "t": "to the model to artiﬁcially boost the loss by a constant additive factor. Then, the distance from the noise"}
+{"p": 17, "s": 10.0, "b": false, "t": "ﬂoor L −Lnoise would be a more meaningful performance metric, with even a small decrease in this distance"}
+{"p": 17, "s": 10.0, "b": false, "t": "potentially representing a signiﬁcant boost in qualitative performance. Since the artiﬁcial noise would affect"}
+{"p": 17, "s": 10.0, "b": false, "t": "all of our trends equally, the critical point of 6.8 would not change (aside from the absolute value of L∗), and"}
+{"p": 17, "s": 10.0, "b": false, "t": "may be meaningful even if it occurs after the leveling off."}
+{"p": 17, "s": 12.0, "b": true, "t": "7"}
+{"p": 17, "s": 12.0, "b": true, "t": "Related Work"}
+{"p": 17, "s": 10.0, "b": false, "t": "Power laws can arise from a wide variety of sources [THK18]. Power-law scalings with model and dataset"}
+{"p": 17, "s": 10.0, "b": false, "t": "size in density estimation [Was06] and in random forest models [Bia12] may be connected with our results."}
+{"p": 17, "s": 10.0, "b": false, "t": "These models suggest that power-law exponents may have a very rough interpretation as the inverse of the"}
+{"p": 17, "s": 10.0, "b": false, "t": "number of relevant features in the data."}
+{"p": 17, "s": 10.0, "b": false, "t": "Some early [BB01, Goo01] work found power-law scalings between performance and dataset size. More"}
+{"p": 17, "s": 10.0, "b": false, "t": "recent work [HNA+17, HAD19] also investigated scaling between model size and data size; their work is"}
+{"p": 17, "s": 10.0, "b": false, "t": "perhaps the closest to ours in the literature8. Note, however, that [HNA+17] found super-linear scaling of"}
+{"p": 17, "s": 10.0, "b": false, "t": "dataset size with model size, whereas we ﬁnd a sub-linear scaling. There are some parallels between our"}
+{"p": 17, "s": 10.0, "b": false, "t": "ﬁndings on optimal allocation of compute and [Kom19], including power-law learning curves. EfﬁcientNets"}
+{"p": 17, "s": 10.0, "b": false, "t": "[TL19] also appear to obey an approximate power-law relation between accuracy and model size. Very recent"}
+{"p": 17, "s": 10.0, "b": false, "t": "work [RRBS19b] studies scaling with both dataset size and model size for a variety of datasets, and ﬁts an"}
+{"p": 17, "s": 10.0, "b": false, "t": "ansatz similar to ours."}
+{"p": 17, "s": 10.0, "b": false, "t": "EfﬁcientNet [TL19] advocates scaling depth and width exponentially (with different coefﬁcients) for optimal"}
+{"p": 17, "s": 10.0, "b": false, "t": "performance of image models, resulting in a power-law scaling of width as a function of depth. We ﬁnd that"}
+{"p": 17, "s": 10.0, "b": false, "t": "for language models this power should be roughly one when scaling up (as width/depth should remain ﬁxed)."}
+{"p": 17, "s": 10.0, "b": false, "t": "But more importantly, we ﬁnd that the precise architectural hyperparameters are unimportant compared to the"}
+{"p": 17, "s": 10.0, "b": false, "t": "overall scale of the language model. In [VWB16] it was argued that deep models can function as ensembles"}
+{"p": 17, "s": 10.0, "b": false, "t": "of shallower models, which could potentially explain this ﬁnding. Earlier work [ZK16] has compared width"}
+{"p": 17, "s": 10.0, "b": false, "t": "and depth, and found that wide ResNets can outperform deep ResNets on image classiﬁcation. Some studies"}
+{"p": 17, "s": 10.0, "b": false, "t": "ﬁx computation per data example, which tends to scale in proportion to the number of model parameters,"}
+{"p": 17, "s": 10.0, "b": false, "t": "whereas we investigate scaling with both model size and the quantity of training computation."}
+{"p": 17, "s": 10.0, "b": false, "t": "Various works [AS17, BHMM18] have investigated generalization in highly overparameterized models, ﬁnd-"}
+{"p": 17, "s": 10.0, "b": false, "t": "ing a “jamming transition” [GJS+19] when the model size reaches the dataset size (this may require training"}
+{"p": 17, "s": 10.0, "b": false, "t": "many orders of magnitude beyond typical practice, and in particular does not use early stopping). We do"}
+{"p": 17, "s": 10.0, "b": false, "t": "not observe such a transition, and ﬁnd that the necessary training data scales sublinearly in the model size."}
+{"p": 17, "s": 10.0, "b": false, "t": "Expansions in the model size, particularly at large width [JGH18, LXS+19], may provide a useful framework"}
+{"p": 17, "s": 10.0, "b": false, "t": "for thinking about some of our scaling relations. Our results on optimization, such as the shape of learning"}
+{"p": 17, "s": 10.0, "b": false, "t": "curves, can likely be explained using a noisy quadratic model, which can provide quite accurate predictions"}
+{"p": 17, "s": 10.0, "b": false, "t": "[ZLN+19] in realistic settings. Making this connection quantitative will require a characterization of the"}
+{"p": 17, "s": 10.0, "b": false, "t": "Hessian spectrum [Pap18, GKX19, GARD18]."}
+{"p": 17, "s": 12.0, "b": true, "t": "8"}
+{"p": 17, "s": 12.0, "b": true, "t": "Discussion"}
+{"p": 17, "s": 10.0, "b": false, "t": "We have observed consistent scalings of language model log-likelihood loss with non-embedding parameter"}
+{"p": 17, "s": 10.0, "b": false, "t": "count N, dataset size D, and optimized training computation Cmin, as encapsulated in Equations (1.5) and"}
+{"p": 17, "s": 10.0, "b": false, "t": "(1.6). Conversely, we ﬁnd very weak dependence on many architectural and optimization hyperparameters."}
+{"p": 17, "s": 10.0, "b": false, "t": "Since scalings with N, D, Cmin are power-laws, there are diminishing returns with increasing scale."}
+{"p": 17, "s": 9.0, "b": false, "t": "7Deﬁning words using the wc utility, the WebText2 dataset has 1.4 tokens per word and 4.3 characters per token."}
+{"p": 17, "s": 9.0, "b": false, "t": "8After this work was completed, [RRBS19a] also appeared, which makes similar predictions for the dependence of"}
+{"p": 17, "s": 9.0, "b": false, "t": "loss on both model and dataset size."}
+{"p": 17, "s": 10.0, "b": false, "t": "18"}
+{"p": 18, "s": 10.0, "b": false, "t": "We were able to precisely model the dependence of the loss on N and D, and alternatively on N and S, when"}
+{"p": 18, "s": 10.0, "b": false, "t": "these parameters are varied simultaneously. We used these relations to derive the compute scaling, magnitude"}
+{"p": 18, "s": 10.0, "b": false, "t": "of overﬁtting, early stopping step, and data requirements when training large language models. So our scaling"}
+{"p": 18, "s": 10.0, "b": false, "t": "relations go beyond mere observation to provide a predictive framework. One might interpret these relations"}
+{"p": 18, "s": 10.0, "b": false, "t": "as analogues of the ideal gas law, which relates the macroscopic properties of a gas in a universal way,"}
+{"p": 18, "s": 10.0, "b": false, "t": "independent of most of the details of its microscopic consituents."}
+{"p": 18, "s": 10.0, "b": false, "t": "It is natural to conjecture that the scaling relations will apply to other generative modeling tasks with a"}
+{"p": 18, "s": 10.0, "b": false, "t": "maximum likelihood loss, and perhaps in other settings as well. To this purpose, it will be interesting to"}
+{"p": 18, "s": 10.0, "b": false, "t": "test these relations on other domains, such as images, audio, and video models, and perhaps also for random"}
+{"p": 18, "s": 10.0, "b": false, "t": "network distillation. At this point we do not know which of our results depend on the structure of natural"}
+{"p": 18, "s": 10.0, "b": false, "t": "language data, and which are universal. It would also be exciting to ﬁnd a theoretical framework from"}
+{"p": 18, "s": 10.0, "b": false, "t": "which the scaling relations can be derived: a ‘statistical mechanics’ underlying the ‘thermodynamics’ we"}
+{"p": 18, "s": 10.0, "b": false, "t": "have observed. Such a theory might make it possible to derive other more precise predictions, and provide a"}
+{"p": 18, "s": 10.0, "b": false, "t": "systematic understanding of the limitations of the scaling laws."}
+{"p": 18, "s": 10.0, "b": false, "t": "In the domain of natural language, it will be important to investigate whether continued improvement on the"}
+{"p": 18, "s": 10.0, "b": false, "t": "loss translates into improvement on relevant language tasks. Smooth quantitative change can mask major"}
+{"p": 18, "s": 10.0, "b": false, "t": "qualitative improvements: “more is different”. For example, the smooth aggregate growth of the economy"}
+{"p": 18, "s": 10.0, "b": false, "t": "provides no indication of the speciﬁc technological developments that underwrite it. Similarly, the smooth"}
+{"p": 18, "s": 10.0, "b": false, "t": "improvements in language model loss may hide seemingly qualitative changes in capability."}
+{"p": 18, "s": 10.0, "b": false, "t": "Our results strongly suggest that larger models will continue to perform better, and will also be much more"}
+{"p": 18, "s": 10.0, "b": false, "t": "sample efﬁcient than has been previously appreciated. Big models may be more important than big data."}
+{"p": 18, "s": 10.0, "b": false, "t": "In this context, further investigation into model parallelism is warranted. Deep models can be trained using"}
+{"p": 18, "s": 10.0, "b": false, "t": "pipelining [HCC+18], which splits parameters depth-wise between devices, but eventually requires increased"}
+{"p": 18, "s": 10.0, "b": false, "t": "batch sizes as more devices are used. Wide networks on the other hand are more amenable to parallelization"}
+{"p": 18, "s": 10.0, "b": false, "t": "[SCP+18], since large layers can be split between multiple workers with less serial dependency. Sparsity"}
+{"p": 18, "s": 10.0, "b": false, "t": "[CGRS19, GRK17] or branching (e.g. [KSH12]) may allow for even faster training of large networks through"}
+{"p": 18, "s": 10.0, "b": false, "t": "increased model parallelism. And using methods like [WRH17, WYL19], which grow networks as they train,"}
+{"p": 18, "s": 10.0, "b": false, "t": "it might be possible to remain on the compute-efﬁcient frontier for an entire training run."}
+{"p": 18, "s": 12.0, "b": true, "t": "Acknowledgements"}
+{"p": 18, "s": 10.0, "b": false, "t": "We would like to thank Shan Carter, Paul Christiano, Jack Clark, Ajeya Cotra, Ethan Dyer, Jason Eisner,"}
+{"p": 18, "s": 10.0, "b": false, "t": "Danny Hernandez, Jacob Hilton, Brice Menard, Chris Olah, and Ilya Sutskever for discussions and for feed-"}
+{"p": 18, "s": 10.0, "b": false, "t": "back on drafts of this work."}
+{"p": 18, "s": 10.0, "b": false, "t": "19"}
+{"p": 19, "s": 20.7, "b": true, "t": "Appendices"}
+{"p": 19, "s": 12.0, "b": true, "t": "A"}
+{"p": 19, "s": 12.0, "b": true, "t": "Summary of Power Laws"}
+{"p": 19, "s": 10.0, "b": false, "t": "For easier reference, we provide a summary below of the key trends described throughout the paper."}
+{"p": 19, "s": 10.0, "b": true, "t": "Parameters"}
+{"p": 19, "s": 10.0, "b": true, "t": "Data"}
+{"p": 19, "s": 10.0, "b": true, "t": "Compute"}
+{"p": 19, "s": 10.0, "b": true, "t": "Batch Size"}
+{"p": 19, "s": 10.0, "b": true, "t": "Equation"}
+{"p": 19, "s": 10.0, "b": false, "t": "N"}
+{"p": 19, "s": 10.0, "b": false, "t": "∞"}
+{"p": 19, "s": 10.0, "b": false, "t": "∞"}
+{"p": 19, "s": 10.0, "b": false, "t": "Fixed"}
+{"p": 19, "s": 10.0, "b": false, "t": "L (N) = (Nc/N)αN"}
+{"p": 19, "s": 10.0, "b": false, "t": "∞"}
+{"p": 19, "s": 10.0, "b": false, "t": "D"}
+{"p": 19, "s": 10.0, "b": false, "t": "Early Stop"}
+{"p": 19, "s": 10.0, "b": false, "t": "Fixed"}
+{"p": 19, "s": 10.0, "b": false, "t": "L (D) = (Dc/D)αD"}
+{"p": 19, "s": 10.0, "b": false, "t": "Optimal"}
+{"p": 19, "s": 10.0, "b": false, "t": "∞"}
+{"p": 19, "s": 10.0, "b": false, "t": "C"}
+{"p": 19, "s": 10.0, "b": false, "t": "Fixed"}
+{"p": 19, "s": 10.0, "b": false, "t": "L (C) = (Cc/C)αC (naive)"}
+{"p": 19, "s": 7.0, "b": false, "t": "Nopt"}
+{"p": 19, "s": 7.0, "b": false, "t": "Dopt"}
+{"p": 19, "s": 7.0, "b": false, "t": "Cmin"}
+{"p": 19, "s": 7.0, "b": false, "t": "B ≪Bcrit"}
+{"p": 19, "s": 10.0, "b": false, "t": "L (Cmin) ="}
+{"p": 19, "s": 10.0, "b": false, "t": "\u0000"}
+{"p": 19, "s": 7.0, "b": false, "t": "Cmin"}
+{"p": 19, "s": 7.0, "b": false, "t": "c"}
+{"p": 19, "s": 7.0, "b": false, "t": "/Cmin"}
+{"p": 19, "s": 5.0, "b": false, "t": "\u0001αmin"}
+{"p": 19, "s": 5.0, "b": false, "t": "C"}
+{"p": 19, "s": 10.0, "b": false, "t": "N"}
+{"p": 19, "s": 10.0, "b": false, "t": "D"}
+{"p": 19, "s": 10.0, "b": false, "t": "Early Stop"}
+{"p": 19, "s": 10.0, "b": false, "t": "Fixed"}
+{"p": 19, "s": 10.0, "b": false, "t": "L (N, D) ="}
+{"p": 19, "s": 10.0, "b": false, "t": "\u0014\u0000 Nc"}
+{"p": 19, "s": 7.0, "b": false, "t": "N"}
+{"p": 19, "s": 5.0, "b": false, "t": "\u0001 αN"}
+{"p": 19, "s": 5.0, "b": false, "t": "αD + Dc"}
+{"p": 19, "s": 7.0, "b": false, "t": "D"}
+{"p": 19, "s": 10.0, "b": false, "t": "\u0015αD"}
+{"p": 19, "s": 10.0, "b": false, "t": "N"}
+{"p": 19, "s": 10.0, "b": false, "t": "∞"}
+{"p": 19, "s": 10.0, "b": false, "t": "S steps"}
+{"p": 19, "s": 10.0, "b": false, "t": "B"}
+{"p": 19, "s": 10.0, "b": false, "t": "L (N, S) ="}
+{"p": 19, "s": 10.0, "b": false, "t": "\u0000 Nc"}
+{"p": 19, "s": 7.0, "b": false, "t": "N"}
+{"p": 19, "s": 10.0, "b": false, "t": "\u0001αN +"}
+{"p": 19, "s": 10.0, "b": false, "t": "\u0010"}
+{"p": 19, "s": 7.0, "b": false, "t": "Sc"}
+{"p": 19, "s": 7.0, "b": false, "t": "Smin(S,B)"}
+{"p": 19, "s": 10.0, "b": false, "t": "\u0011αS"}
+{"p": 19, "s": 10.0, "b": true, "t": "Table 4"}
+{"p": 19, "s": 10.0, "b": false, "t": "The empirical ﬁtted values for these trends are:"}
+{"p": 19, "s": 10.0, "b": true, "t": "Power Law"}
+{"p": 19, "s": 10.0, "b": true, "t": "Scale (tokenization-dependent)"}
+{"p": 19, "s": 10.0, "b": false, "t": "αN = 0.076"}
+{"p": 19, "s": 10.0, "b": false, "t": "Nc = 8.8 × 1013 params (non-embed)"}
+{"p": 19, "s": 10.0, "b": false, "t": "αD = 0.095"}
+{"p": 19, "s": 10.0, "b": false, "t": "Dc = 5.4 × 1013 tokens"}
+{"p": 19, "s": 10.0, "b": false, "t": "αC = 0.057"}
+{"p": 19, "s": 10.0, "b": false, "t": "Cc = 1.6 × 107 PF-days"}
+{"p": 19, "s": 7.0, "b": false, "t": "αmin"}
+{"p": 19, "s": 7.0, "b": false, "t": "C"}
+{"p": 19, "s": 10.0, "b": false, "t": "= 0.050"}
+{"p": 19, "s": 7.0, "b": false, "t": "Cmin"}
+{"p": 19, "s": 7.0, "b": false, "t": "c"}
+{"p": 19, "s": 10.0, "b": false, "t": "= 3.1 × 108 PF-days"}
+{"p": 19, "s": 10.0, "b": false, "t": "αB = 0.21"}
+{"p": 19, "s": 10.0, "b": false, "t": "B∗= 2.1 × 108 tokens"}
+{"p": 19, "s": 10.0, "b": false, "t": "αS = 0.76"}
+{"p": 19, "s": 10.0, "b": false, "t": "Sc = 2.1 × 103 steps"}
+{"p": 19, "s": 10.0, "b": true, "t": "Table 5"}
+{"p": 19, "s": 10.0, "b": false, "t": "The optimal parameters for compute efﬁcient training are given by:"}
+{"p": 19, "s": 10.0, "b": true, "t": "Compute-Efﬁcient Value"}
+{"p": 19, "s": 10.0, "b": true, "t": "Power Law"}
+{"p": 19, "s": 10.0, "b": true, "t": "Scale"}
+{"p": 19, "s": 10.0, "b": false, "t": "Nopt = Ne · CpN"}
+{"p": 19, "s": 7.0, "b": false, "t": "min"}
+{"p": 19, "s": 10.0, "b": false, "t": "pN = 0.73"}
+{"p": 19, "s": 10.0, "b": false, "t": "Ne = 1.3 · 109 params"}
+{"p": 19, "s": 10.0, "b": false, "t": "B ≪Bcrit ="}
+{"p": 19, "s": 7.0, "b": false, "t": "B∗"}
+{"p": 19, "s": 5.0, "b": false, "t": "L1/αB = BeCpB"}
+{"p": 19, "s": 7.0, "b": false, "t": "min"}
+{"p": 19, "s": 10.0, "b": false, "t": "pB = 0.24"}
+{"p": 19, "s": 10.0, "b": false, "t": "Be = 2.0 · 106 tokens"}
+{"p": 19, "s": 10.0, "b": false, "t": "Smin = Se · CpS"}
+{"p": 19, "s": 10.0, "b": false, "t": "min (lower bound)"}
+{"p": 19, "s": 10.0, "b": false, "t": "pS = 0.03"}
+{"p": 19, "s": 10.0, "b": false, "t": "Se = 5.4 · 103 steps"}
+{"p": 19, "s": 10.0, "b": false, "t": "Dopt = De · CpD"}
+{"p": 19, "s": 10.0, "b": false, "t": "min (1 epoch)"}
+{"p": 19, "s": 10.0, "b": false, "t": "pD = 0.27"}
+{"p": 19, "s": 10.0, "b": false, "t": "De = 2 · 1010 tokens"}
+{"p": 19, "s": 10.0, "b": true, "t": "Table 6"}
+{"p": 19, "s": 12.0, "b": true, "t": "B"}
+{"p": 19, "s": 12.0, "b": true, "t": "Empirical Model of Compute-Efﬁcient Frontier"}
+{"p": 19, "s": 10.0, "b": false, "t": "Throughout this appendix all values of C, S, and αC are adjusted for training at the critical batch size Bcrit."}
+{"p": 19, "s": 10.0, "b": false, "t": "We have left off the ‘adj’ label to avoid cluttering the notation."}
+{"p": 19, "s": 10.0, "b": true, "t": "B.1"}
+{"p": 19, "s": 10.0, "b": true, "t": "Deﬁning Equations"}
+{"p": 19, "s": 10.0, "b": false, "t": "The power-law ﬁt to the learning curves implies a simple prescription for compute-efﬁcient training. In this"}
+{"p": 19, "s": 10.0, "b": false, "t": "appendix, we will derive the optimal performance, model size, and number of training steps as a function of"}
+{"p": 19, "s": 10.0, "b": false, "t": "20"}
+{"p": 20, "s": 10.0, "b": false, "t": "the compute budget. We start with the Equation (1.6), repeated here for convenience:"}
+{"p": 20, "s": 10.0, "b": false, "t": "L (N, S) ="}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0012Nc"}
+{"p": 20, "s": 10.0, "b": false, "t": "N"}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0013αN"}
+{"p": 20, "s": 10.0, "b": false, "t": "+"}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0012Sc"}
+{"p": 20, "s": 10.0, "b": false, "t": "S"}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0013αS"}
+{"p": 20, "s": 10.0, "b": false, "t": "."}
+{"p": 20, "s": 10.0, "b": false, "t": "(B.1)"}
+{"p": 20, "s": 10.0, "b": true, "t": "Here, S represents the number of parameter updates when training at the critical batch size [MKAT18],"}
+{"p": 20, "s": 10.0, "b": false, "t": "which was deﬁned in Equation (5.2)9:"}
+{"p": 20, "s": 10.0, "b": false, "t": "B (L) ="}
+{"p": 20, "s": 10.0, "b": false, "t": "B∗"}
+{"p": 20, "s": 7.0, "b": false, "t": "L1/αB ."}
+{"p": 20, "s": 10.0, "b": false, "t": "(B.2)"}
+{"p": 20, "s": 10.0, "b": false, "t": "We would like to determine optimal training parameters for a ﬁxed compute budget, so we replace S ="}
+{"p": 20, "s": 10.0, "b": false, "t": "C/ (6NB (L)), where C is the number of FLOPs used in the training run:"}
+{"p": 20, "s": 10.0, "b": false, "t": "L (N, C) ="}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0012Nc"}
+{"p": 20, "s": 10.0, "b": false, "t": "N"}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0013αN"}
+{"p": 20, "s": 10.0, "b": false, "t": "+"}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0012"}
+{"p": 20, "s": 10.0, "b": false, "t": "6B∗Sc"}
+{"p": 20, "s": 10.0, "b": false, "t": "N"}
+{"p": 20, "s": 7.0, "b": false, "t": "L1/αBC"}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0013αS"}
+{"p": 20, "s": 10.0, "b": false, "t": "."}
+{"p": 20, "s": 10.0, "b": false, "t": "(B.3)"}
+{"p": 20, "s": 10.0, "b": false, "t": "Now, we set ∂NL"}
+{"p": 20, "s": 10.0, "b": false, "t": "C = 0 to ﬁnd the condition for optimality:"}
+{"p": 20, "s": 10.0, "b": false, "t": "0 = ∂L"}
+{"p": 20, "s": 10.0, "b": false, "t": "∂N"}
+{"p": 20, "s": 7.0, "b": false, "t": "C"}
+{"p": 20, "s": 10.0, "b": false, "t": "= −αN"}
+{"p": 20, "s": 10.0, "b": false, "t": "N"}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0012Nc"}
+{"p": 20, "s": 10.0, "b": false, "t": "N"}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0013αN"}
+{"p": 20, "s": 10.0, "b": false, "t": "+ αS"}
+{"p": 20, "s": 10.0, "b": false, "t": "N"}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0012"}
+{"p": 20, "s": 10.0, "b": false, "t": "6B∗Sc"}
+{"p": 20, "s": 10.0, "b": false, "t": "N"}
+{"p": 20, "s": 7.0, "b": false, "t": "L1/αBC"}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0013αS \u0012"}
+{"p": 20, "s": 10.0, "b": false, "t": "1 −5N"}
+{"p": 20, "s": 10.0, "b": false, "t": "L\u001a\u001a\u001a"}
+{"p": 20, "s": 10.0, "b": false, "t": "∂L"}
+{"p": 20, "s": 10.0, "b": false, "t": "∂N"}
+{"p": 20, "s": 7.0, "b": false, "t": "C"}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0013"}
+{"p": 20, "s": 10.0, "b": false, "t": "=⇒αN"}
+{"p": 20, "s": 10.0, "b": false, "t": "αS"}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0012Nc"}
+{"p": 20, "s": 10.0, "b": false, "t": "N"}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0013αN"}
+{"p": 20, "s": 10.0, "b": false, "t": "="}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0012"}
+{"p": 20, "s": 10.0, "b": false, "t": "6B∗Sc"}
+{"p": 20, "s": 10.0, "b": false, "t": "N"}
+{"p": 20, "s": 7.0, "b": false, "t": "L1/αBC"}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0013αS"}
+{"p": 20, "s": 10.0, "b": false, "t": "(B.4)"}
+{"p": 20, "s": 10.0, "b": false, "t": "Equation (B.3) and (B.4) together determine the compute-efﬁcient frontier."}
+{"p": 20, "s": 10.0, "b": true, "t": "B.2"}
+{"p": 20, "s": 10.0, "b": true, "t": "Efﬁcient Training"}
+{"p": 20, "s": 10.0, "b": false, "t": "Now we assemble the implications of (B.3) and (B.4). First, note that inserting (B.4) into (B.3) yields"}
+{"p": 20, "s": 10.0, "b": false, "t": "L (Neﬀ(C) , C) ="}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0012"}
+{"p": 20, "s": 10.0, "b": false, "t": "1 + αN"}
+{"p": 20, "s": 10.0, "b": false, "t": "αS"}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0013"}
+{"p": 20, "s": 10.0, "b": false, "t": "L (Neﬀ, ∞) ,"}
+{"p": 20, "s": 10.0, "b": false, "t": "(B.5)"}
+{"p": 20, "s": 10.0, "b": true, "t": "which implies that for compute-efﬁcient training, we should train to a ﬁxed percentage αN"}
+{"p": 20, "s": 10.0, "b": false, "t": "αS ≈10% above"}
+{"p": 20, "s": 10.0, "b": false, "t": "the converged loss. Next, let’s determine how the optimal loss depends on the compute budget. Eliminating"}
+{"p": 20, "s": 10.0, "b": false, "t": "N yields a power-law dependence of performance on compute:"}
+{"p": 20, "s": 10.0, "b": false, "t": "L (C) ="}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0012Cc"}
+{"p": 20, "s": 10.0, "b": false, "t": "C"}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0013αC"}
+{"p": 20, "s": 10.0, "b": false, "t": "(B.6)"}
+{"p": 20, "s": 10.0, "b": false, "t": "where we deﬁned"}
+{"p": 20, "s": 10.0, "b": false, "t": "αC = 1/ (1/αS + 1/αB + 1/αN) ≈0.052"}
+{"p": 20, "s": 10.0, "b": false, "t": "(B.7)"}
+{"p": 20, "s": 10.0, "b": false, "t": "Cc = 6NcB∗Sc"}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0012"}
+{"p": 20, "s": 10.0, "b": false, "t": "1 + αN"}
+{"p": 20, "s": 10.0, "b": false, "t": "αS"}
+{"p": 20, "s": 7.0, "b": false, "t": "\u00131/αS+1/αN \u0012 αS"}
+{"p": 20, "s": 10.0, "b": false, "t": "αN"}
+{"p": 20, "s": 7.0, "b": false, "t": "\u00131/αS"}
+{"p": 20, "s": 10.0, "b": false, "t": "."}
+{"p": 20, "s": 10.0, "b": false, "t": "(B.8)"}
+{"p": 20, "s": 10.0, "b": false, "t": "Similarly, we can eliminate L to ﬁnd N (C):"}
+{"p": 20, "s": 10.0, "b": false, "t": "N (C)"}
+{"p": 20, "s": 10.0, "b": false, "t": "Nc"}
+{"p": 20, "s": 10.0, "b": false, "t": "="}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0012 C"}
+{"p": 20, "s": 10.0, "b": false, "t": "Cc"}
+{"p": 20, "s": 7.0, "b": false, "t": "\u0013αC/αN \u0012"}
+{"p": 20, "s": 10.0, "b": false, "t": "1 + αN"}
+{"p": 20, "s": 10.0, "b": false, "t": "αS"}
+{"p": 20, "s": 7.0, "b": false, "t": "\u00131/αN"}
+{"p": 20, "s": 10.0, "b": false, "t": "(B.9)"}
+{"p": 20, "s": 10.0, "b": false, "t": "and"}
+{"p": 20, "s": 10.0, "b": false, "t": "S (C) ="}
+{"p": 20, "s": 10.0, "b": false, "t": "Cc"}
+{"p": 20, "s": 10.0, "b": false, "t": "6NcB∗"}
+{"p": 20, "s": 10.0, "b": false, "t": "\u0012"}
+{"p": 20, "s": 10.0, "b": false, "t": "1 + αN"}
+{"p": 20, "s": 10.0, "b": false, "t": "αS"}
+{"p": 20, "s": 7.0, "b": false, "t": "\u0013−1/αN \u0012 C"}
+{"p": 20, "s": 10.0, "b": false, "t": "Cc"}
+{"p": 20, "s": 7.0, "b": false, "t": "\u0013αC/αS"}
+{"p": 20, "s": 10.0, "b": false, "t": "(B.10)"}
+{"p": 20, "s": 9.0, "b": false, "t": "9There is a slight ambiguity here: we can imagine training either at a constant batch size B (Ltarget), or we could"}
+{"p": 20, "s": 9.0, "b": false, "t": "instead train at a variable batch size ˜B (L), where ˜B is the instantaneous critical batch size (as opposed to B, which is"}
+{"p": 20, "s": 9.0, "b": false, "t": "the averaged version). These two prescriptions result in the same number of steps, so we can ignore this subtlety (see"}
+{"p": 20, "s": 9.0, "b": false, "t": "[MKAT18])."}
+{"p": 20, "s": 10.0, "b": false, "t": "21"}
+{"p": 21, "s": 10.0, "b": true, "t": "B.3"}
+{"p": 21, "s": 10.0, "b": true, "t": "Comparison to Inefﬁcient"}
+{"p": 21, "s": 10.0, "b": false, "t": "Typically, researchers train models until they appear to be close to convergence. In this section, we compare"}
+{"p": 21, "s": 10.0, "b": false, "t": "the efﬁcient training procedure described above to this more typical setup. We deﬁne a the convergence factor"}
+{"p": 21, "s": 10.0, "b": false, "t": "f as the percent deviation from the converged loss:"}
+{"p": 21, "s": 10.0, "b": false, "t": "L (N, C) = (1 + f) L (N, ∞) ."}
+{"p": 21, "s": 10.0, "b": false, "t": "(B.11)"}
+{"p": 21, "s": 10.0, "b": false, "t": "For compute-efﬁcient training we have f = αN/αS ≈10% from the previous section, but researchers"}
+{"p": 21, "s": 10.0, "b": false, "t": "typically use a much smaller value. Here, we choose f ′ = 2% as an estimate. For a ﬁxed value of the loss,"}
+{"p": 21, "s": 10.0, "b": false, "t": "we predict:"}
+{"p": 21, "s": 10.0, "b": false, "t": "Nf"}
+{"p": 21, "s": 10.0, "b": false, "t": "Nf ′ ="}
+{"p": 21, "s": 10.0, "b": false, "t": "\u0012 1 + f"}
+{"p": 21, "s": 10.0, "b": false, "t": "1 + f ′"}
+{"p": 21, "s": 7.0, "b": false, "t": "\u00131/αN"}
+{"p": 21, "s": 10.0, "b": false, "t": "≈2.7"}
+{"p": 21, "s": 10.0, "b": false, "t": "(B.12)"}
+{"p": 21, "s": 10.0, "b": false, "t": "Sf"}
+{"p": 21, "s": 10.0, "b": false, "t": "Sf ′ ="}
+{"p": 21, "s": 10.0, "b": false, "t": "1 + 1"}
+{"p": 21, "s": 7.0, "b": false, "t": "f"}
+{"p": 21, "s": 10.0, "b": false, "t": "1 + 1"}
+{"p": 21, "s": 7.0, "b": false, "t": "f ′"}
+{"p": 21, "s": 7.0, "b": false, "t": "!1/αS"}
+{"p": 21, "s": 10.0, "b": false, "t": "≈0.13"}
+{"p": 21, "s": 10.0, "b": false, "t": "(B.13)"}
+{"p": 21, "s": 10.0, "b": false, "t": "Cf"}
+{"p": 21, "s": 10.0, "b": false, "t": "Cf ′ = Nf"}
+{"p": 21, "s": 10.0, "b": false, "t": "Nf ′"}
+{"p": 21, "s": 10.0, "b": false, "t": "Sf"}
+{"p": 21, "s": 10.0, "b": false, "t": "Sf ′ ≈0.35"}
+{"p": 21, "s": 10.0, "b": false, "t": "(B.14)"}
+{"p": 21, "s": 10.0, "b": false, "t": "So that compute-efﬁcient training uses 7.7x fewer parameter updates, 2.7x more parameters, and 65% less"}
+{"p": 21, "s": 10.0, "b": false, "t": "compute to reach the same loss."}
+{"p": 21, "s": 10.0, "b": true, "t": "B.4"}
+{"p": 21, "s": 10.0, "b": true, "t": "Suboptimal Model Sizes"}
+{"p": 21, "s": 10.0, "b": false, "t": "We can solve A.1 to ﬁnd an expression for the amount of compute needed to reach a given value of the loss"}
+{"p": 21, "s": 10.0, "b": false, "t": "L with a model of size N:"}
+{"p": 21, "s": 10.0, "b": false, "t": "C (N, L) ="}
+{"p": 21, "s": 10.0, "b": false, "t": "\u0012"}
+{"p": 21, "s": 10.0, "b": false, "t": "6B∗Sc"}
+{"p": 21, "s": 10.0, "b": false, "t": "N"}
+{"p": 21, "s": 7.0, "b": false, "t": "L1/αB"}
+{"p": 21, "s": 10.0, "b": false, "t": "\u0013 \u0012"}
+{"p": 21, "s": 10.0, "b": false, "t": "L −"}
+{"p": 21, "s": 10.0, "b": false, "t": "\u0012Nc"}
+{"p": 21, "s": 10.0, "b": false, "t": "N"}
+{"p": 21, "s": 7.0, "b": false, "t": "\u0013αN \u0013−1/αS"}
+{"p": 21, "s": 10.0, "b": false, "t": "."}
+{"p": 21, "s": 10.0, "b": false, "t": "(B.15)"}
+{"p": 21, "s": 10.0, "b": false, "t": "Using A.6 and A.9, we can eliminate L in favor of Neﬀ(L), the model size which reaches L most efﬁciently."}
+{"p": 21, "s": 10.0, "b": false, "t": "From there, we ﬁnd an expression for the excess compute needed as a consequence of using a suboptimal"}
+{"p": 21, "s": 10.0, "b": false, "t": "model size:"}
+{"p": 21, "s": 10.0, "b": false, "t": "C (N, Neﬀ)"}
+{"p": 21, "s": 10.0, "b": false, "t": "C (Neﬀ, Neﬀ) ="}
+{"p": 21, "s": 10.0, "b": false, "t": "N"}
+{"p": 21, "s": 7.0, "b": false, "t": "Neﬀ"}
+{"p": 21, "s": 10.0, "b": false, "t": "\u0014"}
+{"p": 21, "s": 10.0, "b": false, "t": "1 + αS"}
+{"p": 21, "s": 10.0, "b": false, "t": "αN"}
+{"p": 21, "s": 10.0, "b": false, "t": "\u0012"}
+{"p": 21, "s": 10.0, "b": false, "t": "1 −"}
+{"p": 21, "s": 10.0, "b": false, "t": "\u0012Neﬀ"}
+{"p": 21, "s": 10.0, "b": false, "t": "N"}
+{"p": 21, "s": 7.0, "b": false, "t": "\u0013αN \u0013\u0015−1/αS"}
+{"p": 21, "s": 10.0, "b": false, "t": "."}
+{"p": 21, "s": 10.0, "b": false, "t": "(B.16)"}
+{"p": 21, "s": 10.0, "b": false, "t": "The result is shown in Figure X. Models between 0.6x and 2.2x the optimal size can be used with only a"}
+{"p": 21, "s": 10.0, "b": false, "t": "20% increase in compute budget. Using a smaller model is useful when accounting for the cost inference. A"}
+{"p": 21, "s": 10.0, "b": false, "t": "larger model can be trained the the same level of performance in fewer steps, allowing for more parallelism"}
+{"p": 21, "s": 10.0, "b": false, "t": "and faster training if sufﬁcient harware is available (see Figure Y):"}
+{"p": 21, "s": 10.0, "b": false, "t": "S (N, Neﬀ)"}
+{"p": 21, "s": 10.0, "b": false, "t": "S (Neﬀ, Neﬀ) ="}
+{"p": 21, "s": 10.0, "b": false, "t": "\u0014"}
+{"p": 21, "s": 10.0, "b": false, "t": "1 + αS"}
+{"p": 21, "s": 10.0, "b": false, "t": "αN"}
+{"p": 21, "s": 10.0, "b": false, "t": "\u0012"}
+{"p": 21, "s": 10.0, "b": false, "t": "1 −"}
+{"p": 21, "s": 10.0, "b": false, "t": "\u0012Neﬀ"}
+{"p": 21, "s": 10.0, "b": false, "t": "N"}
+{"p": 21, "s": 7.0, "b": false, "t": "\u0013αN \u0013\u0015−1/αS"}
+{"p": 21, "s": 10.0, "b": false, "t": "."}
+{"p": 21, "s": 10.0, "b": false, "t": "(B.17)"}
+{"p": 21, "s": 10.0, "b": false, "t": "A 2.2x larger model requires 45% fewer steps at a cost of 20% more training compute. Note that this equation"}
+{"p": 21, "s": 10.0, "b": false, "t": "should not be trusted for very large models, as it is only valid in the power-law region of the learning curve"}
+{"p": 21, "s": 10.0, "b": false, "t": "after initial transient effects."}
+{"p": 21, "s": 12.0, "b": true, "t": "C"}
+{"p": 21, "s": 12.0, "b": true, "t": "Caveats"}
+{"p": 21, "s": 10.0, "b": false, "t": "In this section we list some potential caveats to our analysis."}
+{"p": 21, "s": 10.0, "b": false, "t": "• At present we do not have a solid theoretical understanding for any of our proposed scaling laws."}
+{"p": 21, "s": 10.0, "b": false, "t": "The scaling relations with model size and compute are especially mysterious. It may be possible to"}
+{"p": 21, "s": 10.0, "b": false, "t": "understand scaling at very large D holding model size ﬁxed [AS17], and also the shape of learning"}
+{"p": 21, "s": 10.0, "b": false, "t": "curves late in training, by modeling the loss with a noisy quadratic. But the scaling with D at very"}
+{"p": 21, "s": 10.0, "b": false, "t": "large model size still remains mysterious. Without a theory or a systematic understanding of the"}
+{"p": 21, "s": 10.0, "b": false, "t": "corrections to our scaling laws, it’s difﬁcult to determine in what circumstances they can be trusted."}
+{"p": 21, "s": 10.0, "b": false, "t": "22"}
+{"p": 22, "s": 6.0, "b": false, "t": "103"}
+{"p": 22, "s": 6.0, "b": false, "t": "104"}
+{"p": 22, "s": 6.0, "b": false, "t": "105"}
+{"p": 22, "s": 6.0, "b": false, "t": "Sc × [L(N, D)"}
+{"p": 22, "s": 6.0, "b": false, "t": "L(N,"}
+{"p": 22, "s": 6.0, "b": false, "t": ")]"}
+{"p": 22, "s": 4.2, "b": false, "t": "1/"}
+{"p": 22, "s": 2.9, "b": false, "t": "S"}
+{"p": 22, "s": 6.0, "b": false, "t": "103"}
+{"p": 22, "s": 6.0, "b": false, "t": "104"}
+{"p": 22, "s": 6.0, "b": false, "t": "105"}
+{"p": 22, "s": 4.2, "b": false, "t": "Sstop"}
+{"p": 22, "s": 7.2, "b": false, "t": "Early Stopping Step"}
+{"p": 22, "s": 6.0, "b": false, "t": "Data Size"}
+{"p": 22, "s": 4.3, "b": false, "t": "21M"}
+{"p": 22, "s": 4.3, "b": false, "t": "43M"}
+{"p": 22, "s": 4.3, "b": false, "t": "86M"}
+{"p": 22, "s": 4.3, "b": false, "t": "172M"}
+{"p": 22, "s": 4.3, "b": false, "t": "344M"}
+{"p": 22, "s": 4.3, "b": false, "t": "688M"}
+{"p": 22, "s": 4.3, "b": false, "t": "1.4B"}
+{"p": 22, "s": 7.1, "b": false, "t": "103"}
+{"p": 22, "s": 7.1, "b": false, "t": "104"}
+{"p": 22, "s": 7.1, "b": false, "t": "105"}
+{"p": 22, "s": 7.1, "b": false, "t": "Step"}
+{"p": 22, "s": 7.1, "b": false, "t": "2"}
+{"p": 22, "s": 7.1, "b": false, "t": "3"}
+{"p": 22, "s": 7.1, "b": false, "t": "4"}
+{"p": 22, "s": 7.1, "b": false, "t": "5"}
+{"p": 22, "s": 7.1, "b": false, "t": "6"}
+{"p": 22, "s": 7.1, "b": false, "t": "Loss"}
+{"p": 22, "s": 7.1, "b": false, "t": "Test Loss"}
+{"p": 22, "s": 7.1, "b": false, "t": "Train Loss"}
+{"p": 22, "s": 7.1, "b": false, "t": "108"}
+{"p": 22, "s": 7.1, "b": false, "t": "109"}
+{"p": 22, "s": 7.1, "b": false, "t": "1010"}
+{"p": 22, "s": 7.1, "b": false, "t": "Dataset Size (Tokens)"}
+{"p": 22, "s": 10.0, "b": true, "t": "Figure 16"}
+{"p": 22, "s": 10.0, "b": true, "t": "Left: We characterize the step on which early stopping occurs, as a function of the extent of"}
+{"p": 22, "s": 10.0, "b": true, "t": "overﬁtting. The red line indicates a lower bound for early stopping that is derived in Section 5.3. Right:"}
+{"p": 22, "s": 10.0, "b": false, "t": "We display train and test loss for a series of 300M parameter models trained on different sized dataset sub-"}
+{"p": 22, "s": 10.0, "b": false, "t": "samples. The test loss typically follows that of a run done with unrestricted data until diverging. Note that the"}
+{"p": 22, "s": 10.0, "b": false, "t": "degree of overﬁtting (as compared to the inﬁnite data limit) is signiﬁcantly overestimated by Ltest −Ltrain"}
+{"p": 22, "s": 10.0, "b": false, "t": "(denoted by a black bar for each run)."}
+{"p": 22, "s": 10.0, "b": false, "t": "• We are not especially conﬁdent in the prediction of Bcrit(L) for values of the loss far outside the"}
+{"p": 22, "s": 10.0, "b": false, "t": "range we have explored. Changes in Bcrit could have a signiﬁcant impact on trade-offs between"}
+{"p": 22, "s": 10.0, "b": false, "t": "data parallelism and the number of serial training steps required, which would have a major impact"}
+{"p": 22, "s": 10.0, "b": false, "t": "on training time."}
+{"p": 22, "s": 10.0, "b": false, "t": "• We did not thoroughly investigate the small data regime, and our ﬁts for L(N, D) were poor for"}
+{"p": 22, "s": 10.0, "b": false, "t": "the smallest values of D (where an epoch corresponded to only 40 steps). Furthermore, we did"}
+{"p": 22, "s": 10.0, "b": false, "t": "not experiment with regularization and data augmentation. Improvements in these could alter our"}
+{"p": 22, "s": 10.0, "b": false, "t": "results, quantitatively or qualitatively."}
+{"p": 22, "s": 10.0, "b": false, "t": "• We used the estimated training compute C ≈6NBS, which did not include contributions propor-"}
+{"p": 22, "s": 10.0, "b": false, "t": "tional to nctx (see Section 2.1). So our scalings with compute may be confounded in practice in the"}
+{"p": 22, "s": 10.0, "b": false, "t": "regime of very large nctx, speciﬁcally where nctx ≳12dmodel."}
+{"p": 22, "s": 10.0, "b": false, "t": "• We tuned learning rates, and we experimented with learning rate schedules. But we may have"}
+{"p": 22, "s": 10.0, "b": false, "t": "neglected to tune some hyperparameter (e.g. intialization scale or momentum) that have an important"}
+{"p": 22, "s": 10.0, "b": false, "t": "effect on scaling."}
+{"p": 22, "s": 10.0, "b": false, "t": "• The optimal choice of learning rate is sensitive to the target loss. When training close to convergence,"}
+{"p": 22, "s": 10.0, "b": false, "t": "it may be necessary to use a smaller learning rate to avoid divergences. But when conducting a short"}
+{"p": 22, "s": 10.0, "b": false, "t": "training run (eg due to compute limitations), it may be possible to use a larger learning rate. We did"}
+{"p": 22, "s": 10.0, "b": false, "t": "not experiment with higher learning rates for training runs that did not proceed to convergence."}
+{"p": 22, "s": 12.0, "b": true, "t": "D"}
+{"p": 22, "s": 12.0, "b": true, "t": "Supplemental Figures"}
+{"p": 22, "s": 10.0, "b": true, "t": "D.1"}
+{"p": 22, "s": 10.0, "b": true, "t": "Early Stopping and Test vs Train"}
+{"p": 22, "s": 10.0, "b": false, "t": "In section 5.3 we described the result shown in Figure 16, which provides a prediction for a lower bound on"}
+{"p": 22, "s": 10.0, "b": false, "t": "the early stopping step. We also show the train and test loss for a given model size when training on different"}
+{"p": 22, "s": 10.0, "b": false, "t": "sized datasets."}
+{"p": 22, "s": 10.0, "b": true, "t": "D.2"}
+{"p": 22, "s": 10.0, "b": true, "t": "Universal Transformers"}
+{"p": 22, "s": 10.0, "b": false, "t": "We compare the performance of standard Transformers to recurrent Transformers [DGV+18] in Figure 17."}
+{"p": 22, "s": 10.0, "b": false, "t": "These models re-use parameters, and so perform slightly better as a function of N, but slightly worse as a"}
+{"p": 22, "s": 10.0, "b": false, "t": "function of compute C. We include several different different possibilities for parameter re-use."}
+{"p": 22, "s": 10.0, "b": true, "t": "D.3"}
+{"p": 22, "s": 10.0, "b": true, "t": "Batch Size"}
+{"p": 22, "s": 10.0, "b": false, "t": "We measure the critical batch size using the data displayed in ﬁgure 18. This made it possible to estimate"}
+{"p": 22, "s": 10.0, "b": false, "t": "Bcrit(L) in ﬁgure 10."}
+{"p": 22, "s": 10.0, "b": false, "t": "23"}
+{"p": 23, "s": 7.0, "b": false, "t": "105"}
+{"p": 23, "s": 7.0, "b": false, "t": "106"}
+{"p": 23, "s": 7.0, "b": false, "t": "107"}
+{"p": 23, "s": 7.0, "b": false, "t": "108"}
+{"p": 23, "s": 7.0, "b": false, "t": "109"}
+{"p": 23, "s": 7.0, "b": false, "t": "Parameters, including reuse (non-embedding)"}
+{"p": 23, "s": 7.0, "b": false, "t": "2.5"}
+{"p": 23, "s": 7.0, "b": false, "t": "3.0"}
+{"p": 23, "s": 7.0, "b": false, "t": "3.5"}
+{"p": 23, "s": 7.0, "b": false, "t": "4.0"}
+{"p": 23, "s": 7.0, "b": false, "t": "4.5"}
+{"p": 23, "s": 7.0, "b": false, "t": "Test Loss"}
+{"p": 23, "s": 7.0, "b": false, "t": "2x Reuse"}
+{"p": 23, "s": 7.0, "b": false, "t": "4x Reuse"}
+{"p": 23, "s": 7.0, "b": false, "t": "8x Reuse"}
+{"p": 23, "s": 7.0, "b": false, "t": "Non-recurrent Models"}
+{"p": 23, "s": 7.0, "b": false, "t": "105"}
+{"p": 23, "s": 7.0, "b": false, "t": "106"}
+{"p": 23, "s": 7.0, "b": false, "t": "107"}
+{"p": 23, "s": 7.0, "b": false, "t": "108"}
+{"p": 23, "s": 7.0, "b": false, "t": "109"}
+{"p": 23, "s": 7.0, "b": false, "t": "Parameters (non-embedding)"}
+{"p": 23, "s": 7.0, "b": false, "t": "2.5"}
+{"p": 23, "s": 7.0, "b": false, "t": "3.0"}
+{"p": 23, "s": 7.0, "b": false, "t": "3.5"}
+{"p": 23, "s": 7.0, "b": false, "t": "4.0"}
+{"p": 23, "s": 7.0, "b": false, "t": "4.5"}
+{"p": 23, "s": 7.0, "b": false, "t": "Test Loss"}
+{"p": 23, "s": 7.0, "b": false, "t": "2x Reuse"}
+{"p": 23, "s": 7.0, "b": false, "t": "4x Reuse"}
+{"p": 23, "s": 7.0, "b": false, "t": "8x Reuse"}
+{"p": 23, "s": 7.0, "b": false, "t": "Non-recurrent Models"}
+{"p": 23, "s": 10.0, "b": true, "t": "Figure 17"}
+{"p": 23, "s": 10.0, "b": false, "t": "We compare recurrent Transformers [DGV+18], which re-use parameters, to standard Trans-"}
+{"p": 23, "s": 10.0, "b": false, "t": "formers. Recurrent Transformers perform slightly better when comparing models with equal parameter count,"}
+{"p": 23, "s": 10.0, "b": false, "t": "but slightly worse when accounting for reuse and comparing per FLOP."}
+{"p": 23, "s": 7.0, "b": false, "t": "102"}
+{"p": 23, "s": 7.0, "b": false, "t": "103"}
+{"p": 23, "s": 7.0, "b": false, "t": "104"}
+{"p": 23, "s": 7.0, "b": false, "t": "105"}
+{"p": 23, "s": 7.0, "b": false, "t": "Step"}
+{"p": 23, "s": 7.0, "b": false, "t": "106"}
+{"p": 23, "s": 7.0, "b": false, "t": "107"}
+{"p": 23, "s": 7.0, "b": false, "t": "108"}
+{"p": 23, "s": 7.0, "b": false, "t": "109"}
+{"p": 23, "s": 7.0, "b": false, "t": "1010"}
+{"p": 23, "s": 7.0, "b": false, "t": "1011"}
+{"p": 23, "s": 7.0, "b": false, "t": "Tokens Processed"}
+{"p": 23, "s": 8.4, "b": false, "t": "Batch Size Scan - 3M Params"}
+{"p": 23, "s": 7.0, "b": false, "t": "4"}
+{"p": 23, "s": 7.0, "b": false, "t": "6"}
+{"p": 23, "s": 7.0, "b": false, "t": "8"}
+{"p": 23, "s": 7.0, "b": false, "t": "10"}
+{"p": 23, "s": 7.0, "b": false, "t": "Test Loss"}
+{"p": 23, "s": 7.0, "b": false, "t": "101"}
+{"p": 23, "s": 7.0, "b": false, "t": "102"}
+{"p": 23, "s": 7.0, "b": false, "t": "103"}
+{"p": 23, "s": 7.0, "b": false, "t": "104"}
+{"p": 23, "s": 7.0, "b": false, "t": "105"}
+{"p": 23, "s": 7.0, "b": false, "t": "Step"}
+{"p": 23, "s": 7.0, "b": false, "t": "106"}
+{"p": 23, "s": 7.0, "b": false, "t": "108"}
+{"p": 23, "s": 7.0, "b": false, "t": "1010"}
+{"p": 23, "s": 7.0, "b": false, "t": "Tokens Processed"}
+{"p": 23, "s": 8.4, "b": false, "t": "Batch Size Scan - 85M Params"}
+{"p": 23, "s": 7.0, "b": false, "t": "4"}
+{"p": 23, "s": 7.0, "b": false, "t": "6"}
+{"p": 23, "s": 7.0, "b": false, "t": "8"}
+{"p": 23, "s": 7.0, "b": false, "t": "10"}
+{"p": 23, "s": 7.0, "b": false, "t": "Test Loss"}
+{"p": 23, "s": 10.0, "b": true, "t": "Figure 18"}
+{"p": 23, "s": 10.0, "b": false, "t": "These ﬁgures demonstrate ﬁts to Equation (5.1) for a large number of values of the loss L, and"}
+{"p": 23, "s": 10.0, "b": false, "t": "for two different Transformer model sizes. These ﬁts were used to measure Bcrit(L) for Figure 10."}
+{"p": 23, "s": 10.0, "b": true, "t": "D.4"}
+{"p": 23, "s": 10.0, "b": true, "t": "Sample Efﬁciency vs Model Size"}
+{"p": 23, "s": 10.0, "b": false, "t": "It is easy to see from ﬁgure 2 that larger models train faster, and are therefore more sample efﬁcient. We"}
+{"p": 23, "s": 10.0, "b": false, "t": "provide another way of looking at this phenomenon in ﬁgure 19, which shows when different models reach"}
+{"p": 23, "s": 10.0, "b": false, "t": "various ﬁxed values of the loss."}
+{"p": 23, "s": 6.2, "b": false, "t": "106"}
+{"p": 23, "s": 6.2, "b": false, "t": "107"}
+{"p": 23, "s": 6.2, "b": false, "t": "108"}
+{"p": 23, "s": 6.2, "b": false, "t": "Parameters (non-embedding)"}
+{"p": 23, "s": 6.2, "b": false, "t": "103"}
+{"p": 23, "s": 6.2, "b": false, "t": "104"}
+{"p": 23, "s": 6.2, "b": false, "t": "105"}
+{"p": 23, "s": 6.2, "b": false, "t": "Minimum Steps (Smin)"}
+{"p": 23, "s": 6.2, "b": false, "t": "2.5"}
+{"p": 23, "s": 6.2, "b": false, "t": "3.0"}
+{"p": 23, "s": 6.2, "b": false, "t": "3.5"}
+{"p": 23, "s": 6.2, "b": false, "t": "4.0"}
+{"p": 23, "s": 6.2, "b": false, "t": "4.5"}
+{"p": 23, "s": 6.2, "b": false, "t": "5.0"}
+{"p": 23, "s": 6.2, "b": false, "t": "5.5"}
+{"p": 23, "s": 6.2, "b": false, "t": "Loss"}
+{"p": 23, "s": 6.2, "b": false, "t": "106"}
+{"p": 23, "s": 6.2, "b": false, "t": "107"}
+{"p": 23, "s": 6.2, "b": false, "t": "108"}
+{"p": 23, "s": 6.2, "b": false, "t": "Parameters (non-embedding)"}
+{"p": 23, "s": 6.2, "b": false, "t": "108"}
+{"p": 23, "s": 6.2, "b": false, "t": "109"}
+{"p": 23, "s": 6.2, "b": false, "t": "1010"}
+{"p": 23, "s": 6.2, "b": false, "t": "1011"}
+{"p": 23, "s": 6.2, "b": false, "t": "Minimum Examples (Emin)"}
+{"p": 23, "s": 6.2, "b": false, "t": "2.5"}
+{"p": 23, "s": 6.2, "b": false, "t": "3.0"}
+{"p": 23, "s": 6.2, "b": false, "t": "3.5"}
+{"p": 23, "s": 6.2, "b": false, "t": "4.0"}
+{"p": 23, "s": 6.2, "b": false, "t": "4.5"}
+{"p": 23, "s": 6.2, "b": false, "t": "5.0"}
+{"p": 23, "s": 6.2, "b": false, "t": "5.5"}
+{"p": 23, "s": 6.2, "b": false, "t": "Loss"}
+{"p": 23, "s": 10.0, "b": true, "t": "Figure 19"}
+{"p": 23, "s": 10.0, "b": false, "t": "The number of minimum serial steps needed to reach any ﬁxed value of the test loss decreases"}
+{"p": 23, "s": 10.0, "b": false, "t": "precipitously with model size. Sample efﬁciency (show here for training far below the critical batch size)"}
+{"p": 23, "s": 10.0, "b": false, "t": "improves greatly as well, improving by a factor of almost 100 when comparing the smallest possible model"}
+{"p": 23, "s": 10.0, "b": false, "t": "to a very large one."}
+{"p": 23, "s": 10.0, "b": false, "t": "24"}
+{"p": 24, "s": 6.3, "b": false, "t": "100"}
+{"p": 24, "s": 6.3, "b": false, "t": "101"}
+{"p": 24, "s": 6.3, "b": false, "t": "102"}
+{"p": 24, "s": 6.3, "b": false, "t": "103"}
+{"p": 24, "s": 6.3, "b": false, "t": "Token Index"}
+{"p": 24, "s": 6.3, "b": false, "t": "3"}
+{"p": 24, "s": 6.3, "b": false, "t": "4"}
+{"p": 24, "s": 6.3, "b": false, "t": "5"}
+{"p": 24, "s": 6.3, "b": false, "t": "6"}
+{"p": 24, "s": 6.3, "b": false, "t": "7"}
+{"p": 24, "s": 6.3, "b": false, "t": "8"}
+{"p": 24, "s": 6.3, "b": false, "t": "Per-Token Test Loss"}
+{"p": 24, "s": 4.5, "b": false, "t": "4.0 + 3.2 T"}
+{"p": 24, "s": 3.2, "b": false, "t": "0.47"}
+{"p": 24, "s": 4.5, "b": false, "t": "3.4 + 4.0 T"}
+{"p": 24, "s": 3.2, "b": false, "t": "0.56"}
+{"p": 24, "s": 4.5, "b": false, "t": "2.9 + 4.5 T"}
+{"p": 24, "s": 3.2, "b": false, "t": "0.56"}
+{"p": 24, "s": 4.5, "b": false, "t": "2.7 + 4.9 T"}
+{"p": 24, "s": 3.2, "b": false, "t": "0.60"}
+{"p": 24, "s": 4.5, "b": false, "t": "2.4 + 5.1 T"}
+{"p": 24, "s": 3.2, "b": false, "t": "0.61"}
+{"p": 24, "s": 4.5, "b": false, "t": "2.3 + 5.4 T"}
+{"p": 24, "s": 3.2, "b": false, "t": "0.62"}
+{"p": 24, "s": 6.3, "b": false, "t": "106"}
+{"p": 24, "s": 6.3, "b": false, "t": "107"}
+{"p": 24, "s": 6.3, "b": false, "t": "108"}
+{"p": 24, "s": 6.3, "b": false, "t": "Model Parameters"}
+{"p": 24, "s": 7.0, "b": false, "t": "101"}
+{"p": 24, "s": 7.0, "b": false, "t": "103"}
+{"p": 24, "s": 7.0, "b": false, "t": "105"}
+{"p": 24, "s": 7.0, "b": false, "t": "Step"}
+{"p": 24, "s": 7.0, "b": false, "t": "2"}
+{"p": 24, "s": 7.0, "b": false, "t": "4"}
+{"p": 24, "s": 7.0, "b": false, "t": "6"}
+{"p": 24, "s": 7.0, "b": false, "t": "8"}
+{"p": 24, "s": 7.0, "b": false, "t": "10"}
+{"p": 24, "s": 7.0, "b": false, "t": "Test Loss"}
+{"p": 24, "s": 8.5, "b": false, "t": "Per-token Loss (774M Params)"}
+{"p": 24, "s": 7.0, "b": false, "t": "100"}
+{"p": 24, "s": 7.0, "b": false, "t": "101"}
+{"p": 24, "s": 7.0, "b": false, "t": "102"}
+{"p": 24, "s": 7.0, "b": false, "t": "103"}
+{"p": 24, "s": 7.0, "b": false, "t": "Token Index"}
+{"p": 24, "s": 10.0, "b": true, "t": "Figure 20"}
+{"p": 24, "s": 10.0, "b": false, "t": "This ﬁgure provides information about the performance per token as a function of model size"}
+{"p": 24, "s": 10.0, "b": true, "t": "and training time. Left: Loss per token as a function of its position T in the 1024-token context. Loss scales"}
+{"p": 24, "s": 10.0, "b": true, "t": "predictably as a power-law in T. Right: Test loss per token as a function of training step."}
+{"p": 24, "s": 6.7, "b": false, "t": "104"}
+{"p": 24, "s": 6.7, "b": false, "t": "105"}
+{"p": 24, "s": 6.7, "b": false, "t": "106"}
+{"p": 24, "s": 6.7, "b": false, "t": "107"}
+{"p": 24, "s": 6.7, "b": false, "t": "108"}
+{"p": 24, "s": 6.7, "b": false, "t": "109"}
+{"p": 24, "s": 6.7, "b": false, "t": "Parameters (excl. embedding)"}
+{"p": 24, "s": 6.7, "b": false, "t": "3.0"}
+{"p": 24, "s": 6.7, "b": false, "t": "4.5"}
+{"p": 24, "s": 6.7, "b": false, "t": "6.0"}
+{"p": 24, "s": 6.7, "b": false, "t": "7.5"}
+{"p": 24, "s": 6.7, "b": false, "t": "Test Loss"}
+{"p": 24, "s": 4.8, "b": false, "t": "Token 1/1024"}
+{"p": 24, "s": 4.8, "b": false, "t": "Token 2/1024"}
+{"p": 24, "s": 4.8, "b": false, "t": "Token 4/1024"}
+{"p": 24, "s": 4.8, "b": false, "t": "Token 8/1024"}
+{"p": 24, "s": 4.8, "b": false, "t": "Token 16/1024"}
+{"p": 24, "s": 4.8, "b": false, "t": "Token 64/1024"}
+{"p": 24, "s": 4.8, "b": false, "t": "Token 256/1024"}
+{"p": 24, "s": 4.8, "b": false, "t": "Token 1024/1024"}
+{"p": 24, "s": 4.8, "b": false, "t": "Token 1/8"}
+{"p": 24, "s": 4.8, "b": false, "t": "Token 2/8"}
+{"p": 24, "s": 4.8, "b": false, "t": "Token 4/8"}
+{"p": 24, "s": 4.8, "b": false, "t": "Token 8/8"}
+{"p": 24, "s": 10.0, "b": true, "t": "Figure 21"}
+{"p": 24, "s": 10.0, "b": false, "t": "In addition to the averaged loss, individual tokens within the 1024-token context also improve"}
+{"p": 24, "s": 10.0, "b": false, "t": "smoothly as model size increases. Training runs with shorter context nctx = 8 (dashed lines) perform better"}
+{"p": 24, "s": 10.0, "b": false, "t": "on early tokens, since they can allocate all of their capacity to them."}
+{"p": 24, "s": 10.0, "b": true, "t": "D.5"}
+{"p": 24, "s": 10.0, "b": true, "t": "Context Dependence"}
+{"p": 24, "s": 10.0, "b": false, "t": "The trends for loss as a function of model size are displayed for different tokens in the context in Figure 21."}
+{"p": 24, "s": 10.0, "b": false, "t": "We see that models trained on nctx = 1024 show steady improvement with model size on all but the ﬁrst"}
+{"p": 24, "s": 10.0, "b": false, "t": "token."}
+{"p": 24, "s": 10.0, "b": false, "t": "Fixing model size, it appears that the loss scales as a power-law as a function of position T in the context, see"}
+{"p": 24, "s": 10.0, "b": false, "t": "Figure 20. This may be a consequence of underlying power-law correlations in language [EP94, ACDE12,"}
+{"p": 24, "s": 10.0, "b": false, "t": "LT16], or a more general feature of the model architecture and optimization. It provides some suggestion for"}
+{"p": 24, "s": 10.0, "b": false, "t": "the potential beneﬁts (or lack thereof) from training on larger contexts. Not only do larger models converge"}
+{"p": 24, "s": 10.0, "b": false, "t": "to better performance at T = 1024, but they also improve more quickly at early tokens, suggesting that larger"}
+{"p": 24, "s": 10.0, "b": false, "t": "models are more efﬁcient at detecting patterns with less contextual information. In the right-hand plot we"}
+{"p": 24, "s": 10.0, "b": false, "t": "show how per-token performance varies for a ﬁxed model as a function of the training step. The model begins"}
+{"p": 24, "s": 10.0, "b": false, "t": "by learning short-range information, and only learns longer-range correlations later in training."}
+{"p": 24, "s": 10.0, "b": false, "t": "We have also included models trained with a tiny context nctx = 8 in order to compare with our longer"}
+{"p": 24, "s": 10.0, "b": false, "t": "context models. Even modestly sized models trained on nctx = 8 can dominate our largest nctx = 1024"}
+{"p": 24, "s": 10.0, "b": false, "t": "models on very early tokens. This also suggests that further improvements should be possible with much"}
+{"p": 24, "s": 10.0, "b": false, "t": "larger models trained on large contexts."}
+{"p": 24, "s": 10.0, "b": true, "t": "D.6"}
+{"p": 24, "s": 10.0, "b": true, "t": "Learning Rate Schedules and Error Analysis"}
+{"p": 24, "s": 10.0, "b": false, "t": "We experimented with a variety of learning rates and schedules. A host of schedules and resulting test"}
+{"p": 24, "s": 10.0, "b": false, "t": "performances for a small language model are plotted in Figure 22. We conclude that the choice of learning"}
+{"p": 24, "s": 10.0, "b": false, "t": "rate schedule is mostly irrelevant, as long as the total summed learning rate is sufﬁciently large, and the"}
+{"p": 24, "s": 10.0, "b": false, "t": "schedule includes a warmup period and a ﬁnal decay to near-vanishing learning rate. Variations among"}
+{"p": 24, "s": 10.0, "b": false, "t": "25"}
+{"p": 25, "s": 5.7, "b": false, "t": "0"}
+{"p": 25, "s": 5.7, "b": false, "t": "50000"}
+{"p": 25, "s": 5.7, "b": false, "t": "100000"}
+{"p": 25, "s": 5.7, "b": false, "t": "150000"}
+{"p": 25, "s": 5.7, "b": false, "t": "200000"}
+{"p": 25, "s": 5.7, "b": false, "t": "250000"}
+{"p": 25, "s": 5.7, "b": false, "t": "Step"}
+{"p": 25, "s": 5.7, "b": false, "t": "0.0000"}
+{"p": 25, "s": 5.7, "b": false, "t": "0.0002"}
+{"p": 25, "s": 5.7, "b": false, "t": "0.0004"}
+{"p": 25, "s": 5.7, "b": false, "t": "0.0006"}
+{"p": 25, "s": 5.7, "b": false, "t": "0.0008"}
+{"p": 25, "s": 5.7, "b": false, "t": "0.0010"}
+{"p": 25, "s": 5.7, "b": false, "t": "Learning Rate"}
+{"p": 25, "s": 5.7, "b": false, "t": "50"}
+{"p": 25, "s": 5.7, "b": false, "t": "100"}
+{"p": 25, "s": 5.7, "b": false, "t": "150"}
+{"p": 25, "s": 5.7, "b": false, "t": "200"}
+{"p": 25, "s": 5.7, "b": false, "t": "250"}
+{"p": 25, "s": 5.7, "b": false, "t": "LR Summed Over Steps"}
+{"p": 25, "s": 5.7, "b": false, "t": "3.65"}
+{"p": 25, "s": 5.7, "b": false, "t": "3.70"}
+{"p": 25, "s": 5.7, "b": false, "t": "3.75"}
+{"p": 25, "s": 5.7, "b": false, "t": "3.80"}
+{"p": 25, "s": 5.7, "b": false, "t": "3.85"}
+{"p": 25, "s": 5.7, "b": false, "t": "3.90"}
+{"p": 25, "s": 5.7, "b": false, "t": "Loss"}
+{"p": 25, "s": 10.0, "b": true, "t": "Figure 22"}
+{"p": 25, "s": 10.0, "b": false, "t": "We test a variety of learning rate schedules including cosine decay, linear decay, as well as other"}
+{"p": 25, "s": 10.0, "b": false, "t": "faster/slower decays schedules on a 3 million parameter model, shown on the left. For these experiments we"}
+{"p": 25, "s": 10.0, "b": false, "t": "do not decay to zero, since we ﬁnd that this tends to give a ﬁxed improvement close to the end of training."}
+{"p": 25, "s": 10.0, "b": false, "t": "We ﬁnd that, as long as the learning rate is not too small and does not decay too quickly, performance does"}
+{"p": 25, "s": 10.0, "b": false, "t": "not depend strongly on learning rate. Run-to-run variation is at the level of 0.05 in the loss, so averaging"}
+{"p": 25, "s": 10.0, "b": false, "t": "multiple runs is necessary to validate performance changes smaller than this level."}
+{"p": 25, "s": 7.0, "b": false, "t": "104"}
+{"p": 25, "s": 7.0, "b": false, "t": "105"}
+{"p": 25, "s": 7.0, "b": false, "t": "106"}
+{"p": 25, "s": 7.0, "b": false, "t": "107"}
+{"p": 25, "s": 7.0, "b": false, "t": "108"}
+{"p": 25, "s": 7.0, "b": false, "t": "109"}
+{"p": 25, "s": 7.0, "b": false, "t": "Parameters (non-embedding)"}
+{"p": 25, "s": 7.0, "b": false, "t": "2"}
+{"p": 25, "s": 7.0, "b": false, "t": "3"}
+{"p": 25, "s": 7.0, "b": false, "t": "4"}
+{"p": 25, "s": 7.0, "b": false, "t": "5"}
+{"p": 25, "s": 7.0, "b": false, "t": "6"}
+{"p": 25, "s": 7.0, "b": false, "t": "Test Loss (at convergence)"}
+{"p": 25, "s": 7.0, "b": false, "t": "L = (N/8.8 1013)"}
+{"p": 25, "s": 4.9, "b": false, "t": "0.076"}
+{"p": 25, "s": 7.0, "b": false, "t": "L ="}
+{"p": 25, "s": 7.0, "b": false, "t": "0.25log(N/7.1 1012)"}
+{"p": 25, "s": 10.0, "b": true, "t": "Figure 23"}
+{"p": 25, "s": 10.0, "b": false, "t": "The trend for performance as a function of parameter count, L(N), is ﬁt better by a power law"}
+{"p": 25, "s": 10.0, "b": false, "t": "than by other functions such as a logarithm at a qualitative level."}
+{"p": 25, "s": 10.0, "b": false, "t": "schedules appear to be statistical noise, and provide a rough gauge for the scale of variation between different"}
+{"p": 25, "s": 10.0, "b": false, "t": "training runs. Experiments on larger models suggest that the variation in the ﬁnal test loss between different"}
+{"p": 25, "s": 10.0, "b": false, "t": "random seeds is roughly constant in magnitude for different model sizes."}
+{"p": 25, "s": 10.0, "b": false, "t": "We found that larger models require a smaller learning rate to prevent divergence, while smaller models can"}
+{"p": 25, "s": 10.0, "b": false, "t": "tolerate a larger learning rate. To implement this, the following rule of thumb was used for most runs:"}
+{"p": 25, "s": 10.0, "b": false, "t": "LR(N) ≈0.003239 + −0.0001395 log(N)"}
+{"p": 25, "s": 10.0, "b": false, "t": "(D.1)"}
+{"p": 25, "s": 10.0, "b": false, "t": "We expect that this formula could be improved. There may be a dependence on network width, likely set by"}
+{"p": 25, "s": 10.0, "b": false, "t": "the initialization scale. The formula also breaks down for N > 1010 parameters. Nevertheless, we found that"}
+{"p": 25, "s": 10.0, "b": false, "t": "it works sufﬁciently well for the models we considered."}
+{"p": 25, "s": 10.0, "b": true, "t": "D.7"}
+{"p": 25, "s": 10.0, "b": true, "t": "Fit Details and Power Law Quality"}
+{"p": 25, "s": 10.0, "b": false, "t": "We experimented with a number of functional forms for the ﬁts to L(N), L(C), and L(D); the power-law"}
+{"p": 25, "s": 10.0, "b": false, "t": "ﬁts were qualitatively much more accurate than other functions such as logarithms (see Figure 23)."}
+{"p": 25, "s": 10.0, "b": false, "t": "For L(C), we do not include small models with only 1 layer in the ﬁt, as the transition from 1 to 2 layers"}
+{"p": 25, "s": 10.0, "b": false, "t": "causes a noticable lump in the data. For L(N) we also do not include very small models with only 1 layer in"}
+{"p": 25, "s": 10.0, "b": false, "t": "the ﬁt, and we exclude the largest models that have not trained fully to convergence. Fit parameters change"}
+{"p": 25, "s": 10.0, "b": false, "t": "marginally if we do include them, and the trend extrapolates well in both directions regardless."}
+{"p": 25, "s": 10.0, "b": true, "t": "D.8"}
+{"p": 25, "s": 10.0, "b": true, "t": "Generalization and Architecture"}
+{"p": 25, "s": 10.0, "b": false, "t": "In ﬁgure 24 we show that generalization to other data distributions does not depend on network depth when we"}
+{"p": 25, "s": 10.0, "b": false, "t": "hold the total parameter count ﬁxed. It seems to depend only on the performance on the training distribution."}
+{"p": 25, "s": 10.0, "b": false, "t": "26"}
+{"p": 26, "s": 7.3, "b": false, "t": "101"}
+{"p": 26, "s": 7.3, "b": false, "t": "102"}
+{"p": 26, "s": 7.3, "b": false, "t": "Depth"}
+{"p": 26, "s": 7.3, "b": false, "t": "2.3"}
+{"p": 26, "s": 7.3, "b": false, "t": "2.4"}
+{"p": 26, "s": 7.3, "b": false, "t": "2.5"}
+{"p": 26, "s": 7.3, "b": false, "t": "2.6"}
+{"p": 26, "s": 7.3, "b": false, "t": "2.7"}
+{"p": 26, "s": 7.3, "b": false, "t": "2.8"}
+{"p": 26, "s": 7.3, "b": false, "t": "Test Loss"}
+{"p": 26, "s": 5.2, "b": false, "t": "Wikipedia"}
+{"p": 26, "s": 5.2, "b": false, "t": "Books"}
+{"p": 26, "s": 5.2, "b": false, "t": "Internet Books"}
+{"p": 26, "s": 5.2, "b": false, "t": "Common Crawl"}
+{"p": 26, "s": 5.2, "b": false, "t": "WebText2 (Train)"}
+{"p": 26, "s": 5.2, "b": false, "t": "WebText2 (Test)"}
+{"p": 26, "s": 10.0, "b": true, "t": "Figure 24"}
+{"p": 26, "s": 10.0, "b": false, "t": "We show evaluations on a series of datasets for models with approximately 1.5 Billion param-"}
+{"p": 26, "s": 10.0, "b": false, "t": "eters. We observe no effect of depth on generalization; generalization performance depends primarily on"}
+{"p": 26, "s": 10.0, "b": false, "t": "training distribution performance. The 12-layer model overﬁt the Internet Books dataset and we show the"}
+{"p": 26, "s": 10.0, "b": false, "t": "early-stopped performance; we have not seen this surprising result in other experiments."}
+{"p": 26, "s": 12.0, "b": true, "t": "List of Figures"}
+{"p": 26, "s": 10.0, "b": false, "t": "1"}
+{"p": 26, "s": 10.0, "b": false, "t": "Summary of simple power laws. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "3"}
+{"p": 26, "s": 10.0, "b": false, "t": "2"}
+{"p": 26, "s": 10.0, "b": false, "t": "Illustration of sample efﬁciency and compute efﬁciency. . . . . . . . . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "4"}
+{"p": 26, "s": 10.0, "b": false, "t": "3"}
+{"p": 26, "s": 10.0, "b": false, "t": "How to scale up model size, batch size, and serial steps . . . . . . . . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "4"}
+{"p": 26, "s": 10.0, "b": false, "t": "4"}
+{"p": 26, "s": 10.0, "b": false, "t": "Performance when varying model and data size, or model and training steps, simultaneously"}
+{"p": 26, "s": 10.0, "b": false, "t": "5"}
+{"p": 26, "s": 10.0, "b": false, "t": "5"}
+{"p": 26, "s": 10.0, "b": false, "t": "Weak dependence of performance on hyperparameter tuning . . . . . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "8"}
+{"p": 26, "s": 10.0, "b": false, "t": "6"}
+{"p": 26, "s": 10.0, "b": false, "t": "Comparison of performance trend when including or excluding embeddings . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "8"}
+{"p": 26, "s": 10.0, "b": false, "t": "7"}
+{"p": 26, "s": 10.0, "b": false, "t": "LSTM and Transformer performance comparison . . . . . . . . . . . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "9"}
+{"p": 26, "s": 10.0, "b": false, "t": "8"}
+{"p": 26, "s": 10.0, "b": false, "t": "Generalization to other test datasets"}
+{"p": 26, "s": 10.0, "b": false, "t": ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "10"}
+{"p": 26, "s": 10.0, "b": false, "t": "9"}
+{"p": 26, "s": 10.0, "b": false, "t": "Universality of overﬁtting . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "11"}
+{"p": 26, "s": 10.0, "b": false, "t": "10"}
+{"p": 26, "s": 10.0, "b": false, "t": "Critical batch size . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "12"}
+{"p": 26, "s": 10.0, "b": false, "t": "11"}
+{"p": 26, "s": 10.0, "b": false, "t": "Performance versus compute budget or number of parameter updates . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "14"}
+{"p": 26, "s": 10.0, "b": false, "t": "12"}
+{"p": 26, "s": 10.0, "b": false, "t": "Training on suboptimal models . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "15"}
+{"p": 26, "s": 10.0, "b": false, "t": "13"}
+{"p": 26, "s": 10.0, "b": false, "t": "Comparison between empirical and adjusted compute trends . . . . . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "15"}
+{"p": 26, "s": 10.0, "b": false, "t": "14"}
+{"p": 26, "s": 10.0, "b": false, "t": "Optimal model size and serial number of steps versus compute budget . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "16"}
+{"p": 26, "s": 10.0, "b": false, "t": "15"}
+{"p": 26, "s": 10.0, "b": false, "t": "Contradiction between compute and data trends . . . . . . . . . . . . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "17"}
+{"p": 26, "s": 10.0, "b": false, "t": "16"}
+{"p": 26, "s": 10.0, "b": false, "t": "Early stopping lower bound and training curves for overﬁt models"}
+{"p": 26, "s": 10.0, "b": false, "t": ". . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "23"}
+{"p": 26, "s": 10.0, "b": false, "t": "17"}
+{"p": 26, "s": 10.0, "b": false, "t": "Universal transformers . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "24"}
+{"p": 26, "s": 10.0, "b": false, "t": "18"}
+{"p": 26, "s": 10.0, "b": false, "t": "Batch size scans . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "24"}
+{"p": 26, "s": 10.0, "b": false, "t": "19"}
+{"p": 26, "s": 10.0, "b": false, "t": "Another look at sample efﬁciency"}
+{"p": 26, "s": 10.0, "b": false, "t": ". . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "24"}
+{"p": 26, "s": 10.0, "b": false, "t": "20"}
+{"p": 26, "s": 10.0, "b": false, "t": "Power-law dependence of performance on position in context . . . . . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "25"}
+{"p": 26, "s": 10.0, "b": false, "t": "21"}
+{"p": 26, "s": 10.0, "b": false, "t": "Performance at different context positions versus model size"}
+{"p": 26, "s": 10.0, "b": false, "t": ". . . . . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "25"}
+{"p": 26, "s": 10.0, "b": false, "t": "22"}
+{"p": 26, "s": 10.0, "b": false, "t": "Learning rate schedule scan . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "26"}
+{"p": 26, "s": 10.0, "b": false, "t": "23"}
+{"p": 26, "s": 10.0, "b": false, "t": "Comparison of Power-Law and Logarithmic Fits"}
+{"p": 26, "s": 10.0, "b": false, "t": ". . . . . . . . . . . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "26"}
+{"p": 26, "s": 10.0, "b": false, "t": "24"}
+{"p": 26, "s": 10.0, "b": false, "t": "Generalization versus depth . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."}
+{"p": 26, "s": 10.0, "b": false, "t": "27"}
+{"p": 26, "s": 10.0, "b": false, "t": "27"}
+{"p": 27, "s": 12.0, "b": true, "t": "List of Tables"}
+{"p": 27, "s": 10.0, "b": false, "t": "1"}
+{"p": 27, "s": 10.0, "b": false, "t": "Parameter and compute counts for Transformer . . . . . . . . . . . . . . . . . . . . . . . ."}
+{"p": 27, "s": 10.0, "b": false, "t": "7"}
+{"p": 27, "s": 10.0, "b": false, "t": "2"}
+{"p": 27, "s": 10.0, "b": false, "t": "Fits to L(N, D) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."}
+{"p": 27, "s": 10.0, "b": false, "t": "11"}
+{"p": 27, "s": 10.0, "b": false, "t": "3"}
+{"p": 27, "s": 10.0, "b": false, "t": "Fits to L(N, S) . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."}
+{"p": 27, "s": 10.0, "b": false, "t": "14"}
+{"p": 27, "s": 10.0, "b": false, "t": "4"}
+{"p": 27, "s": 10.0, "b": false, "t": "Key trend equations . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."}
+{"p": 27, "s": 10.0, "b": false, "t": "20"}
+{"p": 27, "s": 10.0, "b": false, "t": "5"}
+{"p": 27, "s": 10.0, "b": false, "t": "Key parameters to trend ﬁts . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."}
+{"p": 27, "s": 10.0, "b": false, "t": "20"}
+{"p": 27, "s": 10.0, "b": false, "t": "6"}
+{"p": 27, "s": 10.0, "b": false, "t": "Trends for compute-efﬁcient training . . . . . . . . . . . . . . . . . . . . . . . . . . . . . ."}
+{"p": 27, "s": 10.0, "b": false, "t": "20"}
+{"p": 27, "s": 12.0, "b": true, "t": "References"}
+{"p": 27, "s": 10.0, "b": false, "t": "[ACDE12]"}
+{"p": 27, "s": 10.0, "b": false, "t": "Eduardo G Altmann, Giampaolo Cristadoro, and Mirko Degli Esposti. On the origin of long-"}
+{"p": 27, "s": 10.0, "b": false, "t": "range correlations in texts. Proceedings of the National Academy of Sciences, 109(29):11582–"}
+{"p": 27, "s": 10.0, "b": false, "t": "11587, 2012. 25"}
+{"p": 27, "s": 10.0, "b": false, "t": "[AS17]"}
+{"p": 27, "s": 10.0, "b": false, "t": "Madhu S. Advani and Andrew M. Saxe. High-dimensional dynamics of generalization error in"}
+{"p": 27, "s": 10.0, "b": false, "t": "neural networks. arXiv, 2017, 1710.03667. 11, 18, 22"}
+{"p": 27, "s": 10.0, "b": false, "t": "[BB01]"}
+{"p": 27, "s": 10.0, "b": false, "t": "Michele Banko and Eric Brill. Scaling to very very large corpora for natural language disam-"}
+{"p": 27, "s": 10.0, "b": false, "t": "biguation. In Proceedings of the 39th annual meeting on association for computational linguis-"}
+{"p": 27, "s": 10.0, "b": false, "t": "tics, pages 26–33. Association for Computational Linguistics, 2001. 18"}
+{"p": 27, "s": 10.0, "b": false, "t": "[BHMM18] Mikhail Belkin, Daniel Hsu, Siyuan Ma, and Soumik Mandal. Reconciling modern machine"}
+{"p": 27, "s": 10.0, "b": false, "t": "learning and the bias-variance trade-off. arXiv, 2018, 1812.11118. 18"}
+{"p": 27, "s": 10.0, "b": false, "t": "[Bia12]"}
+{"p": 27, "s": 10.0, "b": false, "t": "GÃŠrard Biau. Analysis of a random forests model. Journal of Machine Learning Research,"}
+{"p": 27, "s": 10.0, "b": false, "t": "13(Apr):1063–1095, 2012. 18"}
+{"p": 27, "s": 10.0, "b": false, "t": "[CGRS19]"}
+{"p": 27, "s": 10.0, "b": false, "t": "Rewon Child, Scott Gray, Alec Radford, and Ilya Sutskever. Generating long sequences with"}
+{"p": 27, "s": 10.0, "b": false, "t": "sparse transformers. CoRR, abs/1904.10509, 2019, 1904.10509. URL http://arxiv.org/"}
+{"p": 27, "s": 10.0, "b": false, "t": "abs/1904.10509. 19"}
+{"p": 27, "s": 10.0, "b": false, "t": "[DCLT18]"}
+{"p": 27, "s": 10.0, "b": false, "t": "Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. Bert: Pre-training of deep"}
+{"p": 27, "s": 10.0, "b": false, "t": "bidirectional transformers for language understanding, 2018, arXiv:1810.04805. 2"}
+{"p": 27, "s": 10.0, "b": false, "t": "[DGV+18] Mostafa Dehghani, Stephan Gouws, Oriol Vinyals, Jakob Uszkoreit, and Lukasz Kaiser. Uni-"}
+{"p": 27, "s": 10.0, "b": false, "t": "versal transformers. CoRR, abs/1807.03819, 2018, 1807.03819. URL http://arxiv.org/"}
+{"p": 27, "s": 10.0, "b": false, "t": "abs/1807.03819. 6, 9, 23, 24"}
+{"p": 27, "s": 10.0, "b": false, "t": "[EP94]"}
+{"p": 27, "s": 10.0, "b": false, "t": "Werner Ebeling and Thorsten Pöschel. Entropy and long-range correlations in literary english."}
+{"p": 27, "s": 10.0, "b": false, "t": "EPL (Europhysics Letters), 26(4):241, 1994. 25"}
+{"p": 27, "s": 10.0, "b": false, "t": "[Fou]"}
+{"p": 27, "s": 10.0, "b": false, "t": "The Common Crawl Foundation. Common crawl. URL http://commoncrawl.org. 7"}
+{"p": 27, "s": 10.0, "b": false, "t": "[GARD18] Guy Gur-Ari, Daniel A. Roberts, and Ethan Dyer. Gradient descent happens in a tiny subspace."}
+{"p": 27, "s": 10.0, "b": false, "t": "2018, arXiv:1812.04754. 18"}
+{"p": 27, "s": 10.0, "b": false, "t": "[GJS+19]"}
+{"p": 27, "s": 10.0, "b": false, "t": "Mario Geiger, Arthur Jacot, Stefano Spigler, Franck Gabriel, Levent Sagun, Stéphane d’Ascoli,"}
+{"p": 27, "s": 10.0, "b": false, "t": "Giulio Biroli, Clément Hongler, and Matthieu Wyart. Scaling description of generalization with"}
+{"p": 27, "s": 10.0, "b": false, "t": "number of parameters in deep learning. arXiv, 2019, 1901.01608. 18"}
+{"p": 27, "s": 10.0, "b": false, "t": "[GKX19]"}
+{"p": 27, "s": 10.0, "b": false, "t": "Behrooz Ghorbani, Shankar Krishnan, and Ying Xiao. An investigation into neural net op-"}
+{"p": 27, "s": 10.0, "b": false, "t": "timization via hessian eigenvalue density. CoRR, abs/1901.10159, 2019, 1901.10159. URL"}
+{"p": 27, "s": 10.0, "b": false, "t": "http://arxiv.org/abs/1901.10159. 18"}
+{"p": 27, "s": 10.0, "b": false, "t": "[Goo01]"}
+{"p": 27, "s": 10.0, "b": false, "t": "Joshua Goodman. A bit of progress in language modeling. CoRR, cs.CL/0108005, 2001. URL"}
+{"p": 27, "s": 10.0, "b": false, "t": "http://arxiv.org/abs/cs.CL/0108005. 18"}
+{"p": 27, "s": 10.0, "b": false, "t": "[GRK17]"}
+{"p": 27, "s": 10.0, "b": false, "t": "Scott Gray, Alec Radford, and Diederik P Kingma. Gpu kernels for block-sparse weights. ope-"}
+{"p": 27, "s": 10.0, "b": false, "t": "nai.com, 2017. 19"}
+{"p": 27, "s": 10.0, "b": false, "t": "[HAD19]"}
+{"p": 27, "s": 10.0, "b": false, "t": "Joel Hestness, Newsha Ardalani, and Gregory Diamos. Beyond human-level accuracy: Compu-"}
+{"p": 27, "s": 10.0, "b": false, "t": "tational challenges in deep learning. In Proceedings of the 24th Symposium on Principles and"}
+{"p": 27, "s": 10.0, "b": false, "t": "Practice of Parallel Programming, PPoPP ’19, pages 1–14, New York, NY, USA, 2019. ACM."}
+{"p": 27, "s": 10.0, "b": false, "t": "doi:10.1145/3293883.3295710. 18"}
+{"p": 27, "s": 10.0, "b": false, "t": "28"}
+{"p": 28, "s": 10.0, "b": false, "t": "[HCC+18]"}
+{"p": 28, "s": 10.0, "b": false, "t": "Yanping Huang, Yonglong Cheng, Dehao Chen, HyoukJoong Lee, Jiquan Ngiam, Quoc V. Le,"}
+{"p": 28, "s": 10.0, "b": false, "t": "and Zhifeng Chen. Gpipe: Efﬁcient training of giant neural networks using pipeline parallelism."}
+{"p": 28, "s": 10.0, "b": false, "t": "CoRR, abs/1811.06965, 2018, 1811.06965. URL http://arxiv.org/abs/1811.06965. 19"}
+{"p": 28, "s": 10.0, "b": false, "t": "[HNA+17] Joel Hestness, Sharan Narang, Newsha Ardalani, Gregory Diamos, Heewoo Jun, Hassan Kia-"}
+{"p": 28, "s": 10.0, "b": false, "t": "ninejad, Md. Mostofa Ali Patwary, Yang Yang, and Yanqi Zhou. Deep learning scaling is pre-"}
+{"p": 28, "s": 10.0, "b": false, "t": "dictable, empirically, 2017, 1712.00409. 18"}
+{"p": 28, "s": 10.0, "b": false, "t": "[JGH18]"}
+{"p": 28, "s": 10.0, "b": false, "t": "Arthur Jacot, Franck Gabriel, and Clément Hongler. Neural tangent kernel: Convergence and"}
+{"p": 28, "s": 10.0, "b": false, "t": "generalization in neural networks. In Advances in neural information processing systems, pages"}
+{"p": 28, "s": 10.0, "b": false, "t": "8571–8580, 2018. 18"}
+{"p": 28, "s": 10.0, "b": false, "t": "[KB14]"}
+{"p": 28, "s": 10.0, "b": false, "t": "Diederik P. Kingma and Jimmy Ba."}
+{"p": 28, "s": 10.0, "b": false, "t": "Adam: A method for stochastic optimization, 2014,"}
+{"p": 28, "s": 10.0, "b": false, "t": "1412.6980. 7"}
+{"p": 28, "s": 10.0, "b": false, "t": "[Kom19]"}
+{"p": 28, "s": 10.0, "b": false, "t": "Aran Komatsuzaki. One epoch is all you need, 2019, arXiv:1906.06669. 18"}
+{"p": 28, "s": 10.0, "b": false, "t": "[KSH12]"}
+{"p": 28, "s": 10.0, "b": false, "t": "Alex Krizhevsky, Ilya Sutskever, and Geoffrey E. Hinton. Imagenet classiﬁcation with deep"}
+{"p": 28, "s": 10.0, "b": false, "t": "convolutional neural networks. In Proceedings of the 25th International Conference on Neural"}
+{"p": 28, "s": 10.0, "b": false, "t": "Information Processing Systems - Volume 1, NIPS’12, pages 1097–1105, USA, 2012. Curran"}
+{"p": 28, "s": 10.0, "b": false, "t": "Associates Inc. URL http://dl.acm.org/citation.cfm?id=2999134.2999257. 19"}
+{"p": 28, "s": 10.0, "b": false, "t": "[LCG+19]"}
+{"p": 28, "s": 10.0, "b": false, "t": "Zhenzhong Lan, Mingda Chen, Sebastian Goodman, Kevin Gimpel, Piyush Sharma, and Radu"}
+{"p": 28, "s": 10.0, "b": false, "t": "Soricut."}
+{"p": 28, "s": 10.0, "b": false, "t": "Albert: A lite bert for self-supervised learning of language representations, 2019,"}
+{"p": 28, "s": 10.0, "b": false, "t": "1909.11942. 9"}
+{"p": 28, "s": 10.0, "b": false, "t": "[LOG+19]"}
+{"p": 28, "s": 10.0, "b": false, "t": "Yinhan Liu, Myle Ott, Naman Goyal, Jingfei Du, Mandar Joshi, Danqi Chen, Omer Levy, Mike"}
+{"p": 28, "s": 10.0, "b": false, "t": "Lewis, Luke Zettlemoyer, and Veselin Stoyanov. Roberta: A robustly optimized BERT pretrain-"}
+{"p": 28, "s": 10.0, "b": false, "t": "ing approach. CoRR, abs/1907.11692, 2019, 1907.11692. URL http://arxiv.org/abs/"}
+{"p": 28, "s": 10.0, "b": false, "t": "1907.11692. 2"}
+{"p": 28, "s": 10.0, "b": false, "t": "[LSP+18]"}
+{"p": 28, "s": 10.0, "b": false, "t": "Peter J. Liu, Mohammad Saleh, Etienne Pot, Ben Goodrich, Ryan Sepassi, Lukasz Kaiser, and"}
+{"p": 28, "s": 10.0, "b": false, "t": "Noam Shazeer. Generating wikipedia by summarizing long sequences. arXiv:1801.10198 [cs],"}
+{"p": 28, "s": 10.0, "b": false, "t": "2018, 1801.10198. URL http://arxiv.org/abs/1801.10198. 2, 6"}
+{"p": 28, "s": 10.0, "b": false, "t": "[LT16]"}
+{"p": 28, "s": 10.0, "b": false, "t": "Henry W Lin and Max Tegmark. Criticality in formal languages and statistical physics. arXiv"}
+{"p": 28, "s": 10.0, "b": false, "t": "preprint arXiv:1606.06737, 2016. 25"}
+{"p": 28, "s": 10.0, "b": false, "t": "[LXS+19]"}
+{"p": 28, "s": 10.0, "b": false, "t": "Jaehoon Lee, Lechao Xiao, Samuel S. Schoenholz, Yasaman Bahri, Roman Novak, Jascha Sohl-"}
+{"p": 28, "s": 10.0, "b": false, "t": "Dickstein, and Jeffrey Pennington. Wide neural networks of any depth evolve as linear models"}
+{"p": 28, "s": 10.0, "b": false, "t": "under gradient descent, 2019, arXiv:1902.06720. 18"}
+{"p": 28, "s": 10.0, "b": false, "t": "[MKAT18] Sam McCandlish, Jared Kaplan, Dario Amodei, and OpenAI Dota Team. An empirical model"}
+{"p": 28, "s": 10.0, "b": false, "t": "of large-batch training, 2018, arXiv:1812.06162. 3, 5, 6, 12, 13, 21"}
+{"p": 28, "s": 10.0, "b": false, "t": "[Pap18]"}
+{"p": 28, "s": 10.0, "b": false, "t": "Vardan Papyan. The full spectrum of deep net hessians at scale: Dynamics with sample size."}
+{"p": 28, "s": 10.0, "b": false, "t": "CoRR, abs/1811.07062, 2018, 1811.07062. URL http://arxiv.org/abs/1811.07062. 18"}
+{"p": 28, "s": 10.0, "b": false, "t": "[RNSS18]"}
+{"p": 28, "s": 10.0, "b": false, "t": "Alec Radford, Karthik Narasimhan, Tim Salimans, and Ilya Sutskever. Improving language"}
+{"p": 28, "s": 10.0, "b": false, "t": "understanding by generative pre-training. URL https://s3-us-west-2. amazonaws. com/openai-"}
+{"p": 28, "s": 10.0, "b": false, "t": "assets/research-covers/languageunsupervised/language understanding paper. pdf, 2018. 2, 6"}
+{"p": 28, "s": 10.0, "b": false, "t": "[RRBS19a] Jonathan S. Rosenfeld, Amir Rosenfeld, Yonatan Belinkov, and Nir Shavit."}
+{"p": 28, "s": 10.0, "b": false, "t": "A constructive"}
+{"p": 28, "s": 10.0, "b": false, "t": "prediction of the generalization error across scales, 2019, 1909.12673. 18"}
+{"p": 28, "s": 10.0, "b": false, "t": "[RRBS19b] Jonathan S. Rosenfeld, Amir Rosenfeld, Yonatan Belinkov, and Nir Shavit."}
+{"p": 28, "s": 10.0, "b": false, "t": "A constructive"}
+{"p": 28, "s": 10.0, "b": false, "t": "prediction of the generalization error across scales, 2019, arXiv:1909.12673. 18"}
+{"p": 28, "s": 10.0, "b": false, "t": "[RSR+19]"}
+{"p": 28, "s": 10.0, "b": false, "t": "Colin Raffel, Noam Shazeer, Adam Roberts, Katherine Lee, Sharan Narang, Michael Matena,"}
+{"p": 28, "s": 10.0, "b": false, "t": "Yanqi Zhou, Wei Li, and Peter J. Liu. Exploring the limits of transfer learning with a uniﬁed"}
+{"p": 28, "s": 10.0, "b": false, "t": "text-to-text transformer, 2019, arXiv:1910.10683. 2"}
+{"p": 28, "s": 10.0, "b": false, "t": "[RWC+19] Alec Radford, Jeff Wu, Rewon Child, David Luan, Dario Amodei, and Ilya Sutskever. Language"}
+{"p": 28, "s": 10.0, "b": false, "t": "models are unsupervised multitask learners. openai.com, 2019. 2, 5, 6, 7, 8"}
+{"p": 28, "s": 10.0, "b": false, "t": "[SCP+18]"}
+{"p": 28, "s": 10.0, "b": false, "t": "Noam Shazeer, Youlong Cheng, Niki Parmar, Dustin Tran, Ashish Vaswani, Penporn Koanan-"}
+{"p": 28, "s": 10.0, "b": false, "t": "takool, Peter Hawkins, HyoukJoong Lee, Mingsheng Hong, Cliff Young, Ryan Sepassi, and"}
+{"p": 28, "s": 10.0, "b": false, "t": "Blake Hechtman. Mesh-tensorﬂow: Deep learning for supercomputers, 2018, 1811.02084. 19"}
+{"p": 28, "s": 10.0, "b": false, "t": "[SHB15]"}
+{"p": 28, "s": 10.0, "b": false, "t": "Rico Sennrich, Barry Haddow, and Alexandra Birch. Neural machine translation of rare words"}
+{"p": 28, "s": 10.0, "b": false, "t": "with subword units. CoRR, 2015, 1508.07909. 6"}
+{"p": 28, "s": 10.0, "b": false, "t": "29"}
+{"p": 29, "s": 10.0, "b": false, "t": "[SLA+18]"}
+{"p": 29, "s": 10.0, "b": false, "t": "Christopher J. Shallue, Jaehoon Lee, Joe Antognini, Jascha Sohl-Dickstein, Roy Frostig, and"}
+{"p": 29, "s": 10.0, "b": false, "t": "George E. Dahl. Measuring the effects of data parallelism on neural network training, 2018,"}
+{"p": 29, "s": 10.0, "b": false, "t": "arXiv:1811.03600. 12"}
+{"p": 29, "s": 10.0, "b": false, "t": "[SS18]"}
+{"p": 29, "s": 10.0, "b": false, "t": "Noam Shazeer and Mitchell Stern. Adafactor: Adaptive learning rates with sublinear memory"}
+{"p": 29, "s": 10.0, "b": false, "t": "cost. CoRR, abs/1804.04235, 2018, 1804.04235. URL http://arxiv.org/abs/1804.04235."}
+{"p": 29, "s": 10.0, "b": false, "t": "7"}
+{"p": 29, "s": 10.0, "b": false, "t": "[THK18]"}
+{"p": 29, "s": 10.0, "b": false, "t": "Stefan Thurner, Rudolf Hanel, and Peter Klimek. Introduction to the theory of complex systems."}
+{"p": 29, "s": 10.0, "b": false, "t": "Oxford University Press, 2018. 18"}
+{"p": 29, "s": 10.0, "b": false, "t": "[TL19]"}
+{"p": 29, "s": 10.0, "b": false, "t": "Mingxing Tan and Quoc V. Le. Efﬁcientnet: Rethinking model scaling for convolutional neural"}
+{"p": 29, "s": 10.0, "b": false, "t": "networks. CoRR, abs/1905.11946, 2019, 1905.11946. URL http://arxiv.org/abs/1905."}
+{"p": 29, "s": 10.0, "b": false, "t": "11946. 18"}
+{"p": 29, "s": 10.0, "b": false, "t": "[VSP+17]"}
+{"p": 29, "s": 10.0, "b": false, "t": "Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez,"}
+{"p": 29, "s": 10.0, "b": false, "t": "Ł ukasz Kaiser, and Illia Polosukhin. Attention is all you need. In I. Guyon, U. V. Luxburg,"}
+{"p": 29, "s": 10.0, "b": false, "t": "S. Bengio, H. Wallach, R. Fergus, S. Vishwanathan, and R. Garnett, editors, Advances in Neural"}
+{"p": 29, "s": 10.0, "b": false, "t": "Information Processing Systems 30, pages 5998–6008. Curran Associates, Inc., 2017. URL"}
+{"p": 29, "s": 10.0, "b": false, "t": "http://papers.nips.cc/paper/7181-attention-is-all-you-need.pdf. 2, 6"}
+{"p": 29, "s": 10.0, "b": false, "t": "[VWB16]"}
+{"p": 29, "s": 10.0, "b": false, "t": "Andreas Veit, Michael Wilber, and Serge Belongie. Residual networks behave like ensembles"}
+{"p": 29, "s": 10.0, "b": false, "t": "of relatively shallow networks, 2016, arXiv:1605.06431. 8, 18"}
+{"p": 29, "s": 10.0, "b": false, "t": "[Was06]"}
+{"p": 29, "s": 10.0, "b": false, "t": "Larry Wasserman. All of nonparametric statistics. Springer Science & Business Media, 2006."}
+{"p": 29, "s": 10.0, "b": false, "t": "18"}
+{"p": 29, "s": 10.0, "b": false, "t": "[WPN+19] Alex Wang, Yada Pruksachatkun, Nikita Nangia, Amanpreet Singh, Julian Michael, Felix Hill,"}
+{"p": 29, "s": 10.0, "b": false, "t": "Omer Levy, and Samuel R. Bowman. Superglue: A stickier benchmark for general-purpose"}
+{"p": 29, "s": 10.0, "b": false, "t": "language understanding systems, 2019, 1905.00537. 2"}
+{"p": 29, "s": 10.0, "b": false, "t": "[WRH17]"}
+{"p": 29, "s": 10.0, "b": false, "t": "Yu-Xiong Wang, Deva Ramanan, and Martial Hebert. Growing a brain: Fine-tuning by in-"}
+{"p": 29, "s": 10.0, "b": false, "t": "creasing model capacity. 2017 IEEE Conference on Computer Vision and Pattern Recognition"}
+{"p": 29, "s": 10.0, "b": false, "t": "(CVPR), Jul 2017. doi:10.1109/cvpr.2017.323. 19"}
+{"p": 29, "s": 10.0, "b": false, "t": "[WYL19]"}
+{"p": 29, "s": 10.0, "b": false, "t": "Wei Wen, Feng Yan, and Hai Li. Autogrow: Automatic layer growing in deep convolutional"}
+{"p": 29, "s": 10.0, "b": false, "t": "networks, 2019, 1906.02909. 19"}
+{"p": 29, "s": 10.0, "b": false, "t": "[YDY+19] Zhilin Yang, Zihang Dai, Yiming Yang, Jaime Carbonell, Ruslan Salakhutdinov, and Quoc V."}
+{"p": 29, "s": 10.0, "b": false, "t": "Le."}
+{"p": 29, "s": 10.0, "b": false, "t": "Xlnet:"}
+{"p": 29, "s": 10.0, "b": false, "t": "Generalized autoregressive pretraining for language understanding, 2019,"}
+{"p": 29, "s": 10.0, "b": false, "t": "arXiv:1906.08237. 2"}
+{"p": 29, "s": 10.0, "b": false, "t": "[ZK16]"}
+{"p": 29, "s": 10.0, "b": false, "t": "Sergey Zagoruyko and Nikos Komodakis. Wide residual networks. Procedings of the British"}
+{"p": 29, "s": 10.0, "b": false, "t": "Machine Vision Conference 2016, 2016. doi:10.5244/c.30.87. 18"}
+{"p": 29, "s": 10.0, "b": false, "t": "[ZKZ+15]"}
+{"p": 29, "s": 10.0, "b": false, "t": "Yukun Zhu, Ryan Kiros, Rich Zemel, Ruslan Salakhutdinov, Raquel Urtasun, Antonio Tor-"}
+{"p": 29, "s": 10.0, "b": false, "t": "ralba, and Sanja Fidler. Aligning books and movies: Towards story-like visual explanations by"}
+{"p": 29, "s": 10.0, "b": false, "t": "watching movies and reading books. 2015 IEEE International Conference on Computer Vision"}
+{"p": 29, "s": 10.0, "b": false, "t": "(ICCV), Dec 2015. doi:10.1109/iccv.2015.11. 7"}
+{"p": 29, "s": 10.0, "b": false, "t": "[ZLN+19]"}
+{"p": 29, "s": 10.0, "b": false, "t": "Guodong Zhang, Lala Li, Zachary Nado, James Martens, Sushant Sachdeva, George E. Dahl,"}
+{"p": 29, "s": 10.0, "b": false, "t": "Christopher J. Shallue, and Roger B. Grosse. Which algorithmic choices matter at which batch"}
+{"p": 29, "s": 10.0, "b": false, "t": "sizes? insights from a noisy quadratic model. CoRR, abs/1907.04164, 2019, 1907.04164. URL"}
+{"p": 29, "s": 10.0, "b": false, "t": "http://arxiv.org/abs/1907.04164. 12, 18"}
+{"p": 29, "s": 10.0, "b": false, "t": "30"}

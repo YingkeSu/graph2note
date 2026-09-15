@@ -1,0 +1,2069 @@
+{"p": 0, "s": 14.3, "b": true, "t": "BERT: Pre-training of Deep Bidirectional Transformers for"}
+{"p": 0, "s": 14.3, "b": true, "t": "Language Understanding"}
+{"p": 0, "s": 12.0, "b": true, "t": "Jacob Devlin"}
+{"p": 0, "s": 12.0, "b": true, "t": "Ming-Wei Chang"}
+{"p": 0, "s": 12.0, "b": true, "t": "Kenton Lee"}
+{"p": 0, "s": 12.0, "b": true, "t": "Kristina Toutanova"}
+{"p": 0, "s": 12.0, "b": false, "t": "Google AI Language"}
+{"p": 0, "s": 12.0, "b": false, "t": "{jacobdevlin,mingweichang,kentonl,kristout}@google.com"}
+{"p": 0, "s": 12.0, "b": true, "t": "Abstract"}
+{"p": 0, "s": 10.0, "b": false, "t": "We introduce a new language representa-"}
+{"p": 0, "s": 10.0, "b": true, "t": "tion model called BERT, which stands for"}
+{"p": 0, "s": 10.0, "b": true, "t": "Bidirectional Encoder Representations from"}
+{"p": 0, "s": 10.0, "b": true, "t": "Transformers. Unlike recent language repre-"}
+{"p": 0, "s": 10.0, "b": false, "t": "sentation models (Peters et al., 2018a; Rad-"}
+{"p": 0, "s": 10.0, "b": false, "t": "ford et al., 2018), BERT is designed to pre-"}
+{"p": 0, "s": 10.0, "b": false, "t": "train deep bidirectional representations from"}
+{"p": 0, "s": 10.0, "b": false, "t": "unlabeled text by jointly conditioning on both"}
+{"p": 0, "s": 10.0, "b": false, "t": "left and right context in all layers. As a re-"}
+{"p": 0, "s": 10.0, "b": false, "t": "sult, the pre-trained BERT model can be ﬁne-"}
+{"p": 0, "s": 10.0, "b": false, "t": "tuned with just one additional output layer"}
+{"p": 0, "s": 10.0, "b": false, "t": "to create state-of-the-art models for a wide"}
+{"p": 0, "s": 10.0, "b": false, "t": "range of tasks, such as question answering and"}
+{"p": 0, "s": 10.0, "b": false, "t": "language inference, without substantial task-"}
+{"p": 0, "s": 10.0, "b": false, "t": "speciﬁc architecture modiﬁcations."}
+{"p": 0, "s": 10.0, "b": false, "t": "BERT is conceptually simple and empirically"}
+{"p": 0, "s": 10.0, "b": false, "t": "powerful."}
+{"p": 0, "s": 10.0, "b": false, "t": "It obtains new state-of-the-art re-"}
+{"p": 0, "s": 10.0, "b": false, "t": "sults on eleven natural language processing"}
+{"p": 0, "s": 10.0, "b": false, "t": "tasks, including pushing the GLUE score to"}
+{"p": 0, "s": 10.0, "b": false, "t": "80.5% (7.7% point absolute improvement),"}
+{"p": 0, "s": 10.0, "b": false, "t": "MultiNLI accuracy to 86.7% (4.6% absolute"}
+{"p": 0, "s": 10.0, "b": false, "t": "improvement), SQuAD v1.1 question answer-"}
+{"p": 0, "s": 10.0, "b": false, "t": "ing Test F1 to 93.2 (1.5 point absolute im-"}
+{"p": 0, "s": 10.0, "b": false, "t": "provement) and SQuAD v2.0 Test F1 to 83.1"}
+{"p": 0, "s": 10.0, "b": false, "t": "(5.1 point absolute improvement)."}
+{"p": 0, "s": 12.0, "b": true, "t": "1"}
+{"p": 0, "s": 12.0, "b": true, "t": "Introduction"}
+{"p": 0, "s": 10.9, "b": false, "t": "Language model pre-training has been shown to"}
+{"p": 0, "s": 10.9, "b": false, "t": "be effective for improving many natural language"}
+{"p": 0, "s": 10.9, "b": false, "t": "processing tasks (Dai and Le, 2015; Peters et al.,"}
+{"p": 0, "s": 10.9, "b": false, "t": "2018a; Radford et al., 2018; Howard and Ruder,"}
+{"p": 0, "s": 10.9, "b": false, "t": "2018). These include sentence-level tasks such as"}
+{"p": 0, "s": 10.9, "b": false, "t": "natural language inference (Bowman et al., 2015;"}
+{"p": 0, "s": 10.9, "b": false, "t": "Williams et al., 2018) and paraphrasing (Dolan"}
+{"p": 0, "s": 10.9, "b": false, "t": "and Brockett, 2005), which aim to predict the re-"}
+{"p": 0, "s": 10.9, "b": false, "t": "lationships between sentences by analyzing them"}
+{"p": 0, "s": 10.9, "b": false, "t": "holistically, as well as token-level tasks such as"}
+{"p": 0, "s": 10.9, "b": false, "t": "named entity recognition and question answering,"}
+{"p": 0, "s": 10.9, "b": false, "t": "where models are required to produce ﬁne-grained"}
+{"p": 0, "s": 10.9, "b": false, "t": "output at the token level (Tjong Kim Sang and"}
+{"p": 0, "s": 10.9, "b": false, "t": "De Meulder, 2003; Rajpurkar et al., 2016)."}
+{"p": 0, "s": 10.9, "b": false, "t": "There are two existing strategies for apply-"}
+{"p": 0, "s": 10.9, "b": false, "t": "ing pre-trained language representations to down-"}
+{"p": 0, "s": 10.9, "b": false, "t": "stream tasks: feature-based and ﬁne-tuning. The"}
+{"p": 0, "s": 10.9, "b": false, "t": "feature-based approach, such as ELMo (Peters"}
+{"p": 0, "s": 10.9, "b": false, "t": "et al., 2018a), uses task-speciﬁc architectures that"}
+{"p": 0, "s": 10.9, "b": false, "t": "include the pre-trained representations as addi-"}
+{"p": 0, "s": 10.9, "b": false, "t": "tional features. The ﬁne-tuning approach, such as"}
+{"p": 0, "s": 10.9, "b": false, "t": "the Generative Pre-trained Transformer (OpenAI"}
+{"p": 0, "s": 10.9, "b": false, "t": "GPT) (Radford et al., 2018), introduces minimal"}
+{"p": 0, "s": 10.9, "b": false, "t": "task-speciﬁc parameters, and is trained on the"}
+{"p": 0, "s": 10.9, "b": false, "t": "downstream tasks by simply ﬁne-tuning all pre-"}
+{"p": 0, "s": 10.9, "b": false, "t": "trained parameters. The two approaches share the"}
+{"p": 0, "s": 10.9, "b": false, "t": "same objective function during pre-training, where"}
+{"p": 0, "s": 10.9, "b": false, "t": "they use unidirectional language models to learn"}
+{"p": 0, "s": 10.9, "b": false, "t": "general language representations."}
+{"p": 0, "s": 10.9, "b": false, "t": "We argue that current techniques restrict the"}
+{"p": 0, "s": 10.9, "b": false, "t": "power of the pre-trained representations, espe-"}
+{"p": 0, "s": 10.9, "b": false, "t": "cially for the ﬁne-tuning approaches."}
+{"p": 0, "s": 10.9, "b": false, "t": "The ma-"}
+{"p": 0, "s": 10.9, "b": false, "t": "jor limitation is that standard language models are"}
+{"p": 0, "s": 10.9, "b": false, "t": "unidirectional, and this limits the choice of archi-"}
+{"p": 0, "s": 10.9, "b": false, "t": "tectures that can be used during pre-training. For"}
+{"p": 0, "s": 10.9, "b": false, "t": "example, in OpenAI GPT, the authors use a left-to-"}
+{"p": 0, "s": 10.9, "b": false, "t": "right architecture, where every token can only at-"}
+{"p": 0, "s": 10.9, "b": false, "t": "tend to previous tokens in the self-attention layers"}
+{"p": 0, "s": 10.9, "b": false, "t": "of the Transformer (Vaswani et al., 2017). Such re-"}
+{"p": 0, "s": 10.9, "b": false, "t": "strictions are sub-optimal for sentence-level tasks,"}
+{"p": 0, "s": 10.9, "b": false, "t": "and could be very harmful when applying ﬁne-"}
+{"p": 0, "s": 10.9, "b": false, "t": "tuning based approaches to token-level tasks such"}
+{"p": 0, "s": 10.9, "b": false, "t": "as question answering, where it is crucial to incor-"}
+{"p": 0, "s": 10.9, "b": false, "t": "porate context from both directions."}
+{"p": 0, "s": 10.9, "b": false, "t": "In this paper, we improve the ﬁne-tuning based"}
+{"p": 0, "s": 10.9, "b": true, "t": "approaches by proposing BERT: Bidirectional"}
+{"p": 0, "s": 10.9, "b": true, "t": "Encoder"}
+{"p": 0, "s": 10.9, "b": true, "t": "Representations"}
+{"p": 0, "s": 10.9, "b": false, "t": "from"}
+{"p": 0, "s": 10.9, "b": true, "t": "Transformers."}
+{"p": 0, "s": 10.9, "b": false, "t": "BERT alleviates the previously mentioned unidi-"}
+{"p": 0, "s": 10.9, "b": false, "t": "rectionality constraint by using a “masked lan-"}
+{"p": 0, "s": 10.9, "b": false, "t": "guage model” (MLM) pre-training objective, in-"}
+{"p": 0, "s": 10.9, "b": false, "t": "spired by the Cloze task (Taylor, 1953)."}
+{"p": 0, "s": 10.9, "b": false, "t": "The"}
+{"p": 0, "s": 10.9, "b": false, "t": "masked language model randomly masks some of"}
+{"p": 0, "s": 10.9, "b": false, "t": "the tokens from the input, and the objective is to"}
+{"p": 0, "s": 10.9, "b": false, "t": "predict the original vocabulary id of the masked"}
+{"p": 0, "s": 20.0, "b": false, "t": "arXiv:1810.04805v2  [cs.CL]  24 May 2019"}
+{"p": 1, "s": 10.9, "b": false, "t": "word based only on its context."}
+{"p": 1, "s": 10.9, "b": false, "t": "Unlike left-to-"}
+{"p": 1, "s": 10.9, "b": false, "t": "right language model pre-training, the MLM ob-"}
+{"p": 1, "s": 10.9, "b": false, "t": "jective enables the representation to fuse the left"}
+{"p": 1, "s": 10.9, "b": false, "t": "and the right context, which allows us to pre-"}
+{"p": 1, "s": 10.9, "b": false, "t": "train a deep bidirectional Transformer. In addi-"}
+{"p": 1, "s": 10.9, "b": false, "t": "tion to the masked language model, we also use"}
+{"p": 1, "s": 10.9, "b": false, "t": "a “next sentence prediction” task that jointly pre-"}
+{"p": 1, "s": 10.9, "b": false, "t": "trains text-pair representations. The contributions"}
+{"p": 1, "s": 10.9, "b": false, "t": "of our paper are as follows:"}
+{"p": 1, "s": 10.9, "b": false, "t": "• We demonstrate the importance of bidirectional"}
+{"p": 1, "s": 10.9, "b": false, "t": "pre-training for language representations. Un-"}
+{"p": 1, "s": 10.9, "b": false, "t": "like Radford et al. (2018), which uses unidirec-"}
+{"p": 1, "s": 10.9, "b": false, "t": "tional language models for pre-training, BERT"}
+{"p": 1, "s": 10.9, "b": false, "t": "uses masked language models to enable pre-"}
+{"p": 1, "s": 10.9, "b": false, "t": "trained deep bidirectional representations. This"}
+{"p": 1, "s": 10.9, "b": false, "t": "is also in contrast to Peters et al. (2018a), which"}
+{"p": 1, "s": 10.9, "b": false, "t": "uses a shallow concatenation of independently"}
+{"p": 1, "s": 10.9, "b": false, "t": "trained left-to-right and right-to-left LMs."}
+{"p": 1, "s": 10.9, "b": false, "t": "• We show that pre-trained representations reduce"}
+{"p": 1, "s": 10.9, "b": false, "t": "the need for many heavily-engineered task-"}
+{"p": 1, "s": 10.9, "b": false, "t": "speciﬁc architectures. BERT is the ﬁrst ﬁne-"}
+{"p": 1, "s": 10.9, "b": false, "t": "tuning based representation model that achieves"}
+{"p": 1, "s": 10.9, "b": false, "t": "state-of-the-art performance on a large suite"}
+{"p": 1, "s": 10.9, "b": false, "t": "of sentence-level and token-level tasks, outper-"}
+{"p": 1, "s": 10.9, "b": false, "t": "forming many task-speciﬁc architectures."}
+{"p": 1, "s": 10.9, "b": false, "t": "• BERT advances the state of the art for eleven"}
+{"p": 1, "s": 10.9, "b": false, "t": "NLP tasks."}
+{"p": 1, "s": 10.9, "b": false, "t": "The code and pre-trained mod-"}
+{"p": 1, "s": 10.9, "b": false, "t": "els are available at https://github.com/"}
+{"p": 1, "s": 10.9, "b": false, "t": "google-research/bert."}
+{"p": 1, "s": 12.0, "b": true, "t": "2"}
+{"p": 1, "s": 12.0, "b": true, "t": "Related Work"}
+{"p": 1, "s": 10.9, "b": false, "t": "There is a long history of pre-training general lan-"}
+{"p": 1, "s": 10.9, "b": false, "t": "guage representations, and we brieﬂy review the"}
+{"p": 1, "s": 10.9, "b": false, "t": "most widely-used approaches in this section."}
+{"p": 1, "s": 10.9, "b": true, "t": "2.1"}
+{"p": 1, "s": 10.9, "b": true, "t": "Unsupervised Feature-based Approaches"}
+{"p": 1, "s": 10.9, "b": false, "t": "Learning widely applicable representations of"}
+{"p": 1, "s": 10.9, "b": false, "t": "words has been an active area of research for"}
+{"p": 1, "s": 10.9, "b": false, "t": "decades, including non-neural (Brown et al., 1992;"}
+{"p": 1, "s": 10.9, "b": false, "t": "Ando and Zhang, 2005; Blitzer et al., 2006) and"}
+{"p": 1, "s": 10.9, "b": false, "t": "neural (Mikolov et al., 2013; Pennington et al.,"}
+{"p": 1, "s": 10.9, "b": false, "t": "2014) methods."}
+{"p": 1, "s": 10.9, "b": false, "t": "Pre-trained word embeddings"}
+{"p": 1, "s": 10.9, "b": false, "t": "are an integral part of modern NLP systems, of-"}
+{"p": 1, "s": 10.9, "b": false, "t": "fering signiﬁcant improvements over embeddings"}
+{"p": 1, "s": 10.9, "b": false, "t": "learned from scratch (Turian et al., 2010). To pre-"}
+{"p": 1, "s": 10.9, "b": false, "t": "train word embedding vectors, left-to-right lan-"}
+{"p": 1, "s": 10.9, "b": false, "t": "guage modeling objectives have been used (Mnih"}
+{"p": 1, "s": 10.9, "b": false, "t": "and Hinton, 2009), as well as objectives to dis-"}
+{"p": 1, "s": 10.9, "b": false, "t": "criminate correct from incorrect words in left and"}
+{"p": 1, "s": 10.9, "b": false, "t": "right context (Mikolov et al., 2013)."}
+{"p": 1, "s": 10.9, "b": false, "t": "These approaches have been generalized to"}
+{"p": 1, "s": 10.9, "b": false, "t": "coarser granularities, such as sentence embed-"}
+{"p": 1, "s": 10.9, "b": false, "t": "dings (Kiros et al., 2015; Logeswaran and Lee,"}
+{"p": 1, "s": 10.9, "b": false, "t": "2018) or paragraph embeddings (Le and Mikolov,"}
+{"p": 1, "s": 10.9, "b": false, "t": "2014)."}
+{"p": 1, "s": 10.9, "b": false, "t": "To train sentence representations, prior"}
+{"p": 1, "s": 10.9, "b": false, "t": "work has used objectives to rank candidate next"}
+{"p": 1, "s": 10.9, "b": false, "t": "sentences (Jernite et al., 2017; Logeswaran and"}
+{"p": 1, "s": 10.9, "b": false, "t": "Lee, 2018), left-to-right generation of next sen-"}
+{"p": 1, "s": 10.9, "b": false, "t": "tence words given a representation of the previous"}
+{"p": 1, "s": 10.9, "b": false, "t": "sentence (Kiros et al., 2015), or denoising auto-"}
+{"p": 1, "s": 10.9, "b": false, "t": "encoder derived objectives (Hill et al., 2016)."}
+{"p": 1, "s": 10.9, "b": false, "t": "ELMo and its predecessor (Peters et al., 2017,"}
+{"p": 1, "s": 10.9, "b": false, "t": "2018a) generalize traditional word embedding re-"}
+{"p": 1, "s": 10.9, "b": false, "t": "search along a different dimension. They extract"}
+{"p": 1, "s": 10.9, "b": false, "t": "context-sensitive features from a left-to-right and a"}
+{"p": 1, "s": 10.9, "b": false, "t": "right-to-left language model. The contextual rep-"}
+{"p": 1, "s": 10.9, "b": false, "t": "resentation of each token is the concatenation of"}
+{"p": 1, "s": 10.9, "b": false, "t": "the left-to-right and right-to-left representations."}
+{"p": 1, "s": 10.9, "b": false, "t": "When integrating contextual word embeddings"}
+{"p": 1, "s": 10.9, "b": false, "t": "with existing task-speciﬁc architectures, ELMo"}
+{"p": 1, "s": 10.9, "b": false, "t": "advances the state of the art for several major NLP"}
+{"p": 1, "s": 10.9, "b": false, "t": "benchmarks (Peters et al., 2018a) including ques-"}
+{"p": 1, "s": 10.9, "b": false, "t": "tion answering (Rajpurkar et al., 2016), sentiment"}
+{"p": 1, "s": 10.9, "b": false, "t": "analysis (Socher et al., 2013), and named entity"}
+{"p": 1, "s": 10.9, "b": false, "t": "recognition (Tjong Kim Sang and De Meulder,"}
+{"p": 1, "s": 10.9, "b": false, "t": "2003). Melamud et al. (2016) proposed learning"}
+{"p": 1, "s": 10.9, "b": false, "t": "contextual representations through a task to pre-"}
+{"p": 1, "s": 10.9, "b": false, "t": "dict a single word from both left and right context"}
+{"p": 1, "s": 10.9, "b": false, "t": "using LSTMs. Similar to ELMo, their model is"}
+{"p": 1, "s": 10.9, "b": false, "t": "feature-based and not deeply bidirectional. Fedus"}
+{"p": 1, "s": 10.9, "b": false, "t": "et al. (2018) shows that the cloze task can be used"}
+{"p": 1, "s": 10.9, "b": false, "t": "to improve the robustness of text generation mod-"}
+{"p": 1, "s": 10.9, "b": false, "t": "els."}
+{"p": 1, "s": 10.9, "b": true, "t": "2.2"}
+{"p": 1, "s": 10.9, "b": true, "t": "Unsupervised Fine-tuning Approaches"}
+{"p": 1, "s": 10.9, "b": false, "t": "As with the feature-based approaches, the ﬁrst"}
+{"p": 1, "s": 10.9, "b": false, "t": "works in this direction only pre-trained word em-"}
+{"p": 1, "s": 10.9, "b": false, "t": "bedding parameters from unlabeled text"}
+{"p": 1, "s": 10.9, "b": false, "t": "(Col-"}
+{"p": 1, "s": 10.9, "b": false, "t": "lobert and Weston, 2008)."}
+{"p": 1, "s": 10.9, "b": false, "t": "More recently, sentence or document encoders"}
+{"p": 1, "s": 10.9, "b": false, "t": "which produce contextual token representations"}
+{"p": 1, "s": 10.9, "b": false, "t": "have been pre-trained from unlabeled text and"}
+{"p": 1, "s": 10.9, "b": false, "t": "ﬁne-tuned for a supervised downstream task (Dai"}
+{"p": 1, "s": 10.9, "b": false, "t": "and Le, 2015; Howard and Ruder, 2018; Radford"}
+{"p": 1, "s": 10.9, "b": false, "t": "et al., 2018). The advantage of these approaches"}
+{"p": 1, "s": 10.9, "b": false, "t": "is that few parameters need to be learned from"}
+{"p": 1, "s": 10.9, "b": false, "t": "scratch."}
+{"p": 1, "s": 10.9, "b": false, "t": "At least partly due to this advantage,"}
+{"p": 1, "s": 10.9, "b": false, "t": "OpenAI GPT (Radford et al., 2018) achieved pre-"}
+{"p": 1, "s": 10.9, "b": false, "t": "viously state-of-the-art results on many sentence-"}
+{"p": 1, "s": 10.9, "b": false, "t": "level tasks from the GLUE benchmark (Wang"}
+{"p": 1, "s": 10.9, "b": false, "t": "et al., 2018a)."}
+{"p": 1, "s": 10.9, "b": false, "t": "Left-to-right language model-"}
+{"p": 2, "s": 11.1, "b": false, "t": "BERT"}
+{"p": 2, "s": 11.1, "b": false, "t": "BERT"}
+{"p": 2, "s": 3.1, "b": false, "t": "E[CLS]"}
+{"p": 2, "s": 5.6, "b": false, "t": "E1"}
+{"p": 2, "s": 3.7, "b": false, "t": " E[SEP]"}
+{"p": 2, "s": 6.5, "b": false, "t": "..."}
+{"p": 2, "s": 5.6, "b": false, "t": "EN"}
+{"p": 2, "s": 5.6, "b": false, "t": "E1’"}
+{"p": 2, "s": 6.5, "b": false, "t": "..."}
+{"p": 2, "s": 5.6, "b": false, "t": "EM’"}
+{"p": 2, "s": 5.6, "b": false, "t": "C"}
+{"p": 2, "s": 5.6, "b": false, "t": "T1"}
+{"p": 2, "s": 3.7, "b": false, "t": "T[SEP]"}
+{"p": 2, "s": 6.5, "b": false, "t": "..."}
+{"p": 2, "s": 5.6, "b": false, "t": "TN"}
+{"p": 2, "s": 5.6, "b": false, "t": "T1’"}
+{"p": 2, "s": 6.5, "b": false, "t": "..."}
+{"p": 2, "s": 5.6, "b": false, "t": "TM’"}
+{"p": 2, "s": 3.2, "b": false, "t": "[CLS]"}
+{"p": 2, "s": 3.7, "b": false, "t": "Tok 1"}
+{"p": 2, "s": 3.7, "b": false, "t": " [SEP]"}
+{"p": 2, "s": 6.5, "b": false, "t": "..."}
+{"p": 2, "s": 3.7, "b": false, "t": "Tok N"}
+{"p": 2, "s": 3.7, "b": false, "t": "Tok 1"}
+{"p": 2, "s": 6.5, "b": false, "t": "..."}
+{"p": 2, "s": 3.7, "b": false, "t": "TokM"}
+{"p": 2, "s": 6.5, "b": false, "t": "Question"}
+{"p": 2, "s": 6.5, "b": false, "t": "Paragraph"}
+{"p": 2, "s": 6.5, "b": false, "t": "Start/End Span"}
+{"p": 2, "s": 11.1, "b": false, "t": "BERT"}
+{"p": 2, "s": 3.1, "b": false, "t": "E[CLS]"}
+{"p": 2, "s": 5.6, "b": false, "t": "E1"}
+{"p": 2, "s": 3.7, "b": false, "t": " E[SEP]"}
+{"p": 2, "s": 6.5, "b": false, "t": "..."}
+{"p": 2, "s": 5.6, "b": false, "t": "EN"}
+{"p": 2, "s": 5.6, "b": false, "t": "E1’"}
+{"p": 2, "s": 6.5, "b": false, "t": "..."}
+{"p": 2, "s": 5.6, "b": false, "t": "EM’"}
+{"p": 2, "s": 5.6, "b": false, "t": "C"}
+{"p": 2, "s": 5.6, "b": false, "t": "T1"}
+{"p": 2, "s": 3.7, "b": false, "t": "T[SEP]"}
+{"p": 2, "s": 6.5, "b": false, "t": "..."}
+{"p": 2, "s": 5.6, "b": false, "t": "TN"}
+{"p": 2, "s": 5.6, "b": false, "t": "T1’"}
+{"p": 2, "s": 6.5, "b": false, "t": "..."}
+{"p": 2, "s": 5.6, "b": false, "t": "TM’"}
+{"p": 2, "s": 3.2, "b": false, "t": "[CLS]"}
+{"p": 2, "s": 3.7, "b": false, "t": "Tok 1"}
+{"p": 2, "s": 3.7, "b": false, "t": " [SEP]"}
+{"p": 2, "s": 6.5, "b": false, "t": "..."}
+{"p": 2, "s": 3.7, "b": false, "t": "Tok N"}
+{"p": 2, "s": 3.7, "b": false, "t": "Tok 1"}
+{"p": 2, "s": 6.5, "b": false, "t": "..."}
+{"p": 2, "s": 3.7, "b": false, "t": "TokM"}
+{"p": 2, "s": 6.5, "b": false, "t": "Masked Sentence A"}
+{"p": 2, "s": 6.5, "b": false, "t": "Masked Sentence B"}
+{"p": 2, "s": 11.1, "b": false, "t": "Pre-training"}
+{"p": 2, "s": 11.1, "b": false, "t": "Fine-Tuning"}
+{"p": 2, "s": 6.5, "b": false, "t": "NSP"}
+{"p": 2, "s": 6.5, "b": false, "t": "Mask LM"}
+{"p": 2, "s": 6.5, "b": false, "t": "Mask LM"}
+{"p": 2, "s": 6.5, "b": false, "t": "Unlabeled Sentence A and B Pair "}
+{"p": 2, "s": 6.9, "b": true, "t": "SQuAD"}
+{"p": 2, "s": 6.5, "b": false, "t": "Question Answer Pair"}
+{"p": 2, "s": 6.9, "b": true, "t": "NER"}
+{"p": 2, "s": 6.9, "b": true, "t": "MNLI"}
+{"p": 2, "s": 10.0, "b": false, "t": "Figure 1: Overall pre-training and ﬁne-tuning procedures for BERT. Apart from output layers, the same architec-"}
+{"p": 2, "s": 10.0, "b": false, "t": "tures are used in both pre-training and ﬁne-tuning. The same pre-trained model parameters are used to initialize"}
+{"p": 2, "s": 10.0, "b": false, "t": "models for different down-stream tasks. During ﬁne-tuning, all parameters are ﬁne-tuned. [CLS] is a special"}
+{"p": 2, "s": 10.0, "b": false, "t": "symbol added in front of every input example, and [SEP] is a special separator token (e.g. separating ques-"}
+{"p": 2, "s": 10.0, "b": false, "t": "tions/answers)."}
+{"p": 2, "s": 10.9, "b": false, "t": "ing and auto-encoder objectives have been used"}
+{"p": 2, "s": 10.9, "b": false, "t": "for pre-training such models (Howard and Ruder,"}
+{"p": 2, "s": 10.9, "b": false, "t": "2018; Radford et al., 2018; Dai and Le, 2015)."}
+{"p": 2, "s": 10.9, "b": true, "t": "2.3"}
+{"p": 2, "s": 10.9, "b": true, "t": "Transfer Learning from Supervised Data"}
+{"p": 2, "s": 10.9, "b": false, "t": "There has also been work showing effective trans-"}
+{"p": 2, "s": 10.9, "b": false, "t": "fer from supervised tasks with large datasets, such"}
+{"p": 2, "s": 10.9, "b": false, "t": "as natural language inference (Conneau et al.,"}
+{"p": 2, "s": 10.9, "b": false, "t": "2017) and machine translation (McCann et al.,"}
+{"p": 2, "s": 10.9, "b": false, "t": "2017). Computer vision research has also demon-"}
+{"p": 2, "s": 10.9, "b": false, "t": "strated the importance of transfer learning from"}
+{"p": 2, "s": 10.9, "b": false, "t": "large pre-trained models, where an effective recipe"}
+{"p": 2, "s": 10.9, "b": false, "t": "is to ﬁne-tune models pre-trained with Ima-"}
+{"p": 2, "s": 10.9, "b": false, "t": "geNet (Deng et al., 2009; Yosinski et al., 2014)."}
+{"p": 2, "s": 12.0, "b": true, "t": "3"}
+{"p": 2, "s": 12.0, "b": true, "t": "BERT"}
+{"p": 2, "s": 10.9, "b": false, "t": "We introduce BERT and its detailed implementa-"}
+{"p": 2, "s": 10.9, "b": false, "t": "tion in this section. There are two steps in our"}
+{"p": 2, "s": 10.9, "b": false, "t": "framework: pre-training and ﬁne-tuning."}
+{"p": 2, "s": 10.9, "b": false, "t": "Dur-"}
+{"p": 2, "s": 10.9, "b": false, "t": "ing pre-training, the model is trained on unlabeled"}
+{"p": 2, "s": 10.9, "b": false, "t": "data over different pre-training tasks."}
+{"p": 2, "s": 10.9, "b": false, "t": "For ﬁne-"}
+{"p": 2, "s": 10.9, "b": false, "t": "tuning, the BERT model is ﬁrst initialized with"}
+{"p": 2, "s": 10.9, "b": false, "t": "the pre-trained parameters, and all of the param-"}
+{"p": 2, "s": 10.9, "b": false, "t": "eters are ﬁne-tuned using labeled data from the"}
+{"p": 2, "s": 10.9, "b": false, "t": "downstream tasks. Each downstream task has sep-"}
+{"p": 2, "s": 10.9, "b": false, "t": "arate ﬁne-tuned models, even though they are ini-"}
+{"p": 2, "s": 10.9, "b": false, "t": "tialized with the same pre-trained parameters. The"}
+{"p": 2, "s": 10.9, "b": false, "t": "question-answering example in Figure 1 will serve"}
+{"p": 2, "s": 10.9, "b": false, "t": "as a running example for this section."}
+{"p": 2, "s": 10.9, "b": false, "t": "A distinctive feature of BERT is its uniﬁed ar-"}
+{"p": 2, "s": 10.9, "b": false, "t": "chitecture across different tasks. There is mini-"}
+{"p": 2, "s": 10.9, "b": false, "t": "mal difference between the pre-trained architec-"}
+{"p": 2, "s": 10.9, "b": false, "t": "ture and the ﬁnal downstream architecture."}
+{"p": 2, "s": 10.9, "b": true, "t": "Model Architecture"}
+{"p": 2, "s": 10.9, "b": false, "t": "BERT’s model architec-"}
+{"p": 2, "s": 10.9, "b": false, "t": "ture is a multi-layer bidirectional Transformer en-"}
+{"p": 2, "s": 10.9, "b": false, "t": "coder based on the original implementation de-"}
+{"p": 2, "s": 10.9, "b": false, "t": "scribed in Vaswani et al. (2017) and released in"}
+{"p": 2, "s": 10.9, "b": false, "t": "the tensor2tensor library.1 Because the use"}
+{"p": 2, "s": 10.9, "b": false, "t": "of Transformers has become common and our im-"}
+{"p": 2, "s": 10.9, "b": false, "t": "plementation is almost identical to the original,"}
+{"p": 2, "s": 10.9, "b": false, "t": "we will omit an exhaustive background descrip-"}
+{"p": 2, "s": 10.9, "b": false, "t": "tion of the model architecture and refer readers to"}
+{"p": 2, "s": 10.9, "b": false, "t": "Vaswani et al. (2017) as well as excellent guides"}
+{"p": 2, "s": 10.9, "b": false, "t": "such as “The Annotated Transformer.”2"}
+{"p": 2, "s": 10.9, "b": false, "t": "In this work, we denote the number of layers"}
+{"p": 2, "s": 10.9, "b": false, "t": "(i.e., Transformer blocks) as L, the hidden size as"}
+{"p": 2, "s": 10.9, "b": false, "t": "H, and the number of self-attention heads as A.3"}
+{"p": 2, "s": 10.9, "b": false, "t": "We primarily report results on two model sizes:"}
+{"p": 2, "s": 10.9, "b": true, "t": "BERTBASE (L=12, H=768, A=12, Total Param-"}
+{"p": 2, "s": 10.9, "b": true, "t": "eters=110M) and BERTLARGE (L=24, H=1024,"}
+{"p": 2, "s": 10.9, "b": false, "t": "A=16, Total Parameters=340M)."}
+{"p": 2, "s": 10.9, "b": false, "t": "BERTBASE was chosen to have the same model"}
+{"p": 2, "s": 10.9, "b": false, "t": "size as OpenAI GPT for comparison purposes."}
+{"p": 2, "s": 10.9, "b": false, "t": "Critically, however, the BERT Transformer uses"}
+{"p": 2, "s": 10.9, "b": false, "t": "bidirectional self-attention, while the GPT Trans-"}
+{"p": 2, "s": 10.9, "b": false, "t": "former uses constrained self-attention where every"}
+{"p": 2, "s": 10.9, "b": false, "t": "token can only attend to context to its left.4"}
+{"p": 2, "s": 9.0, "b": false, "t": "1https://github.com/tensorﬂow/tensor2tensor"}
+{"p": 2, "s": 9.0, "b": false, "t": "2http://nlp.seas.harvard.edu/2018/04/03/attention.html"}
+{"p": 2, "s": 9.0, "b": false, "t": "3In all cases we set the feed-forward/ﬁlter size to be 4H,"}
+{"p": 2, "s": 9.0, "b": false, "t": "i.e., 3072 for the H = 768 and 4096 for the H = 1024."}
+{"p": 2, "s": 9.0, "b": false, "t": "4We note that in the literature the bidirectional Trans-"}
+{"p": 3, "s": 10.9, "b": true, "t": "Input/Output Representations"}
+{"p": 3, "s": 10.9, "b": false, "t": "To make BERT"}
+{"p": 3, "s": 10.9, "b": false, "t": "handle a variety of down-stream tasks, our input"}
+{"p": 3, "s": 10.9, "b": false, "t": "representation is able to unambiguously represent"}
+{"p": 3, "s": 10.9, "b": false, "t": "both a single sentence and a pair of sentences"}
+{"p": 3, "s": 10.9, "b": false, "t": "(e.g., ⟨Question, Answer ⟩) in one token sequence."}
+{"p": 3, "s": 10.9, "b": false, "t": "Throughout this work, a “sentence” can be an arbi-"}
+{"p": 3, "s": 10.9, "b": false, "t": "trary span of contiguous text, rather than an actual"}
+{"p": 3, "s": 10.9, "b": false, "t": "linguistic sentence. A “sequence” refers to the in-"}
+{"p": 3, "s": 10.9, "b": false, "t": "put token sequence to BERT, which may be a sin-"}
+{"p": 3, "s": 10.9, "b": false, "t": "gle sentence or two sentences packed together."}
+{"p": 3, "s": 10.9, "b": false, "t": "We use WordPiece embeddings (Wu et al.,"}
+{"p": 3, "s": 10.9, "b": false, "t": "2016) with a 30,000 token vocabulary. The ﬁrst"}
+{"p": 3, "s": 10.9, "b": false, "t": "token of every sequence is always a special clas-"}
+{"p": 3, "s": 10.9, "b": false, "t": "siﬁcation token ([CLS]). The ﬁnal hidden state"}
+{"p": 3, "s": 10.9, "b": false, "t": "corresponding to this token is used as the ag-"}
+{"p": 3, "s": 10.9, "b": false, "t": "gregate sequence representation for classiﬁcation"}
+{"p": 3, "s": 10.9, "b": false, "t": "tasks. Sentence pairs are packed together into a"}
+{"p": 3, "s": 10.9, "b": false, "t": "single sequence. We differentiate the sentences in"}
+{"p": 3, "s": 10.9, "b": false, "t": "two ways. First, we separate them with a special"}
+{"p": 3, "s": 10.9, "b": false, "t": "token ([SEP]). Second, we add a learned embed-"}
+{"p": 3, "s": 10.9, "b": false, "t": "ding to every token indicating whether it belongs"}
+{"p": 3, "s": 10.9, "b": false, "t": "to sentence A or sentence B. As shown in Figure 1,"}
+{"p": 3, "s": 10.9, "b": false, "t": "we denote input embedding as E, the ﬁnal hidden"}
+{"p": 3, "s": 10.9, "b": false, "t": "vector of the special [CLS] token as C ∈RH,"}
+{"p": 3, "s": 10.9, "b": false, "t": "and the ﬁnal hidden vector for the ith input token"}
+{"p": 3, "s": 10.9, "b": false, "t": "as Ti ∈RH."}
+{"p": 3, "s": 10.9, "b": false, "t": "For a given token, its input representation is"}
+{"p": 3, "s": 10.9, "b": false, "t": "constructed by summing the corresponding token,"}
+{"p": 3, "s": 10.9, "b": false, "t": "segment, and position embeddings. A visualiza-"}
+{"p": 3, "s": 10.9, "b": false, "t": "tion of this construction can be seen in Figure 2."}
+{"p": 3, "s": 10.9, "b": true, "t": "3.1"}
+{"p": 3, "s": 10.9, "b": true, "t": "Pre-training BERT"}
+{"p": 3, "s": 10.9, "b": false, "t": "Unlike Peters et al. (2018a) and Radford et al."}
+{"p": 3, "s": 10.9, "b": false, "t": "(2018), we do not use traditional left-to-right or"}
+{"p": 3, "s": 10.9, "b": false, "t": "right-to-left language models to pre-train BERT."}
+{"p": 3, "s": 10.9, "b": false, "t": "Instead, we pre-train BERT using two unsuper-"}
+{"p": 3, "s": 10.9, "b": false, "t": "vised tasks, described in this section. This step"}
+{"p": 3, "s": 10.9, "b": false, "t": "is presented in the left part of Figure 1."}
+{"p": 3, "s": 10.9, "b": true, "t": "Task #1: Masked LM"}
+{"p": 3, "s": 10.9, "b": false, "t": "Intuitively, it is reason-"}
+{"p": 3, "s": 10.9, "b": false, "t": "able to believe that a deep bidirectional model is"}
+{"p": 3, "s": 10.9, "b": false, "t": "strictly more powerful than either a left-to-right"}
+{"p": 3, "s": 10.9, "b": false, "t": "model or the shallow concatenation of a left-to-"}
+{"p": 3, "s": 10.9, "b": false, "t": "right and a right-to-left model."}
+{"p": 3, "s": 10.9, "b": false, "t": "Unfortunately,"}
+{"p": 3, "s": 10.9, "b": false, "t": "standard conditional language models can only be"}
+{"p": 3, "s": 10.9, "b": false, "t": "trained left-to-right or right-to-left, since bidirec-"}
+{"p": 3, "s": 10.9, "b": false, "t": "tional conditioning would allow each word to in-"}
+{"p": 3, "s": 10.9, "b": false, "t": "directly “see itself”, and the model could trivially"}
+{"p": 3, "s": 10.9, "b": false, "t": "predict the target word in a multi-layered context."}
+{"p": 3, "s": 9.0, "b": false, "t": "former is often referred to as a “Transformer encoder” while"}
+{"p": 3, "s": 9.0, "b": false, "t": "the left-context-only version is referred to as a “Transformer"}
+{"p": 3, "s": 9.0, "b": false, "t": "decoder” since it can be used for text generation."}
+{"p": 3, "s": 10.9, "b": false, "t": "In order to train a deep bidirectional representa-"}
+{"p": 3, "s": 10.9, "b": false, "t": "tion, we simply mask some percentage of the input"}
+{"p": 3, "s": 10.9, "b": false, "t": "tokens at random, and then predict those masked"}
+{"p": 3, "s": 10.9, "b": false, "t": "tokens. We refer to this procedure as a “masked"}
+{"p": 3, "s": 10.9, "b": false, "t": "LM” (MLM), although it is often referred to as a"}
+{"p": 3, "s": 10.9, "b": false, "t": "Cloze task in the literature (Taylor, 1953). In this"}
+{"p": 3, "s": 10.9, "b": false, "t": "case, the ﬁnal hidden vectors corresponding to the"}
+{"p": 3, "s": 10.9, "b": false, "t": "mask tokens are fed into an output softmax over"}
+{"p": 3, "s": 10.9, "b": false, "t": "the vocabulary, as in a standard LM. In all of our"}
+{"p": 3, "s": 10.9, "b": false, "t": "experiments, we mask 15% of all WordPiece to-"}
+{"p": 3, "s": 10.9, "b": false, "t": "kens in each sequence at random. In contrast to"}
+{"p": 3, "s": 10.9, "b": false, "t": "denoising auto-encoders (Vincent et al., 2008), we"}
+{"p": 3, "s": 10.9, "b": false, "t": "only predict the masked words rather than recon-"}
+{"p": 3, "s": 10.9, "b": false, "t": "structing the entire input."}
+{"p": 3, "s": 10.9, "b": false, "t": "Although this allows us to obtain a bidirec-"}
+{"p": 3, "s": 10.9, "b": false, "t": "tional pre-trained model, a downside is that we"}
+{"p": 3, "s": 10.9, "b": false, "t": "are creating a mismatch between pre-training and"}
+{"p": 3, "s": 10.9, "b": false, "t": "ﬁne-tuning, since the [MASK] token does not ap-"}
+{"p": 3, "s": 10.9, "b": false, "t": "pear during ﬁne-tuning. To mitigate this, we do"}
+{"p": 3, "s": 10.9, "b": false, "t": "not always replace “masked” words with the ac-"}
+{"p": 3, "s": 10.9, "b": false, "t": "tual [MASK] token. The training data generator"}
+{"p": 3, "s": 10.9, "b": false, "t": "chooses 15% of the token positions at random for"}
+{"p": 3, "s": 10.9, "b": false, "t": "prediction. If the i-th token is chosen, we replace"}
+{"p": 3, "s": 10.9, "b": false, "t": "the i-th token with (1) the [MASK] token 80% of"}
+{"p": 3, "s": 10.9, "b": false, "t": "the time (2) a random token 10% of the time (3)"}
+{"p": 3, "s": 10.9, "b": false, "t": "the unchanged i-th token 10% of the time. Then,"}
+{"p": 3, "s": 10.9, "b": false, "t": "Ti will be used to predict the original token with"}
+{"p": 3, "s": 10.9, "b": false, "t": "cross entropy loss. We compare variations of this"}
+{"p": 3, "s": 10.9, "b": false, "t": "procedure in Appendix C.2."}
+{"p": 3, "s": 10.9, "b": true, "t": "Task #2:"}
+{"p": 3, "s": 10.9, "b": true, "t": "Next Sentence Prediction (NSP)"}
+{"p": 3, "s": 10.9, "b": false, "t": "Many important downstream tasks such as Ques-"}
+{"p": 3, "s": 10.9, "b": false, "t": "tion Answering (QA) and Natural Language Infer-"}
+{"p": 3, "s": 10.9, "b": false, "t": "ence (NLI) are based on understanding the rela-"}
+{"p": 3, "s": 10.9, "b": false, "t": "tionship between two sentences, which is not di-"}
+{"p": 3, "s": 10.9, "b": false, "t": "rectly captured by language modeling. In order"}
+{"p": 3, "s": 10.9, "b": false, "t": "to train a model that understands sentence rela-"}
+{"p": 3, "s": 10.9, "b": false, "t": "tionships, we pre-train for a binarized next sen-"}
+{"p": 3, "s": 10.9, "b": false, "t": "tence prediction task that can be trivially gener-"}
+{"p": 3, "s": 10.9, "b": false, "t": "ated from any monolingual corpus. Speciﬁcally,"}
+{"p": 3, "s": 10.9, "b": false, "t": "when choosing the sentences A and B for each pre-"}
+{"p": 3, "s": 10.9, "b": false, "t": "training example, 50% of the time B is the actual"}
+{"p": 3, "s": 10.9, "b": false, "t": "next sentence that follows A (labeled as IsNext),"}
+{"p": 3, "s": 10.9, "b": false, "t": "and 50% of the time it is a random sentence from"}
+{"p": 3, "s": 10.9, "b": false, "t": "the corpus (labeled as NotNext)."}
+{"p": 3, "s": 10.9, "b": false, "t": "As we show"}
+{"p": 3, "s": 10.9, "b": false, "t": "in Figure 1, C is used for next sentence predic-"}
+{"p": 3, "s": 10.9, "b": false, "t": "tion (NSP).5 Despite its simplicity, we demon-"}
+{"p": 3, "s": 10.9, "b": false, "t": "strate in Section 5.1 that pre-training towards this"}
+{"p": 3, "s": 10.9, "b": false, "t": "task is very beneﬁcial to both QA and NLI. 6"}
+{"p": 3, "s": 9.0, "b": false, "t": "5The ﬁnal model achieves 97%-98% accuracy on NSP."}
+{"p": 3, "s": 9.0, "b": false, "t": "6The vector C is not a meaningful sentence representation"}
+{"p": 3, "s": 9.0, "b": false, "t": "without ﬁne-tuning, since it was trained with NSP."}
+{"p": 4, "s": 4.8, "b": false, "t": "[CLS]"}
+{"p": 4, "s": 6.7, "b": false, "t": "he"}
+{"p": 4, "s": 6.7, "b": false, "t": "likes"}
+{"p": 4, "s": 6.7, "b": false, "t": "play"}
+{"p": 4, "s": 6.7, "b": false, "t": "##ing"}
+{"p": 4, "s": 5.3, "b": false, "t": "[SEP]"}
+{"p": 4, "s": 6.7, "b": false, "t": "my"}
+{"p": 4, "s": 6.7, "b": false, "t": "dog"}
+{"p": 4, "s": 6.7, "b": false, "t": "is"}
+{"p": 4, "s": 6.7, "b": false, "t": "cute"}
+{"p": 4, "s": 5.3, "b": false, "t": "[SEP]"}
+{"p": 4, "s": 6.7, "b": false, "t": "Input"}
+{"p": 4, "s": 4.5, "b": false, "t": "E[CLS]"}
+{"p": 4, "s": 4.5, "b": false, "t": "Ehe"}
+{"p": 4, "s": 4.5, "b": false, "t": "Elikes"}
+{"p": 4, "s": 4.5, "b": false, "t": "Eplay"}
+{"p": 4, "s": 4.5, "b": false, "t": "E##ing"}
+{"p": 4, "s": 4.5, "b": false, "t": "E[SEP]"}
+{"p": 4, "s": 4.5, "b": false, "t": "Emy"}
+{"p": 4, "s": 4.5, "b": false, "t": "Edog"}
+{"p": 4, "s": 4.5, "b": false, "t": "Eis"}
+{"p": 4, "s": 4.5, "b": false, "t": "Ecute"}
+{"p": 4, "s": 4.5, "b": false, "t": "E[SEP]"}
+{"p": 4, "s": 6.7, "b": false, "t": "Token"}
+{"p": 4, "s": 6.7, "b": false, "t": "Embeddings"}
+{"p": 4, "s": 8.7, "b": false, "t": "EA"}
+{"p": 4, "s": 8.7, "b": false, "t": "EB"}
+{"p": 4, "s": 8.7, "b": false, "t": "EB"}
+{"p": 4, "s": 8.7, "b": false, "t": "EB"}
+{"p": 4, "s": 8.7, "b": false, "t": "EB"}
+{"p": 4, "s": 8.7, "b": false, "t": "EB"}
+{"p": 4, "s": 8.7, "b": false, "t": "EA"}
+{"p": 4, "s": 8.7, "b": false, "t": "EA"}
+{"p": 4, "s": 8.7, "b": false, "t": "EA"}
+{"p": 4, "s": 8.7, "b": false, "t": "EA"}
+{"p": 4, "s": 8.7, "b": false, "t": "EA"}
+{"p": 4, "s": 6.7, "b": false, "t": "Segment"}
+{"p": 4, "s": 6.7, "b": false, "t": "Embeddings"}
+{"p": 4, "s": 8.7, "b": false, "t": "E0"}
+{"p": 4, "s": 8.7, "b": false, "t": "E6"}
+{"p": 4, "s": 8.7, "b": false, "t": "E7"}
+{"p": 4, "s": 8.7, "b": false, "t": "E8"}
+{"p": 4, "s": 8.7, "b": false, "t": "E9"}
+{"p": 4, "s": 5.8, "b": false, "t": "E10"}
+{"p": 4, "s": 8.7, "b": false, "t": "E1"}
+{"p": 4, "s": 8.7, "b": false, "t": "E2"}
+{"p": 4, "s": 8.7, "b": false, "t": "E3"}
+{"p": 4, "s": 8.7, "b": false, "t": "E4"}
+{"p": 4, "s": 8.7, "b": false, "t": "E5"}
+{"p": 4, "s": 6.7, "b": false, "t": "Position"}
+{"p": 4, "s": 6.7, "b": false, "t": "Embeddings"}
+{"p": 4, "s": 10.0, "b": false, "t": "Figure 2: BERT input representation. The input embeddings are the sum of the token embeddings, the segmenta-"}
+{"p": 4, "s": 10.0, "b": false, "t": "tion embeddings and the position embeddings."}
+{"p": 4, "s": 10.9, "b": false, "t": "The NSP task is closely related to representation-"}
+{"p": 4, "s": 10.9, "b": false, "t": "learning objectives used in Jernite et al. (2017) and"}
+{"p": 4, "s": 10.9, "b": false, "t": "Logeswaran and Lee (2018). However, in prior"}
+{"p": 4, "s": 10.9, "b": false, "t": "work, only sentence embeddings are transferred to"}
+{"p": 4, "s": 10.9, "b": false, "t": "down-stream tasks, where BERT transfers all pa-"}
+{"p": 4, "s": 10.9, "b": false, "t": "rameters to initialize end-task model parameters."}
+{"p": 4, "s": 10.9, "b": true, "t": "Pre-training data The pre-training procedure"}
+{"p": 4, "s": 10.9, "b": false, "t": "largely follows the existing literature on language"}
+{"p": 4, "s": 10.9, "b": false, "t": "model pre-training. For the pre-training corpus we"}
+{"p": 4, "s": 10.9, "b": false, "t": "use the BooksCorpus (800M words) (Zhu et al.,"}
+{"p": 4, "s": 10.9, "b": false, "t": "2015) and English Wikipedia (2,500M words)."}
+{"p": 4, "s": 10.9, "b": false, "t": "For Wikipedia we extract only the text passages"}
+{"p": 4, "s": 10.9, "b": false, "t": "and ignore lists, tables, and headers. It is criti-"}
+{"p": 4, "s": 10.9, "b": false, "t": "cal to use a document-level corpus rather than a"}
+{"p": 4, "s": 10.9, "b": false, "t": "shufﬂed sentence-level corpus such as the Billion"}
+{"p": 4, "s": 10.9, "b": false, "t": "Word Benchmark (Chelba et al., 2013) in order to"}
+{"p": 4, "s": 10.9, "b": false, "t": "extract long contiguous sequences."}
+{"p": 4, "s": 10.9, "b": true, "t": "3.2"}
+{"p": 4, "s": 10.9, "b": true, "t": "Fine-tuning BERT"}
+{"p": 4, "s": 10.9, "b": false, "t": "Fine-tuning is straightforward since the self-"}
+{"p": 4, "s": 10.9, "b": false, "t": "attention mechanism in the Transformer al-"}
+{"p": 4, "s": 10.9, "b": false, "t": "lows BERT to model many downstream tasks—"}
+{"p": 4, "s": 10.9, "b": false, "t": "whether they involve single text or text pairs—by"}
+{"p": 4, "s": 10.9, "b": false, "t": "swapping out the appropriate inputs and outputs."}
+{"p": 4, "s": 10.9, "b": false, "t": "For applications involving text pairs, a common"}
+{"p": 4, "s": 10.9, "b": false, "t": "pattern is to independently encode text pairs be-"}
+{"p": 4, "s": 10.9, "b": false, "t": "fore applying bidirectional cross attention, such"}
+{"p": 4, "s": 10.9, "b": false, "t": "as Parikh et al. (2016); Seo et al. (2017). BERT"}
+{"p": 4, "s": 10.9, "b": false, "t": "instead uses the self-attention mechanism to unify"}
+{"p": 4, "s": 10.9, "b": false, "t": "these two stages, as encoding a concatenated text"}
+{"p": 4, "s": 10.9, "b": false, "t": "pair with self-attention effectively includes bidi-"}
+{"p": 4, "s": 10.9, "b": false, "t": "rectional cross attention between two sentences."}
+{"p": 4, "s": 10.9, "b": false, "t": "For each task, we simply plug in the task-"}
+{"p": 4, "s": 10.9, "b": false, "t": "speciﬁc inputs and outputs into BERT and ﬁne-"}
+{"p": 4, "s": 10.9, "b": false, "t": "tune all the parameters end-to-end."}
+{"p": 4, "s": 10.9, "b": false, "t": "At the in-"}
+{"p": 4, "s": 10.9, "b": false, "t": "put, sentence A and sentence B from pre-training"}
+{"p": 4, "s": 10.9, "b": false, "t": "are analogous to (1) sentence pairs in paraphras-"}
+{"p": 4, "s": 10.9, "b": false, "t": "ing, (2) hypothesis-premise pairs in entailment, (3)"}
+{"p": 4, "s": 10.9, "b": false, "t": "question-passage pairs in question answering, and"}
+{"p": 4, "s": 10.9, "b": false, "t": "(4) a degenerate text-∅pair in text classiﬁcation"}
+{"p": 4, "s": 10.9, "b": false, "t": "or sequence tagging. At the output, the token rep-"}
+{"p": 4, "s": 10.9, "b": false, "t": "resentations are fed into an output layer for token-"}
+{"p": 4, "s": 10.9, "b": false, "t": "level tasks, such as sequence tagging or question"}
+{"p": 4, "s": 10.9, "b": false, "t": "answering, and the [CLS] representation is fed"}
+{"p": 4, "s": 10.9, "b": false, "t": "into an output layer for classiﬁcation, such as en-"}
+{"p": 4, "s": 10.9, "b": false, "t": "tailment or sentiment analysis."}
+{"p": 4, "s": 10.9, "b": false, "t": "Compared to pre-training, ﬁne-tuning is rela-"}
+{"p": 4, "s": 10.9, "b": false, "t": "tively inexpensive. All of the results in the pa-"}
+{"p": 4, "s": 10.9, "b": false, "t": "per can be replicated in at most 1 hour on a sin-"}
+{"p": 4, "s": 10.9, "b": false, "t": "gle Cloud TPU, or a few hours on a GPU, starting"}
+{"p": 4, "s": 10.9, "b": false, "t": "from the exact same pre-trained model.7 We de-"}
+{"p": 4, "s": 10.9, "b": false, "t": "scribe the task-speciﬁc details in the correspond-"}
+{"p": 4, "s": 10.9, "b": false, "t": "ing subsections of Section 4. More details can be"}
+{"p": 4, "s": 10.9, "b": false, "t": "found in Appendix A.5."}
+{"p": 4, "s": 12.0, "b": true, "t": "4"}
+{"p": 4, "s": 12.0, "b": true, "t": "Experiments"}
+{"p": 4, "s": 10.9, "b": false, "t": "In this section, we present BERT ﬁne-tuning re-"}
+{"p": 4, "s": 10.9, "b": false, "t": "sults on 11 NLP tasks."}
+{"p": 4, "s": 10.9, "b": true, "t": "4.1"}
+{"p": 4, "s": 10.9, "b": true, "t": "GLUE"}
+{"p": 4, "s": 10.9, "b": false, "t": "The General Language Understanding Evaluation"}
+{"p": 4, "s": 10.9, "b": false, "t": "(GLUE) benchmark (Wang et al., 2018a) is a col-"}
+{"p": 4, "s": 10.9, "b": false, "t": "lection of diverse natural language understanding"}
+{"p": 4, "s": 10.9, "b": false, "t": "tasks. Detailed descriptions of GLUE datasets are"}
+{"p": 4, "s": 10.9, "b": false, "t": "included in Appendix B.1."}
+{"p": 4, "s": 10.9, "b": false, "t": "To ﬁne-tune on GLUE, we represent the input"}
+{"p": 4, "s": 10.9, "b": false, "t": "sequence (for single sentence or sentence pairs)"}
+{"p": 4, "s": 10.9, "b": false, "t": "as described in Section 3, and use the ﬁnal hid-"}
+{"p": 4, "s": 10.9, "b": false, "t": "den vector C ∈RH corresponding to the ﬁrst"}
+{"p": 4, "s": 10.9, "b": false, "t": "input token ([CLS]) as the aggregate representa-"}
+{"p": 4, "s": 10.9, "b": false, "t": "tion. The only new parameters introduced during"}
+{"p": 4, "s": 10.9, "b": false, "t": "ﬁne-tuning are classiﬁcation layer weights W ∈"}
+{"p": 4, "s": 10.9, "b": false, "t": "RK×H, where K is the number of labels. We com-"}
+{"p": 4, "s": 10.9, "b": false, "t": "pute a standard classiﬁcation loss with C and W,"}
+{"p": 4, "s": 10.9, "b": false, "t": "i.e., log(softmax(CW T ))."}
+{"p": 4, "s": 9.0, "b": false, "t": "7For example, the BERT SQuAD model can be trained in"}
+{"p": 4, "s": 9.0, "b": false, "t": "around 30 minutes on a single Cloud TPU to achieve a Dev"}
+{"p": 4, "s": 9.0, "b": false, "t": "F1 score of 91.0%."}
+{"p": 4, "s": 9.0, "b": false, "t": "8See (10) in https://gluebenchmark.com/faq."}
+{"p": 5, "s": 9.0, "b": false, "t": "System"}
+{"p": 5, "s": 9.0, "b": false, "t": "MNLI-(m/mm)"}
+{"p": 5, "s": 9.0, "b": false, "t": "QQP"}
+{"p": 5, "s": 9.0, "b": false, "t": "QNLI"}
+{"p": 5, "s": 9.0, "b": false, "t": "SST-2"}
+{"p": 5, "s": 9.0, "b": false, "t": "CoLA"}
+{"p": 5, "s": 9.0, "b": false, "t": "STS-B"}
+{"p": 5, "s": 9.0, "b": false, "t": "MRPC"}
+{"p": 5, "s": 9.0, "b": false, "t": "RTE"}
+{"p": 5, "s": 9.0, "b": true, "t": "Average"}
+{"p": 5, "s": 9.0, "b": false, "t": "392k"}
+{"p": 5, "s": 9.0, "b": false, "t": "363k"}
+{"p": 5, "s": 9.0, "b": false, "t": "108k"}
+{"p": 5, "s": 9.0, "b": false, "t": "67k"}
+{"p": 5, "s": 9.0, "b": false, "t": "8.5k"}
+{"p": 5, "s": 9.0, "b": false, "t": "5.7k"}
+{"p": 5, "s": 9.0, "b": false, "t": "3.5k"}
+{"p": 5, "s": 9.0, "b": false, "t": "2.5k"}
+{"p": 5, "s": 9.0, "b": false, "t": "-"}
+{"p": 5, "s": 9.0, "b": false, "t": "Pre-OpenAI SOTA"}
+{"p": 5, "s": 9.0, "b": false, "t": "80.6/80.1"}
+{"p": 5, "s": 9.0, "b": false, "t": "66.1"}
+{"p": 5, "s": 9.0, "b": false, "t": "82.3"}
+{"p": 5, "s": 9.0, "b": false, "t": "93.2"}
+{"p": 5, "s": 9.0, "b": false, "t": "35.0"}
+{"p": 5, "s": 9.0, "b": false, "t": "81.0"}
+{"p": 5, "s": 9.0, "b": false, "t": "86.0"}
+{"p": 5, "s": 9.0, "b": false, "t": "61.7"}
+{"p": 5, "s": 9.0, "b": false, "t": "74.0"}
+{"p": 5, "s": 9.0, "b": false, "t": "BiLSTM+ELMo+Attn"}
+{"p": 5, "s": 9.0, "b": false, "t": "76.4/76.1"}
+{"p": 5, "s": 9.0, "b": false, "t": "64.8"}
+{"p": 5, "s": 9.0, "b": false, "t": "79.8"}
+{"p": 5, "s": 9.0, "b": false, "t": "90.4"}
+{"p": 5, "s": 9.0, "b": false, "t": "36.0"}
+{"p": 5, "s": 9.0, "b": false, "t": "73.3"}
+{"p": 5, "s": 9.0, "b": false, "t": "84.9"}
+{"p": 5, "s": 9.0, "b": false, "t": "56.8"}
+{"p": 5, "s": 9.0, "b": false, "t": "71.0"}
+{"p": 5, "s": 9.0, "b": false, "t": "OpenAI GPT"}
+{"p": 5, "s": 9.0, "b": false, "t": "82.1/81.4"}
+{"p": 5, "s": 9.0, "b": false, "t": "70.3"}
+{"p": 5, "s": 9.0, "b": false, "t": "87.4"}
+{"p": 5, "s": 9.0, "b": false, "t": "91.3"}
+{"p": 5, "s": 9.0, "b": false, "t": "45.4"}
+{"p": 5, "s": 9.0, "b": false, "t": "80.0"}
+{"p": 5, "s": 9.0, "b": false, "t": "82.3"}
+{"p": 5, "s": 9.0, "b": false, "t": "56.0"}
+{"p": 5, "s": 9.0, "b": false, "t": "75.1"}
+{"p": 5, "s": 9.0, "b": false, "t": "BERTBASE"}
+{"p": 5, "s": 9.0, "b": false, "t": "84.6/83.4"}
+{"p": 5, "s": 9.0, "b": false, "t": "71.2"}
+{"p": 5, "s": 9.0, "b": false, "t": "90.5"}
+{"p": 5, "s": 9.0, "b": false, "t": "93.5"}
+{"p": 5, "s": 9.0, "b": false, "t": "52.1"}
+{"p": 5, "s": 9.0, "b": false, "t": "85.8"}
+{"p": 5, "s": 9.0, "b": false, "t": "88.9"}
+{"p": 5, "s": 9.0, "b": false, "t": "66.4"}
+{"p": 5, "s": 9.0, "b": false, "t": "79.6"}
+{"p": 5, "s": 6.0, "b": false, "t": "BERTLARGE"}
+{"p": 5, "s": 9.0, "b": true, "t": "86.7/85.9"}
+{"p": 5, "s": 9.0, "b": true, "t": "72.1"}
+{"p": 5, "s": 9.0, "b": true, "t": "92.7"}
+{"p": 5, "s": 9.0, "b": true, "t": "94.9"}
+{"p": 5, "s": 9.0, "b": true, "t": "60.5"}
+{"p": 5, "s": 9.0, "b": true, "t": "86.5"}
+{"p": 5, "s": 9.0, "b": true, "t": "89.3"}
+{"p": 5, "s": 9.0, "b": true, "t": "70.1"}
+{"p": 5, "s": 9.0, "b": true, "t": "82.1"}
+{"p": 5, "s": 10.0, "b": false, "t": "Table 1: GLUE Test results, scored by the evaluation server (https://gluebenchmark.com/leaderboard)."}
+{"p": 5, "s": 10.0, "b": false, "t": "The number below each task denotes the number of training examples. The “Average” column is slightly different"}
+{"p": 5, "s": 10.0, "b": false, "t": "than the ofﬁcial GLUE score, since we exclude the problematic WNLI set.8 BERT and OpenAI GPT are single-"}
+{"p": 5, "s": 10.0, "b": false, "t": "model, single task. F1 scores are reported for QQP and MRPC, Spearman correlations are reported for STS-B, and"}
+{"p": 5, "s": 10.0, "b": false, "t": "accuracy scores are reported for the other tasks. We exclude entries that use BERT as one of their components."}
+{"p": 5, "s": 10.9, "b": false, "t": "We use a batch size of 32 and ﬁne-tune for 3"}
+{"p": 5, "s": 10.9, "b": false, "t": "epochs over the data for all GLUE tasks. For each"}
+{"p": 5, "s": 10.9, "b": false, "t": "task, we selected the best ﬁne-tuning learning rate"}
+{"p": 5, "s": 10.9, "b": false, "t": "(among 5e-5, 4e-5, 3e-5, and 2e-5) on the Dev set."}
+{"p": 5, "s": 10.9, "b": false, "t": "Additionally, for BERTLARGE we found that ﬁne-"}
+{"p": 5, "s": 10.9, "b": false, "t": "tuning was sometimes unstable on small datasets,"}
+{"p": 5, "s": 10.9, "b": false, "t": "so we ran several random restarts and selected the"}
+{"p": 5, "s": 10.9, "b": false, "t": "best model on the Dev set. With random restarts,"}
+{"p": 5, "s": 10.9, "b": false, "t": "we use the same pre-trained checkpoint but per-"}
+{"p": 5, "s": 10.9, "b": false, "t": "form different ﬁne-tuning data shufﬂing and clas-"}
+{"p": 5, "s": 10.9, "b": false, "t": "siﬁer layer initialization.9"}
+{"p": 5, "s": 10.9, "b": false, "t": "Results are presented in Table 1."}
+{"p": 5, "s": 10.9, "b": false, "t": "Both"}
+{"p": 5, "s": 10.9, "b": false, "t": "BERTBASE and BERTLARGE outperform all sys-"}
+{"p": 5, "s": 10.9, "b": false, "t": "tems on all tasks by a substantial margin, obtaining"}
+{"p": 5, "s": 10.9, "b": false, "t": "4.5% and 7.0% respective average accuracy im-"}
+{"p": 5, "s": 10.9, "b": false, "t": "provement over the prior state of the art. Note that"}
+{"p": 5, "s": 10.9, "b": false, "t": "BERTBASE and OpenAI GPT are nearly identical"}
+{"p": 5, "s": 10.9, "b": false, "t": "in terms of model architecture apart from the at-"}
+{"p": 5, "s": 10.9, "b": false, "t": "tention masking. For the largest and most widely"}
+{"p": 5, "s": 10.9, "b": false, "t": "reported GLUE task, MNLI, BERT obtains a 4.6%"}
+{"p": 5, "s": 10.9, "b": false, "t": "absolute accuracy improvement. On the ofﬁcial"}
+{"p": 5, "s": 10.9, "b": false, "t": "GLUE leaderboard10, BERTLARGE obtains a score"}
+{"p": 5, "s": 10.9, "b": false, "t": "of 80.5, compared to OpenAI GPT, which obtains"}
+{"p": 5, "s": 10.9, "b": false, "t": "72.8 as of the date of writing."}
+{"p": 5, "s": 10.9, "b": false, "t": "We ﬁnd that BERTLARGE signiﬁcantly outper-"}
+{"p": 5, "s": 10.9, "b": false, "t": "forms BERTBASE across all tasks, especially those"}
+{"p": 5, "s": 10.9, "b": false, "t": "with very little training data. The effect of model"}
+{"p": 5, "s": 10.9, "b": false, "t": "size is explored more thoroughly in Section 5.2."}
+{"p": 5, "s": 10.9, "b": true, "t": "4.2"}
+{"p": 5, "s": 10.9, "b": true, "t": "SQuAD v1.1"}
+{"p": 5, "s": 10.9, "b": false, "t": "The"}
+{"p": 5, "s": 10.9, "b": false, "t": "Stanford"}
+{"p": 5, "s": 10.9, "b": false, "t": "Question"}
+{"p": 5, "s": 10.9, "b": false, "t": "Answering"}
+{"p": 5, "s": 10.9, "b": false, "t": "Dataset"}
+{"p": 5, "s": 10.9, "b": false, "t": "(SQuAD v1.1) is a collection of 100k crowd-"}
+{"p": 5, "s": 10.9, "b": false, "t": "sourced question/answer pairs (Rajpurkar et al.,"}
+{"p": 5, "s": 10.9, "b": false, "t": "2016)."}
+{"p": 5, "s": 10.9, "b": false, "t": "Given a question and a passage from"}
+{"p": 5, "s": 9.0, "b": false, "t": "9The GLUE data set distribution does not include the Test"}
+{"p": 5, "s": 9.0, "b": false, "t": "labels, and we only made a single GLUE evaluation server"}
+{"p": 5, "s": 9.0, "b": false, "t": "submission for each of BERTBASE and BERTLARGE."}
+{"p": 5, "s": 9.0, "b": false, "t": "10https://gluebenchmark.com/leaderboard"}
+{"p": 5, "s": 10.9, "b": false, "t": "Wikipedia containing the answer, the task is to"}
+{"p": 5, "s": 10.9, "b": false, "t": "predict the answer text span in the passage."}
+{"p": 5, "s": 10.9, "b": false, "t": "As shown in Figure 1, in the question answer-"}
+{"p": 5, "s": 10.9, "b": false, "t": "ing task, we represent the input question and pas-"}
+{"p": 5, "s": 10.9, "b": false, "t": "sage as a single packed sequence, with the ques-"}
+{"p": 5, "s": 10.9, "b": false, "t": "tion using the A embedding and the passage using"}
+{"p": 5, "s": 10.9, "b": false, "t": "the B embedding. We only introduce a start vec-"}
+{"p": 5, "s": 10.9, "b": false, "t": "tor S ∈RH and an end vector E ∈RH during"}
+{"p": 5, "s": 10.9, "b": false, "t": "ﬁne-tuning. The probability of word i being the"}
+{"p": 5, "s": 10.9, "b": false, "t": "start of the answer span is computed as a dot prod-"}
+{"p": 5, "s": 10.9, "b": false, "t": "uct between Ti and S followed by a softmax over"}
+{"p": 5, "s": 10.9, "b": false, "t": "all of the words in the paragraph: Pi ="}
+{"p": 5, "s": 6.0, "b": false, "t": "eS·Ti"}
+{"p": 5, "s": 8.0, "b": false, "t": "P"}
+{"p": 5, "s": 6.0, "b": false, "t": "j eS·Tj ."}
+{"p": 5, "s": 10.9, "b": false, "t": "The analogous formula is used for the end of the"}
+{"p": 5, "s": 10.9, "b": false, "t": "answer span. The score of a candidate span from"}
+{"p": 5, "s": 10.9, "b": false, "t": "position i to position j is deﬁned as S·Ti + E·Tj,"}
+{"p": 5, "s": 10.9, "b": false, "t": "and the maximum scoring span where j ≥i is"}
+{"p": 5, "s": 10.9, "b": false, "t": "used as a prediction. The training objective is the"}
+{"p": 5, "s": 10.9, "b": false, "t": "sum of the log-likelihoods of the correct start and"}
+{"p": 5, "s": 10.9, "b": false, "t": "end positions. We ﬁne-tune for 3 epochs with a"}
+{"p": 5, "s": 10.9, "b": false, "t": "learning rate of 5e-5 and a batch size of 32."}
+{"p": 5, "s": 10.9, "b": false, "t": "Table 2 shows top leaderboard entries as well"}
+{"p": 5, "s": 10.9, "b": false, "t": "as results from top published systems (Seo et al.,"}
+{"p": 5, "s": 10.9, "b": false, "t": "2017; Clark and Gardner, 2018; Peters et al.,"}
+{"p": 5, "s": 10.9, "b": false, "t": "2018a; Hu et al., 2018). The top results from the"}
+{"p": 5, "s": 10.9, "b": false, "t": "SQuAD leaderboard do not have up-to-date public"}
+{"p": 5, "s": 10.9, "b": false, "t": "system descriptions available,11 and are allowed to"}
+{"p": 5, "s": 10.9, "b": false, "t": "use any public data when training their systems."}
+{"p": 5, "s": 10.9, "b": false, "t": "We therefore use modest data augmentation in"}
+{"p": 5, "s": 10.9, "b": false, "t": "our system by ﬁrst ﬁne-tuning on TriviaQA (Joshi"}
+{"p": 5, "s": 10.9, "b": false, "t": "et al., 2017) befor ﬁne-tuning on SQuAD."}
+{"p": 5, "s": 10.9, "b": false, "t": "Our best performing system outperforms the top"}
+{"p": 5, "s": 10.9, "b": false, "t": "leaderboard system by +1.5 F1 in ensembling and"}
+{"p": 5, "s": 10.9, "b": false, "t": "+1.3 F1 as a single system. In fact, our single"}
+{"p": 5, "s": 10.9, "b": false, "t": "BERT model outperforms the top ensemble sys-"}
+{"p": 5, "s": 10.9, "b": false, "t": "tem in terms of F1 score. Without TriviaQA ﬁne-"}
+{"p": 5, "s": 9.0, "b": false, "t": "11QANet is described in Yu et al. (2018), but the system"}
+{"p": 5, "s": 9.0, "b": false, "t": "has improved substantially after publication."}
+{"p": 6, "s": 9.0, "b": false, "t": "System"}
+{"p": 6, "s": 9.0, "b": false, "t": "Dev"}
+{"p": 6, "s": 9.0, "b": false, "t": "Test"}
+{"p": 6, "s": 9.0, "b": false, "t": "EM"}
+{"p": 6, "s": 9.0, "b": false, "t": "F1"}
+{"p": 6, "s": 9.0, "b": false, "t": "EM"}
+{"p": 6, "s": 9.0, "b": false, "t": "F1"}
+{"p": 6, "s": 9.0, "b": false, "t": "Top Leaderboard Systems (Dec 10th, 2018)"}
+{"p": 6, "s": 9.0, "b": false, "t": "Human"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "82.3 91.2"}
+{"p": 6, "s": 9.0, "b": false, "t": "#1 Ensemble - nlnet"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "86.0 91.7"}
+{"p": 6, "s": 9.0, "b": false, "t": "#2 Ensemble - QANet"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "84.5 90.5"}
+{"p": 6, "s": 9.0, "b": false, "t": "Published"}
+{"p": 6, "s": 9.0, "b": false, "t": "BiDAF+ELMo (Single)"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "85.6"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "85.8"}
+{"p": 6, "s": 9.0, "b": false, "t": "R.M. Reader (Ensemble)"}
+{"p": 6, "s": 9.0, "b": false, "t": "81.2 87.9 82.3 88.5"}
+{"p": 6, "s": 9.0, "b": false, "t": "Ours"}
+{"p": 6, "s": 9.0, "b": false, "t": "BERTBASE (Single)"}
+{"p": 6, "s": 9.0, "b": false, "t": "80.8 88.5"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "BERTLARGE (Single)"}
+{"p": 6, "s": 9.0, "b": false, "t": "84.1 90.9"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "BERTLARGE (Ensemble)"}
+{"p": 6, "s": 9.0, "b": false, "t": "85.8 91.8"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "BERTLARGE (Sgl.+TriviaQA)"}
+{"p": 6, "s": 9.0, "b": true, "t": "84.2 91.1 85.1 91.8"}
+{"p": 6, "s": 9.0, "b": true, "t": "BERTLARGE (Ens.+TriviaQA) 86.2 92.2 87.4 93.2"}
+{"p": 6, "s": 10.0, "b": false, "t": "Table 2:"}
+{"p": 6, "s": 10.0, "b": false, "t": "SQuAD 1.1 results. The BERT ensemble"}
+{"p": 6, "s": 10.0, "b": false, "t": "is 7x systems which use different pre-training check-"}
+{"p": 6, "s": 10.0, "b": false, "t": "points and ﬁne-tuning seeds."}
+{"p": 6, "s": 9.0, "b": false, "t": "System"}
+{"p": 6, "s": 9.0, "b": false, "t": "Dev"}
+{"p": 6, "s": 9.0, "b": false, "t": "Test"}
+{"p": 6, "s": 9.0, "b": false, "t": "EM"}
+{"p": 6, "s": 9.0, "b": false, "t": "F1"}
+{"p": 6, "s": 9.0, "b": false, "t": "EM"}
+{"p": 6, "s": 9.0, "b": false, "t": "F1"}
+{"p": 6, "s": 9.0, "b": false, "t": "Top Leaderboard Systems (Dec 10th, 2018)"}
+{"p": 6, "s": 9.0, "b": false, "t": "Human"}
+{"p": 6, "s": 9.0, "b": false, "t": "86.3 89.0 86.9 89.5"}
+{"p": 6, "s": 9.0, "b": false, "t": "#1 Single - MIR-MRC (F-Net)"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "74.8 78.0"}
+{"p": 6, "s": 9.0, "b": false, "t": "#2 Single - nlnet"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "74.2 77.1"}
+{"p": 6, "s": 9.0, "b": false, "t": "Published"}
+{"p": 6, "s": 9.0, "b": false, "t": "unet (Ensemble)"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "71.4 74.9"}
+{"p": 6, "s": 9.0, "b": false, "t": "SLQA+ (Single)"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "71.4 74.4"}
+{"p": 6, "s": 9.0, "b": false, "t": "Ours"}
+{"p": 6, "s": 9.0, "b": false, "t": "BERTLARGE (Single)"}
+{"p": 6, "s": 9.0, "b": false, "t": "78.7 81.9 80.0 83.1"}
+{"p": 6, "s": 10.0, "b": false, "t": "Table 3: SQuAD 2.0 results. We exclude entries that"}
+{"p": 6, "s": 10.0, "b": false, "t": "use BERT as one of their components."}
+{"p": 6, "s": 10.9, "b": false, "t": "tuning data, we only lose 0.1-0.4 F1, still outper-"}
+{"p": 6, "s": 10.9, "b": false, "t": "forming all existing systems by a wide margin.12"}
+{"p": 6, "s": 10.9, "b": true, "t": "4.3"}
+{"p": 6, "s": 10.9, "b": true, "t": "SQuAD v2.0"}
+{"p": 6, "s": 10.9, "b": false, "t": "The SQuAD 2.0 task extends the SQuAD 1.1"}
+{"p": 6, "s": 10.9, "b": false, "t": "problem deﬁnition by allowing for the possibility"}
+{"p": 6, "s": 10.9, "b": false, "t": "that no short answer exists in the provided para-"}
+{"p": 6, "s": 10.9, "b": false, "t": "graph, making the problem more realistic."}
+{"p": 6, "s": 10.9, "b": false, "t": "We use a simple approach to extend the SQuAD"}
+{"p": 6, "s": 10.9, "b": false, "t": "v1.1 BERT model for this task. We treat ques-"}
+{"p": 6, "s": 10.9, "b": false, "t": "tions that do not have an answer as having an an-"}
+{"p": 6, "s": 10.9, "b": false, "t": "swer span with start and end at the [CLS] to-"}
+{"p": 6, "s": 10.9, "b": false, "t": "ken. The probability space for the start and end"}
+{"p": 6, "s": 10.9, "b": false, "t": "answer span positions is extended to include the"}
+{"p": 6, "s": 10.9, "b": false, "t": "position of the [CLS] token. For prediction, we"}
+{"p": 6, "s": 10.9, "b": false, "t": "compare the score of the no-answer span: snull ="}
+{"p": 6, "s": 10.9, "b": false, "t": "S·C + E·C to the score of the best non-null span"}
+{"p": 6, "s": 9.0, "b": false, "t": "12The TriviaQA data we used consists of paragraphs from"}
+{"p": 6, "s": 9.0, "b": false, "t": "TriviaQA-Wiki formed of the ﬁrst 400 tokens in documents,"}
+{"p": 6, "s": 9.0, "b": false, "t": "that contain at least one of the provided possible answers."}
+{"p": 6, "s": 9.0, "b": false, "t": "System"}
+{"p": 6, "s": 9.0, "b": false, "t": "Dev"}
+{"p": 6, "s": 9.0, "b": false, "t": "Test"}
+{"p": 6, "s": 9.0, "b": false, "t": "ESIM+GloVe"}
+{"p": 6, "s": 9.0, "b": false, "t": "51.9 52.7"}
+{"p": 6, "s": 9.0, "b": false, "t": "ESIM+ELMo"}
+{"p": 6, "s": 9.0, "b": false, "t": "59.1 59.2"}
+{"p": 6, "s": 9.0, "b": false, "t": "OpenAI GPT"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "78.0"}
+{"p": 6, "s": 9.0, "b": false, "t": "BERTBASE"}
+{"p": 6, "s": 9.0, "b": false, "t": "81.6"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 6.0, "b": false, "t": "BERTLARGE"}
+{"p": 6, "s": 9.0, "b": true, "t": "86.6 86.3"}
+{"p": 6, "s": 9.0, "b": false, "t": "Human (expert)†"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "85.0"}
+{"p": 6, "s": 9.0, "b": false, "t": "Human (5 annotations)†"}
+{"p": 6, "s": 9.0, "b": false, "t": "-"}
+{"p": 6, "s": 9.0, "b": false, "t": "88.0"}
+{"p": 6, "s": 10.0, "b": false, "t": "Table 4: SWAG Dev and Test accuracies. †Human per-"}
+{"p": 6, "s": 10.0, "b": false, "t": "formance is measured with 100 samples, as reported in"}
+{"p": 6, "s": 10.0, "b": false, "t": "the SWAG paper."}
+{"p": 6, "s": 10.9, "b": false, "t": "ˆ"}
+{"p": 6, "s": 10.9, "b": false, "t": "si,j = maxj≥iS·Ti + E·Tj. We predict a non-null"}
+{"p": 6, "s": 10.9, "b": false, "t": "answer when ˆ"}
+{"p": 6, "s": 10.9, "b": false, "t": "si,j > snull + τ, where the thresh-"}
+{"p": 6, "s": 10.9, "b": false, "t": "old τ is selected on the dev set to maximize F1."}
+{"p": 6, "s": 10.9, "b": false, "t": "We did not use TriviaQA data for this model. We"}
+{"p": 6, "s": 10.9, "b": false, "t": "ﬁne-tuned for 2 epochs with a learning rate of 5e-5"}
+{"p": 6, "s": 10.9, "b": false, "t": "and a batch size of 48."}
+{"p": 6, "s": 10.9, "b": false, "t": "The results compared to prior leaderboard en-"}
+{"p": 6, "s": 10.9, "b": false, "t": "tries and top published work (Sun et al., 2018;"}
+{"p": 6, "s": 10.9, "b": false, "t": "Wang et al., 2018b) are shown in Table 3, exclud-"}
+{"p": 6, "s": 10.9, "b": false, "t": "ing systems that use BERT as one of their com-"}
+{"p": 6, "s": 10.9, "b": false, "t": "ponents. We observe a +5.1 F1 improvement over"}
+{"p": 6, "s": 10.9, "b": false, "t": "the previous best system."}
+{"p": 6, "s": 10.9, "b": true, "t": "4.4"}
+{"p": 6, "s": 10.9, "b": true, "t": "SWAG"}
+{"p": 6, "s": 10.9, "b": false, "t": "The Situations With Adversarial Generations"}
+{"p": 6, "s": 10.9, "b": false, "t": "(SWAG) dataset contains 113k sentence-pair com-"}
+{"p": 6, "s": 10.9, "b": false, "t": "pletion examples that evaluate grounded common-"}
+{"p": 6, "s": 10.9, "b": false, "t": "sense inference (Zellers et al., 2018). Given a sen-"}
+{"p": 6, "s": 10.9, "b": false, "t": "tence, the task is to choose the most plausible con-"}
+{"p": 6, "s": 10.9, "b": false, "t": "tinuation among four choices."}
+{"p": 6, "s": 10.9, "b": false, "t": "When ﬁne-tuning on the SWAG dataset, we"}
+{"p": 6, "s": 10.9, "b": false, "t": "construct four input sequences, each containing"}
+{"p": 6, "s": 10.9, "b": false, "t": "the concatenation of the given sentence (sentence"}
+{"p": 6, "s": 10.9, "b": false, "t": "A) and a possible continuation (sentence B). The"}
+{"p": 6, "s": 10.9, "b": false, "t": "only task-speciﬁc parameters introduced is a vec-"}
+{"p": 6, "s": 10.9, "b": false, "t": "tor whose dot product with the [CLS] token rep-"}
+{"p": 6, "s": 10.9, "b": false, "t": "resentation C denotes a score for each choice"}
+{"p": 6, "s": 10.9, "b": false, "t": "which is normalized with a softmax layer."}
+{"p": 6, "s": 10.9, "b": false, "t": "We ﬁne-tune the model for 3 epochs with a"}
+{"p": 6, "s": 10.9, "b": false, "t": "learning rate of 2e-5 and a batch size of 16. Re-"}
+{"p": 6, "s": 10.9, "b": false, "t": "sults are presented in Table 4. BERTLARGE out-"}
+{"p": 6, "s": 10.9, "b": false, "t": "performs the authors’ baseline ESIM+ELMo sys-"}
+{"p": 6, "s": 10.9, "b": false, "t": "tem by +27.1% and OpenAI GPT by 8.3%."}
+{"p": 6, "s": 12.0, "b": true, "t": "5"}
+{"p": 6, "s": 12.0, "b": true, "t": "Ablation Studies"}
+{"p": 6, "s": 10.9, "b": false, "t": "In this section, we perform ablation experiments"}
+{"p": 6, "s": 10.9, "b": false, "t": "over a number of facets of BERT in order to better"}
+{"p": 6, "s": 10.9, "b": false, "t": "understand their relative importance. Additional"}
+{"p": 7, "s": 9.0, "b": false, "t": "Dev Set"}
+{"p": 7, "s": 9.0, "b": false, "t": "Tasks"}
+{"p": 7, "s": 9.0, "b": false, "t": "MNLI-m QNLI MRPC SST-2 SQuAD"}
+{"p": 7, "s": 9.0, "b": false, "t": "(Acc)"}
+{"p": 7, "s": 9.0, "b": false, "t": "(Acc)"}
+{"p": 7, "s": 9.0, "b": false, "t": "(Acc)"}
+{"p": 7, "s": 9.0, "b": false, "t": "(Acc)"}
+{"p": 7, "s": 9.0, "b": false, "t": "(F1)"}
+{"p": 7, "s": 9.0, "b": false, "t": "BERTBASE"}
+{"p": 7, "s": 9.0, "b": false, "t": "84.4"}
+{"p": 7, "s": 9.0, "b": false, "t": "88.4"}
+{"p": 7, "s": 9.0, "b": false, "t": "86.7"}
+{"p": 7, "s": 9.0, "b": false, "t": "92.7"}
+{"p": 7, "s": 9.0, "b": false, "t": "88.5"}
+{"p": 7, "s": 9.0, "b": false, "t": "No NSP"}
+{"p": 7, "s": 9.0, "b": false, "t": "83.9"}
+{"p": 7, "s": 9.0, "b": false, "t": "84.9"}
+{"p": 7, "s": 9.0, "b": false, "t": "86.5"}
+{"p": 7, "s": 9.0, "b": false, "t": "92.6"}
+{"p": 7, "s": 9.0, "b": false, "t": "87.9"}
+{"p": 7, "s": 9.0, "b": false, "t": "LTR & No NSP"}
+{"p": 7, "s": 9.0, "b": false, "t": "82.1"}
+{"p": 7, "s": 9.0, "b": false, "t": "84.3"}
+{"p": 7, "s": 9.0, "b": false, "t": "77.5"}
+{"p": 7, "s": 9.0, "b": false, "t": "92.1"}
+{"p": 7, "s": 9.0, "b": false, "t": "77.8"}
+{"p": 7, "s": 9.0, "b": false, "t": "+ BiLSTM"}
+{"p": 7, "s": 9.0, "b": false, "t": "82.1"}
+{"p": 7, "s": 9.0, "b": false, "t": "84.1"}
+{"p": 7, "s": 9.0, "b": false, "t": "75.7"}
+{"p": 7, "s": 9.0, "b": false, "t": "91.6"}
+{"p": 7, "s": 9.0, "b": false, "t": "84.9"}
+{"p": 7, "s": 10.0, "b": false, "t": "Table 5: Ablation over the pre-training tasks using the"}
+{"p": 7, "s": 10.0, "b": false, "t": "BERTBASE architecture. “No NSP” is trained without"}
+{"p": 7, "s": 10.0, "b": false, "t": "the next sentence prediction task. “LTR & No NSP” is"}
+{"p": 7, "s": 10.0, "b": false, "t": "trained as a left-to-right LM without the next sentence"}
+{"p": 7, "s": 10.0, "b": false, "t": "prediction, like OpenAI GPT. “+ BiLSTM” adds a ran-"}
+{"p": 7, "s": 10.0, "b": false, "t": "domly initialized BiLSTM on top of the “LTR + No"}
+{"p": 7, "s": 10.0, "b": false, "t": "NSP” model during ﬁne-tuning."}
+{"p": 7, "s": 10.9, "b": false, "t": "ablation studies can be found in Appendix C."}
+{"p": 7, "s": 10.9, "b": true, "t": "5.1"}
+{"p": 7, "s": 10.9, "b": true, "t": "Effect of Pre-training Tasks"}
+{"p": 7, "s": 10.9, "b": false, "t": "We demonstrate the importance of the deep bidi-"}
+{"p": 7, "s": 10.9, "b": false, "t": "rectionality of BERT by evaluating two pre-"}
+{"p": 7, "s": 10.9, "b": false, "t": "training objectives using exactly the same pre-"}
+{"p": 7, "s": 10.9, "b": false, "t": "training data, ﬁne-tuning scheme, and hyperpa-"}
+{"p": 7, "s": 10.9, "b": false, "t": "rameters as BERTBASE:"}
+{"p": 7, "s": 10.9, "b": true, "t": "No NSP: A bidirectional model which is trained"}
+{"p": 7, "s": 10.9, "b": false, "t": "using the “masked LM” (MLM) but without the"}
+{"p": 7, "s": 10.9, "b": false, "t": "“next sentence prediction” (NSP) task."}
+{"p": 7, "s": 10.9, "b": true, "t": "LTR & No NSP: A left-context-only model which"}
+{"p": 7, "s": 10.9, "b": false, "t": "is trained using a standard Left-to-Right (LTR)"}
+{"p": 7, "s": 10.9, "b": false, "t": "LM, rather than an MLM. The left-only constraint"}
+{"p": 7, "s": 10.9, "b": false, "t": "was also applied at ﬁne-tuning, because removing"}
+{"p": 7, "s": 10.9, "b": false, "t": "it introduced a pre-train/ﬁne-tune mismatch that"}
+{"p": 7, "s": 10.9, "b": false, "t": "degraded downstream performance. Additionally,"}
+{"p": 7, "s": 10.9, "b": false, "t": "this model was pre-trained without the NSP task."}
+{"p": 7, "s": 10.9, "b": false, "t": "This is directly comparable to OpenAI GPT, but"}
+{"p": 7, "s": 10.9, "b": false, "t": "using our larger training dataset, our input repre-"}
+{"p": 7, "s": 10.9, "b": false, "t": "sentation, and our ﬁne-tuning scheme."}
+{"p": 7, "s": 10.9, "b": false, "t": "We ﬁrst examine the impact brought by the NSP"}
+{"p": 7, "s": 10.9, "b": false, "t": "task."}
+{"p": 7, "s": 10.9, "b": false, "t": "In Table 5, we show that removing NSP"}
+{"p": 7, "s": 10.9, "b": false, "t": "hurts performance signiﬁcantly on QNLI, MNLI,"}
+{"p": 7, "s": 10.9, "b": false, "t": "and SQuAD 1.1. Next, we evaluate the impact"}
+{"p": 7, "s": 10.9, "b": false, "t": "of training bidirectional representations by com-"}
+{"p": 7, "s": 10.9, "b": false, "t": "paring “No NSP” to “LTR & No NSP”. The LTR"}
+{"p": 7, "s": 10.9, "b": false, "t": "model performs worse than the MLM model on all"}
+{"p": 7, "s": 10.9, "b": false, "t": "tasks, with large drops on MRPC and SQuAD."}
+{"p": 7, "s": 10.9, "b": false, "t": "For SQuAD it is intuitively clear that a LTR"}
+{"p": 7, "s": 10.9, "b": false, "t": "model will perform poorly at token predictions,"}
+{"p": 7, "s": 10.9, "b": false, "t": "since the token-level hidden states have no right-"}
+{"p": 7, "s": 10.9, "b": false, "t": "side context. In order to make a good faith at-"}
+{"p": 7, "s": 10.9, "b": false, "t": "tempt at strengthening the LTR system, we added"}
+{"p": 7, "s": 10.9, "b": false, "t": "a randomly initialized BiLSTM on top. This does"}
+{"p": 7, "s": 10.9, "b": false, "t": "signiﬁcantly improve results on SQuAD, but the"}
+{"p": 7, "s": 10.9, "b": false, "t": "results are still far worse than those of the pre-"}
+{"p": 7, "s": 10.9, "b": false, "t": "trained bidirectional models. The BiLSTM hurts"}
+{"p": 7, "s": 10.9, "b": false, "t": "performance on the GLUE tasks."}
+{"p": 7, "s": 10.9, "b": false, "t": "We recognize that it would also be possible to"}
+{"p": 7, "s": 10.9, "b": false, "t": "train separate LTR and RTL models and represent"}
+{"p": 7, "s": 10.9, "b": false, "t": "each token as the concatenation of the two mod-"}
+{"p": 7, "s": 10.9, "b": false, "t": "els, as ELMo does. However: (a) this is twice as"}
+{"p": 7, "s": 10.9, "b": false, "t": "expensive as a single bidirectional model; (b) this"}
+{"p": 7, "s": 10.9, "b": false, "t": "is non-intuitive for tasks like QA, since the RTL"}
+{"p": 7, "s": 10.9, "b": false, "t": "model would not be able to condition the answer"}
+{"p": 7, "s": 10.9, "b": false, "t": "on the question; (c) this it is strictly less powerful"}
+{"p": 7, "s": 10.9, "b": false, "t": "than a deep bidirectional model, since it can use"}
+{"p": 7, "s": 10.9, "b": false, "t": "both left and right context at every layer."}
+{"p": 7, "s": 10.9, "b": true, "t": "5.2"}
+{"p": 7, "s": 10.9, "b": true, "t": "Effect of Model Size"}
+{"p": 7, "s": 10.9, "b": false, "t": "In this section, we explore the effect of model size"}
+{"p": 7, "s": 10.9, "b": false, "t": "on ﬁne-tuning task accuracy. We trained a number"}
+{"p": 7, "s": 10.9, "b": false, "t": "of BERT models with a differing number of layers,"}
+{"p": 7, "s": 10.9, "b": false, "t": "hidden units, and attention heads, while otherwise"}
+{"p": 7, "s": 10.9, "b": false, "t": "using the same hyperparameters and training pro-"}
+{"p": 7, "s": 10.9, "b": false, "t": "cedure as described previously."}
+{"p": 7, "s": 10.9, "b": false, "t": "Results on selected GLUE tasks are shown in"}
+{"p": 7, "s": 10.9, "b": false, "t": "Table 6. In this table, we report the average Dev"}
+{"p": 7, "s": 10.9, "b": false, "t": "Set accuracy from 5 random restarts of ﬁne-tuning."}
+{"p": 7, "s": 10.9, "b": false, "t": "We can see that larger models lead to a strict ac-"}
+{"p": 7, "s": 10.9, "b": false, "t": "curacy improvement across all four datasets, even"}
+{"p": 7, "s": 10.9, "b": false, "t": "for MRPC which only has 3,600 labeled train-"}
+{"p": 7, "s": 10.9, "b": false, "t": "ing examples, and is substantially different from"}
+{"p": 7, "s": 10.9, "b": false, "t": "the pre-training tasks. It is also perhaps surpris-"}
+{"p": 7, "s": 10.9, "b": false, "t": "ing that we are able to achieve such signiﬁcant"}
+{"p": 7, "s": 10.9, "b": false, "t": "improvements on top of models which are al-"}
+{"p": 7, "s": 10.9, "b": false, "t": "ready quite large relative to the existing literature."}
+{"p": 7, "s": 10.9, "b": false, "t": "For example, the largest Transformer explored in"}
+{"p": 7, "s": 10.9, "b": false, "t": "Vaswani et al. (2017) is (L=6, H=1024, A=16)"}
+{"p": 7, "s": 10.9, "b": false, "t": "with 100M parameters for the encoder, and the"}
+{"p": 7, "s": 10.9, "b": false, "t": "largest Transformer we have found in the literature"}
+{"p": 7, "s": 10.9, "b": false, "t": "is (L=64, H=512, A=2) with 235M parameters"}
+{"p": 7, "s": 10.9, "b": false, "t": "(Al-Rfou et al., 2018). By contrast, BERTBASE"}
+{"p": 7, "s": 10.9, "b": false, "t": "contains 110M parameters and BERTLARGE con-"}
+{"p": 7, "s": 10.9, "b": false, "t": "tains 340M parameters."}
+{"p": 7, "s": 10.9, "b": false, "t": "It has long been known that increasing the"}
+{"p": 7, "s": 10.9, "b": false, "t": "model size will lead to continual improvements"}
+{"p": 7, "s": 10.9, "b": false, "t": "on large-scale tasks such as machine translation"}
+{"p": 7, "s": 10.9, "b": false, "t": "and language modeling, which is demonstrated"}
+{"p": 7, "s": 10.9, "b": false, "t": "by the LM perplexity of held-out training data"}
+{"p": 7, "s": 10.9, "b": false, "t": "shown in Table 6."}
+{"p": 7, "s": 10.9, "b": false, "t": "However, we believe that"}
+{"p": 7, "s": 10.9, "b": false, "t": "this is the ﬁrst work to demonstrate convinc-"}
+{"p": 7, "s": 10.9, "b": false, "t": "ingly that scaling to extreme model sizes also"}
+{"p": 7, "s": 10.9, "b": false, "t": "leads to large improvements on very small scale"}
+{"p": 7, "s": 10.9, "b": false, "t": "tasks, provided that the model has been sufﬁ-"}
+{"p": 7, "s": 10.9, "b": false, "t": "ciently pre-trained. Peters et al. (2018b) presented"}
+{"p": 8, "s": 10.9, "b": false, "t": "mixed results on the downstream task impact of"}
+{"p": 8, "s": 10.9, "b": false, "t": "increasing the pre-trained bi-LM size from two"}
+{"p": 8, "s": 10.9, "b": false, "t": "to four layers and Melamud et al. (2016) men-"}
+{"p": 8, "s": 10.9, "b": false, "t": "tioned in passing that increasing hidden dimen-"}
+{"p": 8, "s": 10.9, "b": false, "t": "sion size from 200 to 600 helped, but increasing"}
+{"p": 8, "s": 10.9, "b": false, "t": "further to 1,000 did not bring further improve-"}
+{"p": 8, "s": 10.9, "b": false, "t": "ments. Both of these prior works used a feature-"}
+{"p": 8, "s": 10.9, "b": false, "t": "based approach — we hypothesize that when the"}
+{"p": 8, "s": 10.9, "b": false, "t": "model is ﬁne-tuned directly on the downstream"}
+{"p": 8, "s": 10.9, "b": false, "t": "tasks and uses only a very small number of ran-"}
+{"p": 8, "s": 10.9, "b": false, "t": "domly initialized additional parameters, the task-"}
+{"p": 8, "s": 10.9, "b": false, "t": "speciﬁc models can beneﬁt from the larger, more"}
+{"p": 8, "s": 10.9, "b": false, "t": "expressive pre-trained representations even when"}
+{"p": 8, "s": 10.9, "b": false, "t": "downstream task data is very small."}
+{"p": 8, "s": 10.9, "b": true, "t": "5.3"}
+{"p": 8, "s": 10.9, "b": true, "t": "Feature-based Approach with BERT"}
+{"p": 8, "s": 10.9, "b": false, "t": "All of the BERT results presented so far have used"}
+{"p": 8, "s": 10.9, "b": false, "t": "the ﬁne-tuning approach, where a simple classiﬁ-"}
+{"p": 8, "s": 10.9, "b": false, "t": "cation layer is added to the pre-trained model, and"}
+{"p": 8, "s": 10.9, "b": false, "t": "all parameters are jointly ﬁne-tuned on a down-"}
+{"p": 8, "s": 10.9, "b": false, "t": "stream task. However, the feature-based approach,"}
+{"p": 8, "s": 10.9, "b": false, "t": "where ﬁxed features are extracted from the pre-"}
+{"p": 8, "s": 10.9, "b": false, "t": "trained model, has certain advantages. First, not"}
+{"p": 8, "s": 10.9, "b": false, "t": "all tasks can be easily represented by a Trans-"}
+{"p": 8, "s": 10.9, "b": false, "t": "former encoder architecture, and therefore require"}
+{"p": 8, "s": 10.9, "b": false, "t": "a task-speciﬁc model architecture to be added."}
+{"p": 8, "s": 10.9, "b": false, "t": "Second, there are major computational beneﬁts"}
+{"p": 8, "s": 10.9, "b": false, "t": "to pre-compute an expensive representation of the"}
+{"p": 8, "s": 10.9, "b": false, "t": "training data once and then run many experiments"}
+{"p": 8, "s": 10.9, "b": false, "t": "with cheaper models on top of this representation."}
+{"p": 8, "s": 10.9, "b": false, "t": "In this section, we compare the two approaches"}
+{"p": 8, "s": 10.9, "b": false, "t": "by applying BERT to the CoNLL-2003 Named"}
+{"p": 8, "s": 10.9, "b": false, "t": "Entity Recognition (NER) task (Tjong Kim Sang"}
+{"p": 8, "s": 10.9, "b": false, "t": "and De Meulder, 2003). In the input to BERT, we"}
+{"p": 8, "s": 10.9, "b": false, "t": "use a case-preserving WordPiece model, and we"}
+{"p": 8, "s": 10.9, "b": false, "t": "include the maximal document context provided"}
+{"p": 8, "s": 10.9, "b": false, "t": "by the data. Following standard practice, we for-"}
+{"p": 8, "s": 10.9, "b": false, "t": "mulate this as a tagging task but do not use a CRF"}
+{"p": 8, "s": 9.0, "b": false, "t": "Hyperparams"}
+{"p": 8, "s": 9.0, "b": false, "t": "Dev Set Accuracy"}
+{"p": 8, "s": 9.0, "b": false, "t": "#L"}
+{"p": 8, "s": 9.0, "b": false, "t": "#H #A LM (ppl) MNLI-m MRPC SST-2"}
+{"p": 8, "s": 9.0, "b": false, "t": "3"}
+{"p": 8, "s": 9.0, "b": false, "t": "768"}
+{"p": 8, "s": 9.0, "b": false, "t": "12"}
+{"p": 8, "s": 9.0, "b": false, "t": "5.84"}
+{"p": 8, "s": 9.0, "b": false, "t": "77.9"}
+{"p": 8, "s": 9.0, "b": false, "t": "79.8"}
+{"p": 8, "s": 9.0, "b": false, "t": "88.4"}
+{"p": 8, "s": 9.0, "b": false, "t": "6"}
+{"p": 8, "s": 9.0, "b": false, "t": "768"}
+{"p": 8, "s": 9.0, "b": false, "t": "3"}
+{"p": 8, "s": 9.0, "b": false, "t": "5.24"}
+{"p": 8, "s": 9.0, "b": false, "t": "80.6"}
+{"p": 8, "s": 9.0, "b": false, "t": "82.2"}
+{"p": 8, "s": 9.0, "b": false, "t": "90.7"}
+{"p": 8, "s": 9.0, "b": false, "t": "6"}
+{"p": 8, "s": 9.0, "b": false, "t": "768"}
+{"p": 8, "s": 9.0, "b": false, "t": "12"}
+{"p": 8, "s": 9.0, "b": false, "t": "4.68"}
+{"p": 8, "s": 9.0, "b": false, "t": "81.9"}
+{"p": 8, "s": 9.0, "b": false, "t": "84.8"}
+{"p": 8, "s": 9.0, "b": false, "t": "91.3"}
+{"p": 8, "s": 9.0, "b": false, "t": "12"}
+{"p": 8, "s": 9.0, "b": false, "t": "768"}
+{"p": 8, "s": 9.0, "b": false, "t": "12"}
+{"p": 8, "s": 9.0, "b": false, "t": "3.99"}
+{"p": 8, "s": 9.0, "b": false, "t": "84.4"}
+{"p": 8, "s": 9.0, "b": false, "t": "86.7"}
+{"p": 8, "s": 9.0, "b": false, "t": "92.9"}
+{"p": 8, "s": 9.0, "b": false, "t": "12 1024"}
+{"p": 8, "s": 9.0, "b": false, "t": "16"}
+{"p": 8, "s": 9.0, "b": false, "t": "3.54"}
+{"p": 8, "s": 9.0, "b": false, "t": "85.7"}
+{"p": 8, "s": 9.0, "b": false, "t": "86.9"}
+{"p": 8, "s": 9.0, "b": false, "t": "93.3"}
+{"p": 8, "s": 9.0, "b": false, "t": "24 1024"}
+{"p": 8, "s": 9.0, "b": false, "t": "16"}
+{"p": 8, "s": 9.0, "b": false, "t": "3.23"}
+{"p": 8, "s": 9.0, "b": false, "t": "86.6"}
+{"p": 8, "s": 9.0, "b": false, "t": "87.8"}
+{"p": 8, "s": 9.0, "b": false, "t": "93.7"}
+{"p": 8, "s": 10.0, "b": false, "t": "Table 6:"}
+{"p": 8, "s": 10.0, "b": false, "t": "Ablation over BERT model size. #L = the"}
+{"p": 8, "s": 10.0, "b": false, "t": "number of layers; #H = hidden size; #A = number of at-"}
+{"p": 8, "s": 10.0, "b": false, "t": "tention heads. “LM (ppl)” is the masked LM perplexity"}
+{"p": 8, "s": 10.0, "b": false, "t": "of held-out training data."}
+{"p": 8, "s": 9.0, "b": false, "t": "System"}
+{"p": 8, "s": 9.0, "b": false, "t": "Dev F1 Test F1"}
+{"p": 8, "s": 9.0, "b": false, "t": "ELMo (Peters et al., 2018a)"}
+{"p": 8, "s": 9.0, "b": false, "t": "95.7"}
+{"p": 8, "s": 9.0, "b": false, "t": "92.2"}
+{"p": 8, "s": 9.0, "b": false, "t": "CVT (Clark et al., 2018)"}
+{"p": 8, "s": 9.0, "b": false, "t": "-"}
+{"p": 8, "s": 9.0, "b": false, "t": "92.6"}
+{"p": 8, "s": 9.0, "b": false, "t": "CSE (Akbik et al., 2018)"}
+{"p": 8, "s": 9.0, "b": false, "t": "-"}
+{"p": 8, "s": 9.0, "b": true, "t": "93.1"}
+{"p": 8, "s": 9.0, "b": false, "t": "Fine-tuning approach"}
+{"p": 8, "s": 6.0, "b": false, "t": "BERTLARGE"}
+{"p": 8, "s": 9.0, "b": false, "t": "96.6"}
+{"p": 8, "s": 9.0, "b": false, "t": "92.8"}
+{"p": 8, "s": 9.0, "b": false, "t": "BERTBASE"}
+{"p": 8, "s": 9.0, "b": false, "t": "96.4"}
+{"p": 8, "s": 9.0, "b": false, "t": "92.4"}
+{"p": 8, "s": 9.0, "b": false, "t": "Feature-based approach (BERTBASE)"}
+{"p": 8, "s": 9.0, "b": false, "t": "Embeddings"}
+{"p": 8, "s": 9.0, "b": false, "t": "91.0"}
+{"p": 8, "s": 9.0, "b": false, "t": "-"}
+{"p": 8, "s": 9.0, "b": false, "t": "Second-to-Last Hidden"}
+{"p": 8, "s": 9.0, "b": false, "t": "95.6"}
+{"p": 8, "s": 9.0, "b": false, "t": "-"}
+{"p": 8, "s": 9.0, "b": false, "t": "Last Hidden"}
+{"p": 8, "s": 9.0, "b": false, "t": "94.9"}
+{"p": 8, "s": 9.0, "b": false, "t": "-"}
+{"p": 8, "s": 9.0, "b": false, "t": "Weighted Sum Last Four Hidden"}
+{"p": 8, "s": 9.0, "b": false, "t": "95.9"}
+{"p": 8, "s": 9.0, "b": false, "t": "-"}
+{"p": 8, "s": 9.0, "b": false, "t": "Concat Last Four Hidden"}
+{"p": 8, "s": 9.0, "b": false, "t": "96.1"}
+{"p": 8, "s": 9.0, "b": false, "t": "-"}
+{"p": 8, "s": 9.0, "b": false, "t": "Weighted Sum All 12 Layers"}
+{"p": 8, "s": 9.0, "b": false, "t": "95.5"}
+{"p": 8, "s": 9.0, "b": false, "t": "-"}
+{"p": 8, "s": 10.0, "b": false, "t": "Table 7: CoNLL-2003 Named Entity Recognition re-"}
+{"p": 8, "s": 10.0, "b": false, "t": "sults. Hyperparameters were selected using the Dev"}
+{"p": 8, "s": 10.0, "b": false, "t": "set. The reported Dev and Test scores are averaged over"}
+{"p": 8, "s": 10.0, "b": false, "t": "5 random restarts using those hyperparameters."}
+{"p": 8, "s": 10.9, "b": false, "t": "layer in the output. We use the representation of"}
+{"p": 8, "s": 10.9, "b": false, "t": "the ﬁrst sub-token as the input to the token-level"}
+{"p": 8, "s": 10.9, "b": false, "t": "classiﬁer over the NER label set."}
+{"p": 8, "s": 10.9, "b": false, "t": "To ablate the ﬁne-tuning approach, we apply the"}
+{"p": 8, "s": 10.9, "b": false, "t": "feature-based approach by extracting the activa-"}
+{"p": 8, "s": 10.9, "b": false, "t": "tions from one or more layers without ﬁne-tuning"}
+{"p": 8, "s": 10.9, "b": false, "t": "any parameters of BERT. These contextual em-"}
+{"p": 8, "s": 10.9, "b": false, "t": "beddings are used as input to a randomly initial-"}
+{"p": 8, "s": 10.9, "b": false, "t": "ized two-layer 768-dimensional BiLSTM before"}
+{"p": 8, "s": 10.9, "b": false, "t": "the classiﬁcation layer."}
+{"p": 8, "s": 10.9, "b": false, "t": "Results are presented in Table 7. BERTLARGE"}
+{"p": 8, "s": 10.9, "b": false, "t": "performs competitively with state-of-the-art meth-"}
+{"p": 8, "s": 10.9, "b": false, "t": "ods. The best performing method concatenates the"}
+{"p": 8, "s": 10.9, "b": false, "t": "token representations from the top four hidden lay-"}
+{"p": 8, "s": 10.9, "b": false, "t": "ers of the pre-trained Transformer, which is only"}
+{"p": 8, "s": 10.9, "b": false, "t": "0.3 F1 behind ﬁne-tuning the entire model. This"}
+{"p": 8, "s": 10.9, "b": false, "t": "demonstrates that BERT is effective for both ﬁne-"}
+{"p": 8, "s": 10.9, "b": false, "t": "tuning and feature-based approaches."}
+{"p": 8, "s": 12.0, "b": true, "t": "6"}
+{"p": 8, "s": 12.0, "b": true, "t": "Conclusion"}
+{"p": 8, "s": 10.9, "b": false, "t": "Recent empirical improvements due to transfer"}
+{"p": 8, "s": 10.9, "b": false, "t": "learning with language models have demonstrated"}
+{"p": 8, "s": 10.9, "b": false, "t": "that rich, unsupervised pre-training is an integral"}
+{"p": 8, "s": 10.9, "b": false, "t": "part of many language understanding systems. In"}
+{"p": 8, "s": 10.9, "b": false, "t": "particular, these results enable even low-resource"}
+{"p": 8, "s": 10.9, "b": false, "t": "tasks to beneﬁt from deep unidirectional architec-"}
+{"p": 8, "s": 10.9, "b": false, "t": "tures. Our major contribution is further general-"}
+{"p": 8, "s": 10.9, "b": false, "t": "izing these ﬁndings to deep bidirectional architec-"}
+{"p": 8, "s": 10.9, "b": false, "t": "tures, allowing the same pre-trained model to suc-"}
+{"p": 8, "s": 10.9, "b": false, "t": "cessfully tackle a broad set of NLP tasks."}
+{"p": 9, "s": 12.0, "b": true, "t": "References"}
+{"p": 9, "s": 10.0, "b": false, "t": "Alan Akbik, Duncan Blythe, and Roland Vollgraf."}
+{"p": 9, "s": 10.0, "b": false, "t": "2018. Contextual string embeddings for sequence"}
+{"p": 9, "s": 10.0, "b": false, "t": "labeling. In Proceedings of the 27th International"}
+{"p": 9, "s": 10.0, "b": false, "t": "Conference on Computational Linguistics, pages"}
+{"p": 9, "s": 10.0, "b": false, "t": "1638–1649."}
+{"p": 9, "s": 10.0, "b": false, "t": "Rami Al-Rfou, Dokook Choe, Noah Constant, Mandy"}
+{"p": 9, "s": 10.0, "b": false, "t": "Guo, and Llion Jones. 2018."}
+{"p": 9, "s": 10.0, "b": false, "t": "Character-level lan-"}
+{"p": 9, "s": 10.0, "b": false, "t": "guage modeling with deeper self-attention."}
+{"p": 9, "s": 10.0, "b": false, "t": "arXiv"}
+{"p": 9, "s": 10.0, "b": false, "t": "preprint arXiv:1808.04444."}
+{"p": 9, "s": 10.0, "b": false, "t": "Rie Kubota Ando and Tong Zhang. 2005. A framework"}
+{"p": 9, "s": 10.0, "b": false, "t": "for learning predictive structures from multiple tasks"}
+{"p": 9, "s": 10.0, "b": false, "t": "and unlabeled data. Journal of Machine Learning"}
+{"p": 9, "s": 10.0, "b": false, "t": "Research, 6(Nov):1817–1853."}
+{"p": 9, "s": 10.0, "b": false, "t": "Luisa Bentivogli,"}
+{"p": 9, "s": 10.0, "b": false, "t": "Bernardo Magnini,"}
+{"p": 9, "s": 10.0, "b": false, "t": "Ido Dagan,"}
+{"p": 9, "s": 10.0, "b": false, "t": "Hoa Trang Dang, and Danilo Giampiccolo. 2009."}
+{"p": 9, "s": 10.0, "b": false, "t": "The ﬁfth PASCAL recognizing textual entailment"}
+{"p": 9, "s": 10.0, "b": false, "t": "challenge. In TAC. NIST."}
+{"p": 9, "s": 10.0, "b": false, "t": "John Blitzer, Ryan McDonald, and Fernando Pereira."}
+{"p": 9, "s": 10.0, "b": false, "t": "2006. Domain adaptation with structural correspon-"}
+{"p": 9, "s": 10.0, "b": false, "t": "dence learning. In Proceedings of the 2006 confer-"}
+{"p": 9, "s": 10.0, "b": false, "t": "ence on empirical methods in natural language pro-"}
+{"p": 9, "s": 10.0, "b": false, "t": "cessing, pages 120–128. Association for Computa-"}
+{"p": 9, "s": 10.0, "b": false, "t": "tional Linguistics."}
+{"p": 9, "s": 10.0, "b": false, "t": "Samuel R. Bowman, Gabor Angeli, Christopher Potts,"}
+{"p": 9, "s": 10.0, "b": false, "t": "and Christopher D. Manning. 2015. A large anno-"}
+{"p": 9, "s": 10.0, "b": false, "t": "tated corpus for learning natural language inference."}
+{"p": 9, "s": 10.0, "b": false, "t": "In EMNLP. Association for Computational Linguis-"}
+{"p": 9, "s": 10.0, "b": false, "t": "tics."}
+{"p": 9, "s": 10.0, "b": false, "t": "Peter F Brown, Peter V Desouza, Robert L Mercer,"}
+{"p": 9, "s": 10.0, "b": false, "t": "Vincent J Della Pietra, and Jenifer C Lai. 1992."}
+{"p": 9, "s": 10.0, "b": false, "t": "Class-based n-gram models of natural language."}
+{"p": 9, "s": 10.0, "b": false, "t": "Computational linguistics, 18(4):467–479."}
+{"p": 9, "s": 10.0, "b": false, "t": "Daniel Cer, Mona Diab, Eneko Agirre, Inigo Lopez-"}
+{"p": 9, "s": 10.0, "b": false, "t": "Gazpio, and Lucia Specia. 2017."}
+{"p": 9, "s": 10.0, "b": false, "t": "Semeval-2017"}
+{"p": 9, "s": 10.0, "b": false, "t": "task 1: Semantic textual similarity multilingual and"}
+{"p": 9, "s": 10.0, "b": false, "t": "crosslingual focused evaluation."}
+{"p": 9, "s": 10.0, "b": false, "t": "In Proceedings"}
+{"p": 9, "s": 10.0, "b": false, "t": "of the 11th International Workshop on Semantic"}
+{"p": 9, "s": 10.0, "b": false, "t": "Evaluation (SemEval-2017), pages 1–14, Vancou-"}
+{"p": 9, "s": 10.0, "b": false, "t": "ver, Canada. Association for Computational Lin-"}
+{"p": 9, "s": 10.0, "b": false, "t": "guistics."}
+{"p": 9, "s": 10.0, "b": false, "t": "Ciprian Chelba, Tomas Mikolov, Mike Schuster, Qi Ge,"}
+{"p": 9, "s": 10.0, "b": false, "t": "Thorsten Brants, Phillipp Koehn, and Tony Robin-"}
+{"p": 9, "s": 10.0, "b": false, "t": "son. 2013. One billion word benchmark for measur-"}
+{"p": 9, "s": 10.0, "b": false, "t": "ing progress in statistical language modeling. arXiv"}
+{"p": 9, "s": 10.0, "b": false, "t": "preprint arXiv:1312.3005."}
+{"p": 9, "s": 10.0, "b": false, "t": "Z. Chen, H. Zhang, X. Zhang, and L. Zhao. 2018."}
+{"p": 9, "s": 10.0, "b": false, "t": "Quora question pairs."}
+{"p": 9, "s": 10.0, "b": false, "t": "Christopher Clark and Matt Gardner. 2018."}
+{"p": 9, "s": 10.0, "b": false, "t": "Simple"}
+{"p": 9, "s": 10.0, "b": false, "t": "and effective multi-paragraph reading comprehen-"}
+{"p": 9, "s": 10.0, "b": false, "t": "sion. In ACL."}
+{"p": 9, "s": 10.0, "b": false, "t": "Kevin Clark, Minh-Thang Luong, Christopher D Man-"}
+{"p": 9, "s": 10.0, "b": false, "t": "ning, and Quoc Le. 2018."}
+{"p": 9, "s": 10.0, "b": false, "t": "Semi-supervised se-"}
+{"p": 9, "s": 10.0, "b": false, "t": "quence modeling with cross-view training. In Pro-"}
+{"p": 9, "s": 10.0, "b": false, "t": "ceedings of the 2018 Conference on Empirical Meth-"}
+{"p": 9, "s": 10.0, "b": false, "t": "ods in Natural Language Processing, pages 1914–"}
+{"p": 9, "s": 10.0, "b": false, "t": "1925."}
+{"p": 9, "s": 10.0, "b": false, "t": "Ronan Collobert and Jason Weston. 2008. A uniﬁed"}
+{"p": 9, "s": 10.0, "b": false, "t": "architecture for natural language processing: Deep"}
+{"p": 9, "s": 10.0, "b": false, "t": "neural networks with multitask learning."}
+{"p": 9, "s": 10.0, "b": false, "t": "In Pro-"}
+{"p": 9, "s": 10.0, "b": false, "t": "ceedings of the 25th international conference on"}
+{"p": 9, "s": 10.0, "b": false, "t": "Machine learning, pages 160–167. ACM."}
+{"p": 9, "s": 10.0, "b": false, "t": "Alexis Conneau, Douwe Kiela, Holger Schwenk, Lo¨ıc"}
+{"p": 9, "s": 10.0, "b": false, "t": "Barrault, and Antoine Bordes. 2017."}
+{"p": 9, "s": 10.0, "b": false, "t": "Supervised"}
+{"p": 9, "s": 10.0, "b": false, "t": "learning of universal sentence representations from"}
+{"p": 9, "s": 10.0, "b": false, "t": "natural language inference data. In Proceedings of"}
+{"p": 9, "s": 10.0, "b": false, "t": "the 2017 Conference on Empirical Methods in Nat-"}
+{"p": 9, "s": 10.0, "b": false, "t": "ural Language Processing, pages 670–680, Copen-"}
+{"p": 9, "s": 10.0, "b": false, "t": "hagen, Denmark. Association for Computational"}
+{"p": 9, "s": 10.0, "b": false, "t": "Linguistics."}
+{"p": 9, "s": 10.0, "b": false, "t": "Andrew M Dai and Quoc V Le. 2015. Semi-supervised"}
+{"p": 9, "s": 10.0, "b": false, "t": "sequence learning. In Advances in neural informa-"}
+{"p": 9, "s": 10.0, "b": false, "t": "tion processing systems, pages 3079–3087."}
+{"p": 9, "s": 10.0, "b": false, "t": "J. Deng, W. Dong, R. Socher, L.-J. Li, K. Li, and L. Fei-"}
+{"p": 9, "s": 10.0, "b": false, "t": "Fei. 2009. ImageNet: A Large-Scale Hierarchical"}
+{"p": 9, "s": 10.0, "b": false, "t": "Image Database. In CVPR09."}
+{"p": 9, "s": 10.0, "b": false, "t": "William B Dolan and Chris Brockett. 2005. Automati-"}
+{"p": 9, "s": 10.0, "b": false, "t": "cally constructing a corpus of sentential paraphrases."}
+{"p": 9, "s": 10.0, "b": false, "t": "In Proceedings of the Third International Workshop"}
+{"p": 9, "s": 10.0, "b": false, "t": "on Paraphrasing (IWP2005)."}
+{"p": 9, "s": 10.0, "b": false, "t": "William Fedus, Ian Goodfellow, and Andrew M Dai."}
+{"p": 9, "s": 10.0, "b": false, "t": "2018. Maskgan: Better text generation via ﬁlling in"}
+{"p": 9, "s": 10.0, "b": false, "t": "the . arXiv preprint arXiv:1801.07736."}
+{"p": 9, "s": 10.0, "b": false, "t": "Dan Hendrycks and Kevin Gimpel. 2016."}
+{"p": 9, "s": 10.0, "b": false, "t": "Bridging"}
+{"p": 9, "s": 10.0, "b": false, "t": "nonlinearities and stochastic regularizers with gaus-"}
+{"p": 9, "s": 10.0, "b": false, "t": "sian error linear units. CoRR, abs/1606.08415."}
+{"p": 9, "s": 10.0, "b": false, "t": "Felix Hill, Kyunghyun Cho, and Anna Korhonen. 2016."}
+{"p": 9, "s": 10.0, "b": false, "t": "Learning distributed representations of sentences"}
+{"p": 9, "s": 10.0, "b": false, "t": "from unlabelled data. In Proceedings of the 2016"}
+{"p": 9, "s": 10.0, "b": false, "t": "Conference of the North American Chapter of the"}
+{"p": 9, "s": 10.0, "b": false, "t": "Association for Computational Linguistics: Human"}
+{"p": 9, "s": 10.0, "b": false, "t": "Language Technologies. Association for Computa-"}
+{"p": 9, "s": 10.0, "b": false, "t": "tional Linguistics."}
+{"p": 9, "s": 10.0, "b": false, "t": "Jeremy Howard and Sebastian Ruder. 2018. Universal"}
+{"p": 9, "s": 10.0, "b": false, "t": "language model ﬁne-tuning for text classiﬁcation. In"}
+{"p": 9, "s": 10.0, "b": false, "t": "ACL. Association for Computational Linguistics."}
+{"p": 9, "s": 10.0, "b": false, "t": "Minghao Hu, Yuxing Peng, Zhen Huang, Xipeng Qiu,"}
+{"p": 9, "s": 10.0, "b": false, "t": "Furu Wei, and Ming Zhou. 2018."}
+{"p": 9, "s": 10.0, "b": false, "t": "Reinforced"}
+{"p": 9, "s": 10.0, "b": false, "t": "mnemonic reader for machine reading comprehen-"}
+{"p": 9, "s": 10.0, "b": false, "t": "sion. In IJCAI."}
+{"p": 9, "s": 10.0, "b": false, "t": "Yacine Jernite, Samuel R. Bowman, and David Son-"}
+{"p": 9, "s": 10.0, "b": false, "t": "tag. 2017. Discourse-based objectives for fast un-"}
+{"p": 9, "s": 10.0, "b": false, "t": "supervised sentence representation learning. CoRR,"}
+{"p": 9, "s": 10.0, "b": false, "t": "abs/1705.00557."}
+{"p": 10, "s": 10.0, "b": false, "t": "Mandar Joshi, Eunsol Choi, Daniel S Weld, and Luke"}
+{"p": 10, "s": 10.0, "b": false, "t": "Zettlemoyer. 2017. Triviaqa: A large scale distantly"}
+{"p": 10, "s": 10.0, "b": false, "t": "supervised challenge dataset for reading comprehen-"}
+{"p": 10, "s": 10.0, "b": false, "t": "sion. In ACL."}
+{"p": 10, "s": 10.0, "b": false, "t": "Ryan Kiros, Yukun Zhu, Ruslan R Salakhutdinov,"}
+{"p": 10, "s": 10.0, "b": false, "t": "Richard Zemel, Raquel Urtasun, Antonio Torralba,"}
+{"p": 10, "s": 10.0, "b": false, "t": "and Sanja Fidler. 2015. Skip-thought vectors. In"}
+{"p": 10, "s": 10.0, "b": false, "t": "Advances in neural information processing systems,"}
+{"p": 10, "s": 10.0, "b": false, "t": "pages 3294–3302."}
+{"p": 10, "s": 10.0, "b": false, "t": "Quoc Le and Tomas Mikolov. 2014. Distributed rep-"}
+{"p": 10, "s": 10.0, "b": false, "t": "resentations of sentences and documents. In Inter-"}
+{"p": 10, "s": 10.0, "b": false, "t": "national Conference on Machine Learning, pages"}
+{"p": 10, "s": 10.0, "b": false, "t": "1188–1196."}
+{"p": 10, "s": 10.0, "b": false, "t": "Hector J Levesque, Ernest Davis, and Leora Morgen-"}
+{"p": 10, "s": 10.0, "b": false, "t": "stern. 2011. The winograd schema challenge. In"}
+{"p": 10, "s": 10.0, "b": false, "t": "Aaai spring symposium: Logical formalizations of"}
+{"p": 10, "s": 10.0, "b": false, "t": "commonsense reasoning, volume 46, page 47."}
+{"p": 10, "s": 10.0, "b": false, "t": "Lajanugen Logeswaran and Honglak Lee. 2018. An"}
+{"p": 10, "s": 10.0, "b": false, "t": "efﬁcient framework for learning sentence represen-"}
+{"p": 10, "s": 10.0, "b": false, "t": "tations."}
+{"p": 10, "s": 10.0, "b": false, "t": "In International Conference on Learning"}
+{"p": 10, "s": 10.0, "b": false, "t": "Representations."}
+{"p": 10, "s": 10.0, "b": false, "t": "Bryan McCann, James Bradbury, Caiming Xiong, and"}
+{"p": 10, "s": 10.0, "b": false, "t": "Richard Socher. 2017. Learned in translation: Con-"}
+{"p": 10, "s": 10.0, "b": false, "t": "textualized word vectors. In NIPS."}
+{"p": 10, "s": 10.0, "b": false, "t": "Oren Melamud, Jacob Goldberger, and Ido Dagan."}
+{"p": 10, "s": 10.0, "b": false, "t": "2016. context2vec: Learning generic context em-"}
+{"p": 10, "s": 10.0, "b": false, "t": "bedding with bidirectional LSTM. In CoNLL."}
+{"p": 10, "s": 10.0, "b": false, "t": "Tomas Mikolov, Ilya Sutskever, Kai Chen, Greg S Cor-"}
+{"p": 10, "s": 10.0, "b": false, "t": "rado, and Jeff Dean. 2013. Distributed representa-"}
+{"p": 10, "s": 10.0, "b": false, "t": "tions of words and phrases and their compositional-"}
+{"p": 10, "s": 10.0, "b": false, "t": "ity. In Advances in Neural Information Processing"}
+{"p": 10, "s": 10.0, "b": false, "t": "Systems 26, pages 3111–3119. Curran Associates,"}
+{"p": 10, "s": 10.0, "b": false, "t": "Inc."}
+{"p": 10, "s": 10.0, "b": false, "t": "Andriy Mnih and Geoffrey E Hinton. 2009. A scal-"}
+{"p": 10, "s": 10.0, "b": false, "t": "able hierarchical distributed language model."}
+{"p": 10, "s": 10.0, "b": false, "t": "In"}
+{"p": 10, "s": 10.0, "b": false, "t": "D. Koller, D. Schuurmans, Y. Bengio, and L. Bot-"}
+{"p": 10, "s": 10.0, "b": false, "t": "tou, editors, Advances in Neural Information Pro-"}
+{"p": 10, "s": 10.0, "b": false, "t": "cessing Systems 21, pages 1081–1088. Curran As-"}
+{"p": 10, "s": 10.0, "b": false, "t": "sociates, Inc."}
+{"p": 10, "s": 10.0, "b": false, "t": "Ankur P Parikh, Oscar T¨ackstr¨om, Dipanjan Das, and"}
+{"p": 10, "s": 10.0, "b": false, "t": "Jakob Uszkoreit. 2016. A decomposable attention"}
+{"p": 10, "s": 10.0, "b": false, "t": "model for natural language inference. In EMNLP."}
+{"p": 10, "s": 10.0, "b": false, "t": "Jeffrey Pennington, Richard Socher, and Christo-"}
+{"p": 10, "s": 10.0, "b": false, "t": "pher D. Manning. 2014. Glove: Global vectors for"}
+{"p": 10, "s": 10.0, "b": false, "t": "word representation. In Empirical Methods in Nat-"}
+{"p": 10, "s": 10.0, "b": false, "t": "ural Language Processing (EMNLP), pages 1532–"}
+{"p": 10, "s": 10.0, "b": false, "t": "1543."}
+{"p": 10, "s": 10.0, "b": false, "t": "Matthew Peters, Waleed Ammar, Chandra Bhagavat-"}
+{"p": 10, "s": 10.0, "b": false, "t": "ula, and Russell Power. 2017. Semi-supervised se-"}
+{"p": 10, "s": 10.0, "b": false, "t": "quence tagging with bidirectional language models."}
+{"p": 10, "s": 10.0, "b": false, "t": "In ACL."}
+{"p": 10, "s": 10.0, "b": false, "t": "Matthew Peters, Mark Neumann, Mohit Iyyer, Matt"}
+{"p": 10, "s": 10.0, "b": false, "t": "Gardner, Christopher Clark, Kenton Lee, and Luke"}
+{"p": 10, "s": 10.0, "b": false, "t": "Zettlemoyer. 2018a. Deep contextualized word rep-"}
+{"p": 10, "s": 10.0, "b": false, "t": "resentations. In NAACL."}
+{"p": 10, "s": 10.0, "b": false, "t": "Matthew Peters, Mark Neumann, Luke Zettlemoyer,"}
+{"p": 10, "s": 10.0, "b": false, "t": "and Wen-tau Yih. 2018b."}
+{"p": 10, "s": 10.0, "b": false, "t": "Dissecting contextual"}
+{"p": 10, "s": 10.0, "b": false, "t": "word embeddings: Architecture and representation."}
+{"p": 10, "s": 10.0, "b": false, "t": "In Proceedings of the 2018 Conference on Empiri-"}
+{"p": 10, "s": 10.0, "b": false, "t": "cal Methods in Natural Language Processing, pages"}
+{"p": 10, "s": 10.0, "b": false, "t": "1499–1509."}
+{"p": 10, "s": 10.0, "b": false, "t": "Alec Radford, Karthik Narasimhan, Tim Salimans, and"}
+{"p": 10, "s": 10.0, "b": false, "t": "Ilya Sutskever. 2018."}
+{"p": 10, "s": 10.0, "b": false, "t": "Improving language under-"}
+{"p": 10, "s": 10.0, "b": false, "t": "standing with unsupervised learning. Technical re-"}
+{"p": 10, "s": 10.0, "b": false, "t": "port, OpenAI."}
+{"p": 10, "s": 10.0, "b": false, "t": "Pranav Rajpurkar, Jian Zhang, Konstantin Lopyrev, and"}
+{"p": 10, "s": 10.0, "b": false, "t": "Percy Liang. 2016. Squad: 100,000+ questions for"}
+{"p": 10, "s": 10.0, "b": false, "t": "machine comprehension of text. In Proceedings of"}
+{"p": 10, "s": 10.0, "b": false, "t": "the 2016 Conference on Empirical Methods in Nat-"}
+{"p": 10, "s": 10.0, "b": false, "t": "ural Language Processing, pages 2383–2392."}
+{"p": 10, "s": 10.0, "b": false, "t": "Minjoon Seo, Aniruddha Kembhavi, Ali Farhadi, and"}
+{"p": 10, "s": 10.0, "b": false, "t": "Hannaneh Hajishirzi. 2017. Bidirectional attention"}
+{"p": 10, "s": 10.0, "b": false, "t": "ﬂow for machine comprehension. In ICLR."}
+{"p": 10, "s": 10.0, "b": false, "t": "Richard Socher, Alex Perelygin, Jean Wu, Jason"}
+{"p": 10, "s": 10.0, "b": false, "t": "Chuang, Christopher D Manning, Andrew Ng, and"}
+{"p": 10, "s": 10.0, "b": false, "t": "Christopher Potts. 2013."}
+{"p": 10, "s": 10.0, "b": false, "t": "Recursive deep models"}
+{"p": 10, "s": 10.0, "b": false, "t": "for semantic compositionality over a sentiment tree-"}
+{"p": 10, "s": 10.0, "b": false, "t": "bank."}
+{"p": 10, "s": 10.0, "b": false, "t": "In Proceedings of the 2013 conference on"}
+{"p": 10, "s": 10.0, "b": false, "t": "empirical methods in natural language processing,"}
+{"p": 10, "s": 10.0, "b": false, "t": "pages 1631–1642."}
+{"p": 10, "s": 10.0, "b": false, "t": "Fu Sun, Linyang Li, Xipeng Qiu, and Yang Liu."}
+{"p": 10, "s": 10.0, "b": false, "t": "2018."}
+{"p": 10, "s": 10.0, "b": false, "t": "U-net:"}
+{"p": 10, "s": 10.0, "b": false, "t": "Machine reading comprehension"}
+{"p": 10, "s": 10.0, "b": false, "t": "with unanswerable questions."}
+{"p": 10, "s": 10.0, "b": false, "t": "arXiv preprint"}
+{"p": 10, "s": 10.0, "b": false, "t": "arXiv:1810.06638."}
+{"p": 10, "s": 10.0, "b": false, "t": "Wilson L Taylor. 1953."}
+{"p": 10, "s": 10.0, "b": false, "t": "Cloze procedure:"}
+{"p": 10, "s": 10.0, "b": false, "t": "A new"}
+{"p": 10, "s": 10.0, "b": false, "t": "tool for measuring readability. Journalism Bulletin,"}
+{"p": 10, "s": 10.0, "b": false, "t": "30(4):415–433."}
+{"p": 10, "s": 10.0, "b": false, "t": "Erik F Tjong Kim Sang and Fien De Meulder."}
+{"p": 10, "s": 10.0, "b": false, "t": "2003."}
+{"p": 10, "s": 10.0, "b": false, "t": "Introduction to the conll-2003 shared task:"}
+{"p": 10, "s": 10.0, "b": false, "t": "Language-independent named entity recognition. In"}
+{"p": 10, "s": 10.0, "b": false, "t": "CoNLL."}
+{"p": 10, "s": 10.0, "b": false, "t": "Joseph Turian, Lev Ratinov, and Yoshua Bengio. 2010."}
+{"p": 10, "s": 10.0, "b": false, "t": "Word representations: A simple and general method"}
+{"p": 10, "s": 10.0, "b": false, "t": "for semi-supervised learning. In Proceedings of the"}
+{"p": 10, "s": 10.0, "b": false, "t": "48th Annual Meeting of the Association for Compu-"}
+{"p": 10, "s": 10.0, "b": false, "t": "tational Linguistics, ACL ’10, pages 384–394."}
+{"p": 10, "s": 10.0, "b": false, "t": "Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob"}
+{"p": 10, "s": 10.0, "b": false, "t": "Uszkoreit, Llion Jones, Aidan N Gomez, Lukasz"}
+{"p": 10, "s": 10.0, "b": false, "t": "Kaiser, and Illia Polosukhin. 2017. Attention is all"}
+{"p": 10, "s": 10.0, "b": false, "t": "you need. In Advances in Neural Information Pro-"}
+{"p": 10, "s": 10.0, "b": false, "t": "cessing Systems, pages 6000–6010."}
+{"p": 10, "s": 10.0, "b": false, "t": "Pascal Vincent, Hugo Larochelle, Yoshua Bengio, and"}
+{"p": 10, "s": 10.0, "b": false, "t": "Pierre-Antoine Manzagol. 2008."}
+{"p": 10, "s": 10.0, "b": false, "t": "Extracting and"}
+{"p": 10, "s": 10.0, "b": false, "t": "composing robust features with denoising autoen-"}
+{"p": 10, "s": 10.0, "b": false, "t": "coders."}
+{"p": 10, "s": 10.0, "b": false, "t": "In Proceedings of the 25th international"}
+{"p": 10, "s": 10.0, "b": false, "t": "conference on Machine learning, pages 1096–1103."}
+{"p": 10, "s": 10.0, "b": false, "t": "ACM."}
+{"p": 10, "s": 10.0, "b": false, "t": "Alex Wang, Amanpreet Singh, Julian Michael, Fe-"}
+{"p": 10, "s": 10.0, "b": false, "t": "lix Hill, Omer Levy, and Samuel Bowman. 2018a."}
+{"p": 10, "s": 10.0, "b": false, "t": "Glue: A multi-task benchmark and analysis platform"}
+{"p": 11, "s": 10.0, "b": false, "t": "for natural language understanding. In Proceedings"}
+{"p": 11, "s": 10.0, "b": false, "t": "of the 2018 EMNLP Workshop BlackboxNLP: An-"}
+{"p": 11, "s": 10.0, "b": false, "t": "alyzing and Interpreting Neural Networks for NLP,"}
+{"p": 11, "s": 10.0, "b": false, "t": "pages 353–355."}
+{"p": 11, "s": 10.0, "b": false, "t": "Wei Wang, Ming Yan, and Chen Wu. 2018b. Multi-"}
+{"p": 11, "s": 10.0, "b": false, "t": "granularity hierarchical attention fusion networks"}
+{"p": 11, "s": 10.0, "b": false, "t": "for reading comprehension and question answering."}
+{"p": 11, "s": 10.0, "b": false, "t": "In Proceedings of the 56th Annual Meeting of the As-"}
+{"p": 11, "s": 10.0, "b": false, "t": "sociation for Computational Linguistics (Volume 1:"}
+{"p": 11, "s": 10.0, "b": false, "t": "Long Papers). Association for Computational Lin-"}
+{"p": 11, "s": 10.0, "b": false, "t": "guistics."}
+{"p": 11, "s": 10.0, "b": false, "t": "Alex Warstadt, Amanpreet Singh, and Samuel R Bow-"}
+{"p": 11, "s": 10.0, "b": false, "t": "man. 2018."}
+{"p": 11, "s": 10.0, "b": false, "t": "Neural network acceptability judg-"}
+{"p": 11, "s": 10.0, "b": false, "t": "ments. arXiv preprint arXiv:1805.12471."}
+{"p": 11, "s": 10.0, "b": false, "t": "Adina Williams, Nikita Nangia, and Samuel R Bow-"}
+{"p": 11, "s": 10.0, "b": false, "t": "man. 2018."}
+{"p": 11, "s": 10.0, "b": false, "t": "A broad-coverage challenge corpus"}
+{"p": 11, "s": 10.0, "b": false, "t": "for sentence understanding through inference."}
+{"p": 11, "s": 10.0, "b": false, "t": "In"}
+{"p": 11, "s": 10.0, "b": false, "t": "NAACL."}
+{"p": 11, "s": 10.0, "b": false, "t": "Yonghui Wu, Mike Schuster, Zhifeng Chen, Quoc V"}
+{"p": 11, "s": 10.0, "b": false, "t": "Le,"}
+{"p": 11, "s": 10.0, "b": false, "t": "Mohammad Norouzi,"}
+{"p": 11, "s": 10.0, "b": false, "t": "Wolfgang Macherey,"}
+{"p": 11, "s": 10.0, "b": false, "t": "Maxim Krikun,"}
+{"p": 11, "s": 10.0, "b": false, "t": "Yuan Cao,"}
+{"p": 11, "s": 10.0, "b": false, "t": "Qin Gao,"}
+{"p": 11, "s": 10.0, "b": false, "t": "Klaus"}
+{"p": 11, "s": 10.0, "b": false, "t": "Macherey, et al. 2016."}
+{"p": 11, "s": 10.0, "b": false, "t": "Google’s neural ma-"}
+{"p": 11, "s": 10.0, "b": false, "t": "chine translation system: Bridging the gap between"}
+{"p": 11, "s": 10.0, "b": false, "t": "human and machine translation."}
+{"p": 11, "s": 10.0, "b": false, "t": "arXiv preprint"}
+{"p": 11, "s": 10.0, "b": false, "t": "arXiv:1609.08144."}
+{"p": 11, "s": 10.0, "b": false, "t": "Jason Yosinski, Jeff Clune, Yoshua Bengio, and Hod"}
+{"p": 11, "s": 10.0, "b": false, "t": "Lipson. 2014. How transferable are features in deep"}
+{"p": 11, "s": 10.0, "b": false, "t": "neural networks? In Advances in neural information"}
+{"p": 11, "s": 10.0, "b": false, "t": "processing systems, pages 3320–3328."}
+{"p": 11, "s": 10.0, "b": false, "t": "Adams Wei Yu, David Dohan, Minh-Thang Luong, Rui"}
+{"p": 11, "s": 10.0, "b": false, "t": "Zhao, Kai Chen, Mohammad Norouzi, and Quoc V"}
+{"p": 11, "s": 10.0, "b": false, "t": "Le. 2018."}
+{"p": 11, "s": 10.0, "b": false, "t": "QANet: Combining local convolution"}
+{"p": 11, "s": 10.0, "b": false, "t": "with global self-attention for reading comprehen-"}
+{"p": 11, "s": 10.0, "b": false, "t": "sion. In ICLR."}
+{"p": 11, "s": 10.0, "b": false, "t": "Rowan Zellers, Yonatan Bisk, Roy Schwartz, and Yejin"}
+{"p": 11, "s": 10.0, "b": false, "t": "Choi. 2018. Swag: A large-scale adversarial dataset"}
+{"p": 11, "s": 10.0, "b": false, "t": "for grounded commonsense inference. In Proceed-"}
+{"p": 11, "s": 10.0, "b": false, "t": "ings of the 2018 Conference on Empirical Methods"}
+{"p": 11, "s": 10.0, "b": false, "t": "in Natural Language Processing (EMNLP)."}
+{"p": 11, "s": 10.0, "b": false, "t": "Yukun Zhu, Ryan Kiros, Rich Zemel, Ruslan Salakhut-"}
+{"p": 11, "s": 10.0, "b": false, "t": "dinov, Raquel Urtasun, Antonio Torralba, and Sanja"}
+{"p": 11, "s": 10.0, "b": false, "t": "Fidler. 2015. Aligning books and movies: Towards"}
+{"p": 11, "s": 10.0, "b": false, "t": "story-like visual explanations by watching movies"}
+{"p": 11, "s": 10.0, "b": false, "t": "and reading books."}
+{"p": 11, "s": 10.0, "b": false, "t": "In Proceedings of the IEEE"}
+{"p": 11, "s": 10.0, "b": false, "t": "international conference on computer vision, pages"}
+{"p": 11, "s": 10.0, "b": false, "t": "19–27."}
+{"p": 11, "s": 12.0, "b": true, "t": "Appendix for “BERT: Pre-training of"}
+{"p": 11, "s": 12.0, "b": true, "t": "Deep Bidirectional Transformers for"}
+{"p": 11, "s": 12.0, "b": true, "t": "Language Understanding”"}
+{"p": 11, "s": 10.9, "b": false, "t": "We organize the appendix into three sections:"}
+{"p": 11, "s": 10.9, "b": false, "t": "• Additional implementation details for BERT"}
+{"p": 11, "s": 10.9, "b": false, "t": "are presented in Appendix A;"}
+{"p": 11, "s": 10.9, "b": false, "t": "• Additional details for our experiments are"}
+{"p": 11, "s": 10.9, "b": false, "t": "presented in Appendix B; and"}
+{"p": 11, "s": 10.9, "b": false, "t": "• Additional ablation studies are presented in"}
+{"p": 11, "s": 10.9, "b": false, "t": "Appendix C."}
+{"p": 11, "s": 10.9, "b": false, "t": "We present additional ablation studies for"}
+{"p": 11, "s": 10.9, "b": false, "t": "BERT including:"}
+{"p": 11, "s": 10.9, "b": true, "t": "– Effect of Number of Training Steps; and"}
+{"p": 11, "s": 10.9, "b": true, "t": "– Ablation for Different Masking Proce-"}
+{"p": 11, "s": 10.9, "b": false, "t": "dures."}
+{"p": 11, "s": 12.0, "b": true, "t": "A"}
+{"p": 11, "s": 12.0, "b": true, "t": "Additional Details for BERT"}
+{"p": 11, "s": 10.9, "b": true, "t": "A.1"}
+{"p": 11, "s": 10.9, "b": true, "t": "Illustration of the Pre-training Tasks"}
+{"p": 11, "s": 10.9, "b": false, "t": "We provide examples of the pre-training tasks in"}
+{"p": 11, "s": 10.9, "b": false, "t": "the following."}
+{"p": 11, "s": 10.9, "b": true, "t": "Masked LM and the Masking Procedure"}
+{"p": 11, "s": 10.9, "b": false, "t": "As-"}
+{"p": 11, "s": 10.9, "b": false, "t": "suming the unlabeled sentence is"}
+{"p": 11, "s": 9.0, "b": false, "t": "my dog is"}
+{"p": 11, "s": 10.9, "b": false, "t": "hairy, and during the random masking procedure"}
+{"p": 11, "s": 10.9, "b": false, "t": "we chose the 4-th token (which corresponding to"}
+{"p": 11, "s": 10.9, "b": false, "t": "hairy), our masking procedure can be further il-"}
+{"p": 11, "s": 10.9, "b": false, "t": "lustrated by"}
+{"p": 11, "s": 10.9, "b": false, "t": "• 80% of the time: Replace the word with the"}
+{"p": 11, "s": 10.9, "b": false, "t": "[MASK] token, e.g., my dog is hairy →"}
+{"p": 11, "s": 9.0, "b": false, "t": "my dog is [MASK]"}
+{"p": 11, "s": 10.9, "b": false, "t": "• 10% of the time: Replace the word with a"}
+{"p": 11, "s": 10.9, "b": false, "t": "random word, e.g., my dog is hairy →my"}
+{"p": 11, "s": 9.0, "b": false, "t": "dog is apple"}
+{"p": 11, "s": 10.9, "b": false, "t": "• 10% of the time:"}
+{"p": 11, "s": 10.9, "b": false, "t": "Keep the word un-"}
+{"p": 11, "s": 9.0, "b": false, "t": "changed, e.g., my dog is hairy →my dog"}
+{"p": 11, "s": 10.9, "b": false, "t": "is hairy. The purpose of this is to bias the"}
+{"p": 11, "s": 10.9, "b": false, "t": "representation towards the actual observed"}
+{"p": 11, "s": 10.9, "b": false, "t": "word."}
+{"p": 11, "s": 10.9, "b": false, "t": "The advantage of this procedure is that the"}
+{"p": 11, "s": 10.9, "b": false, "t": "Transformer encoder does not know which words"}
+{"p": 11, "s": 10.9, "b": false, "t": "it will be asked to predict or which have been re-"}
+{"p": 11, "s": 10.9, "b": false, "t": "placed by random words, so it is forced to keep"}
+{"p": 11, "s": 10.9, "b": false, "t": "a distributional contextual representation of ev-"}
+{"p": 11, "s": 10.9, "b": false, "t": "ery input token."}
+{"p": 11, "s": 10.9, "b": false, "t": "Additionally, because random"}
+{"p": 11, "s": 10.9, "b": false, "t": "replacement only occurs for 1.5% of all tokens"}
+{"p": 11, "s": 10.9, "b": false, "t": "(i.e., 10% of 15%), this does not seem to harm"}
+{"p": 11, "s": 10.9, "b": false, "t": "the model’s language understanding capability. In"}
+{"p": 11, "s": 10.9, "b": false, "t": "Section C.2, we evaluate the impact this proce-"}
+{"p": 11, "s": 10.9, "b": false, "t": "dure."}
+{"p": 11, "s": 10.9, "b": false, "t": "Compared to standard langauge model training,"}
+{"p": 11, "s": 10.9, "b": false, "t": "the masked LM only make predictions on 15% of"}
+{"p": 11, "s": 10.9, "b": false, "t": "tokens in each batch, which suggests that more"}
+{"p": 11, "s": 10.9, "b": false, "t": "pre-training steps may be required for the model"}
+{"p": 12, "s": 9.2, "b": false, "t": "BERT (Ours)"}
+{"p": 12, "s": 4.6, "b": false, "t": "Trm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Trm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Trm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Trm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Trm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Trm"}
+{"p": 12, "s": 5.3, "b": false, "t": "..."}
+{"p": 12, "s": 5.3, "b": false, "t": "..."}
+{"p": 12, "s": 4.6, "b": false, "t": "Trm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Trm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Trm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Trm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Trm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Trm"}
+{"p": 12, "s": 5.3, "b": false, "t": "..."}
+{"p": 12, "s": 5.3, "b": false, "t": "..."}
+{"p": 12, "s": 9.2, "b": false, "t": "OpenAI GPT"}
+{"p": 12, "s": 4.6, "b": false, "t": "Lstm"}
+{"p": 12, "s": 9.2, "b": false, "t": "ELMo"}
+{"p": 12, "s": 4.6, "b": false, "t": "Lstm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Lstm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Lstm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Lstm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Lstm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Lstm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Lstm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Lstm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Lstm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Lstm"}
+{"p": 12, "s": 4.6, "b": false, "t": "Lstm"}
+{"p": 12, "s": 4.6, "b": false, "t": " T1"}
+{"p": 12, "s": 4.6, "b": false, "t": "T2"}
+{"p": 12, "s": 4.6, "b": false, "t": " TN"}
+{"p": 12, "s": 5.3, "b": false, "t": "..."}
+{"p": 12, "s": 5.3, "b": false, "t": "..."}
+{"p": 12, "s": 5.3, "b": false, "t": "..."}
+{"p": 12, "s": 5.3, "b": false, "t": "..."}
+{"p": 12, "s": 5.3, "b": false, "t": "..."}
+{"p": 12, "s": 4.6, "b": false, "t": " E1"}
+{"p": 12, "s": 4.6, "b": false, "t": "E2"}
+{"p": 12, "s": 4.6, "b": false, "t": " EN"}
+{"p": 12, "s": 5.3, "b": false, "t": "..."}
+{"p": 12, "s": 4.6, "b": false, "t": " T1"}
+{"p": 12, "s": 4.6, "b": false, "t": "T2"}
+{"p": 12, "s": 4.6, "b": false, "t": "TN"}
+{"p": 12, "s": 5.3, "b": false, "t": "..."}
+{"p": 12, "s": 4.6, "b": false, "t": " E1"}
+{"p": 12, "s": 4.6, "b": false, "t": "E2"}
+{"p": 12, "s": 4.6, "b": false, "t": " EN"}
+{"p": 12, "s": 5.3, "b": false, "t": "..."}
+{"p": 12, "s": 4.6, "b": false, "t": " T1"}
+{"p": 12, "s": 4.6, "b": false, "t": "T2"}
+{"p": 12, "s": 4.6, "b": false, "t": " TN"}
+{"p": 12, "s": 5.3, "b": false, "t": "..."}
+{"p": 12, "s": 4.6, "b": false, "t": " E1"}
+{"p": 12, "s": 4.6, "b": false, "t": "E2"}
+{"p": 12, "s": 4.6, "b": false, "t": " EN"}
+{"p": 12, "s": 5.3, "b": false, "t": "..."}
+{"p": 12, "s": 10.0, "b": false, "t": "Figure 3: Differences in pre-training model architectures. BERT uses a bidirectional Transformer. OpenAI GPT"}
+{"p": 12, "s": 10.0, "b": false, "t": "uses a left-to-right Transformer. ELMo uses the concatenation of independently trained left-to-right and right-to-"}
+{"p": 12, "s": 10.0, "b": false, "t": "left LSTMs to generate features for downstream tasks. Among the three, only BERT representations are jointly"}
+{"p": 12, "s": 10.0, "b": false, "t": "conditioned on both left and right context in all layers. In addition to the architecture differences, BERT and"}
+{"p": 12, "s": 10.0, "b": false, "t": "OpenAI GPT are ﬁne-tuning approaches, while ELMo is a feature-based approach."}
+{"p": 12, "s": 10.9, "b": false, "t": "to converge. In Section C.1 we demonstrate that"}
+{"p": 12, "s": 10.9, "b": false, "t": "MLM does converge marginally slower than a left-"}
+{"p": 12, "s": 10.9, "b": false, "t": "to-right model (which predicts every token), but"}
+{"p": 12, "s": 10.9, "b": false, "t": "the empirical improvements of the MLM model"}
+{"p": 12, "s": 10.9, "b": false, "t": "far outweigh the increased training cost."}
+{"p": 12, "s": 10.9, "b": true, "t": "Next Sentence Prediction"}
+{"p": 12, "s": 10.9, "b": false, "t": "The next sentence"}
+{"p": 12, "s": 10.9, "b": false, "t": "prediction task can be illustrated in the following"}
+{"p": 12, "s": 10.9, "b": false, "t": "examples."}
+{"p": 12, "s": 7.0, "b": false, "t": "Input = [CLS] the man went to [MASK] store [SEP]"}
+{"p": 12, "s": 7.0, "b": false, "t": "he bought a gallon [MASK] milk [SEP]"}
+{"p": 12, "s": 10.9, "b": false, "t": "Label = IsNext"}
+{"p": 12, "s": 7.0, "b": false, "t": "Input = [CLS] the man [MASK] to the store [SEP]"}
+{"p": 12, "s": 7.0, "b": false, "t": "penguin [MASK] are flight ##less birds [SEP]"}
+{"p": 12, "s": 7.0, "b": false, "t": "Label = NotNext"}
+{"p": 12, "s": 10.9, "b": true, "t": "A.2"}
+{"p": 12, "s": 10.9, "b": true, "t": "Pre-training Procedure"}
+{"p": 12, "s": 10.9, "b": false, "t": "To generate each training input sequence, we sam-"}
+{"p": 12, "s": 10.9, "b": false, "t": "ple two spans of text from the corpus, which we"}
+{"p": 12, "s": 10.9, "b": false, "t": "refer to as “sentences” even though they are typ-"}
+{"p": 12, "s": 10.9, "b": false, "t": "ically much longer than single sentences (but can"}
+{"p": 12, "s": 10.9, "b": false, "t": "be shorter also). The ﬁrst sentence receives the A"}
+{"p": 12, "s": 10.9, "b": false, "t": "embedding and the second receives the B embed-"}
+{"p": 12, "s": 10.9, "b": false, "t": "ding. 50% of the time B is the actual next sentence"}
+{"p": 12, "s": 10.9, "b": false, "t": "that follows A and 50% of the time it is a random"}
+{"p": 12, "s": 10.9, "b": false, "t": "sentence, which is done for the “next sentence pre-"}
+{"p": 12, "s": 10.9, "b": false, "t": "diction” task. They are sampled such that the com-"}
+{"p": 12, "s": 10.9, "b": false, "t": "bined length is ≤512 tokens. The LM masking is"}
+{"p": 12, "s": 10.9, "b": false, "t": "applied after WordPiece tokenization with a uni-"}
+{"p": 12, "s": 10.9, "b": false, "t": "form masking rate of 15%, and no special consid-"}
+{"p": 12, "s": 10.9, "b": false, "t": "eration given to partial word pieces."}
+{"p": 12, "s": 10.9, "b": false, "t": "We train with batch size of 256 sequences (256"}
+{"p": 12, "s": 10.9, "b": false, "t": "sequences * 512 tokens = 128,000 tokens/batch)"}
+{"p": 12, "s": 10.9, "b": false, "t": "for 1,000,000 steps, which is approximately 40"}
+{"p": 12, "s": 10.9, "b": false, "t": "epochs over the 3.3 billion word corpus."}
+{"p": 12, "s": 10.9, "b": false, "t": "We"}
+{"p": 12, "s": 10.9, "b": false, "t": "use Adam with learning rate of 1e-4, β1 = 0.9,"}
+{"p": 12, "s": 10.9, "b": false, "t": "β2 = 0.999, L2 weight decay of 0.01, learning"}
+{"p": 12, "s": 10.9, "b": false, "t": "rate warmup over the ﬁrst 10,000 steps, and linear"}
+{"p": 12, "s": 10.9, "b": false, "t": "decay of the learning rate. We use a dropout prob-"}
+{"p": 12, "s": 10.9, "b": false, "t": "ability of 0.1 on all layers. We use a gelu acti-"}
+{"p": 12, "s": 10.9, "b": false, "t": "vation (Hendrycks and Gimpel, 2016) rather than"}
+{"p": 12, "s": 10.9, "b": false, "t": "the standard relu, following OpenAI GPT. The"}
+{"p": 12, "s": 10.9, "b": false, "t": "training loss is the sum of the mean masked LM"}
+{"p": 12, "s": 10.9, "b": false, "t": "likelihood and the mean next sentence prediction"}
+{"p": 12, "s": 10.9, "b": false, "t": "likelihood."}
+{"p": 12, "s": 10.9, "b": false, "t": "Training of BERTBASE was performed on 4"}
+{"p": 12, "s": 10.9, "b": false, "t": "Cloud TPUs in Pod conﬁguration (16 TPU chips"}
+{"p": 12, "s": 10.9, "b": false, "t": "total).13 Training of BERTLARGE was performed"}
+{"p": 12, "s": 10.9, "b": false, "t": "on 16 Cloud TPUs (64 TPU chips total). Each pre-"}
+{"p": 12, "s": 10.9, "b": false, "t": "training took 4 days to complete."}
+{"p": 12, "s": 10.9, "b": false, "t": "Longer sequences are disproportionately expen-"}
+{"p": 12, "s": 10.9, "b": false, "t": "sive because attention is quadratic to the sequence"}
+{"p": 12, "s": 10.9, "b": false, "t": "length. To speed up pretraing in our experiments,"}
+{"p": 12, "s": 10.9, "b": false, "t": "we pre-train the model with sequence length of"}
+{"p": 12, "s": 10.9, "b": false, "t": "128 for 90% of the steps. Then, we train the rest"}
+{"p": 12, "s": 10.9, "b": false, "t": "10% of the steps of sequence of 512 to learn the"}
+{"p": 12, "s": 10.9, "b": false, "t": "positional embeddings."}
+{"p": 12, "s": 10.9, "b": true, "t": "A.3"}
+{"p": 12, "s": 10.9, "b": true, "t": "Fine-tuning Procedure"}
+{"p": 12, "s": 10.9, "b": false, "t": "For ﬁne-tuning, most model hyperparameters are"}
+{"p": 12, "s": 10.9, "b": false, "t": "the same as in pre-training, with the exception of"}
+{"p": 12, "s": 10.9, "b": false, "t": "the batch size, learning rate, and number of train-"}
+{"p": 12, "s": 10.9, "b": false, "t": "ing epochs. The dropout probability was always"}
+{"p": 12, "s": 10.9, "b": false, "t": "kept at 0.1. The optimal hyperparameter values"}
+{"p": 12, "s": 10.9, "b": false, "t": "are task-speciﬁc, but we found the following range"}
+{"p": 12, "s": 10.9, "b": false, "t": "of possible values to work well across all tasks:"}
+{"p": 12, "s": 10.9, "b": true, "t": "• Batch size: 16, 32"}
+{"p": 12, "s": 9.0, "b": false, "t": "13https://cloudplatform.googleblog.com/2018/06/Cloud-"}
+{"p": 12, "s": 9.0, "b": false, "t": "TPU-now-offers-preemptible-pricing-and-global-"}
+{"p": 12, "s": 9.0, "b": false, "t": "availability.html"}
+{"p": 13, "s": 10.9, "b": true, "t": "• Learning rate (Adam): 5e-5, 3e-5, 2e-5"}
+{"p": 13, "s": 10.9, "b": true, "t": "• Number of epochs: 2, 3, 4"}
+{"p": 13, "s": 10.9, "b": false, "t": "We also observed that large data sets (e.g.,"}
+{"p": 13, "s": 10.9, "b": false, "t": "100k+ labeled training examples) were far less"}
+{"p": 13, "s": 10.9, "b": false, "t": "sensitive to hyperparameter choice than small data"}
+{"p": 13, "s": 10.9, "b": false, "t": "sets. Fine-tuning is typically very fast, so it is rea-"}
+{"p": 13, "s": 10.9, "b": false, "t": "sonable to simply run an exhaustive search over"}
+{"p": 13, "s": 10.9, "b": false, "t": "the above parameters and choose the model that"}
+{"p": 13, "s": 10.9, "b": false, "t": "performs best on the development set."}
+{"p": 13, "s": 10.9, "b": true, "t": "A.4"}
+{"p": 13, "s": 10.9, "b": true, "t": "Comparison of BERT, ELMo ,and"}
+{"p": 13, "s": 10.9, "b": true, "t": "OpenAI GPT"}
+{"p": 13, "s": 10.9, "b": false, "t": "Here we studies the differences in recent popular"}
+{"p": 13, "s": 10.9, "b": false, "t": "representation learning models including ELMo,"}
+{"p": 13, "s": 10.9, "b": false, "t": "OpenAI GPT and BERT. The comparisons be-"}
+{"p": 13, "s": 10.9, "b": false, "t": "tween the model architectures are shown visually"}
+{"p": 13, "s": 10.9, "b": false, "t": "in Figure 3. Note that in addition to the architec-"}
+{"p": 13, "s": 10.9, "b": false, "t": "ture differences, BERT and OpenAI GPT are ﬁne-"}
+{"p": 13, "s": 10.9, "b": false, "t": "tuning approaches, while ELMo is a feature-based"}
+{"p": 13, "s": 10.9, "b": false, "t": "approach."}
+{"p": 13, "s": 10.9, "b": false, "t": "The most comparable existing pre-training"}
+{"p": 13, "s": 10.9, "b": false, "t": "method to BERT is OpenAI GPT, which trains a"}
+{"p": 13, "s": 10.9, "b": false, "t": "left-to-right Transformer LM on a large text cor-"}
+{"p": 13, "s": 10.9, "b": false, "t": "pus. In fact, many of the design decisions in BERT"}
+{"p": 13, "s": 10.9, "b": false, "t": "were intentionally made to make it as close to"}
+{"p": 13, "s": 10.9, "b": false, "t": "GPT as possible so that the two methods could be"}
+{"p": 13, "s": 10.9, "b": false, "t": "minimally compared. The core argument of this"}
+{"p": 13, "s": 10.9, "b": false, "t": "work is that the bi-directionality and the two pre-"}
+{"p": 13, "s": 10.9, "b": false, "t": "training tasks presented in Section 3.1 account for"}
+{"p": 13, "s": 10.9, "b": false, "t": "the majority of the empirical improvements, but"}
+{"p": 13, "s": 10.9, "b": false, "t": "we do note that there are several other differences"}
+{"p": 13, "s": 10.9, "b": false, "t": "between how BERT and GPT were trained:"}
+{"p": 13, "s": 10.9, "b": false, "t": "• GPT is trained on the BooksCorpus (800M"}
+{"p": 13, "s": 10.9, "b": false, "t": "words); BERT is trained on the BooksCor-"}
+{"p": 13, "s": 10.9, "b": false, "t": "pus (800M words) and Wikipedia (2,500M"}
+{"p": 13, "s": 10.9, "b": false, "t": "words)."}
+{"p": 13, "s": 10.9, "b": false, "t": "• GPT uses a sentence separator ([SEP]) and"}
+{"p": 13, "s": 10.9, "b": false, "t": "classiﬁer token ([CLS]) which are only in-"}
+{"p": 13, "s": 10.9, "b": false, "t": "troduced at ﬁne-tuning time; BERT learns"}
+{"p": 13, "s": 10.9, "b": false, "t": "[SEP], [CLS] and sentence A/B embed-"}
+{"p": 13, "s": 10.9, "b": false, "t": "dings during pre-training."}
+{"p": 13, "s": 10.9, "b": false, "t": "• GPT was trained for 1M steps with a batch"}
+{"p": 13, "s": 10.9, "b": false, "t": "size of 32,000 words; BERT was trained for"}
+{"p": 13, "s": 10.9, "b": false, "t": "1M steps with a batch size of 128,000 words."}
+{"p": 13, "s": 10.9, "b": false, "t": "• GPT used the same learning rate of 5e-5 for"}
+{"p": 13, "s": 10.9, "b": false, "t": "all ﬁne-tuning experiments; BERT chooses a"}
+{"p": 13, "s": 10.9, "b": false, "t": "task-speciﬁc ﬁne-tuning learning rate which"}
+{"p": 13, "s": 10.9, "b": false, "t": "performs the best on the development set."}
+{"p": 13, "s": 10.9, "b": false, "t": "To isolate the effect of these differences, we per-"}
+{"p": 13, "s": 10.9, "b": false, "t": "form ablation experiments in Section 5.1 which"}
+{"p": 13, "s": 10.9, "b": false, "t": "demonstrate that the majority of the improvements"}
+{"p": 13, "s": 10.9, "b": false, "t": "are in fact coming from the two pre-training tasks"}
+{"p": 13, "s": 10.9, "b": false, "t": "and the bidirectionality they enable."}
+{"p": 13, "s": 10.9, "b": true, "t": "A.5"}
+{"p": 13, "s": 10.9, "b": true, "t": "Illustrations of Fine-tuning on Different"}
+{"p": 13, "s": 10.9, "b": true, "t": "Tasks"}
+{"p": 13, "s": 10.9, "b": false, "t": "The illustration of ﬁne-tuning BERT on different"}
+{"p": 13, "s": 10.9, "b": false, "t": "tasks can be seen in Figure 4. Our task-speciﬁc"}
+{"p": 13, "s": 10.9, "b": false, "t": "models are formed by incorporating BERT with"}
+{"p": 13, "s": 10.9, "b": false, "t": "one additional output layer, so a minimal num-"}
+{"p": 13, "s": 10.9, "b": false, "t": "ber of parameters need to be learned from scratch."}
+{"p": 13, "s": 10.9, "b": false, "t": "Among the tasks, (a) and (b) are sequence-level"}
+{"p": 13, "s": 10.9, "b": false, "t": "tasks while (c) and (d) are token-level tasks. In"}
+{"p": 13, "s": 10.9, "b": false, "t": "the ﬁgure, E represents the input embedding, Ti"}
+{"p": 13, "s": 10.9, "b": false, "t": "represents the contextual representation of token i,"}
+{"p": 13, "s": 10.9, "b": false, "t": "[CLS] is the special symbol for classiﬁcation out-"}
+{"p": 13, "s": 10.9, "b": false, "t": "put, and [SEP] is the special symbol to separate"}
+{"p": 13, "s": 10.9, "b": false, "t": "non-consecutive token sequences."}
+{"p": 13, "s": 12.0, "b": true, "t": "B"}
+{"p": 13, "s": 12.0, "b": true, "t": "Detailed Experimental Setup"}
+{"p": 13, "s": 10.9, "b": true, "t": "B.1"}
+{"p": 13, "s": 10.9, "b": true, "t": "Detailed Descriptions for the GLUE"}
+{"p": 13, "s": 10.9, "b": true, "t": "Benchmark Experiments."}
+{"p": 13, "s": 10.9, "b": false, "t": "Our"}
+{"p": 13, "s": 10.9, "b": false, "t": "GLUE"}
+{"p": 13, "s": 10.9, "b": false, "t": "results"}
+{"p": 13, "s": 10.9, "b": false, "t": "in"}
+{"p": 13, "s": 10.9, "b": false, "t": "Table1"}
+{"p": 13, "s": 10.9, "b": false, "t": "are"}
+{"p": 13, "s": 10.9, "b": false, "t": "obtained"}
+{"p": 13, "s": 10.9, "b": false, "t": "from"}
+{"p": 13, "s": 10.9, "b": false, "t": "https://gluebenchmark.com/"}
+{"p": 13, "s": 10.9, "b": false, "t": "leaderboard"}
+{"p": 13, "s": 10.9, "b": false, "t": "and"}
+{"p": 13, "s": 10.9, "b": false, "t": "https://blog."}
+{"p": 13, "s": 10.9, "b": false, "t": "openai.com/language-unsupervised."}
+{"p": 13, "s": 10.9, "b": false, "t": "The GLUE benchmark includes the following"}
+{"p": 13, "s": 10.9, "b": false, "t": "datasets, the descriptions of which were originally"}
+{"p": 13, "s": 10.9, "b": false, "t": "summarized in Wang et al. (2018a):"}
+{"p": 13, "s": 10.9, "b": true, "t": "MNLI"}
+{"p": 13, "s": 10.9, "b": false, "t": "Multi-Genre Natural Language Inference"}
+{"p": 13, "s": 10.9, "b": false, "t": "is a large-scale, crowdsourced entailment classiﬁ-"}
+{"p": 13, "s": 10.9, "b": false, "t": "cation task (Williams et al., 2018). Given a pair of"}
+{"p": 13, "s": 10.9, "b": false, "t": "sentences, the goal is to predict whether the sec-"}
+{"p": 13, "s": 10.9, "b": false, "t": "ond sentence is an entailment, contradiction, or"}
+{"p": 13, "s": 10.9, "b": false, "t": "neutral with respect to the ﬁrst one."}
+{"p": 13, "s": 10.9, "b": true, "t": "QQP"}
+{"p": 13, "s": 10.9, "b": false, "t": "Quora Question Pairs is a binary classiﬁ-"}
+{"p": 13, "s": 10.9, "b": false, "t": "cation task where the goal is to determine if two"}
+{"p": 13, "s": 10.9, "b": false, "t": "questions asked on Quora are semantically equiv-"}
+{"p": 13, "s": 10.9, "b": false, "t": "alent (Chen et al., 2018)."}
+{"p": 13, "s": 10.9, "b": true, "t": "QNLI"}
+{"p": 13, "s": 10.9, "b": false, "t": "Question Natural Language Inference is"}
+{"p": 13, "s": 10.9, "b": false, "t": "a version of the Stanford Question Answering"}
+{"p": 13, "s": 10.9, "b": false, "t": "Dataset (Rajpurkar et al., 2016) which has been"}
+{"p": 13, "s": 10.9, "b": false, "t": "converted to a binary classiﬁcation task (Wang"}
+{"p": 13, "s": 10.9, "b": false, "t": "et al., 2018a). The positive examples are (ques-"}
+{"p": 13, "s": 10.9, "b": false, "t": "tion, sentence) pairs which do contain the correct"}
+{"p": 13, "s": 10.9, "b": false, "t": "answer, and the negative examples are (question,"}
+{"p": 13, "s": 10.9, "b": false, "t": "sentence) from the same paragraph which do not"}
+{"p": 13, "s": 10.9, "b": false, "t": "contain the answer."}
+{"p": 14, "s": 11.1, "b": false, "t": "BERT"}
+{"p": 14, "s": 3.1, "b": false, "t": "E[CLS]"}
+{"p": 14, "s": 5.5, "b": false, "t": "E1"}
+{"p": 14, "s": 3.7, "b": false, "t": " E[SEP]"}
+{"p": 14, "s": 6.5, "b": false, "t": "..."}
+{"p": 14, "s": 5.5, "b": false, "t": "EN"}
+{"p": 14, "s": 5.5, "b": false, "t": "E1’"}
+{"p": 14, "s": 6.5, "b": false, "t": "..."}
+{"p": 14, "s": 5.5, "b": false, "t": "EM’"}
+{"p": 14, "s": 5.5, "b": false, "t": "C"}
+{"p": 14, "s": 5.5, "b": false, "t": "T1"}
+{"p": 14, "s": 3.7, "b": false, "t": "T[SEP]"}
+{"p": 14, "s": 6.5, "b": false, "t": "..."}
+{"p": 14, "s": 5.5, "b": false, "t": "TN"}
+{"p": 14, "s": 5.5, "b": false, "t": "T1’"}
+{"p": 14, "s": 6.5, "b": false, "t": "..."}
+{"p": 14, "s": 5.5, "b": false, "t": "TM’"}
+{"p": 14, "s": 3.2, "b": false, "t": "[CLS]"}
+{"p": 14, "s": 3.7, "b": false, "t": "Tok "}
+{"p": 14, "s": 3.7, "b": false, "t": "1"}
+{"p": 14, "s": 3.7, "b": false, "t": " [SEP]"}
+{"p": 14, "s": 6.5, "b": false, "t": "..."}
+{"p": 14, "s": 3.7, "b": false, "t": "Tok "}
+{"p": 14, "s": 3.7, "b": false, "t": "N"}
+{"p": 14, "s": 3.7, "b": false, "t": "Tok "}
+{"p": 14, "s": 3.7, "b": false, "t": "1"}
+{"p": 14, "s": 6.5, "b": false, "t": "..."}
+{"p": 14, "s": 3.7, "b": false, "t": "Tok"}
+{"p": 14, "s": 3.7, "b": false, "t": "M"}
+{"p": 14, "s": 6.5, "b": false, "t": "Question"}
+{"p": 14, "s": 6.5, "b": false, "t": "Paragraph"}
+{"p": 14, "s": 11.1, "b": false, "t": "BERT"}
+{"p": 14, "s": 3.7, "b": false, "t": "E[CLS]"}
+{"p": 14, "s": 5.5, "b": false, "t": "E1"}
+{"p": 14, "s": 5.5, "b": false, "t": " E2"}
+{"p": 14, "s": 5.5, "b": false, "t": " EN"}
+{"p": 14, "s": 5.5, "b": false, "t": "C"}
+{"p": 14, "s": 5.5, "b": false, "t": "T1"}
+{"p": 14, "s": 5.5, "b": false, "t": " T2"}
+{"p": 14, "s": 5.5, "b": false, "t": " TN"}
+{"p": 14, "s": 6.5, "b": false, "t": "Single Sentence "}
+{"p": 14, "s": 6.5, "b": false, "t": "..."}
+{"p": 14, "s": 6.5, "b": false, "t": "..."}
+{"p": 14, "s": 11.1, "b": false, "t": "BERT"}
+{"p": 14, "s": 5.5, "b": false, "t": "Tok 1"}
+{"p": 14, "s": 5.5, "b": false, "t": " Tok 2"}
+{"p": 14, "s": 5.5, "b": false, "t": " Tok N"}
+{"p": 14, "s": 6.5, "b": false, "t": "..."}
+{"p": 14, "s": 4.6, "b": false, "t": "[CLS]"}
+{"p": 14, "s": 3.7, "b": false, "t": "E[CLS]"}
+{"p": 14, "s": 5.5, "b": false, "t": "E1"}
+{"p": 14, "s": 5.5, "b": false, "t": " E2"}
+{"p": 14, "s": 5.5, "b": false, "t": " EN"}
+{"p": 14, "s": 5.5, "b": false, "t": "C"}
+{"p": 14, "s": 5.5, "b": false, "t": "T1"}
+{"p": 14, "s": 5.5, "b": false, "t": " T2"}
+{"p": 14, "s": 5.5, "b": false, "t": " TN"}
+{"p": 14, "s": 6.5, "b": false, "t": "Single Sentence "}
+{"p": 14, "s": 6.5, "b": false, "t": "B-PER"}
+{"p": 14, "s": 6.5, "b": false, "t": "O"}
+{"p": 14, "s": 6.5, "b": false, "t": "O"}
+{"p": 14, "s": 6.5, "b": false, "t": "..."}
+{"p": 14, "s": 6.5, "b": false, "t": "..."}
+{"p": 14, "s": 3.1, "b": false, "t": "E[CLS]"}
+{"p": 14, "s": 5.5, "b": false, "t": "E1"}
+{"p": 14, "s": 3.7, "b": false, "t": " E[SEP]"}
+{"p": 14, "s": 6.5, "b": false, "t": "Class "}
+{"p": 14, "s": 6.5, "b": false, "t": "Label"}
+{"p": 14, "s": 6.5, "b": false, "t": "..."}
+{"p": 14, "s": 5.5, "b": false, "t": "EN"}
+{"p": 14, "s": 5.5, "b": false, "t": "E1’"}
+{"p": 14, "s": 6.5, "b": false, "t": "..."}
+{"p": 14, "s": 5.5, "b": false, "t": "EM’"}
+{"p": 14, "s": 5.5, "b": false, "t": "C"}
+{"p": 14, "s": 5.5, "b": false, "t": "T1"}
+{"p": 14, "s": 3.7, "b": false, "t": "T[SEP]"}
+{"p": 14, "s": 6.5, "b": false, "t": "..."}
+{"p": 14, "s": 5.5, "b": false, "t": "TN"}
+{"p": 14, "s": 5.5, "b": false, "t": "T1’"}
+{"p": 14, "s": 6.5, "b": false, "t": "..."}
+{"p": 14, "s": 5.5, "b": false, "t": "TM’"}
+{"p": 14, "s": 6.5, "b": false, "t": "Start/End Span"}
+{"p": 14, "s": 6.5, "b": false, "t": "Class "}
+{"p": 14, "s": 6.5, "b": false, "t": "Label"}
+{"p": 14, "s": 11.1, "b": false, "t": "BERT"}
+{"p": 14, "s": 5.5, "b": false, "t": "Tok 1"}
+{"p": 14, "s": 5.5, "b": false, "t": " Tok 2"}
+{"p": 14, "s": 5.5, "b": false, "t": " Tok N"}
+{"p": 14, "s": 6.5, "b": false, "t": "..."}
+{"p": 14, "s": 4.6, "b": false, "t": "[CLS]"}
+{"p": 14, "s": 5.5, "b": false, "t": "Tok 1"}
+{"p": 14, "s": 4.6, "b": false, "t": "[CLS]"}
+{"p": 14, "s": 3.2, "b": false, "t": "[CLS]"}
+{"p": 14, "s": 3.7, "b": false, "t": "Tok "}
+{"p": 14, "s": 3.7, "b": false, "t": "1"}
+{"p": 14, "s": 3.7, "b": false, "t": " [SEP]"}
+{"p": 14, "s": 6.5, "b": false, "t": "..."}
+{"p": 14, "s": 3.7, "b": false, "t": "Tok "}
+{"p": 14, "s": 3.7, "b": false, "t": "N"}
+{"p": 14, "s": 3.7, "b": false, "t": "Tok "}
+{"p": 14, "s": 3.7, "b": false, "t": "1"}
+{"p": 14, "s": 6.5, "b": false, "t": "..."}
+{"p": 14, "s": 3.7, "b": false, "t": "Tok"}
+{"p": 14, "s": 3.7, "b": false, "t": "M"}
+{"p": 14, "s": 6.5, "b": false, "t": "Sentence 1"}
+{"p": 14, "s": 6.5, "b": false, "t": "..."}
+{"p": 14, "s": 6.5, "b": false, "t": "Sentence 2"}
+{"p": 14, "s": 10.0, "b": false, "t": "Figure 4: Illustrations of Fine-tuning BERT on Different Tasks."}
+{"p": 14, "s": 10.9, "b": true, "t": "SST-2"}
+{"p": 14, "s": 10.9, "b": false, "t": "The Stanford Sentiment Treebank is a"}
+{"p": 14, "s": 10.9, "b": false, "t": "binary single-sentence classiﬁcation task consist-"}
+{"p": 14, "s": 10.9, "b": false, "t": "ing of sentences extracted from movie reviews"}
+{"p": 14, "s": 10.9, "b": false, "t": "with human annotations of their sentiment (Socher"}
+{"p": 14, "s": 10.9, "b": false, "t": "et al., 2013)."}
+{"p": 14, "s": 10.9, "b": true, "t": "CoLA"}
+{"p": 14, "s": 10.9, "b": false, "t": "The Corpus of Linguistic Acceptability is"}
+{"p": 14, "s": 10.9, "b": false, "t": "a binary single-sentence classiﬁcation task, where"}
+{"p": 14, "s": 10.9, "b": false, "t": "the goal is to predict whether an English sentence"}
+{"p": 14, "s": 10.9, "b": false, "t": "is linguistically “acceptable” or not (Warstadt"}
+{"p": 14, "s": 10.9, "b": false, "t": "et al., 2018)."}
+{"p": 14, "s": 10.9, "b": true, "t": "STS-B"}
+{"p": 14, "s": 10.9, "b": false, "t": "The Semantic Textual Similarity Bench-"}
+{"p": 14, "s": 10.9, "b": false, "t": "mark is a collection of sentence pairs drawn from"}
+{"p": 14, "s": 10.9, "b": false, "t": "news headlines and other sources (Cer et al.,"}
+{"p": 14, "s": 10.9, "b": false, "t": "2017). They were annotated with a score from 1"}
+{"p": 14, "s": 10.9, "b": false, "t": "to 5 denoting how similar the two sentences are in"}
+{"p": 14, "s": 10.9, "b": false, "t": "terms of semantic meaning."}
+{"p": 14, "s": 10.9, "b": true, "t": "MRPC"}
+{"p": 14, "s": 10.9, "b": false, "t": "Microsoft Research Paraphrase Corpus"}
+{"p": 14, "s": 10.9, "b": false, "t": "consists of sentence pairs automatically extracted"}
+{"p": 14, "s": 10.9, "b": false, "t": "from online news sources, with human annotations"}
+{"p": 14, "s": 10.9, "b": false, "t": "for whether the sentences in the pair are semanti-"}
+{"p": 14, "s": 10.9, "b": false, "t": "cally equivalent (Dolan and Brockett, 2005)."}
+{"p": 14, "s": 10.9, "b": true, "t": "RTE"}
+{"p": 14, "s": 10.9, "b": false, "t": "Recognizing Textual Entailment is a bi-"}
+{"p": 14, "s": 10.9, "b": false, "t": "nary entailment task similar to MNLI, but with"}
+{"p": 14, "s": 10.9, "b": false, "t": "much less training data (Bentivogli et al., 2009).14"}
+{"p": 14, "s": 10.9, "b": true, "t": "WNLI"}
+{"p": 14, "s": 10.9, "b": false, "t": "Winograd NLI is a small natural lan-"}
+{"p": 14, "s": 10.9, "b": false, "t": "guage inference dataset (Levesque et al., 2011)."}
+{"p": 14, "s": 10.9, "b": false, "t": "The GLUE webpage notes that there are issues"}
+{"p": 14, "s": 10.9, "b": false, "t": "with the construction of this dataset, 15 and every"}
+{"p": 14, "s": 10.9, "b": false, "t": "trained system that’s been submitted to GLUE has"}
+{"p": 14, "s": 10.9, "b": false, "t": "performed worse than the 65.1 baseline accuracy"}
+{"p": 14, "s": 10.9, "b": false, "t": "of predicting the majority class. We therefore ex-"}
+{"p": 14, "s": 10.9, "b": false, "t": "clude this set to be fair to OpenAI GPT. For our"}
+{"p": 14, "s": 10.9, "b": false, "t": "GLUE submission, we always predicted the ma-"}
+{"p": 14, "s": 9.0, "b": false, "t": "14Note that we only report single-task ﬁne-tuning results"}
+{"p": 14, "s": 9.0, "b": false, "t": "in this paper. A multitask ﬁne-tuning approach could poten-"}
+{"p": 14, "s": 9.0, "b": false, "t": "tially push the performance even further. For example, we"}
+{"p": 14, "s": 9.0, "b": false, "t": "did observe substantial improvements on RTE from multi-"}
+{"p": 14, "s": 9.0, "b": false, "t": "task training with MNLI."}
+{"p": 14, "s": 9.0, "b": false, "t": "15https://gluebenchmark.com/faq"}
+{"p": 15, "s": 10.9, "b": false, "t": "jority class."}
+{"p": 15, "s": 12.0, "b": true, "t": "C"}
+{"p": 15, "s": 12.0, "b": true, "t": "Additional Ablation Studies"}
+{"p": 15, "s": 10.9, "b": true, "t": "C.1"}
+{"p": 15, "s": 10.9, "b": true, "t": "Effect of Number of Training Steps"}
+{"p": 15, "s": 10.9, "b": false, "t": "Figure 5 presents MNLI Dev accuracy after ﬁne-"}
+{"p": 15, "s": 10.9, "b": false, "t": "tuning from a checkpoint that has been pre-trained"}
+{"p": 15, "s": 10.9, "b": false, "t": "for k steps. This allows us to answer the following"}
+{"p": 15, "s": 10.9, "b": false, "t": "questions:"}
+{"p": 15, "s": 10.9, "b": false, "t": "1. Question:"}
+{"p": 15, "s": 10.9, "b": false, "t": "Does BERT really need such"}
+{"p": 15, "s": 10.9, "b": false, "t": "a large amount of pre-training (128,000"}
+{"p": 15, "s": 10.9, "b": false, "t": "words/batch * 1,000,000 steps) to achieve"}
+{"p": 15, "s": 10.9, "b": false, "t": "high ﬁne-tuning accuracy?"}
+{"p": 15, "s": 10.9, "b": false, "t": "Answer: Yes, BERTBASE achieves almost"}
+{"p": 15, "s": 10.9, "b": false, "t": "1.0% additional accuracy on MNLI when"}
+{"p": 15, "s": 10.9, "b": false, "t": "trained on 1M steps compared to 500k steps."}
+{"p": 15, "s": 10.9, "b": false, "t": "2. Question: Does MLM pre-training converge"}
+{"p": 15, "s": 10.9, "b": false, "t": "slower than LTR pre-training, since only 15%"}
+{"p": 15, "s": 10.9, "b": false, "t": "of words are predicted in each batch rather"}
+{"p": 15, "s": 10.9, "b": false, "t": "than every word?"}
+{"p": 15, "s": 10.9, "b": false, "t": "Answer: The MLM model does converge"}
+{"p": 15, "s": 10.9, "b": false, "t": "slightly slower than the LTR model. How-"}
+{"p": 15, "s": 10.9, "b": false, "t": "ever, in terms of absolute accuracy the MLM"}
+{"p": 15, "s": 10.9, "b": false, "t": "model begins to outperform the LTR model"}
+{"p": 15, "s": 10.9, "b": false, "t": "almost immediately."}
+{"p": 15, "s": 10.9, "b": true, "t": "C.2"}
+{"p": 15, "s": 10.9, "b": true, "t": "Ablation for Different Masking"}
+{"p": 15, "s": 10.9, "b": true, "t": "Procedures"}
+{"p": 15, "s": 10.9, "b": false, "t": "In Section 3.1, we mention that BERT uses a"}
+{"p": 15, "s": 10.9, "b": false, "t": "mixed strategy for masking the target tokens when"}
+{"p": 15, "s": 10.9, "b": false, "t": "pre-training with the masked language model"}
+{"p": 15, "s": 10.9, "b": false, "t": "(MLM) objective. The following is an ablation"}
+{"p": 15, "s": 10.9, "b": false, "t": "study to evaluate the effect of different masking"}
+{"p": 15, "s": 10.9, "b": false, "t": "strategies."}
+{"p": 15, "s": 7.0, "b": false, "t": "200"}
+{"p": 15, "s": 7.0, "b": false, "t": "400"}
+{"p": 15, "s": 7.0, "b": false, "t": "600"}
+{"p": 15, "s": 7.0, "b": false, "t": "800"}
+{"p": 15, "s": 7.0, "b": false, "t": "1,000"}
+{"p": 15, "s": 7.0, "b": false, "t": "76"}
+{"p": 15, "s": 7.0, "b": false, "t": "78"}
+{"p": 15, "s": 7.0, "b": false, "t": "80"}
+{"p": 15, "s": 7.0, "b": false, "t": "82"}
+{"p": 15, "s": 7.0, "b": false, "t": "84"}
+{"p": 15, "s": 7.0, "b": false, "t": "Pre-training Steps (Thousands)"}
+{"p": 15, "s": 7.0, "b": false, "t": "MNLI Dev Accuracy"}
+{"p": 15, "s": 7.0, "b": false, "t": "BERTBASE (Masked LM)"}
+{"p": 15, "s": 7.0, "b": false, "t": "BERTBASE (Left-to-Right)"}
+{"p": 15, "s": 10.0, "b": false, "t": "Figure 5: Ablation over number of training steps. This"}
+{"p": 15, "s": 10.0, "b": false, "t": "shows the MNLI accuracy after ﬁne-tuning, starting"}
+{"p": 15, "s": 10.0, "b": false, "t": "from model parameters that have been pre-trained for"}
+{"p": 15, "s": 10.0, "b": false, "t": "k steps. The x-axis is the value of k."}
+{"p": 15, "s": 10.9, "b": false, "t": "Note that the purpose of the masking strategies"}
+{"p": 15, "s": 10.9, "b": false, "t": "is to reduce the mismatch between pre-training"}
+{"p": 15, "s": 10.9, "b": false, "t": "and ﬁne-tuning, as the [MASK] symbol never ap-"}
+{"p": 15, "s": 10.9, "b": false, "t": "pears during the ﬁne-tuning stage. We report the"}
+{"p": 15, "s": 10.9, "b": false, "t": "Dev results for both MNLI and NER. For NER,"}
+{"p": 15, "s": 10.9, "b": false, "t": "we report both ﬁne-tuning and feature-based ap-"}
+{"p": 15, "s": 10.9, "b": false, "t": "proaches, as we expect the mismatch will be am-"}
+{"p": 15, "s": 10.9, "b": false, "t": "pliﬁed for the feature-based approach as the model"}
+{"p": 15, "s": 10.9, "b": false, "t": "will not have the chance to adjust the representa-"}
+{"p": 15, "s": 10.9, "b": false, "t": "tions."}
+{"p": 15, "s": 9.0, "b": false, "t": "Masking Rates"}
+{"p": 15, "s": 9.0, "b": false, "t": "Dev Set Results"}
+{"p": 15, "s": 7.2, "b": false, "t": "MASK SAME"}
+{"p": 15, "s": 7.2, "b": false, "t": "RND"}
+{"p": 15, "s": 9.0, "b": false, "t": "MNLI"}
+{"p": 15, "s": 9.0, "b": false, "t": "NER"}
+{"p": 15, "s": 9.0, "b": false, "t": "Fine-tune Fine-tune Feature-based"}
+{"p": 15, "s": 9.0, "b": false, "t": "80%"}
+{"p": 15, "s": 9.0, "b": false, "t": "10%"}
+{"p": 15, "s": 9.0, "b": false, "t": "10%"}
+{"p": 15, "s": 9.0, "b": false, "t": "84.2"}
+{"p": 15, "s": 9.0, "b": false, "t": "95.4"}
+{"p": 15, "s": 9.0, "b": false, "t": "94.9"}
+{"p": 15, "s": 9.0, "b": false, "t": "100%"}
+{"p": 15, "s": 9.0, "b": false, "t": "0%"}
+{"p": 15, "s": 9.0, "b": false, "t": "0%"}
+{"p": 15, "s": 9.0, "b": false, "t": "84.3"}
+{"p": 15, "s": 9.0, "b": false, "t": "94.9"}
+{"p": 15, "s": 9.0, "b": false, "t": "94.0"}
+{"p": 15, "s": 9.0, "b": false, "t": "80%"}
+{"p": 15, "s": 9.0, "b": false, "t": "0%"}
+{"p": 15, "s": 9.0, "b": false, "t": "20%"}
+{"p": 15, "s": 9.0, "b": false, "t": "84.1"}
+{"p": 15, "s": 9.0, "b": false, "t": "95.2"}
+{"p": 15, "s": 9.0, "b": false, "t": "94.6"}
+{"p": 15, "s": 9.0, "b": false, "t": "80%"}
+{"p": 15, "s": 9.0, "b": false, "t": "20%"}
+{"p": 15, "s": 9.0, "b": false, "t": "0%"}
+{"p": 15, "s": 9.0, "b": false, "t": "84.4"}
+{"p": 15, "s": 9.0, "b": false, "t": "95.2"}
+{"p": 15, "s": 9.0, "b": false, "t": "94.7"}
+{"p": 15, "s": 9.0, "b": false, "t": "0%"}
+{"p": 15, "s": 9.0, "b": false, "t": "20%"}
+{"p": 15, "s": 9.0, "b": false, "t": "80%"}
+{"p": 15, "s": 9.0, "b": false, "t": "83.7"}
+{"p": 15, "s": 9.0, "b": false, "t": "94.8"}
+{"p": 15, "s": 9.0, "b": false, "t": "94.6"}
+{"p": 15, "s": 9.0, "b": false, "t": "0%"}
+{"p": 15, "s": 9.0, "b": false, "t": "0% 100%"}
+{"p": 15, "s": 9.0, "b": false, "t": "83.6"}
+{"p": 15, "s": 9.0, "b": false, "t": "94.9"}
+{"p": 15, "s": 9.0, "b": false, "t": "94.6"}
+{"p": 15, "s": 10.0, "b": false, "t": "Table 8: Ablation over different masking strategies."}
+{"p": 15, "s": 10.9, "b": false, "t": "The results are presented in Table 8. In the table,"}
+{"p": 15, "s": 10.9, "b": false, "t": "MASK means that we replace the target token with"}
+{"p": 15, "s": 10.9, "b": false, "t": "the [MASK] symbol for MLM; SAME means that"}
+{"p": 15, "s": 10.9, "b": false, "t": "we keep the target token as is; RND means that"}
+{"p": 15, "s": 10.9, "b": false, "t": "we replace the target token with another random"}
+{"p": 15, "s": 10.9, "b": false, "t": "token."}
+{"p": 15, "s": 10.9, "b": false, "t": "The numbers in the left part of the table repre-"}
+{"p": 15, "s": 10.9, "b": false, "t": "sent the probabilities of the speciﬁc strategies used"}
+{"p": 15, "s": 10.9, "b": false, "t": "during MLM pre-training (BERT uses 80%, 10%,"}
+{"p": 15, "s": 10.9, "b": false, "t": "10%). The right part of the paper represents the"}
+{"p": 15, "s": 10.9, "b": false, "t": "Dev set results. For the feature-based approach,"}
+{"p": 15, "s": 10.9, "b": false, "t": "we concatenate the last 4 layers of BERT as the"}
+{"p": 15, "s": 10.9, "b": false, "t": "features, which was shown to be the best approach"}
+{"p": 15, "s": 10.9, "b": false, "t": "in Section 5.3."}
+{"p": 15, "s": 10.9, "b": false, "t": "From the table it can be seen that ﬁne-tuning is"}
+{"p": 15, "s": 10.9, "b": false, "t": "surprisingly robust to different masking strategies."}
+{"p": 15, "s": 10.9, "b": false, "t": "However, as expected, using only the MASK strat-"}
+{"p": 15, "s": 10.9, "b": false, "t": "egy was problematic when applying the feature-"}
+{"p": 15, "s": 10.9, "b": false, "t": "based approach to NER. Interestingly, using only"}
+{"p": 15, "s": 10.9, "b": false, "t": "the RND strategy performs much worse than our"}
+{"p": 15, "s": 10.9, "b": false, "t": "strategy as well."}
