@@ -1008,6 +1008,143 @@ def create_app(
     def document_get(document_id: str):
         return _get_document(document_id)
 
+    # ---- paper reading view (SPW P3, SPEC §2; /api/papers/* read-only) -------
+
+    # The projection reads through the public store seams rather than parsing
+    # record.json keys: P1's payload (sections / full text / page map) comes from
+    # ``store.get_paper_payload`` and P2's metadata/references from
+    # ``store.paper_payload``.  The file-backed store keeps those in ``paper.json``
+    # and the ``paper`` slot of ``record.json`` respectively, so ``record.json``
+    # only carries a section *count* (``paper_sections``) — reading the record
+    # directly would silently yield no sections.  Malformed data never raises: it
+    # degrades to an empty projection and the frontend falls back to the
+    # standard document view.
+    def _paper_p2_payload(document_id: str) -> dict:
+        reader = getattr(store, "paper_payload", None)
+        if not callable(reader):
+            return {}
+        payload = reader(document_id)
+        return payload if isinstance(payload, dict) else {}
+
+    def _paper_int(value):
+        if isinstance(value, bool):
+            return None
+        if isinstance(value, int):
+            return value
+        if isinstance(value, str) and value.strip().lstrip("-").isdigit():
+            return int(value.strip())
+        return None
+
+    def _paper_text(value) -> str:
+        return value.strip() if isinstance(value, str) else ""
+
+    def _paper_text_list(value) -> list[str]:
+        if not isinstance(value, list):
+            return []
+        return [item.strip() for item in value
+                if isinstance(item, str) and item.strip()]
+
+    def _paper_meta_payload(source) -> dict:
+        meta = source if isinstance(source, dict) else {}
+        return {
+            "title": _paper_text(meta.get("title")),
+            "authors": _paper_text_list(meta.get("authors")),
+            "year": _paper_int(meta.get("year")),
+            "venue": _paper_text(meta.get("venue")),
+            "doi": _paper_text(meta.get("doi")),
+            "abstract": meta.get("abstract").strip()
+            if isinstance(meta.get("abstract"), str) else "",
+            "keywords": _paper_text_list(meta.get("keywords")),
+            "source": _paper_text(meta.get("source")),
+        }
+
+    def _paper_page_number(page_map, index: int | None) -> int | None:
+        """P1 stores 0-based page indexes; the reader displays 1-based numbers."""
+        if index is None:
+            return None
+        if isinstance(page_map, list):
+            for entry in page_map:
+                if isinstance(entry, dict) and entry.get("page_index") == index:
+                    number = _paper_int(entry.get("page_number"))
+                    if number is not None:
+                        return number
+        return index + 1
+
+    def _paper_page_label(page_map, start: int | None, end: int | None) -> str:
+        first = _paper_page_number(page_map, start)
+        last = _paper_page_number(page_map, end)
+        if first is None and last is None:
+            return ""
+        if first is not None and last is not None and last != first:
+            return f"p.{first}–{last}"
+        return f"p.{first if first is not None else last}"
+
+    def _paper_sections_payload(value, page_map=None) -> list[dict]:
+        sections = []
+        if not isinstance(value, list):
+            return sections
+        for item in value:
+            if not isinstance(item, dict):
+                continue
+            level = _paper_int(item.get("level"))
+            start = _paper_int(item.get("page_start"))
+            end = _paper_int(item.get("page_end"))
+            sections.append({
+                "level": max(1, level) if level is not None else 1,
+                "title": _paper_text(item.get("title")),
+                "text": item.get("text") if isinstance(item.get("text"), str) else "",
+                # page_start/page_end stay P1's raw 0-based indexes; page_label is
+                # the 1-based display range the reader shows next to a section.
+                "page_start": start,
+                "page_end": end,
+                "page_label": _paper_page_label(page_map, start, end),
+            })
+        return sections
+
+    def _paper_references_payload(value) -> list[dict]:
+        references = []
+        if not isinstance(value, list):
+            return references
+        for item in value:
+            if not isinstance(item, dict):
+                continue
+            references.append({
+                "raw": _paper_text(item.get("raw")),
+                "title": _paper_text(item.get("title")),
+                "authors": _paper_text_list(item.get("authors")),
+                "year": _paper_int(item.get("year")),
+                "doi": _paper_text(item.get("doi")),
+                "resolved_document_id": _paper_text(item.get("resolved_document_id")),
+            })
+        return references
+
+    def _paper_view_payload(document_id: str, record: dict) -> dict:
+        p1 = store.get_paper_payload(document_id)
+        is_paper = str(record.get("doc_kind") or "").strip() == "paper" or p1 is not None
+        p1 = p1 if isinstance(p1, dict) else {}
+        p2 = _paper_p2_payload(document_id)
+        meta_source = (p2.get("meta") if isinstance(p2.get("meta"), dict)
+                       else p1.get("meta"))
+        references_source = (p2.get("references")
+                             if isinstance(p2.get("references"), list)
+                             else p1.get("references"))
+        meta = _paper_meta_payload(meta_source)
+        return {
+            "document_id": record.get("document_id") or document_id,
+            "doc_kind": "paper" if is_paper else "",
+            "title": record.get("title") or meta.get("title") or "",
+            "meta": meta,
+            "sections": _paper_sections_payload(p1.get("sections"), p1.get("page_map")),
+            "references": _paper_references_payload(references_source),
+        }
+
+    @app.get("/api/papers/{document_id}/view")
+    def paper_view(document_id: str):
+        record = store.get_document(document_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail="文档不存在或已被删除。")
+        return _paper_view_payload(document_id, record)
+
     # ---- evolution anchoring (issue S2) -------------------------------------
 
     def _bounded_max_distance(value: int | None) -> int:

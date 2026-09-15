@@ -50,6 +50,7 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_unified_search": "webapp",  # P3 统一检索索引（新文件）
     "test_p3_cross_doc_qa": "webapp",  # P3 跨文档问答（新文件）
     "test_search_panel": "webapp",  # P3 ⌘K 搜索面板（新文件）
+    "test_papers_view": "webapp",  # SPW P3 论文阅读视图（新文件）
     # 双模型交叉验证
     "test_verify_diff": "verify",
     "test_verify_engine": "verify",

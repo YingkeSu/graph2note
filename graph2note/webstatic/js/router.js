@@ -44,6 +44,11 @@ export function parseHash(hash = location.hash) {
     }
     return route;
   }
+  // P3: explicit paper reading deep link.  `#doc/<id>` also renders the paper
+  // view for a paper document (see views/paper.js), so both entry points work.
+  if (parts[0] === "paper" && parts[1]) {
+    return { name: "paper", id: decodeURIComponent(parts[1]) };
+  }
   if (parts[0] === "inbox") return { name: "inbox" };
   if (parts[0] === "settings") return { name: "settings" };
   if (parts[0] === "tags") return { name: "tags" };

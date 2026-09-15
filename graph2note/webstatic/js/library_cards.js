@@ -58,6 +58,17 @@ export function cardTags(doc, max = MAX_TAG_CHIPS) {
   };
 }
 
+/** P3: a paper document carries ``doc_kind == "paper"`` (SPEC §2).  The kind
+    may arrive on the summary directly or nested under ``metadata`` while P1's
+    storage landing point settles, so both are accepted. */
+export function isPaperDoc(doc) {
+  if (!doc || typeof doc !== "object") return false;
+  const direct = String(doc.doc_kind || "").trim();
+  if (direct) return direct === "paper";
+  const metadata = doc.metadata && typeof doc.metadata === "object" ? doc.metadata : {};
+  return String(metadata.doc_kind || "").trim() === "paper";
+}
+
 export function cardSource(doc) {
   const kind = (doc && doc.source_kind) || ((doc && doc.source_pdf) ? "pdf" : "image");
   if (kind === "pdf") {
@@ -78,6 +89,7 @@ export function cardViewModel(doc) {
     tagOverflow: overflow,
     tagTotal: total,
     source: cardSource(doc),
+    paper: isPaperDoc(doc),
     thumbnail: (doc && doc.thumbnail_url) || "",
   };
 }
@@ -101,6 +113,9 @@ export function cardHtml(doc, escape) {
   const subtitle = vm.filename
     ? `<div class="doc-subtitle dim" title="${esc(vm.filename)}">${esc(vm.filename)}</div>`
     : "";
+  // P3: paper documents get an explicit, non-colour-only marker in the grid.
+  const paperBadge = vm.paper
+    ? `<span class="doc-paper-badge" title="论文文档">论文</span>` : "";
   return `<article class="doc-card" data-id="${esc(vm.id)}" tabindex="0" role="button" aria-label="打开 ${esc(vm.title)}">
       <div class="thumb">
         ${thumb}
@@ -112,6 +127,7 @@ export function cardHtml(doc, escape) {
       </div>
       <div class="doc-meta">
         <div class="doc-title" title="${esc(vm.title)}">${esc(vm.title)}</div>
+        ${paperBadge}
         ${subtitle}
         <div class="doc-tags">${chips}${overflow}</div>
         <div class="doc-footer">${date}</div>

@@ -986,3 +986,85 @@ body {
   margin: 7px 0 2px; font-size: 12.5px; line-height: 1.5;
   color: var(--muted); text-align: center;
 }
+
+/* ============ P3 (SPW): paper reading view ============
+   Append-only, page-scoped selectors.  The paper reading surface is a
+   metadata card + section navigation + section body + bibliography over the
+   read-only /api/papers/* projection.  Body text stays >=14px and auxiliary
+   text >=12px on the existing paper-ink tokens (contrast >=4.5:1); at 390px the
+   nav stacks above the content so nothing overflows horizontally. */
+.doc-paper-badge {
+  display: inline-block; margin-top: 4px; padding: 1px 7px;
+  border: 1px solid #c9bfae; background: var(--accent-soft); color: var(--accent-dark);
+  border-radius: 999px; font-size: 12px; line-height: 1.6; font-weight: 600;
+}
+.paper-zone { display: block; }
+.paper-toolbar { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.paper-status { min-width: 0; overflow-wrap: anywhere; }
+.paper-error { margin: 0; color: var(--danger); font-size: 14px; }
+.paper-layout {
+  display: grid; grid-template-columns: minmax(0, 240px) minmax(0, 1fr);
+  gap: 24px; align-items: start;
+}
+.paper-nav {
+  min-width: 0; padding: 12px 10px; border: 1px solid var(--line); border-radius: 10px;
+  background: var(--surface); position: sticky; top: 12px; max-height: calc(100vh - 120px);
+  overflow-y: auto;
+}
+.paper-nav-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.paper-nav-item { min-width: 0; }
+.paper-nav-link {
+  display: block; width: 100%; min-height: 0; padding: 6px 8px; border: 0; border-radius: 6px;
+  background: transparent; color: var(--ink); font-size: 13px; line-height: 1.5;
+  text-align: left; white-space: normal; overflow-wrap: anywhere; cursor: pointer;
+}
+.paper-nav-link:hover { background: #e9e3d8; }
+.paper-nav-link.active { background: var(--accent-soft); color: var(--accent-dark); font-weight: 600; }
+.paper-nav-page { margin-left: 6px; font-size: 12px; }
+.paper-nav-item.level-2 .paper-nav-link { padding-left: 22px; font-size: 12.5px; }
+.paper-nav-item.level-3 .paper-nav-link,
+.paper-nav-item.level-4 .paper-nav-link { padding-left: 34px; font-size: 12px; }
+.paper-content { min-width: 0; display: flex; flex-direction: column; gap: 20px; }
+.paper-meta {
+  padding: 18px 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel);
+}
+.paper-title { margin: 0 0 12px; font: 600 24px/1.35 var(--display); color: var(--ink); overflow-wrap: anywhere; }
+.paper-meta-grid { display: flex; flex-direction: column; gap: 6px; }
+.paper-meta-row { display: flex; gap: 10px; flex-wrap: wrap; min-width: 0; }
+.paper-meta-label { flex: 0 0 46px; color: var(--muted); font-size: 12px; line-height: 1.9; }
+.paper-meta-value { flex: 1 1 200px; min-width: 0; font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+.paper-keywords { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; }
+.paper-keyword {
+  padding: 2px 9px; border: 1px solid var(--line); border-radius: 999px;
+  background: var(--surface); color: var(--muted); font-size: 12px;
+}
+.paper-abstract {
+  margin: 14px 0 0; font-size: 14px; line-height: 1.8; color: var(--ink);
+  white-space: pre-line; overflow-wrap: anywhere;
+}
+.paper-body { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.paper-section { min-width: 0; max-width: 74ch; scroll-margin-top: 16px; }
+.paper-section:focus-visible { outline: 2px solid var(--accent); outline-offset: 6px; }
+.paper-section-title { margin: 0 0 8px; font: 600 19px/1.4 var(--display); color: var(--ink); overflow-wrap: anywhere; }
+.paper-section-page { margin-left: 8px; font: 400 12px/1.6 -apple-system, "PingFang SC", sans-serif; }
+.paper-section-text {
+  font-size: 15px; line-height: 1.85; color: var(--ink); white-space: pre-line; overflow-wrap: anywhere;
+}
+.paper-references { min-width: 0; }
+.paper-references-title { margin: 0 0 12px; font: 600 19px/1.4 var(--display); }
+.paper-references-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.paper-reference {
+  display: flex; gap: 8px; min-width: 0; padding: 10px 12px;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--panel);
+}
+.paper-ref-index { flex: 0 0 auto; color: var(--muted); font-size: 12px; line-height: 1.7; }
+.paper-ref-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; }
+.paper-ref-title { font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
+.paper-ref-meta, .paper-ref-raw { font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+.paper-ref-link { flex: 0 0 auto; align-self: flex-start; font-size: 12px; color: var(--accent-dark); }
+/* 390px: stack the section nav above the reading column; nothing scrolls sideways. */
+@media (max-width: 860px) {
+  .paper-layout { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .paper-nav { position: static; max-height: none; }
+  .paper-meta { padding: 14px 16px; }
+}

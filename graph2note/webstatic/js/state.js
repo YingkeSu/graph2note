@@ -229,6 +229,15 @@ export const el = {
   askSessionsCount: $("#ask-sessions-count"),
   // R1 黑图修复报告：zone 由 /static/repair.js（classic，先于模块执行）注入。
   repairZone: $("#repair-zone"),
+  // P3 论文阅读视图（paper.js 注册；只读展示）。
+  paperZone: $("#paper-zone"),
+  paperBack: $("#paper-back"),
+  paperStatus: $("#paper-status"),
+  paperMeta: $("#paper-meta"),
+  paperSectionNav: $("#paper-section-nav"),
+  paperBody: $("#paper-body"),
+  paperReferencesZone: $("#paper-references-zone"),
+  paperReferences: $("#paper-references"),
 };
 
 /* Views routed by location.hash; every routable zone is hidden before the
@@ -237,6 +246,7 @@ export const ZONES = [
   el.libraryZone, el.tagsZone, el.askZone, el.inboxZone, el.settingsZone,
   el.timelineZone, el.graphZone, el.dashboardZone, el.uploadZone,
   el.workingZone, el.workZone, el.vaultExportZone, el.pdfZone, el.repairZone,
+  el.paperZone,
 ];
 
 export function hideAll() {

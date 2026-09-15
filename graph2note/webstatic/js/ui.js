@@ -46,8 +46,8 @@ export function showViewError(zone, message, retry) {
 
 /* ---------- active nav highlight ---------- */
 
-/* doc views belong to the Library section; upload has no sidebar item. */
-const NAV_VIEW_ALIAS = { doc: "library" };
+/* doc/paper views belong to the Library section; upload has no sidebar item. */
+const NAV_VIEW_ALIAS = { doc: "library", paper: "library" };
 
 export function syncNav(routeName) {
   const view = NAV_VIEW_ALIAS[routeName] || routeName;
