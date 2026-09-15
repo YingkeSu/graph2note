@@ -48,4 +48,35 @@ Status: ready-for-review
   4. 不同段不变 ✅ `test_author_and_abstract_in_separate_paragraphs_is_unchanged`；affiliation ✅ `test_affiliation_paragraph_is_still_not_part_of_the_author_list`（既有 `_looks_like_author_line` 规则未动）。
   5. mutation 有牙 ✅ 把 `_author_lines_before_abstract` 改成恒等（去掉摘要边界）→ 4 个新用例 FAIL；把 `_extract_abstract` 退回只看 `para[0]` → 2 个新用例 FAIL（authors/abstract 断言）。
   6. 离线确定性 ✅ 纯正则、无时钟/网络；全量 `pytest -p no:warnings` → **1214 passed, EXIT=0**（基线 1207 + 新增 7）。
-- 风险/残留：`_SENTENCE_HINT_RE`/`_PROSE_LEAD_RE` 是启发式 deny-list，仍可能漏判“把英文散文当姓名”的极端标题；真实 PDF 回流样本待 Y4 覆盖。
+- 风险/残留（R1 披露不完整，仅列 prose→name 方向；完整两方向见下方 R2 风险披露）：`_SENTENCE_HINT_RE`/`_PROSE_LEAD_RE` 是启发式 deny-list，仍可能漏判“把英文散文当姓名”的极端标题；真实 PDF 回流样本待 Y4 覆盖。
+
+### Rework R2（D1 修复，Y5）
+
+- 独立 reviewer（会话 `graph2note-115`）裁决 **REJECT**，见 `/tmp/review-spw-Y5-verdict.md` §2。阻塞缺陷 D1：AC「作者行与摘要不在同段时行为不变」被违背。
+- D1 最小反例（不同段、有空行）：`A Paper Title\n\nWei Zhang, Li Chen, Ming Li, and Will Smith.\n\nAbstract\nBody text.` —— base `authors=['Wei Zhang','Li Chen','Ming Li','Will Smith']`；R1 修复后 `authors=[]`（4 个作者全丢）。
+  根因：`_author_lines_before_abstract` 对 `author_lines` 无条件跑 `_looks_like_sentence_line`，而 `_SENTENCE_HINT_RE` 用 `re.I` 且含 `will`，于是「末句号 + 含 `Will`/`Can`/`The`」的合法 byline 被整行判为句子丢弃；`_looks_like_author_line` 判 True 的行又被新逻辑否决，模块内自相矛盾。
+- R2 修复（3 处，均在领地内）：
+  1. 句子启发式只在 `kept` 非空时才 `break` —— 永不因句子判据丢掉开启作者块的第一行（该行已由 `_looks_like_author_line` 判定）。
+  2. `_SENTENCE_HINT_RE` 去掉 `re.I`，改为区分大小写的**小写**功能词匹配；散文小写、姓名首字母大写，`Will`/`Can`/`The` 不再碰撞。
+  3. `_PROSE_LEAD_RE`（行内标签前的姓名前缀判定）同样改为区分大小写，`Will Smith, Can The Abstract—…` 的姓名前缀不再被当散文而整行丢弃。
+- R2 新增回归用例（4）：
+  - `test_separate_paragraph_byline_ending_with_a_period_is_preserved`（verdict 指定文本：`authors == ['Wei Zhang','Li Chen','Ming Li','Will Smith']`）
+  - `test_vlm_superscript_byline_ending_with_a_period_is_preserved`（`Wei Zhang1, Li Chen2, Ming Li3, and Will Brown1.`）
+  - `test_wrapped_byline_line_with_a_capitalized_hint_name_is_preserved`（10 作者折行，第二行含 `Will Smith.`）
+  - `test_inline_label_after_a_byline_with_capitalized_hint_names_is_preserved`（`Will Smith, Can The Abstract—…`）
+- R2 mutation 证据（备份 → 改 → 跑 → 还原，最终工作树干净）：
+
+  | mutation | 结果 |
+  | --- | --- |
+  | `_author_lines_before_abstract` 改恒等（去掉摘要边界） | 4 个 R1 用例 FAIL |
+  | `_extract_abstract` 退回只看 `para[0]` | 2 个 R1 用例 FAIL |
+  | 完全移除句子边界 | `test_sentence_like_reflowed_line_is_not_taken_as_an_author` FAIL |
+  | 恢复 `_SENTENCE_HINT_RE` 的 `re.I` | `test_wrapped_byline_line_with_a_capitalized_hint_name_is_preserved` FAIL |
+  | 恢复 `re.I` + 去掉 `kept` 守卫（= R1 行为） | 3 个 R2 新用例 FAIL |
+  | 恢复 `_PROSE_LEAD_RE` 的 `re.I` | `test_inline_label_after_a_byline_with_capitalized_hint_names_is_preserved` FAIL |
+
+- R2 全量：`pytest -p no:warnings` → **1218 passed, EXIT=0**（R1 1214 + 新增 4；`tests/test_papers_meta.py` 单文件 41 passed）。
+- **风险披露（补全，两个方向）**：
+  - prose→name（误收）：无 `Abstract`/`摘要` 标签且散文与姓名同段的极端情况，仍可能把散文行当作者，或把含冷门提示词的标题尾部误当摘要；靠标签边界 + 小写判据收敛，真实样本待 Y4 校准。
+  - name→prose（误丢，R1 遗漏方向，即 D1）：合法 byline 被句子判据整行丢弃导致 `authors=[]`。R2 用「`kept` 非空守卫 + 区分大小写」双保险消除，并以 4 个回归用例锁定，覆盖姓名/提示词碰撞（Will/Can/The）与 VLM 上标 + 句号风格。
+  - 残余：`_SENTENCE_HINT_RE` 只认小写功能词，句首大写的纯散文行（如 `We present a novel approach.` 且无其它小写提示词）不再被判为句子；此类行通常不满足 `_looks_like_author_line`，且摘要标签路径已独立覆盖。
