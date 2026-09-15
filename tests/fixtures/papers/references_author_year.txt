@@ -1,0 +1,5 @@
+References
+
+Zhang, W., Chen, L., & Li, M. (2023). Graph neural networks for document understanding. IEEE Transactions on Knowledge and Data Engineering, 35(4), 1123-1138.
+
+Sun, J., Kim, A., & Nair, P. (2022). Robust feature matching under extreme viewpoint changes. In CVPR, 1-10.

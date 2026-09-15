@@ -1,0 +1,14 @@
+Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), 2022
+
+Robust Feature Matching under Extreme Viewpoint Changes
+
+Jian Sun1, Alex Kim2, and Priya Nair1
+
+1University of Example  2Institute of Vision
+
+Abstract
+We present a robust method for feature matching under extreme viewpoint
+changes. Our approach combines geometric verification with learned
+descriptors and achieves state-of-the-art results.
+
+Index Terms: feature matching, viewpoint robustness, geometric verification

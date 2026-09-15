@@ -1,0 +1,7 @@
+References
+
+[1] W. Zhang, L. Chen, and M. Li. Graph neural networks for document understanding. IEEE Transactions on Knowledge and Data Engineering, 35(4):1123-1138, 2023. doi:10.1109/TKDE.2023.1234567
+
+[2] J. Sun, A. Kim, and P. Nair. Robust feature matching under extreme viewpoint changes. In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), pages 1-10, 2022.
+
+[3] Y. Bengio, A. Courville, and P. Vincent. Representation learning: A review and new perspectives. IEEE Transactions on Pattern Analysis and Machine Intelligence, 35(8):1798-1828, 2013.
