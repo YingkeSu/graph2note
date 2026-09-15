@@ -159,6 +159,12 @@ _AFFIL_RE = re.compile(
     re.I,
 )
 _ABSTRACT_RE = re.compile(r"^\s*(?:abstract|摘要)\b[\s:：—\-–]*", re.I)
+#: The same label when a reflowed text layer glues it after the byline
+#: (``… Ming Li Abstract—…``).  Both the author boundary and
+#: ``_extract_abstract`` use it; the latter only accepts a match preceded by a
+#: known author line, so a title that merely contains the word "abstract" is
+#: not mistaken for the summary.
+_ABSTRACT_INLINE_RE = re.compile(r"(?:abstract|摘要)\b[\s:：—\-–]*", re.I)
 _KEYWORDS_RE = re.compile(
     r"^\s*(?:index\s+terms|keywords?|key\s+words|关键词)\s*[:：—\-–]?\s*(.*)$",
     re.I,
@@ -173,6 +179,23 @@ _INITIAL_RE = re.compile(r"\b[A-Z]\.")
 _NAME_TOKEN_RE = re.compile(r"\b[A-Z][a-z]+(?:[-'][A-Za-z]+)?\b")
 _EMAIL_RE = re.compile(r"\S+@\S+")
 _SUPERSCRIPT_RE = re.compile(r"[\d*†‡§¶#]+")
+#: Prose that a reflowed text layer glued onto the author block: sentence-final
+#: punctuation plus function words is a sentence, not a name list.
+_SENTENCE_STOP_RE = re.compile(r"[.!?。！？]\s*$")
+_SENTENCE_HINT_RE = re.compile(
+    r"\b(?:the|this|these|those|is|are|was|were|has|have|had|which|that|"
+    r"we|our|it|its|can|could|will|would|should|be|been|not|also|however)\b",
+    re.I,
+)
+#: Lowercase prose words that never occur in a byline.  They tell a title that
+#: merely contains "abstract" apart from a real author prefix glued to a label.
+_PROSE_LEAD_RE = re.compile(
+    r"\b(?:of|the|this|that|these|those|which|who|is|are|was|were|be|been|"
+    r"being|has|have|had|for|with|from|into|onto|about|study|survey|review|"
+    r"analysis|paper|approach|method|methods|using|based|toward|towards|via|"
+    r"we|our|it|its|can|could|will|would|should|not|also|however)\b",
+    re.I,
+)
 
 
 def _clean(text: str) -> str:
@@ -243,8 +266,42 @@ def _strip_author_noise(text: str) -> str:
     return _clean(text)
 
 
+def _looks_like_sentence_line(line: str) -> bool:
+    """True for a prose line that must not be read as an author name list."""
+
+    text = line.strip()
+    if len(text) < 40 or not _SENTENCE_STOP_RE.search(text):
+        return False
+    return bool(_SENTENCE_HINT_RE.search(text))
+
+
+def _author_lines_before_abstract(lines: list[str]) -> list[str]:
+    """Cut author lines at the abstract start (label or prose sentence).
+
+    Reflowed text-layer paragraphs merge the byline and the abstract into one
+    block; everything from the abstract heading onward must never reach
+    :func:`_parse_authors`.  When the label is glued after the names on one
+    line, that line contributes only its leading name part.
+    """
+
+    kept: list[str] = []
+    for line in lines:
+        match = _ABSTRACT_RE.match(line) or _ABSTRACT_INLINE_RE.search(line)
+        if match:
+            head = _clean(line[: match.start()])
+            # A head carrying prose words means the line was a title, not a
+            # byline with a glued label; keep nothing from it.
+            if head and not _PROSE_LEAD_RE.search(head):
+                kept.append(head)
+            break
+        if _looks_like_sentence_line(line):
+            break
+        kept.append(line)
+    return kept
+
+
 def _parse_authors(author_lines: list[str]) -> list[str]:
-    text = _strip_author_noise(" ".join(author_lines))
+    text = _strip_author_noise(" ".join(_author_lines_before_abstract(author_lines)))
     if not text:
         return []
     if _CJK_NAMES_RE.match(text):
@@ -270,28 +327,50 @@ def _title_lines(paragraphs: list[list[str]]) -> tuple[list[str], list[str], lis
     first = paragraphs[0]
     author_at = next((i for i, line in enumerate(first) if _looks_like_author_line(line)), None)
     if author_at is not None and author_at > 0:
-        return first[:author_at], first[author_at:], paragraphs[1:]
+        return (
+            first[:author_at],
+            _author_lines_before_abstract(first[author_at:]),
+            paragraphs[1:],
+        )
     if author_at == 0:
-        return [], first, paragraphs[1:]
+        return [], _author_lines_before_abstract(first), paragraphs[1:]
     rest = paragraphs[1:]
     if rest and _looks_like_author_line(rest[0][0]):
-        return first, rest[0], rest[1:]
+        return first, _author_lines_before_abstract(rest[0]), rest[1:]
     return first, [], rest
 
 
-def _extract_abstract(paragraphs: list[list[str]]) -> tuple[str, str]:
+def _extract_abstract(
+    paragraphs: list[list[str]], author_lines: Optional[list[str]] = None
+) -> tuple[str, str]:
+    """Return ``(abstract body, evidence line)`` for the first abstract block.
+
+    The label normally heads its own line, but a reflowed text layer may glue
+    it after the byline (``… Ming Li Abstract—…``).  An inline label is only
+    accepted when the text before it is one of the known author lines, which
+    keeps a title containing the word "abstract" from being mistaken for the
+    summary.
+    """
+
+    author_keys = {_clean(line) for line in (author_lines or []) if _clean(line)}
     for para in paragraphs:
-        if not _ABSTRACT_RE.match(para[0]):
-            continue
-        body = _ABSTRACT_RE.sub("", para[0])
-        pieces = [body] if body else []
-        for line in para[1:]:
-            if _STOP_RE.match(line):
-                break
-            pieces.append(line)
-        text = _clean(" ".join(pieces))
-        if text:
-            return text, para[0][:200]
+        for index, line in enumerate(para):
+            match = _ABSTRACT_RE.match(line)
+            if match is None:
+                inline = _ABSTRACT_INLINE_RE.search(line)
+                lead = _clean(line[: inline.start()]) if inline else ""
+                if inline is None or lead not in author_keys:
+                    continue
+                match = inline
+            body = _clean(line[match.end():])
+            pieces = [body] if body else []
+            for following in para[index + 1:]:
+                if _STOP_RE.match(following):
+                    break
+                pieces.append(following)
+            text = _clean(" ".join(pieces))
+            if text:
+                return text, line[:200]
     return "", ""
 
 
@@ -407,7 +486,7 @@ def parse_paper_meta(
     title_block, author_lines, _rest = _title_lines(paragraphs)
     title = _clean(" ".join(title_block)).rstrip(".")
     authors = _parse_authors(author_lines)
-    abstract, abstract_evidence = _extract_abstract(paragraphs)
+    abstract, abstract_evidence = _extract_abstract(paragraphs, author_lines)
     keywords, keywords_evidence = _extract_keywords(paragraphs)
     doi, doi_evidence = _extract_doi(text, full_text)
     venue, venue_confidence, venue_evidence = _extract_venue(header_lines, text)

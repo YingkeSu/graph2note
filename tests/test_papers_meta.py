@@ -70,6 +70,115 @@ def test_title_containing_a_venue_word_is_not_dropped_as_a_header():
     assert result.meta.authors == ["Wei Zhang", "Li Chen"]
 
 
+# ---------------------------------------------------------------------------
+# Reflowed text-layer front page: abstract glued to the author block (Y5)
+# ---------------------------------------------------------------------------
+
+def test_reflowed_author_block_keeps_the_abstract_out_of_authors():
+    """P3-r2 live regression: the text layer merges byline + ``Abstract`` head."""
+
+    # Same layout as the synthetic born-digital PDF of the P3-r2 live run: the
+    # heading, byline and ``Abstract`` label share one paragraph because the
+    # text-layer extraction inserts no blank line between them.
+    text = (
+        "Graph Neural Networks for Document Understanding:\n"
+        "A Comprehensive Survey\n"
+        "Wei Zhang, Li Chen, and Ming Li\n"
+        "Abstract\n"
+        "Document understanding has attracted attention in recent years. "
+        "We review graph neural network methods for document understanding.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.authors == ["Wei Zhang", "Li Chen", "Ming Li"]
+    assert result.meta.abstract.startswith("Document understanding has attracted")
+    assert result.meta.title == (
+        "Graph Neural Networks for Document Understanding: A Comprehensive Survey"
+    )
+
+
+def test_inline_abstract_label_glued_to_a_byline_is_not_an_author():
+    text = (
+        "Robust Feature Matching under Extreme Viewpoint Changes\n"
+        "\n"
+        "Wei Zhang, Li Chen\n"
+        "Abstract—We present a robust method for feature matching, which combines "
+        "geometric verification with learned descriptors.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.title == "Robust Feature Matching under Extreme Viewpoint Changes"
+    assert result.meta.authors == ["Wei Zhang", "Li Chen"]
+    assert result.meta.abstract.startswith("We present a robust method")
+
+
+def test_sentence_like_reflowed_line_is_not_taken_as_an_author():
+    text = (
+        "Neural Networks for Document Understanding\n"
+        "\n"
+        "Wei Zhang, Li Chen\n"
+        "Document Understanding, which has attracted much attention, is surveyed here.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.authors == ["Wei Zhang", "Li Chen"]
+
+
+def test_cjk_author_list_is_unchanged_by_the_abstract_boundary():
+    text = (
+        "图神经网络文档理解综述\n"
+        "\n"
+        "张三、李四、王五\n"
+        "\n"
+        "摘要\n"
+        "本文综述了图神经网络在文档理解中的应用。\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.authors == ["张三", "李四", "王五"]
+    assert result.meta.abstract.startswith("本文综述了")
+
+
+def test_affiliation_paragraph_is_still_not_part_of_the_author_list():
+    text = (
+        "Robust Feature Matching under Extreme Viewpoint Changes\n"
+        "\n"
+        "Jian Sun1, Alex Kim2, and Priya Nair1\n"
+        "\n"
+        "1University of Example  2Institute of Vision\n"
+        "\n"
+        "Abstract\n"
+        "We present a robust method.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.authors == ["Jian Sun", "Alex Kim", "Priya Nair"]
+
+
+def test_author_and_abstract_in_separate_paragraphs_is_unchanged():
+    text = (
+        "A Paper Title\n"
+        "\n"
+        "Wei Zhang, Li Chen\n"
+        "\n"
+        "Abstract\n"
+        "Body text here.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.title == "A Paper Title"
+    assert result.meta.authors == ["Wei Zhang", "Li Chen"]
+    assert result.meta.abstract == "Body text here."
+
+
+def test_a_title_containing_the_word_abstract_does_not_become_the_abstract():
+    text = (
+        "A Survey of Abstract Meaning Representation, which is used, in NLP\n"
+        "\n"
+        "Wei Zhang, Li Chen\n"
+        "\n"
+        "Abstract\n"
+        "Body text.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.abstract == "Body text."
+    assert "Abstract" not in " ".join(result.meta.authors)
+
+
 def test_empty_front_text_is_none_sourced_and_never_invents():
     result = metadata.parse_paper_meta("")
     assert result.meta.source == "none"
