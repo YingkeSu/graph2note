@@ -431,3 +431,146 @@ def test_matplotlib_groups_change_the_image():
         mpl.render(NODES, EDGES, None, flat)
         mpl.render(NODES, EDGES, None, grouped, groups=GROUPS)
         assert _sha(flat) != _sha(grouped)
+
+
+# ---------------------------------------------------------------------------
+# D5b: dense grouped diagrams must not overlap (T-vision live §2/§4/§7-5)
+#
+# The fixed 12x8in canvas collapsed at >=21 nodes: node text escaped its box
+# and group titles landed on node labels.  The geometry now grows with the
+# content; these tests measure the drawn artists (window extents) instead of
+# trusting the box-size formulas.
+# ---------------------------------------------------------------------------
+
+def _dense_fixture(rows: int = 3, cols: int = 8):
+    nodes = []
+    for r in range(rows):
+        for c in range(cols):
+            node = {"id": f"n{r}{c}", "label": f"Stage {r}{c} process here"}
+            if c % 4 == 0:
+                node["note"] = f"marginal note {r}{c}"
+            nodes.append(node)
+    edges = [
+        {"from": f"n{r}{c}", "to": f"n{r + 1}{c}"}
+        for r in range(rows - 1) for c in range(cols)
+    ]
+    # long diagonals whose midpoint label would land on an unrelated node
+    edges.append({"from": "n00", "to": f"n{rows - 1}{cols - 1}",
+                  "label": "cross step"})
+    edges.append({"from": f"n0{cols - 1}", "to": f"n{rows - 1}0",
+                  "label": "back ref"})
+    groups = [
+        {"id": f"L{r}", "label": f"Layer {r}", "kind": "layer",
+         "nodes": [f"n{r}{c}" for c in range(cols)]}
+        for r in range(rows)
+    ]
+    return nodes, edges, groups
+
+
+def _render_grouped_via_engine(nodes, edges, groups):
+    """Reproduce the product chain: canonicalise -> layout -> matplotlib."""
+    from graph2note.diagrams import _canonical, engine
+    from graph2note.ir import Edge, Node
+
+    mpl_mod = _mpl()
+    nc = _canonical.canonical_nodes(
+        [Node(id=n["id"], label=n.get("label", ""), note=n.get("note"))
+         for n in nodes])
+    ec = _canonical.canonical_edges(
+        [Edge(**{"from": e.get("from"), "to": e.get("to"),
+                 "label": e.get("label", ""),
+                 "style": e.get("style", "solid")}) for e in edges],
+        {n.id for n in nc})
+    layout = engine.prepare_diagram_layout(nc, ec, groups)
+    # engine.render_structured forwards only ``layout`` to the renderer
+    fig, ax, drawn = mpl_mod.build_figure(
+        nc, ec, {n.id: n.label for n in nc}, layout=layout)
+    return fig, ax, drawn
+
+
+def _overlap(a, b) -> float:
+    x0, y0 = max(a.x0, b.x0), max(a.y0, b.y0)
+    x1, y1 = min(a.x1, b.x1), min(a.y1, b.y1)
+    return (x1 - x0) * (y1 - y0) if (x1 > x0 and y1 > y0) else 0.0
+
+
+def _contains(outer, inner, tol=1.0) -> bool:
+    return (inner.x0 >= outer.x0 - tol and inner.x1 <= outer.x1 + tol
+            and inner.y0 >= outer.y0 - tol and inner.y1 <= outer.y1 + tol)
+
+
+def _assert_no_overlap(ax):
+    from matplotlib.patches import Rectangle
+
+    mpl = _mpl()
+    fig = ax.figure
+    fig.canvas.draw()
+    rend = fig.canvas.get_renderer()
+    boxes = [p.get_window_extent(rend) for p in ax.patches
+             if isinstance(p, Rectangle) and p.get_zorder() == 3]
+    assert boxes, "no node boxes drawn"
+    # 1) node boxes never intersect one another
+    for i, a in enumerate(boxes):
+        for b in boxes[i + 1:]:
+            assert _overlap(a, b) <= 1.0, (a, b)
+    # 2) every node label / note stays inside exactly its own box ...
+    for text in ax.texts:
+        size = text.get_fontsize()
+        if size not in (mpl.NODE_FONTSIZE, mpl.NOTE_FONTSIZE):
+            continue
+        tb = text.get_window_extent(rend)
+        inside = [b for b in boxes
+                  if _overlap(tb, b) >= 0.9 * (tb.width * tb.height)]
+        assert len(inside) == 1, (text.get_text(), len(inside))
+        assert _contains(inside[0], tb, tol=2.0), text.get_text()
+    # 3) edge labels also stay clear of node boxes on the grouped path
+    for text in ax.texts:
+        if text.get_fontsize() != mpl.EDGE_FONTSIZE:
+            continue
+        tb = text.get_window_extent(rend)
+        for box in boxes:
+            assert _overlap(tb, box) <= 1.0, (text.get_text(), box)
+    # 4) group titles never land on a node box
+    for text in ax.texts:
+        if text.get_fontsize() != mpl.GROUP_FONTSIZE:
+            continue
+        tb = text.get_window_extent(rend)
+        for box in boxes:
+            assert _overlap(tb, box) <= 1.0, (text.get_text(), box)
+
+
+def test_dense_grouped_diagram_has_no_artist_overlap():
+    nodes, edges, groups = _dense_fixture()
+    _fig, ax, drawn = _render_grouped_via_engine(nodes, edges, groups)
+    assert drawn == ["L0", "L1", "L2"]
+    _assert_no_overlap(ax)
+
+
+def test_dense_grouped_diagram_grows_the_canvas_with_the_grid():
+    """The whole point: no font shrink, the canvas does the work."""
+    nodes, edges, groups = _dense_fixture()
+    _fig, ax, _drawn = _render_grouped_via_engine(nodes, edges, groups)
+    assert tuple(ax.figure.get_size_inches())[0] > 12.0
+
+
+def test_group_title_does_not_degrade_weight_silently(caplog):
+    """T-vision live §4: a real bold face (or a warning-free fallback), never
+    matplotlib's silent 'Failed to find font weight bold, now using 400'."""
+    with caplog.at_level("WARNING", logger="matplotlib.font_manager"):
+        nodes, edges, groups = _dense_fixture(rows=1, cols=3)
+        fig, _ax, _drawn = _render_grouped_via_engine(nodes, edges, groups)
+        fig.canvas.draw()
+    assert "Failed to find font weight" not in caplog.text
+
+
+def test_group_title_style_never_requests_a_missing_weight():
+    mpl = _mpl()
+    kwargs, effects = mpl._group_title_style("#123456")
+    if mpl._CJK_BOLD_FAMILY is None:
+        # no heavy CJK face installed -> synthetic bold, never weight 700
+        assert kwargs.get("fontweight") != "bold"
+        assert effects
+    else:
+        assert kwargs["fontfamily"] == [mpl._CJK_BOLD_FAMILY]
+        assert kwargs["fontweight"] == mpl._CJK_BOLD_WEIGHT >= 600
+        assert effects is None
