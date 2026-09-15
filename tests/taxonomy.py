@@ -46,6 +46,7 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_pdf_qa_multiturn": "webapp",  # P1（新文件）
     "test_ask_view": "webapp",  # P2（新文件，问答一级视图）
     "test_papers_ingest": "ingest",  # SPW I/P1（论文导入管线，离线）
+    "test_papers_ingest_real": "ingest",  # SPW Y4（真实论文文本层 regression fixture）
     "test_papers_ingest_api": "webapp",  # SPW I/P1（论文导入 API 契约）
     "test_upload_pdf_intercept": "webapp",  # SPW Y3（upload.js PDF 拦截行为契约，离线 DOM）
     "test_unified_search": "webapp",  # P3 统一检索索引（新文件）
@@ -79,6 +80,7 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_collection_organize": "workspace",  # auto-organization 02（相似度/归类/API/CLI）
     "test_document_metadata": "workspace",
     "test_papers_meta": "workspace",  # SPW P2（论文元数据/参考文献确定性解析 + citegraph）
+    "test_papers_meta_real": "workspace",  # SPW Y4（真实论文元数据/参考文献 regression fixture）
     "test_papers_meta_api": "webapp",  # SPW P2（/api/papers/* + store 契约）
     "test_tags": "workspace",
     "test_autotag": "workspace",  # A1: 识别自动打标签

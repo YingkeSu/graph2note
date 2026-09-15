@@ -1,0 +1,173 @@
+{
+  "key": "bert",
+  "source": {
+    "vendor": "google",
+    "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+    "arxiv_id": "1810.04805",
+    "source_url": "https://arxiv.org/abs/1810.04805",
+    "download_url": "https://arxiv.org/pdf/1810.04805",
+    "license": "arXiv.org perpetual, non-exclusive license 1.0",
+    "sha256_16": "5692a5514787a8c6",
+    "pages": 16
+  },
+  "layout": {
+    "kind": "two-column-conference",
+    "body_columns": 2,
+    "note": "NAACL 会议双栏正文（下载自 arXiv；正文两栏、标题/作者跨栏）"
+  },
+  "p1": {
+    "decision_source": "text-layer",
+    "page_count": 16,
+    "section_count": 52,
+    "required_headings": [
+      [
+        "Abstract",
+        1
+      ],
+      [
+        "Introduction",
+        1
+      ],
+      [
+        "References",
+        1
+      ]
+    ],
+    "front_title_evidence": "BERT: Pre-training of Deep Bidirectional Transformers for",
+    "spurious_heading_examples": [
+      "1024"
+    ]
+  },
+  "p2": {
+    "meta": {
+      "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding Jacob Devlin Ming-Wei Chang Kenton Lee Kristina Toutanova Google AI Language {jacobdevlin,mingweichang,kentonl,kristout}@google.com Abstract We introduce a new language representa- tion model called BERT, which stands for Bidirectional Encoder Representations from Transformers. Unlike recent language repre-",
+      "authors": [
+        "sentation models (Peters et al",
+        "a; Rad- ford et al",
+        ")",
+        "BERT is designed to pre- train deep bidirectional representations from unlabeled text by jointly conditioning on both left",
+        "right context in all layers. As a re- sult",
+        "the pre-trained BERT model can be ﬁne- tuned with just one additional output layer to create state-of-the-art models for a wide range of tasks",
+        "such as question answering",
+        "language inference",
+        "without substantial task- speciﬁc architecture modiﬁcations. BERT is conceptually simple",
+        "empirically powerful. It obtains new state-of-the-art re- sults on eleven natural language processing tasks",
+        "including pushing the GLUE score to .% (.% point absolute improvement)",
+        "MultiNLI accuracy to .% (.% absolute improvement)",
+        "SQuAD v. question answer- ing Test F to . (. point absolute im- provement)",
+        "SQuAD v. Test F to . (. point absolute improvement). Introduction Language model pre-training has been shown to be effective for improving many natural language processing tasks (Dai",
+        "Le",
+        "; Peters et al",
+        "a; Radford et al",
+        "; Howard",
+        "Ruder",
+        "). These include sentence-level tasks such as natural language inference (Bowman et al",
+        "; Williams et al",
+        ")",
+        "paraphrasing (Dolan",
+        "Brockett",
+        ")",
+        "which aim to predict the re- lationships between sentences by analyzing them holistically",
+        "as well as token-level tasks such as named entity recognition",
+        "question answering",
+        "where models are required to produce ﬁne-grained output at the token level (Tjong Kim Sang",
+        "De Meulder",
+        "; Rajpurkar et al",
+        "). There are two existing strategies for apply- ing pre-trained language representations to down- stream tasks: feature-based",
+        "ﬁne-tuning. The feature-based approach",
+        "such as ELMo (Peters et al",
+        "a)",
+        "uses task-speciﬁc architectures that include the pre-trained representations as addi- tional features. The ﬁne-tuning approach",
+        "such as the Generative Pre-trained Transformer (OpenAI GPT) (Radford et al",
+        ")",
+        "introduces minimal task-speciﬁc parameters",
+        "is trained on the downstream tasks by simply ﬁne-tuning all pre- trained parameters. The two approaches share the same objective function during pre-training",
+        "where they use unidirectional language models to learn general language representations. We argue that current techniques restrict the power of the pre-trained representations",
+        "espe- cially for the ﬁne-tuning approaches. The ma- jor limitation is that standard language models are unidirectional",
+        "this limits the choice of archi- tectures that can be used during pre-training. For example",
+        "in OpenAI GPT",
+        "the authors use a left-to- right architecture",
+        "where every token can only at- tend to previous tokens in the self-attention layers of the Transformer (Vaswani et al",
+        "). Such re- strictions are sub-optimal for sentence-level tasks",
+        "could be very harmful when applying ﬁne- tuning based approaches to token-level tasks such as question answering",
+        "where it is crucial to incor- porate context from both directions. In this paper",
+        "we improve the ﬁne-tuning based approaches by proposing BERT: Bidirectional Encoder Representations from Transformers. BERT alleviates the previously mentioned unidi- rectionality constraint by using a “masked lan- guage model” (MLM) pre-training objective",
+        "in-"
+      ],
+      "year": 2018,
+      "venue": "",
+      "doi": "",
+      "abstract": "We introduce a new language representa- tion model called BERT, which stands for Bidirectional Encoder Representations from Transformers. Unlike recent language repre- sentation models (Peters et al., 2018a; Rad- ford et al., 2018), BERT is designed to pre- train deep bidirectional representations from unlabeled text by jointly conditioning on both left and right context in all layers. As a re- sult, the pre-trained BERT model can be ﬁne- tuned with just one additional output layer to create state-of-the-art models for a wide range of tasks, such as question answering and language inference, without substantial task- speciﬁc architecture modiﬁcations. BERT is conceptually simple and empirically powerful. It obtains new state-of-the-art re- sults on eleven natural language processing tasks, including pushing the GLUE score to 80.5% (7.7% point absolute improvement), MultiNLI accuracy to 86.7% (4.6% absolute improvement), SQuAD v1.1 question answer- ing Test F1 to 93.2 (1.5 point absolute im- provement) and SQuAD v2.0 Test F1 to 83.1 (5.1 point absolute improvement). 1 Introduction Language model pre-training has been shown to be effective for improving many natural language processing tasks (Dai and Le, 2015; Peters et al., 2018a; Radford et al., 2018; Howard and Ruder, 2018). These include sentence-level tasks such as natural language inference (Bowman et al., 2015; Williams et al., 2018) and paraphrasing (Dolan and Brockett, 2005), which aim to predict the re- lationships between sentences by analyzing them holistically, as well as token-level tasks such as named entity recognition and question answering, where models are required to produce ﬁne-grained output at the token level (Tjong Kim Sang and De Meulder, 2003; Rajpurkar et al., 2016). There are two existing strategies for apply- ing pre-trained language representations to down- stream tasks: feature-based and ﬁne-tuning. The feature-based approach, such as ELMo (Peters et al., 2018a), uses task-speciﬁc architectures that include the pre-trained representations as addi- tional features. The ﬁne-tuning approach, such as the Generative Pre-trained Transformer (OpenAI GPT) (Radford et al., 2018), introduces minimal task-speciﬁc parameters, and is trained on the downstream tasks by simply ﬁne-tuning all pre- trained parameters. The two approaches share the same objective function during pre-training, where they use unidirectional language models to learn general language representations. We argue that current techniques restrict the power of the pre-trained representations, espe- cially for the ﬁne-tuning approaches. The ma- jor limitation is that standard language models are unidirectional, and this limits the choice of archi- tectures that can be used during pre-training. For example, in OpenAI GPT, the authors use a left-to- right architecture, where every token can only at- tend to previous tokens in the self-attention layers of the Transformer (Vaswani et al., 2017). Such re- strictions are sub-optimal for sentence-level tasks, and could be very harmful when applying ﬁne- tuning based approaches to token-level tasks such as question answering, where it is crucial to incor- porate context from both directions. In this paper, we improve the ﬁne-tuning based approaches by proposing BERT: Bidirectional Encoder Representations from Transformers. BERT alleviates the previously mentioned unidi- rectionality constraint by using a “masked lan- guage model” (MLM) pre-training objective, in- spired by the Cloze task (Taylor, 1953). The masked language model randomly masks some of the tokens from the input, and the objective is to predict the original vocabulary id of the masked arXiv:1810.04805v2 [cs.CL] 24 May 2019",
+      "keywords": [],
+      "source": "text-layer"
+    },
+    "notes": [
+      "keywords-not-found",
+      "venue-not-found"
+    ],
+    "provenance_confidence": {
+      "title": "high",
+      "authors": "high",
+      "year": "high",
+      "venue": "low",
+      "doi": "low",
+      "abstract": "high",
+      "keywords": "low",
+      "source": "high"
+    },
+    "field_status": {
+      "title": "degraded",
+      "authors": "degraded",
+      "year": "degraded",
+      "venue": "missing",
+      "doi": "missing",
+      "abstract": "ok",
+      "keywords": "missing"
+    },
+    "known_failures": [
+      {
+        "field": "title",
+        "tag": "title-absorbs-byline-and-abstract",
+        "detail": "双栏首页把标题、作者、Abstract 首段并成一块，标题吞掉作者与摘要开头。"
+      },
+      {
+        "field": "authors",
+        "tag": "authors-are-abstract-fragments",
+        "detail": "作者列表被切成了摘要句子片段（'sentation models (Peters et al' ...），即 Y5 关注的同族缺陷在双栏排版下仍复现。"
+      },
+      {
+        "field": "year",
+        "tag": "year-is-arxiv-v1",
+        "detail": "取到 arXiv v1 年 2018（'arXiv:1810.04805v1'），实际 NAACL 发表为 2019。"
+      },
+      {
+        "field": "venue",
+        "tag": "venue-not-found",
+        "detail": "首页没有 venue 行。"
+      },
+      {
+        "field": "keywords",
+        "tag": "keywords-not-found",
+        "detail": "首页没有 Keywords 段。"
+      }
+    ],
+    "references": {
+      "heading": "References",
+      "count": 3,
+      "style": "author-year",
+      "first_raw_startswith": "Alan Akbik, Dunc",
+      "under_split": true,
+      "provenance_notes": [
+        "authors-unparsed",
+        "dehyphenated",
+        "merged-continuation"
+      ],
+      "max_fragments": 124
+    }
+  },
+  "differences_from_synthetic": [
+    "合成 front_two_column.txt 是人工整理过的双栏首页；真实双栏文本层把标题/作者/摘要按列序回流，标题与摘要被并进第一个 block。",
+    "真实双栏 References 为作者-年、无空行，整节水合成 3 个巨条目。",
+    "真实页面夹带图表数字（'1024'、'91.2'）被当成标题。"
+  ]
+}

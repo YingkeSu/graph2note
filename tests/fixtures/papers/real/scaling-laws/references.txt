@@ -1,0 +1,183 @@
+[ACDE12]
+Eduardo G Altmann, Giampaolo Cristadoro, and Mirko Degli Esposti. On the origin of long-
+range correlations in texts. Proceedings of the National Academy of Sciences, 109(29):11582–
+11587, 2012. 25
+[AS17]
+Madhu S. Advani and Andrew M. Saxe. High-dimensional dynamics of generalization error in
+neural networks. arXiv, 2017, 1710.03667. 11, 18, 22
+[BB01]
+Michele Banko and Eric Brill. Scaling to very very large corpora for natural language disam-
+biguation. In Proceedings of the 39th annual meeting on association for computational linguis-
+tics, pages 26–33. Association for Computational Linguistics, 2001. 18
+[BHMM18] Mikhail Belkin, Daniel Hsu, Siyuan Ma, and Soumik Mandal. Reconciling modern machine
+learning and the bias-variance trade-off. arXiv, 2018, 1812.11118. 18
+[Bia12]
+GÃŠrard Biau. Analysis of a random forests model. Journal of Machine Learning Research,
+13(Apr):1063–1095, 2012. 18
+[CGRS19]
+Rewon Child, Scott Gray, Alec Radford, and Ilya Sutskever. Generating long sequences with
+sparse transformers. CoRR, abs/1904.10509, 2019, 1904.10509. URL http://arxiv.org/
+abs/1904.10509. 19
+[DCLT18]
+Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. Bert: Pre-training of deep
+bidirectional transformers for language understanding, 2018, arXiv:1810.04805. 2
+[DGV+18] Mostafa Dehghani, Stephan Gouws, Oriol Vinyals, Jakob Uszkoreit, and Lukasz Kaiser. Uni-
+versal transformers. CoRR, abs/1807.03819, 2018, 1807.03819. URL http://arxiv.org/
+abs/1807.03819. 6, 9, 23, 24
+[EP94]
+Werner Ebeling and Thorsten Pöschel. Entropy and long-range correlations in literary english.
+EPL (Europhysics Letters), 26(4):241, 1994. 25
+[Fou]
+The Common Crawl Foundation. Common crawl. URL http://commoncrawl.org. 7
+[GARD18] Guy Gur-Ari, Daniel A. Roberts, and Ethan Dyer. Gradient descent happens in a tiny subspace.
+2018, arXiv:1812.04754. 18
+[GJS+19]
+Mario Geiger, Arthur Jacot, Stefano Spigler, Franck Gabriel, Levent Sagun, Stéphane d’Ascoli,
+Giulio Biroli, Clément Hongler, and Matthieu Wyart. Scaling description of generalization with
+number of parameters in deep learning. arXiv, 2019, 1901.01608. 18
+[GKX19]
+Behrooz Ghorbani, Shankar Krishnan, and Ying Xiao. An investigation into neural net op-
+timization via hessian eigenvalue density. CoRR, abs/1901.10159, 2019, 1901.10159. URL
+http://arxiv.org/abs/1901.10159. 18
+[Goo01]
+Joshua Goodman. A bit of progress in language modeling. CoRR, cs.CL/0108005, 2001. URL
+http://arxiv.org/abs/cs.CL/0108005. 18
+[GRK17]
+Scott Gray, Alec Radford, and Diederik P Kingma. Gpu kernels for block-sparse weights. ope-
+nai.com, 2017. 19
+[HAD19]
+Joel Hestness, Newsha Ardalani, and Gregory Diamos. Beyond human-level accuracy: Compu-
+tational challenges in deep learning. In Proceedings of the 24th Symposium on Principles and
+Practice of Parallel Programming, PPoPP ’19, pages 1–14, New York, NY, USA, 2019. ACM.
+doi:10.1145/3293883.3295710. 18
+28
+
+[HCC+18]
+Yanping Huang, Yonglong Cheng, Dehao Chen, HyoukJoong Lee, Jiquan Ngiam, Quoc V. Le,
+and Zhifeng Chen. Gpipe: Efﬁcient training of giant neural networks using pipeline parallelism.
+CoRR, abs/1811.06965, 2018, 1811.06965. URL http://arxiv.org/abs/1811.06965. 19
+[HNA+17] Joel Hestness, Sharan Narang, Newsha Ardalani, Gregory Diamos, Heewoo Jun, Hassan Kia-
+ninejad, Md. Mostofa Ali Patwary, Yang Yang, and Yanqi Zhou. Deep learning scaling is pre-
+dictable, empirically, 2017, 1712.00409. 18
+[JGH18]
+Arthur Jacot, Franck Gabriel, and Clément Hongler. Neural tangent kernel: Convergence and
+generalization in neural networks. In Advances in neural information processing systems, pages
+8571–8580, 2018. 18
+[KB14]
+Diederik P. Kingma and Jimmy Ba.
+Adam: A method for stochastic optimization, 2014,
+1412.6980. 7
+[Kom19]
+Aran Komatsuzaki. One epoch is all you need, 2019, arXiv:1906.06669. 18
+[KSH12]
+Alex Krizhevsky, Ilya Sutskever, and Geoffrey E. Hinton. Imagenet classiﬁcation with deep
+convolutional neural networks. In Proceedings of the 25th International Conference on Neural
+Information Processing Systems - Volume 1, NIPS’12, pages 1097–1105, USA, 2012. Curran
+Associates Inc. URL http://dl.acm.org/citation.cfm?id=2999134.2999257. 19
+[LCG+19]
+Zhenzhong Lan, Mingda Chen, Sebastian Goodman, Kevin Gimpel, Piyush Sharma, and Radu
+Soricut.
+Albert: A lite bert for self-supervised learning of language representations, 2019,
+1909.11942. 9
+[LOG+19]
+Yinhan Liu, Myle Ott, Naman Goyal, Jingfei Du, Mandar Joshi, Danqi Chen, Omer Levy, Mike
+Lewis, Luke Zettlemoyer, and Veselin Stoyanov. Roberta: A robustly optimized BERT pretrain-
+ing approach. CoRR, abs/1907.11692, 2019, 1907.11692. URL http://arxiv.org/abs/
+1907.11692. 2
+[LSP+18]
+Peter J. Liu, Mohammad Saleh, Etienne Pot, Ben Goodrich, Ryan Sepassi, Lukasz Kaiser, and
+Noam Shazeer. Generating wikipedia by summarizing long sequences. arXiv:1801.10198 [cs],
+2018, 1801.10198. URL http://arxiv.org/abs/1801.10198. 2, 6
+[LT16]
+Henry W Lin and Max Tegmark. Criticality in formal languages and statistical physics. arXiv
+preprint arXiv:1606.06737, 2016. 25
+[LXS+19]
+Jaehoon Lee, Lechao Xiao, Samuel S. Schoenholz, Yasaman Bahri, Roman Novak, Jascha Sohl-
+Dickstein, and Jeffrey Pennington. Wide neural networks of any depth evolve as linear models
+under gradient descent, 2019, arXiv:1902.06720. 18
+[MKAT18] Sam McCandlish, Jared Kaplan, Dario Amodei, and OpenAI Dota Team. An empirical model
+of large-batch training, 2018, arXiv:1812.06162. 3, 5, 6, 12, 13, 21
+[Pap18]
+Vardan Papyan. The full spectrum of deep net hessians at scale: Dynamics with sample size.
+CoRR, abs/1811.07062, 2018, 1811.07062. URL http://arxiv.org/abs/1811.07062. 18
+[RNSS18]
+Alec Radford, Karthik Narasimhan, Tim Salimans, and Ilya Sutskever. Improving language
+understanding by generative pre-training. URL https://s3-us-west-2. amazonaws. com/openai-
+assets/research-covers/languageunsupervised/language understanding paper. pdf, 2018. 2, 6
+[RRBS19a] Jonathan S. Rosenfeld, Amir Rosenfeld, Yonatan Belinkov, and Nir Shavit.
+A constructive
+prediction of the generalization error across scales, 2019, 1909.12673. 18
+[RRBS19b] Jonathan S. Rosenfeld, Amir Rosenfeld, Yonatan Belinkov, and Nir Shavit.
+A constructive
+prediction of the generalization error across scales, 2019, arXiv:1909.12673. 18
+[RSR+19]
+Colin Raffel, Noam Shazeer, Adam Roberts, Katherine Lee, Sharan Narang, Michael Matena,
+Yanqi Zhou, Wei Li, and Peter J. Liu. Exploring the limits of transfer learning with a uniﬁed
+text-to-text transformer, 2019, arXiv:1910.10683. 2
+[RWC+19] Alec Radford, Jeff Wu, Rewon Child, David Luan, Dario Amodei, and Ilya Sutskever. Language
+models are unsupervised multitask learners. openai.com, 2019. 2, 5, 6, 7, 8
+[SCP+18]
+Noam Shazeer, Youlong Cheng, Niki Parmar, Dustin Tran, Ashish Vaswani, Penporn Koanan-
+takool, Peter Hawkins, HyoukJoong Lee, Mingsheng Hong, Cliff Young, Ryan Sepassi, and
+Blake Hechtman. Mesh-tensorﬂow: Deep learning for supercomputers, 2018, 1811.02084. 19
+[SHB15]
+Rico Sennrich, Barry Haddow, and Alexandra Birch. Neural machine translation of rare words
+with subword units. CoRR, 2015, 1508.07909. 6
+29
+
+[SLA+18]
+Christopher J. Shallue, Jaehoon Lee, Joe Antognini, Jascha Sohl-Dickstein, Roy Frostig, and
+George E. Dahl. Measuring the effects of data parallelism on neural network training, 2018,
+arXiv:1811.03600. 12
+[SS18]
+Noam Shazeer and Mitchell Stern. Adafactor: Adaptive learning rates with sublinear memory
+cost. CoRR, abs/1804.04235, 2018, 1804.04235. URL http://arxiv.org/abs/1804.04235.
+7
+[THK18]
+Stefan Thurner, Rudolf Hanel, and Peter Klimek. Introduction to the theory of complex systems.
+Oxford University Press, 2018. 18
+[TL19]
+Mingxing Tan and Quoc V. Le. Efﬁcientnet: Rethinking model scaling for convolutional neural
+networks. CoRR, abs/1905.11946, 2019, 1905.11946. URL http://arxiv.org/abs/1905.
+11946. 18
+[VSP+17]
+Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N Gomez,
+Ł ukasz Kaiser, and Illia Polosukhin. Attention is all you need. In I. Guyon, U. V. Luxburg,
+S. Bengio, H. Wallach, R. Fergus, S. Vishwanathan, and R. Garnett, editors, Advances in Neural
+Information Processing Systems 30, pages 5998–6008. Curran Associates, Inc., 2017. URL
+http://papers.nips.cc/paper/7181-attention-is-all-you-need.pdf. 2, 6
+[VWB16]
+Andreas Veit, Michael Wilber, and Serge Belongie. Residual networks behave like ensembles
+of relatively shallow networks, 2016, arXiv:1605.06431. 8, 18
+[Was06]
+Larry Wasserman. All of nonparametric statistics. Springer Science & Business Media, 2006.
+18
+[WPN+19] Alex Wang, Yada Pruksachatkun, Nikita Nangia, Amanpreet Singh, Julian Michael, Felix Hill,
+Omer Levy, and Samuel R. Bowman. Superglue: A stickier benchmark for general-purpose
+language understanding systems, 2019, 1905.00537. 2
+[WRH17]
+Yu-Xiong Wang, Deva Ramanan, and Martial Hebert. Growing a brain: Fine-tuning by in-
+creasing model capacity. 2017 IEEE Conference on Computer Vision and Pattern Recognition
+(CVPR), Jul 2017. doi:10.1109/cvpr.2017.323. 19
+[WYL19]
+Wei Wen, Feng Yan, and Hai Li. Autogrow: Automatic layer growing in deep convolutional
+networks, 2019, 1906.02909. 19
+[YDY+19] Zhilin Yang, Zihang Dai, Yiming Yang, Jaime Carbonell, Ruslan Salakhutdinov, and Quoc V.
+Le.
+Xlnet:
+Generalized autoregressive pretraining for language understanding, 2019,
+arXiv:1906.08237. 2
+[ZK16]
+Sergey Zagoruyko and Nikos Komodakis. Wide residual networks. Procedings of the British
+Machine Vision Conference 2016, 2016. doi:10.5244/c.30.87. 18
+[ZKZ+15]
+Yukun Zhu, Ryan Kiros, Rich Zemel, Ruslan Salakhutdinov, Raquel Urtasun, Antonio Tor-
+ralba, and Sanja Fidler. Aligning books and movies: Towards story-like visual explanations by
+watching movies and reading books. 2015 IEEE International Conference on Computer Vision
+(ICCV), Dec 2015. doi:10.1109/iccv.2015.11. 7
+[ZLN+19]
+Guodong Zhang, Lala Li, Zachary Nado, James Martens, Sushant Sachdeva, George E. Dahl,
+Christopher J. Shallue, and Roger B. Grosse. Which algorithmic choices matter at which batch
+sizes? insights from a noisy quadratic model. CoRR, abs/1907.04164, 2019, 1907.04164. URL
+http://arxiv.org/abs/1907.04164. 12, 18
+30

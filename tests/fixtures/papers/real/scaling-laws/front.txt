@@ -1,0 +1,50 @@
+Scaling Laws for Neural Language Models
+Jared Kaplan ∗
+Johns Hopkins University, OpenAI
+jaredk@jhu.edu
+Sam McCandlish∗
+OpenAI
+sam@openai.com
+Tom Henighan
+OpenAI
+henighan@openai.com
+Tom B. Brown
+OpenAI
+tom@openai.com
+Benjamin Chess
+OpenAI
+bchess@openai.com
+Rewon Child
+OpenAI
+rewon@openai.com
+Scott Gray
+OpenAI
+scott@openai.com
+Alec Radford
+OpenAI
+alec@openai.com
+Jeffrey Wu
+OpenAI
+jeffwu@openai.com
+Dario Amodei
+OpenAI
+damodei@openai.com
+Abstract
+We study empirical scaling laws for language model performance on the cross-entropy loss.
+The loss scales as a power-law with model size, dataset size, and the amount of compute
+used for training, with some trends spanning more than seven orders of magnitude. Other
+architectural details such as network width or depth have minimal effects within a wide
+range. Simple equations govern the dependence of overﬁtting on model/dataset size and the
+dependence of training speed on model size. These relationships allow us to determine the
+optimal allocation of a ﬁxed compute budget. Larger models are signiﬁcantly more sample-
+efﬁcient, such that optimally compute-efﬁcient training involves training very large models
+on a relatively modest amount of data and stopping signiﬁcantly before convergence.
+∗Equal contribution.
+Contributions:
+Jared Kaplan and Sam McCandlish led the research.
+Tom Henighan contributed the LSTM ex-
+periments.
+Tom Brown, Rewon Child, and Scott Gray, and Alec Radford developed the optimized Transformer
+implementation. Jeff Wu, Benjamin Chess, and Alec Radford developed the text datasets. Dario Amodei provided
+guidance throughout the project.
+arXiv:2001.08361v1  [cs.LG]  23 Jan 2020

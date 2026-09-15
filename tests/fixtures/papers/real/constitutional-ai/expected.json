@@ -1,0 +1,165 @@
+{
+  "key": "constitutional-ai",
+  "source": {
+    "vendor": "anthropic",
+    "title": "Constitutional AI: Harmlessness from AI Feedback",
+    "arxiv_id": "2212.08073",
+    "source_url": "https://arxiv.org/abs/2212.08073",
+    "download_url": "https://arxiv.org/pdf/2212.08073",
+    "license": "arXiv.org perpetual, non-exclusive license 1.0",
+    "sha256_16": "9a456a07ad346e33",
+    "pages": 34
+  },
+  "layout": {
+    "kind": "single-column-arxiv",
+    "body_columns": 1,
+    "note": "arXiv 预印本，单栏正文，超长作者名单（51 人）"
+  },
+  "p1": {
+    "decision_source": "text-layer",
+    "page_count": 34,
+    "section_count": 42,
+    "required_headings": [
+      [
+        "Abstract",
+        1
+      ],
+      [
+        "Introduction",
+        1
+      ],
+      [
+        "References",
+        1
+      ]
+    ],
+    "front_title_evidence": "Constitutional AI: Harmlessness from AI Feedback",
+    "spurious_heading_examples": [
+      "1010",
+      "Revisions"
+    ]
+  },
+  "p2": {
+    "meta": {
+      "title": "Constitutional AI: Harmlessness from AI Feedback",
+      "authors": [
+        "Yuntao Bai∗",
+        "Saurav Kadavath",
+        "Sandipan Kundu",
+        "Amanda Askell",
+        "Jackson Kernion",
+        "Andy Jones",
+        "Anna Chen",
+        "Anna Goldie",
+        "Azalia Mirhoseini",
+        "Cameron McKinnon",
+        "Carol Chen",
+        "Catherine Olsson",
+        "Christopher Olah",
+        "Danny Hernandez",
+        "Dawn Drain",
+        "Deep Ganguli",
+        "Dustin Li",
+        "Eli Tran-Johnson",
+        "Ethan Perez",
+        "Jamie Kerr",
+        "Jared Mueller",
+        "Jeffrey Ladish",
+        "Joshua Landau",
+        "Kamal Ndousse",
+        "Kamile Lukosuite",
+        "Liane Lovitt",
+        "Michael Sellitto",
+        "Nelson Elhage",
+        "Nicholas Schiefer",
+        "Noemi Mercado",
+        "Nova DasSarma",
+        "Robert Lasenby",
+        "Robin Larson",
+        "Sam Ringer",
+        "Scott Johnston",
+        "Shauna Kravec",
+        "Sheer El Showk",
+        "Stanislav Fort",
+        "Tamera Lanham",
+        "Timothy Telleen-Lawton",
+        "Tom Conerly",
+        "Tom Henighan",
+        "Tristan Hume",
+        "Samuel R. Bowman",
+        "Zac Hatﬁeld-Dodds",
+        "Ben Mann",
+        "Dario Amodei",
+        "Nicholas Joseph",
+        "Sam McCandlish",
+        "Tom Brown",
+        "Jared Kaplan∗ Anthropic"
+      ],
+      "year": 2022,
+      "venue": "",
+      "doi": "",
+      "abstract": "As AI systems become more capable, we would like to enlist their help to supervise other AIs. We experiment with methods for training a harmless AI assistant through self- improvement, without any human labels identifying harmful outputs. The only human oversight is provided through a list of rules or principles, and so we refer to the method as ‘Constitutional AI’. The process involves both a supervised learning and a reinforcement learning phase. In the supervised phase we sample from an initial model, then generate self-critiques and revisions, and then ﬁnetune the original model on revised responses. In the RL phase, we sample from the ﬁnetuned model, use a model to evaluate which of the two samples is better, and then train a preference model from this dataset of AI prefer- ences. We then train with RL using the preference model as the reward signal, i.e. we use ‘RL from AI Feedback’ (RLAIF). As a result we are able to train a harmless but non- evasive AI assistant that engages with harmful queries by explaining its objections to them. Both the SL and RL methods can leverage chain-of-thought style reasoning to improve the human-judged performance and transparency of AI decision making. These methods make it possible to control AI behavior more precisely and with far fewer human labels. ∗Correspondence to: {yuntao,jared}@anthropic.com Author contributions are detailed in 7. arXiv:2212.08073v1 [cs.CL] 15 Dec 2022",
+      "keywords": [],
+      "source": "text-layer"
+    },
+    "notes": [
+      "keywords-not-found",
+      "venue-not-found"
+    ],
+    "provenance_confidence": {
+      "title": "high",
+      "authors": "high",
+      "year": "high",
+      "venue": "low",
+      "doi": "low",
+      "abstract": "high",
+      "keywords": "low",
+      "source": "high"
+    },
+    "field_status": {
+      "title": "ok",
+      "authors": "degraded",
+      "year": "ok",
+      "venue": "missing",
+      "doi": "missing",
+      "abstract": "ok",
+      "keywords": "missing"
+    },
+    "known_failures": [
+      {
+        "field": "authors",
+        "tag": "authors-absorb-affiliation",
+        "detail": "最后一位作者与机构粘连：'Jared Kaplan∗ Anthropic'（Y5 已挡住摘要，但机构行未切干净）。"
+      },
+      {
+        "field": "venue",
+        "tag": "venue-not-found",
+        "detail": "arXiv 预印本首页没有 venue 行。"
+      },
+      {
+        "field": "keywords",
+        "tag": "keywords-not-found",
+        "detail": "arXiv 预印本没有 Index Terms/Keywords 段。"
+      }
+    ],
+    "references": {
+      "heading": "References",
+      "count": 9,
+      "style": "author-year",
+      "first_raw_startswith": "[Askell et al., ",
+      "under_split": true,
+      "provenance_notes": [
+        "authors-unparsed",
+        "dehyphenated",
+        "merged-continuation",
+        "merged-incomplete"
+      ],
+      "max_fragments": 230
+    }
+  },
+  "differences_from_synthetic": [
+    "51 人作者名单跨越多个 block，机构名（Anthropic）与末位作者粘在同一行。",
+    "首页含 arXiv 页眉（'arXiv:2212.08073v1 [cs.CL] 15 Dec 2022'）与页脚数字，进入正文行序。",
+    "真实 References 为作者-年 + 字母键混排，无空行分隔。"
+  ]
+}

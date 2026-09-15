@@ -1,0 +1,125 @@
+{
+  "key": "scaling-laws",
+  "source": {
+    "vendor": "openai",
+    "title": "Scaling Laws for Neural Language Models",
+    "arxiv_id": "2001.08361",
+    "source_url": "https://arxiv.org/abs/2001.08361",
+    "download_url": "https://arxiv.org/pdf/2001.08361",
+    "license": "arXiv.org perpetual, non-exclusive license 1.0",
+    "sha256_16": "a41bd7877fd1a6bc",
+    "pages": 30
+  },
+  "layout": {
+    "kind": "single-column-arxiv",
+    "body_columns": 1,
+    "note": "arXiv 预印本，单栏正文（arXiv 单栏模板 / 大量图内数字与公式）"
+  },
+  "p1": {
+    "decision_source": "text-layer",
+    "page_count": 30,
+    "section_count": 76,
+    "required_headings": [
+      [
+        "Abstract",
+        1
+      ],
+      [
+        "Introduction",
+        1
+      ],
+      [
+        "References",
+        1
+      ]
+    ],
+    "front_title_evidence": "Scaling Laws for Neural Language Models",
+    "spurious_heading_examples": [
+      "Layers",
+      "Layer",
+      "+ αN"
+    ]
+  },
+  "p2": {
+    "meta": {
+      "title": "Scaling Laws for Neural Language Models Jared Kaplan ∗",
+      "authors": [
+        "Johns Hopkins University",
+        "OpenAI Sam McCandlish∗ OpenAI Tom Henighan OpenAI Tom B. Brown OpenAI Benjamin Chess OpenAI Rewon Child OpenAI Scott Gray OpenAI Alec Radford OpenAI Jeffrey Wu OpenAI Dario Amodei OpenAI"
+      ],
+      "year": 2020,
+      "venue": "",
+      "doi": "10.1145/3293883.3295710",
+      "abstract": "We study empirical scaling laws for language model performance on the cross-entropy loss. The loss scales as a power-law with model size, dataset size, and the amount of compute used for training, with some trends spanning more than seven orders of magnitude. Other architectural details such as network width or depth have minimal effects within a wide range. Simple equations govern the dependence of overﬁtting on model/dataset size and the dependence of training speed on model size. These relationships allow us to determine the optimal allocation of a ﬁxed compute budget. Larger models are signiﬁcantly more sample- efﬁcient, such that optimally compute-efﬁcient training involves training very large models on a relatively modest amount of data and stopping signiﬁcantly before convergence. ∗Equal contribution. Contributions: Jared Kaplan and Sam McCandlish led the research. Tom Henighan contributed the LSTM ex- periments. Tom Brown, Rewon Child, and Scott Gray, and Alec Radford developed the optimized Transformer implementation. Jeff Wu, Benjamin Chess, and Alec Radford developed the text datasets. Dario Amodei provided guidance throughout the project. arXiv:2001.08361v1 [cs.LG] 23 Jan 2020",
+      "keywords": [],
+      "source": "text-layer"
+    },
+    "notes": [
+      "keywords-not-found",
+      "venue-not-found"
+    ],
+    "provenance_confidence": {
+      "title": "high",
+      "authors": "high",
+      "year": "high",
+      "venue": "low",
+      "doi": "high",
+      "abstract": "high",
+      "keywords": "low",
+      "source": "high"
+    },
+    "field_status": {
+      "title": "degraded",
+      "authors": "degraded",
+      "year": "ok",
+      "venue": "missing",
+      "doi": "wrong",
+      "abstract": "ok",
+      "keywords": "missing"
+    },
+    "known_failures": [
+      {
+        "field": "title",
+        "tag": "title-absorbs-byline",
+        "detail": "首页第一段把标题、作者、脚注并成一块，标题尾部带 'Jared Kaplan ∗'。"
+      },
+      {
+        "field": "authors",
+        "tag": "authors-are-affiliations",
+        "detail": "作者块被识别为机构行（Johns Hopkins University / OpenAI ...），没有任何真实人名。"
+      },
+      {
+        "field": "doi",
+        "tag": "doi-from-references",
+        "detail": "首页无 DOI，回退到 full_text 后命中了参考文献里的 10.1145/3293883.3295710（错误 DOI）。"
+      },
+      {
+        "field": "venue",
+        "tag": "venue-not-found",
+        "detail": "arXiv 预印本首页没有 venue 行。"
+      },
+      {
+        "field": "keywords",
+        "tag": "keywords-not-found",
+        "detail": "arXiv 预印本没有 Index Terms/Keywords 段。"
+      }
+    ],
+    "references": {
+      "heading": "References",
+      "count": 3,
+      "style": "author-year",
+      "first_raw_startswith": "[ACDE12] Eduardo",
+      "under_split": true,
+      "provenance_notes": [
+        "dehyphenated",
+        "merged-continuation"
+      ],
+      "max_fragments": 72
+    }
+  },
+  "differences_from_synthetic": [
+    "合成的 front_*.txt 用空行分隔段落；真实文本层把标题/作者/脚注挤进同一个 block。",
+    "合成 References 有 [n] 编号或作者-年空行分组；真实 arXiv 参考文献用 [ACDE12] 字母键且无空行。",
+    "真实页面夹带图/表内的数字文本（'× 1013'、'Layers'），被结构切分器当成标题。"
+  ]
+}

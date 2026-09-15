@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "papers": [
+    {
+      "key": "bert",
+      "vendor": "google",
+      "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+      "arxiv_id": "1810.04805",
+      "source_url": "https://arxiv.org/abs/1810.04805",
+      "download_url": "https://arxiv.org/pdf/1810.04805",
+      "license": "arXiv.org perpetual, non-exclusive license 1.0",
+      "sha256_16": "5692a5514787a8c6",
+      "pages": 16,
+      "layout": {
+        "kind": "two-column-conference",
+        "body_columns": 2,
+        "note": "NAACL 会议双栏正文（下载自 arXiv；正文两栏、标题/作者跨栏）"
+      },
+      "fixture": "bert/",
+      "expected": "bert/expected.json"
+    },
+    {
+      "key": "constitutional-ai",
+      "vendor": "anthropic",
+      "title": "Constitutional AI: Harmlessness from AI Feedback",
+      "arxiv_id": "2212.08073",
+      "source_url": "https://arxiv.org/abs/2212.08073",
+      "download_url": "https://arxiv.org/pdf/2212.08073",
+      "license": "arXiv.org perpetual, non-exclusive license 1.0",
+      "sha256_16": "9a456a07ad346e33",
+      "pages": 34,
+      "layout": {
+        "kind": "single-column-arxiv",
+        "body_columns": 1,
+        "note": "arXiv 预印本，单栏正文，超长作者名单（51 人）"
+      },
+      "fixture": "constitutional-ai/",
+      "expected": "constitutional-ai/expected.json"
+    },
+    {
+      "key": "deepseek-moe",
+      "vendor": "deepseek",
+      "title": "DeepSeekMoE: Towards Ultimate Expert Specialization in Mixture-of-Experts Language Models",
+      "arxiv_id": "2401.06066",
+      "source_url": "https://arxiv.org/abs/2401.06066",
+      "download_url": "https://arxiv.org/pdf/2401.06066",
+      "license": "arXiv.org perpetual, non-exclusive license 1.0",
+      "sha256_16": "a64b509e1410d09c",
+      "pages": 33,
+      "layout": {
+        "kind": "single-column-tech-report",
+        "body_columns": 1,
+        "note": "技术报告，单栏正文，多机构作者脚注与 GitHub/邮箱混排首页"
+      },
+      "fixture": "deepseek-moe/",
+      "expected": "deepseek-moe/expected.json"
+    },
+    {
+      "key": "scaling-laws",
+      "vendor": "openai",
+      "title": "Scaling Laws for Neural Language Models",
+      "arxiv_id": "2001.08361",
+      "source_url": "https://arxiv.org/abs/2001.08361",
+      "download_url": "https://arxiv.org/pdf/2001.08361",
+      "license": "arXiv.org perpetual, non-exclusive license 1.0",
+      "sha256_16": "a41bd7877fd1a6bc",
+      "pages": 30,
+      "layout": {
+        "kind": "single-column-arxiv",
+        "body_columns": 1,
+        "note": "arXiv 预印本，单栏正文（arXiv 单栏模板 / 大量图内数字与公式）"
+      },
+      "fixture": "scaling-laws/",
+      "expected": "scaling-laws/expected.json"
+    }
+  ]
+}
