@@ -23,6 +23,7 @@ Status: in-progress
 | D1 | 层次化抽取与 IR 扩展 | `dev/D1-diagram-extract` | `graph2note/ir.py`（仅 diagram/flow 区块扩展）、`graph2note/diagram.py`、`graph2note/diagrams/infer.py`、对应新测试 | merged 2026-09-14 @ `b4d09d1`（reviewer 验收通过，全量 pytest 920 passed） |
 | D2 | 分组感知布局引擎 | `dev/D2-diagram-layout` | `graph2note/diagrams/_layout.py`、`_canonical.py`、`engine.py`、对应新测试 | merged 2026-09-14 @ `4002288`（reviewer 验收通过，全量 pytest 980 passed） |
 | D3 | 渲染与前端呈现 | `dev/D3-diagram-render` | `graph2note/diagrams/graphviz_renderer.py`、`matplotlib_renderer.py`、`degrade.py`、`graph2note/attachments.py`（DiagramSemantics）、`graph2note/render.py`（diagram 段）、webstatic 图展示组件、对应新测试 | merged 2026-09-14 @ `7b4a6b2`（reviewer 二轮验收通过，全量 pytest 1027 passed） |
+| D4 | 阶段2复验缺陷整合修复（T-audit F-A/F-B/F-C/F-D/F-G/F-H + 字号三档） | `dev/D4-diagram-fix` | D3 渲染/字体 + D2 `_layout.py` + D1 `diagram.py`/`vlm.py`（三领地经调度授权）+ 对应既有测试 | merged 2026-09-15 @ `4c3782a`（fresh reviewer 全项自跑验收通过，全量 pytest 1037 passed） |
 | T-audit | 视觉基线审计 + 复验 | `audit/visual-diagram` | 只读源码；产物写 `reports/`（本目录）+ /tmp；不改实现代码 | 已派发 2026-09-14 |
 
 D 轨共享契约：[SPEC.md §1 层次结构图 IR 扩展](SPEC.md)。D2/D3 针对 SPEC 契约与自建 fixture 开发，可在 `dev/D1-diagram-extract` 落盘后择机 rebase；合并顺序 D1 → D2 → D3，reviewer 负责集成验证。
