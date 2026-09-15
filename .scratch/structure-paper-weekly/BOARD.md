@@ -92,7 +92,7 @@ I 轨共享契约：[SPEC.md §2 论文文档契约](SPEC.md)。P2/P3 针对契�
 | Y1 | ✅ merged `f8c6f61`（rev-112 APPROVE，verdict `/tmp/review-spw-Y1-verdict.md`） | `dev/Y1-patch-metadata` @ `5984a5a` | PATCH 部分合并 / PUT 整体替换；1211 passed；残留：documents metadata 同问题另立项 |
 | X2 | ✅ merged `55c8c15`（rev-113 APPROVE，verdict `/tmp/review-spw-X2-verdict.md`） | `dev/X2-extract-retry` @ `81b9ad3` | 半截 JSON 升级重试四分支；1214 passed |
 | X5 | ✅ merged `2eb5fed`（rev-114 APPROVE，verdict `/tmp/review-spw-X5-verdict.md`） | `dev/X5-marked-localize` @ `270580f` | marked 4.3.0 本地 vendor，离线探针 10/10 |
-| Y5 | ❌ REJECT（rev-115，verdict `/tmp/review-spw-Y5-verdict.md`）→ 作者-111 返工中 | `dev/Y5-author-split` @ `acdbc79` | D1：含 Will/The/Can + 句末标点的合法 byline 被句子启发式静默清空（不同段场景回归）；目标缺陷本身已修、mutation 有牙 |
+| Y5 | R2 返工交付（报告 `/tmp/spw-Y5-r2-report.md`），待评审空位 | `dev/Y5-author-split` @ `d88fac5` | D1 修复：kept 非空守卫 + hint 词区分大小写；+4 回归用例；6 组 mutation；风险双方向披露补全 |
 | X1 | 评审中（rev-121，含 live 复核） | `dev/X1-deepseek-channel` @ `09a7a9e` | live 3/3 ok；02inc 空 length 触发 X2 重试后成功（跨修复联动验证） |
 | X3+X4 | 实现中（worker-117，合并单 worker） | `dev/X3X4-mpl-layout` | 共享 matplotlib_renderer.py |
 | Y3 | 评审中（rev-120） | `dev/Y3-upload-test` @ `26a804f` | upload.js 拦截行为测试；1219 passed |
