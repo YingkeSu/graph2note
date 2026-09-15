@@ -180,6 +180,14 @@ _NOTE_GAP_IN = 0.04
 _CELL_GAP_FRAC = 0.16
 _BASE_FIGSIZE = (12.0, 8.0)
 _AXES_FRACTION = 0.96
+# Clearance kept between two group titles that would otherwise share a title
+# strip (slid sideways), and between a stacked title and the strip it left.
+_TITLE_SLIDE_PAD_IN = 0.12
+_TITLE_ROW_PAD_IN = 0.02
+# The canvas edge is a soft bound: the row's title strip can sit exactly on
+# ``y == 0`` (``ty - text_h`` lands on -1e-18 through float rounding), so the
+# on-canvas check needs a tolerance or that legal anchor is rejected.
+_CANVAS_EPS = 1e-6
 
 
 def _text_size_in(text: str, fontsize: float) -> tuple[float, float]:
@@ -418,6 +426,74 @@ def _group_title_style(line_color: str):
         return {}, None
 
 
+def _title_box(tx: float, ty: float, w: float, h: float):
+    """Text box of a ``va="bottom"`` title anchored at ``(tx, ty)``.
+
+    The y axis is inverted (top -> down), so the glyph block grows towards
+    *smaller* y; the box is ``(x0, top, x1, bottom)``.
+    """
+    return tx, ty - h, tx + w, ty
+
+
+def _boxes_hit(a, b, pad_x: float = 0.0, pad_y: float = 0.0) -> bool:
+    """Do two ``(x0, top, x1, bottom)`` boxes intersect (padded slack)?"""
+    return (a[0] < b[2] + pad_x and a[2] > b[0] - pad_x
+            and a[1] < b[3] + pad_y and a[3] > b[1] - pad_y)
+
+
+def _place_group_titles(candidates: list[dict], node_boxes: list, axes_size,
+                        title_gap: float) -> list[tuple[float, float]]:
+    """Resolve group-title collisions; returns ``[(tx, ty)]`` in input order.
+
+    T-vision final report §3: a lane band and a cluster that share a row band
+    *and* a left edge produced two titles anchored on the same point (01: 2
+    pairs, 02inc: 1 pair).  Titles are now placed greedily in group order: a
+    title keeps its historical anchor unless that box hits an already-placed
+    title, in which case it first slides sideways along its own title strip and
+    then stacks into the reserved strip above the row.  Every move is checked
+    against the node boxes too, and the historical anchor is the fallback, so a
+    collision-free figure is laid out exactly as before (golden-safe).
+    """
+    axes_w_in, axes_h_in = axes_size
+    pad_x = _TITLE_SLIDE_PAD_IN / max(axes_w_in, 1e-9)
+    pad_y = _TITLE_ROW_PAD_IN / max(axes_h_in, 1e-9)
+    placed: list[tuple[float, float, float, float]] = []
+    anchors: list[tuple[float, float]] = []
+    for cand in candidates:
+        tx, ty, w, h = cand["tx"], cand["ty"], cand["w"], cand["h"]
+        base = _title_box(tx, ty, w, h)
+        chosen = base
+        if any(_boxes_hit(base, other, pad_x, pad_y) for other in placed):
+            # Same title strip = already-visible titles this one would cross.
+            band = [r for r in placed
+                    if r[1] < base[3] + pad_y and r[3] > base[1] - pad_y]
+            xs = [tx]
+            if band:
+                xs.append(max(r[2] for r in band) + pad_x)
+                xs.append(min(r[0] for r in band) - pad_x - w)
+            found = None
+            for y in [ty] + [ty - k * (h + title_gap) for k in (1, 2, 3)]:
+                for x in xs:
+                    box = _title_box(x, y, w, h)
+                    if (box[0] < -_CANVAS_EPS or box[2] > 1.0 + _CANVAS_EPS
+                            or box[1] < -_CANVAS_EPS):
+                        continue  # off-canvas / above the drawing
+                    if any(_boxes_hit(box, other, pad_x, pad_y)
+                           for other in placed):
+                        continue
+                    if any(_boxes_hit(box, nb) for nb in node_boxes):
+                        continue
+                    found = box
+                    break
+                if found is not None:
+                    break
+            if found is not None:
+                chosen = found
+        placed.append(chosen)
+        anchors.append((chosen[0], chosen[3]))
+    return anchors
+
+
 def _draw_groups(ax, sem: rs.RenderSemantics,
                  pos: dict[str, tuple[float, float]],
                  box_w: dict[str, float], box_h: dict[str, float],
@@ -425,8 +501,9 @@ def _draw_groups(ax, sem: rs.RenderSemantics,
     """Draw group backgrounds + titles; returns the drawn group ids in order.
 
     ``title_gap`` (normalized, grouped/dense path) moves each title into the
-    strip the geometry reserved above its topmost member box; ``None`` keeps
-    the legacy top-left placement for direct renderer calls.
+    strip the geometry reserved above its topmost member box and de-conflicts
+    titles *across groups*; ``None`` keeps the legacy top-left placement for
+    direct renderer calls.
     """
     membership = sem.membership
     # Top of the tallest node box on each grid row: a group title must clear the
@@ -437,7 +514,7 @@ def _draw_groups(ax, sem: rs.RenderSemantics,
         row = round(pos[node.id][1], 6)
         top = pos[node.id][1] - box_h[node.id] / 2
         row_top[row] = min(row_top.get(row, top), top)
-    drawn: list[str] = []
+    entries = []
     for index, group in enumerate(sem.groups):
         members = [nid for nid in group.nodes if membership.get(nid) == group.id]
         if not members:
@@ -446,17 +523,47 @@ def _draw_groups(ax, sem: rs.RenderSemantics,
         x0, y0, w, h = _group_extent(group, members, pos, box_w, box_h, orientation)
         if w <= 0 or h <= 0:
             continue
+        ty = None
+        if group.label and title_gap is not None:
+            # Anchor the title's *bottom* in the reserved strip so the text
+            # grows upward, clear of the row's node boxes.
+            ty = min(row_top[round(pos[nid][1], 6)] for nid in members) \
+                - title_gap
+        entries.append((group, fill, line, x0, y0, w, h, ty))
+
+    anchors: list[tuple[float, float] | None] = [None] * len(entries)
+    titled = [i for i, e in enumerate(entries) if e[7] is not None]
+    if titled:
+        axes_w_in = ax.get_figure().get_size_inches()[0] * _AXES_FRACTION
+        axes_h_in = ax.get_figure().get_size_inches()[1] * _AXES_FRACTION
+        candidates = []
+        for i in titled:
+            group, _fill, _line, x0, _y0, _w, _h, ty = entries[i]
+            text_w, text_h = _text_size_in(group.label, GROUP_FONTSIZE)
+            candidates.append({"tx": x0 + 0.008, "ty": ty,
+                               "w": text_w / axes_w_in,
+                               "h": text_h / axes_h_in})
+        node_boxes = [
+            (pos[n.id][0] - box_w[n.id] / 2, pos[n.id][1] - box_h[n.id] / 2,
+             pos[n.id][0] + box_w[n.id] / 2, pos[n.id][1] + box_h[n.id] / 2)
+            for n in sem.nodes
+        ]
+        resolved = _place_group_titles(candidates, node_boxes,
+                                       (axes_w_in, axes_h_in), title_gap)
+        for i, anchor in zip(titled, resolved):
+            anchors[i] = anchor
+
+    drawn: list[str] = []
+    for entry, anchor in zip(entries, anchors):
+        group, fill, line, x0, y0, w, h, ty = entry
         ax.add_patch(Rectangle((x0, y0), w, h, facecolor=fill, edgecolor=line,
                                linewidth=1.3, alpha=0.45, zorder=0))
         if group.label:
             if title_gap is None:
                 tx, ty, va = x0 + 0.008, y0 + 0.014, "top"
             else:
-                # Anchor the title's *bottom* in the reserved strip so the text
-                # grows upward, clear of the row's node boxes.
-                tx, ty, va = x0 + 0.008, \
-                    min(row_top[round(pos[nid][1], 6)] for nid in members) - title_gap, \
-                    "bottom"
+                tx, ty = anchor
+                va = "bottom"
             style, effects = _group_title_style(line)
             title = ax.text(tx, ty, group.label, ha="left", va=va,
                             fontsize=GROUP_FONTSIZE, color=line, zorder=1,
