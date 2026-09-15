@@ -89,6 +89,34 @@ class PaperSection(BaseModel):        # P1 产出
 - 手工修正写入语义：`PUT /api/papers/{id}/metadata` 为**整体替换**（未提供的字段回落到 `PaperMeta` 默认空值）；`PATCH /api/papers/{id}/metadata` 为**部分合并**（只覆盖本次请求提供的字段，其余字段连同 provenance 保持既有值）。两者均只把本次提供的字段标 `manual/high`，未知字段与非法值（含非法 `year`）仍 422。
 - 网络：默认不访问外部服务（CrossRef 等在线解析若做，必须可选、可关、测试离线）。
 
+### 落点与 accessor 契约（双落点；2026-09-15 维护者裁决 (b)）
+
+> **裁决**：保持 **双落点**，不收敛。决策人：维护者；日期：2026-09-15。
+> **理由**：P3 阅读视图已在消费侧经两个 accessor 合并化解分叉（P3-r2 §8：live sections 9/9 与 P1 payload 逐字段相同，meta/references 与 P2 一致）；收敛到单落点需要迁移已存数据 + 向后兼容读，重构风险大于收益。本契约 + 不变量测试（`tests/test_papers_meta_dualslot.py`）替代收敛。
+
+论文 payload 分成两个落点，每个落点有**唯一写入方**与**唯一读取 accessor**：
+
+| 落点 | 物理位置（durable `FileDocumentStore`） | 字段集 | 写入 | 读取 |
+|---|---|---|---|---|
+| **P1 结构槽** | `documents/<id>/paper.json`（整文件） | `schema_version` / `source` / `sections` / `fulltext` / `page_map` / `provenance`，另有 P1 写的空占位 `meta`（`{}`）/ `references`（`[]`） | `set_paper_payload`（`save_paper_document` / `update_paper_payload` 是它的包装） | `get_paper_payload` |
+| **P2 元数据槽** | `record.json` 的 `paper` 对象 | `meta` / `meta_provenance` / `references` / `references_provenance` / `notes` / `parse`（+ 可选 `source`） | `set_paper_meta` / `set_paper_references` / `set_paper_reference_resolution`（经 `_write_paper`） | `paper_payload` |
+
+- `record.json` 另带**轻量镜像**：`doc_kind == "paper"`、`paper_source`（= P1 `source`）、`paper_sections`（= P1 sections 计数）。这三者是列表/筛选用的摘要，**不是 payload**；消费方不得从它们重建 sections（P3 缺陷 A 的成因）。
+- `get_paper_payload(document_id)`：未知文档或 `doc_kind != "paper"` → `None`；`paper.json` 缺失/不可读时回退读旧式 `record.json.paper`（P1 早期默认实现把整份 payload 写在该槽，历史数据兼容读），两者都无 → `{}`。返回 P1 槽内容，可含 P1 自己写的空 `meta`/`references` 占位。
+- `paper_payload(document_id)`：未知文档 → `None`；槽缺失或非 dict → `{}`。只返回 P2 槽内容。
+- `meta` / `references` 两个键名两侧都存在：P1 侧恒为空占位，P2 侧是真实数据；消费方以 P2 侧为准（见 I4）。
+- `SessionDocumentStore`（非持久会话库）没有独立文件，两槽共用记录里的 `paper` 键：只受 I1 约束，**I2 只对 durable `FileDocumentStore` 成立**（非持久库重开即丢，没有迁移/兼容问题）。
+
+**不变量（测试 `tests/test_papers_meta_dualslot.py`，任一条目被破坏即变红）**
+
+- **I1（两 store 均成立）**：P2 写入绝不改动 P1 槽的 `sections` / `fulltext` / `page_map` / `schema_version` / `provenance`；durable store 上 `paper.json` 文件逐字节不变。
+- **I2（durable store）**：P1 写入（`set_paper_payload` / `save_paper_document` / `update_paper_payload`）绝不改动 P2 槽的 `meta` / `meta_provenance` / `references` / `references_provenance` / `notes` / `parse`——P1 只写 `paper.json` + 镜像字段，不碰 `record.json.paper`。
+- **I3（P2 内部）**：写 references 不动 meta，写 reference resolution 只改目标条目的 `resolved_document_id`。
+- **I4（P3 合并，`webapp._paper_view_payload`）**：`sections` **只**来自 P1 槽（`sections` + `page_map`，0-based 索引照留、`page_label` 为 1-based 显示）；`meta` 取 P2 槽 `meta`（非 dict 时回退 P1 占位，再退空默认）；`references` 取 P2 槽 `references`（非 list 时回退 P1 占位，再退 `[]`）。P2 槽里的其他键（含伪造的 `sections`）不进入视图。
+- **I5（持久化重载一致）**：`FileDocumentStore` 重开后两个 accessor 与视图 payload 与重开前逐字段相同。
+
+**重复契约类处置（P2 verdict R2）**：`papers/model.py`（P1）与 `papers/metadata.py` / `papers/references.py`（P2）各自定义 `PaperMeta` / `PaperReference`。两处字段集与类型逐字段相同（`extra="forbid"`）。裁决：**保留两套，不统一**（与落点裁决同轮，2026-09-15，决策人：维护者）。理由：落点契约以 **dict** 为准（store accessor 层），两侧互不 import；P2 的两个类承担本模块的校验/归一化职责（如 `metadata.PaperMeta` 的 DOI 归一化），`model.py` 的类只作为 `PaperPayload` 的占位 schema；统一需跨模块重构（`papers/metadata.py`、`references.py` 不在本项领地内），收益仅为去重，风险大于收益。`tests/test_papers_meta_dualslot.py::test_duplicate_contract_classes_share_field_sets` 钉住字段集一致，防漂移。
+
 ## §3 周报模块契约（I 轨 W1–W2）
 
 - 现行：`digest.py` 单次 text LLM 调用生成一整篇 Markdown；dashboard.js 展示。
