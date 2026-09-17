@@ -111,3 +111,24 @@ node tests/paper_view.mjs && node tests/upload_pdf_intercept.mjs
 ### 残留（未转嫁、如实记录）
 
 `Transformer Circuits Thread AUTHORS` 类**页眉**仍可能被当标题（形状合理但语义错误）；`doi` 仍可能回退到参考文献（`doi-from-references`）；`venue`/`keywords` 在 arXiv 样本上缺失（预期）。这些属 issue 03 / Z2 的首页印记与页眉抑制领地，本轮按约束未扩张到章节重排。
+
+## Rework R2 — 独立复审第二轮的整改（R1 阻塞 + R2/R3）
+
+审查报告：`graph2note-136/.scratch/reviews/prr-02-metadata-r2.md`（针对 `a2b2d16`/`a501497`）。
+
+- **R1（高，阻塞）DOI 来源** ✅
+  - `_extract_doi(front_text)`：只扫本论文首页元数据区域；参考/引用行跳过（`_CITATION_HINT_RE`），带标签的行还得像元数据（`_DOI_METADATA_MARKER_RE` 或该行基本只由 DOI/URL 构成），截断片段（后缀 <8 / 纯字母）拒绝；无证据 `meta.doi=""` + note `doi-not-found`。
+  - 证据：GPT-4/scaling-laws 的 `meta.doi == ""`（原来分别是 `10.18653/v1/p19-1472` / `10.1145/3293883.3295710`）；真实库只读探针 DOI **0/17**；正例 `front_single_column` 仍为 `10.1109/tkde.2023.1234567`（high）。
+- **R2（中）BERT 机构作者** ✅
+  - `_parse_authors` 增加机构/组织裁剪（`_is_affiliation_like`/`_personal_name_tokens`，区分 `Google AI Language` 与 `the Ming Li Group`），并折叠 PDF 连字（`ﬁ`→`fi`）保住 `Zac Hatfield-Dodds`。`bert` 精确 4 人，gold 加 `author_count: 4`；真实库 2/17 无作者（deepseek-v3/r1）如实记录。
+- **R3（低）Abstract 独立成段** ✅ 最小修复：`_abstract_block` 跨段收集正文（排除作者段落）。
+- **year 同源检查**：真实 17 篇 year 均来自自身 arXiv/版权/页眉，无引用年份污染；未改逻辑。
+- **保留**：B1–B3/M1/L1 回归未回退。
+
+### R2 证据
+
+```bash
+… -m pytest -p no:warnings tests/test_papers_meta.py tests/test_papers_meta_import.py \
+    tests/test_papers_meta_real.py tests/test_papers_ingest_real.py
+# 全量：见下（本次交付运行 1436 passed / 0 failed / 0 skipped）
+```

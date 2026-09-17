@@ -49,3 +49,11 @@ None — 可立即开始
   - **L2**：真实 fixture 增加显式 `gold`（人工核对标题/作者前缀/摘要开头），新增 `test_real_gold_title_authors_abstract` 按 gold 断言，不再以“非空标题数”当正确率。新增真实来源/哈希可追溯 fixture `gpt3-few-shot`（arXiv 2005.14165，sha256_16 `97fd272f1fdfc186`）与 `gpt4-tech-report`（arXiv 2303.08774，sha256_16 `c33a66dadca2388d`），来源即用户库对应 PDF 内容哈希。
   - **测试**：`tests/test_papers_meta_import.py` 25 例 + 真实 fixture 套件；全量 `pytest -p no:warnings` **1431 passed / 0 failed / 0 error / 0 skipped**。真实库只读复测：17 篇摘要 **17/17**（此前 8/17）、标题 15/17 非空且形状合理（2 篇诚实为空）。**未写入用户库**。
   - **残留（诚实记录）**：`Transformer Circuits Thread AUTHORS` 类页眉仍可能被当标题（形状合理但语义错误，属 issue 03/Z2 的首页印记/页眉抑制）；`doi` 仍可能回退到参考文献（`doi-from-references`，issue 03 领地）；GROBID live 仍未调用。
+- 2026-09-17 复审 R2 整改（独立复审报告 `graph2note-136/.scratch/reviews/prr-02-metadata-r2.md`，裁决 CHANGES_REQUESTED）：
+  - **R1（高，阻塞）DOI 不得来自参考文献/正文引用**：`metadata._extract_doi(front_text)` 改为逐行扫描**本论文首页元数据区域**——参考/引用行（`et al.`/`[n]`/`Proceedings`/`(年)`/`pp.` 等）直接跳过；带 `doi:`/`doi.org` 标签的行还须像元数据（©/copyright/ISSN/ISBN/arXiv/preprint/received/accepted/published/available at 标记，或该行基本只由 DOI/URL 构成），否则也跳过；截断片段（如 `10.1109/tse`，后缀 <8 或纯字母）拒绝；无证据则 `meta.doi=""` 并记 `doi-not-found`，不再落 `full_text` 回退、不再记 `high` 置信。正例保留：`front_single_column` 的首页 DOI 仍解析为 `10.1109/tkde.2023.1234567`（confidence high）；参考条目自身的 DOI 不受论文级过滤影响（仍在 references 契约内）。
+  - **真实 import→persist→view 回归**：`tests/test_papers_meta_import.py::test_real_frozen_text_import_persists_and_views_gold` 现断言 GPT-4/GPT-3 的 `meta.doi == ""` 且 `/view` 一致；真实库只读探针 DOI 由整改前 12/17（多个错配/截断）变为 **0/17**（均为 arXiv 预印本，首页无自身 DOI 证据）。
+  - **R2（中）BERT 作者混入机构行**：`_parse_authors` 增加机构/组织裁剪（`_is_affiliation_like` + `_personal_name_tokens`，区分机构行与合法团体作者），并折叠 PDF Unicode 连字（`ﬁ`→`fi`）避免误丢真实作者 `Zac Hatfield-Dodds`；`bert` 现为精确 4 人并写入 gold `author_count: 4`，`Google AI Language` 不再出现。真实库 2/17 无作者（deepseek-v3 / deepseek-r1）如实记录为已知残留。
+  - **R3（低）Abstract 独立成段缺口**：`_abstract_block` 支持“标签自成一段、正文在下一段”的跨段收集（并排除作者段落，避免把 byline 当摘要）；回归 `test_abstract_label_own_paragraph_collects_the_next_paragraph`。
+  - **year 同源检查**：真实 17 篇只读探针的 year 均来自论文自身 arXiv 印记/版权/页眉（2020–2025），未观察到参考文献年份污染，本轮未改 year 逻辑。
+  - **测试**：定向 `test_papers_meta.py` 65 例、`test_papers_meta_import.py` 26 例、真实 fixture 套件全绿；全量见 R2 handoff。
+  - **保留**：B1–B3/M1/L1 全部回归保留，未回退。
