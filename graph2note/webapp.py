@@ -66,6 +66,7 @@ from . import continuity
 from . import evolution
 from . import versiondiff
 from . import digest
+from . import research_report
 from . import pipeline
 from . import pdflib
 from . import pdfsearch
@@ -926,6 +927,59 @@ def create_app(
         if stored is None:
             raise HTTPException(status_code=404, detail="小结不存在。")
         return {"meta": stored["meta"], "markdown": stored["markdown"]}
+
+    # ---- research weekly reports (research-weekly-template issue 01) --------
+
+    @app.get("/api/report-templates")
+    def report_templates():
+        """Research template + the legacy four-section summary template."""
+        return research_report.templates_payload()
+
+    @app.post("/api/reports")
+    def report_create(body: dict | None = None):
+        """Generate (or fingerprint-cache reuse) one research weekly report."""
+        payload = body or {}
+        spec = payload.get("range") or payload.get("kind") or "this_week"
+        if isinstance(spec, dict):
+            kind = spec.get("kind") or spec.get("range") or "custom"
+            from_ = payload.get("from") or spec.get("from") or spec.get("start")
+            to = payload.get("to") or spec.get("to") or spec.get("end")
+        else:
+            kind, from_, to = spec, payload.get("from"), payload.get("to")
+        try:
+            range_spec = digest.resolve_range(kind, from_=from_, to=to)
+            modules = research_report.normalize_modules(payload.get("modules"))
+        except (digest.RangeError, research_report.ModuleError) as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+        result = research_report.generate_report(
+            _all_records(),
+            range_spec,
+            storage_dir=app.state.storage_dir,
+            planner=app.state.digest_planner,
+            force=bool(payload.get("force")),
+            modules=modules,
+            reporter=payload.get("reporter"),
+            report_date=payload.get("report_date") or payload.get("date"),
+        )
+        if result["status"] == "error":
+            raise HTTPException(status_code=502, detail=result["message"]) from None
+        return result
+
+    @app.get("/api/reports")
+    def report_list():
+        metas = research_report.list_reports(app.state.storage_dir)
+        return {"reports": metas, "total": len(metas)}
+
+    @app.get("/api/reports/{report_id}")
+    def report_get(report_id: str):
+        stored = research_report.load_report(app.state.storage_dir, report_id)
+        if stored is None:
+            raise HTTPException(status_code=404, detail="周报不存在。")
+        return {
+            "meta": stored["meta"],
+            "markdown": stored["markdown"],
+            "sections": stored["sections"],
+        }
 
     # ---- LLM provider/model settings (issue 16) ----------------------------
 

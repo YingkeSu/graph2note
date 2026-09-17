@@ -75,6 +75,8 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_digest_structure": "notes",  # SPW W1（四节骨架/分节来源/节级缓存）
     "test_digest_budget": "notes",  # SPW W1（确定性统计 + 材料预算取舍）
     "test_digest_view": "notes",  # SPW W2（周报分节视图/来源跳转/导出，离线 DOM）
+    "test_research_report": "notes",  # research-weekly-template 01（科研周报模型/缓存/API）
+    "test_report_view": "notes",  # research-weekly-template 01（科研周报阅读视图，离线 DOM）
     # knowledge-workspace（collections/graph/inbox/metadata/tags/timeline/telemetry）
     "test_collections": "workspace",
     "test_collection_organize": "workspace",  # auto-organization 02（相似度/归类/API/CLI）
@@ -153,6 +155,7 @@ INTEGRATION_FILES: frozenset[str] = frozenset({
     "test_evolution_api",  # issue S2（版本链/候选 API 契约）
     "test_versiondiff_api",  # issue S3（版本对比 API/静态接线）
     "test_weekly_digest",   # issue A2（新文件）
+    "test_research_report",  # research-weekly-template 01（TestClient 全链 + 重启）
     "test_collection_organize",  # auto-organization 02（相似度/归类/API/CLI）
     "test_timeline_visual",  # U5（新文件，TestClient API 契约）
     "test_continuity_api",  # issue 03（API/CLI/UI 契约）
