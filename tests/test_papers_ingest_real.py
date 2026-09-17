@@ -108,7 +108,7 @@ def _rebuild_pdf(key: str, path: Path, *, max_pages: int = 2) -> None:
 # ---------------------------------------------------------------------------
 
 def test_real_fixture_set_covers_required_layouts():
-    assert 3 <= len(KEYS) <= 5, KEYS
+    assert 3 <= len(KEYS) <= 6, KEYS
     layouts = {_expected(key)["layout"]["kind"] for key in KEYS}
     assert "two-column-conference" in layouts, layouts
     assert {"single-column-arxiv", "single-column-tech-report"} <= layouts, layouts
@@ -140,7 +140,7 @@ def test_real_text_layer_is_born_digital(key):
     assert decision.use_text_layer is True
     assert decision.source == "text-layer"
     assert decision.total_pages == expected["p1"]["page_count"]
-    assert decision.text_pages == decision.total_pages  # every real page is text-bearing
+    assert decision.text_pages == expected["p1"]["text_pages"]
     assert decision.total_chars > 0
 
 

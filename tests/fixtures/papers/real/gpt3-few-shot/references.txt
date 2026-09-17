@@ -1,0 +1,340 @@
+[ADG+16] Marcin Andrychowicz, Misha Denil, Sergio Gomez, Matthew W Hoffman, David Pfau, Tom Schaul,
+Brendan Shillingford, and Nando De Freitas. Learning to learn by gradient descent by gradient descent.
+In Advances in neural information processing systems, pages 3981–3989, 2016.
+[AI19] WeChat AI. Tr-mt (ensemble), December 2019.
+[AJF19] Roee Aharoni, Melvin Johnson, and Orhan Firat. Massively multilingual neural machine translation. In
+Proceedings of the 2019 Conference of the North American Chapter of the Association for Computational
+Linguistics: Human Language Technologies, Volume 1 (Long and Short Papers), 2019.
+[BBDIW20] Su Lin Blodgett, Solon Barocas, Hal Daum´e III, and Hanna Wallach. Language (technology) is power:
+A critical survey of “bias” in nlp. arXiv preprint arXiv:2005.14050, 2020.
+[BCFL13] Jonathan Berant, Andrew Chou, Roy Frostig, and Percy Liang. Semantic parsing on freebase from
+question-answer pairs. In Proceedings of the 2013 conference on empirical methods in natural language
+processing, pages 1533–1544, 2013.
+[BDD+09] Luisa Bentivogli, Ido Dagan, Hoa Trang Dang, Danilo Giampiccolo, and Bernardo Magnini. The ﬁfth
+PASCAL recognizing textual entailment challenge. 2009.
+[BES10] Stefano Baccianella, Andrea Esuli, and Fabrizio Sebastiani. Sentiwordnet 3.0: an enhanced lexical
+resource for sentiment analysis and opinion mining. In Lrec, volume 10, pages 2200–2204, 2010.
+[BHDD+06] Roy Bar Haim, Ido Dagan, Bill Dolan, Lisa Ferro, Danilo Giampiccolo, Bernardo Magnini, and Idan
+Szpektor. The second PASCAL recognising textual entailment challenge. 2006.
+[BHT+20] Yonatan Bisk, Ari Holtzman, Jesse Thomason, Jacob Andreas, Yoshua Bengio, Joyce Chai, Mirella
+Lapata, Angeliki Lazaridou, Jonathan May, Aleksandr Nisnevich, et al. Experience grounds language.
+arXiv preprint arXiv:2004.10151, 2020.
+[BLC13] Yoshua Bengio, Nicholas L´eonard, and Aaron C. Courville. Estimating or propagating gradients through
+stochastic neurons for conditional computation. Arxiv, 2013.
+[BZB+19] Yonatan Bisk, Rowan Zellers, Ronan Le Bras, Jianfeng Gao, and Yejin Choi. Piqa: Reasoning about
+physical commonsense in natural language. arXiv preprint arXiv:1911.11641, 2019.
+[Car97] Rich Caruana. Multitask learning. Machine learning, 28(1), 1997.
+[CB78] Susan Carey and Elsa Bartlett. Acquiring a single new word. Proceedings of the Stanford Child Language
+Conference, 1978.
+[CCE+18] Peter Clark, Isaac Cowhey, Oren Etzioni, Tushar Khot, Ashish Sabharwal, Carissa Schoenick, and
+Oyvind Tafjord. Think you have solved question answering? try arc, the ai2 reasoning challenge. ArXiv,
+abs/1803.05457, 2018.
+[CGRS19] Rewon Child, Scott Gray, Alec Radford, and Ilya Sutskever. Generating long sequences with sparse
+transformers, 2019.
+[CHI+18] Eunsol Choi, He He, Mohit Iyyer, Mark Yatskar, Wen-tau Yih, Yejin Choi, Percy Liang, and Luke
+Zettlemoyer. Quac : Question answering in context. Arxiv, 2018.
+[CLC+19] Christopher Clark, Kenton Lee, Ming-Wei Chang, Tom Kwiatkowski, Michael Collins, and Kristina
+Toutanova. BoolQ: Exploring the surprising difﬁculty of natural yes/no questions. arXiv preprint
+arXiv:1905.10044, 2019.
+[CLY+19] Yen-Chun Chen, Linjie Li, Licheng Yu, Ahmed El Kholy, Faisal Ahmed, Zhe Gan, Yu Cheng, and
+Jingjing Liu. Uniter: Learning universal image-text representations. arXiv preprint arXiv:1909.11740,
+2019.
+[Cra17] Kate Crawford. The trouble with bias. NIPS 2017 Keynote, 2017.
+[DCLT18] Jacob Devlin, Ming-Wei Chang, Kenton Lee, and Kristina Toutanova. BERT: Pre-training of deep
+bidirectional transformers for language understanding. arXiv preprint arXiv:1810.04805, 2018.
+68
+
+[DGM06] Ido Dagan, Oren Glickman, and Bernardo Magnini. The PASCAL recognising textual entailment
+challenge. In Machine learning challenges. evaluating predictive uncertainty, visual object classiﬁcation,
+and recognising textual entailment, pages 177–190. Springer, 2006.
+[DGV+18] Mostafa Dehghani, Stephan Gouws, Oriol Vinyals, Jakob Uszkoreit, and Lukasz Kaiser. Universal
+transformers. Arxiv, 2018.
+[DHKH14] Nadir Durrani, Barry Haddow, Philipp Koehn, and Kenneth Heaﬁeld. Edinburgh’s phrase-based machine
+translation systems for wmt-14. In Proceedings of the Ninth Workshop on Statistical Machine Translation,
+pages 97–104, 2014.
+[DL15] Andrew M. Dai and Quoc V. Le. Semi-supervised sequence learning. In Advances in neural information
+processing systems, 2015.
+[DMST19] Marie-Catherine De Marneffe, Mandy Simons, and Judith Tonhauser. The CommitmentBank: Investigat-
+ing projection in naturally occurring discourse. 2019. To appear in proceedings of Sinn und Bedeutung
+23. Data can be found at https://github.com/mcdm/CommitmentBank/.
+[DSC+16] Yan Duan, John Schulman, Xi Chen, Peter L. Bartlett, Ilya Sutskever, and Pieter Abbeel. Rl2: Fast
+reinforcement learning via slow reinforcement learning. ArXiv, abs/1611.02779, 2016.
+[DWD+19] Dheeru Dua, Yizhong Wang, Pradeep Dasigi, Gabriel Stanovsky, Sameer Singh, and Matt Gardner.
+Drop: A reading comprehension benchmark requiring discrete reasoning over paragraphs. arXiv preprint
+arXiv:1903.00161, 2019.
+[DYY+19] Zihang Dai, Zhilin Yang, Yiming Yang, Jaime G. Carbonell, Quoc V. Le, and Ruslan Salakhutdinov.
+Transformer-xl: Attentive language models beyond a ﬁxed-length context. Arxiv, 2019.
+[EOAG18] Sergey Edunov, Myle Ott, Michael Auli, and David Grangier. Understanding back-translation at scale.
+arXiv preprint arXiv:1808.09381, 2018.
+[FAL17] Chelsea Finn, Pieter Abbeel, and Sergey Levine. Model-agnostic meta-learning for fast adaptation of
+deep networks. ArXiv, abs/1703.03400, 2017.
+[Fyo00] Yaroslav Fyodorov. A natural logic inference system, 2000.
+[GG19] Hila Gonen and Yoav Goldberg. Lipstick on a pig: Debiasing methods cover up systematic gender biases
+in word embeddings but do not remove them. arXiv preprint arXiv:1903.03862, 2019.
+[GLT+20] Kelvin Guu, Kenton Lee, Zora Tung, Panupong Pasupat, and Ming-Wei Chang. Realm: Retrieval-
+augmented language model pre-training. arXiv preprint arXiv:2002.08909, 2020.
+[GMDD07] Danilo Giampiccolo, Bernardo Magnini, Ido Dagan, and Bill Dolan. The third PASCAL recognizing
+textual entailment challenge. In Proceedings of the ACL-PASCAL workshop on textual entailment and
+paraphrasing, pages 1–9. Association for Computational Linguistics, 2007.
+[Gra16] Alex Graves. Adaptive computation time for recurrent neural networks. Arxiv, 2016.
+[GSL+18] Suchin Gururangan, Swabha Swayamdipta, Omer Levy, Roy Schwartz, Samuel R Bowman, and Noah A
+Smith. Annotation artifacts in natural language inference data. arXiv preprint arXiv:1803.02324, 2018.
+[GSR19] Sebastian Gehrmann, Hendrik Strobelt, and Alexander M. Rush. Gltr: Statistical detection and visualiza-
+tion of generated text. arXiv preprint arXiv: 1906.04043, 2019.
+[GWC+18] Jiatao Gu, Yong Wang, Yun Chen, Kyunghyun Cho, and Victor OK Li. Meta-learning for low-resource
+neural machine translation. arXiv preprint arXiv:1808.08437, 2018.
+[HB20] Daniel Hernandez and Tom Brown. Ai and efﬁciency, May 2020.
+[HBFC19] Ari Holtzman, Jan Buys, Maxwell Forbes, and Yejin Choi. The curious case of neural text degeneration.
+CoRR, abs/1904.09751, 2019.
+[HLW+20] Dan Hendrycks, Xiaoyuan Liu, Eric Wallace, Adam Dziedzic, Rishabh Krishnan, and Dawn Song.
+Pretrained transformers improve out of distribution robustness. arXiv preprint arXiv:2004.06100, 2020.
+69
+
+[HNA+17] Joel Hestness, Sharan Narang, Newsha Ardalani, Gregory Diamos, Heewoo Jun, Hassan Kianinejad, Md.
+Mostofa Ali Patwary, Yang Yang, and Yanqi Zhou. Deep learning scaling is predictable, empirically.
+arXiv preprint arXiv:1712.00409, 2017.
+[HR18] Jeremy Howard and Sebastian Ruder. Universal language model ﬁne-tuning for text classiﬁcation. arXiv
+preprint arXiv:1801.06146, 2018.
+[HVD15] Geoffrey Hinton, Oriol Vinyals, and Jeff Dean. Distilling the knowledge in a neural network. arXiv
+preprint arXiv:1503.02531, 2015.
+[HYC01] Sepp Hochreiter, A Steven Younger, and Peter R Conwell. Learning to Learn Using Gradient Descent.
+In International Conference on Artiﬁcial Neural Networks, pages 87–94. Springer, 2001.
+[HZJ+19] Po-Sen Huang, Huan Zhang, Ray Jiang, Robert Stanforth, Johannes Welbl, Jack Rae, Vishal Maini,
+Dani Yogatama, and Pushmeet Kohli. Reducing sentiment bias in language models via counterfactual
+evaluation. arXiv preprint arXiv:1911.03064, 2019.
+[IBGC+14] Mohit Iyyer, Jordan Boyd-Graber, Leonardo Claudino, Richard Socher, and Hal Daum´e III. A neural
+network for factoid question answering over paragraphs. In Empirical Methods in Natural Language
+Processing, 2014.
+[IDCBE19] Daphne Ippolito, Daniel Duckworth, Chris Callison-Burch, and Douglas Eck. Automatic detection of
+generated text is easiest when humans are fooled. arXiv preprint arXiv:1911.00650, 2019.
+[JCWZ17] Mandar Joshi, Eunsol Choi, Daniel S. Weld, and Luke Zettlemoyer. TriviaQA: A large scale distantly
+supervised challenge dataset for reading comprehension. arXiv preprint arXiv:1705.03551, 2017.
+[JN20] Zheng Junyuan and Gamma Lab NYC. Numeric transformer - albert, March 2020.
+[JVS+16] Rafal Jozefowicz, Oriol Vinyals, Mike Schuster, Noam Shazeer, and Yonghui Wu. Exploring the limits
+of language modeling. arXiv preprint arXiv:1602.02410, 2016.
+[JYS+19] Xiaoqi Jiao, Yichun Yin, Lifeng Shang, Xin Jiang, Xiao Chen, Linlin Li, Fang Wang, and Qun Liu.
+TinyBERT: Distilling BERT for natural language understanding. arXiv preprint arXiv:1909.10351, 2019.
+[JZC+19] Ying Ju, Fubang Zhao, Shijie Chen, Bowen Zheng, Xuefeng Yang, and Yunfeng Liu. Technical report on
+conversational question answering. arXiv preprint arXiv:1909.10772, 2019.
+[KCR+18] Daniel Khashabi, Snigdha Chaturvedi, Michael Roth, Shyam Upadhyay, and Dan Roth. Looking beyond
+the surface: A challenge set for reading comprehension over multiple sentences. In Proceedings of North
+American Chapter of the Association for Computational Linguistics (NAACL), 2018.
+[KKS+20] Daniel Khashabi, Tushar Khot, Ashish Sabharwal, Oyvind Tafjord, Peter Clark, and Hannaneh Hajishirzi.
+Uniﬁedqa: Crossing format boundaries with a single qa system. arXiv preprint arXiv:2005.00700, 2020.
+[KMB20] Sarah E. Kreps, Miles McCain, and Miles Brundage. All the news that’s ﬁt to fabricate: Ai-generated
+text as a tool of media misinformation, 2020.
+[KMH+20] Jared Kaplan, Sam McCandlish, Tom Henighan, Tom B. Brown, Benjamin Chess, Rewon Child, Scott
+Gray, Alec Radford, Jeffrey Wu, and Dario Amodei. Scaling laws for neural language models, 2020.
+[KPR+19] Tom Kwiatkowski, Jennimaria Palomaki, Olivia Redﬁeld, Michael Collins, Ankur Parikh, Chris Alberti,
+Danielle Epstein, Illia Polosukhin, Matthew Kelcey, Jacob Devlin, Kenton Lee, Kristina N. Toutanova,
+Llion Jones, Ming-Wei Chang, Andrew Dai, Jakob Uszkoreit, Quoc Le, and Slav Petrov. Natural ques-
+tions: a benchmark for question answering research. Transactions of the Association of Computational
+Linguistics, 2019.
+[KR16] Yoon Kim and Alexander M. Rush. Sequence-level knowledge distillation. Arxiv, 2016.
+[LB02] Edward Loper and Steven Bird. Nltk: The natural language toolkit, 2002.
+[LC19] Guillaume Lample and Alexis Conneau. Cross-lingual language model pretraining. arXiv preprint
+arXiv:1901.07291, 2019.
+70
+
+[LCG+19] Zhenzhong Lan, Mingda Chen, Sebastian Goodman, Kevin Gimpel, Piyush Sharma, and Radu Sori-
+cut. ALBERT: A lite BERT for self-supervised learning of language representations. arXiv preprint
+arXiv:1909.11942, 2019.
+[LCH+20] Xiaodong Liu, Hao Cheng, Pengcheng He, Weizhu Chen, Yu Wang, Hoifung Poon, and Jianfeng Gao.
+Adversarial training for large neural language models. arXiv preprint arXiv:2004.08994, 2020.
+[LDL19] Zhongyang Li, Xiao Ding, and Ting Liu. Story ending prediction by transferable bert. arXiv preprint
+arXiv:1905.07504, 2019.
+[LDM12] Hector Levesque, Ernest Davis, and Leora Morgenstern. The Winograd schema challenge. In Thirteenth
+International Conference on the Principles of Knowledge Representation and Reasoning, 2012.
+[LGG+20] Yinhan Liu, Jiatao Gu, Naman Goyal, Xian Li, Sergey Edunov, Marjan Ghazvininejad, Mike Lewis, and
+Luke Zettlemoyer. Multilingual denoising pre-training for neural machine translation. arXiv preprint
+arXiv:2001.08210, 2020.
+[LGH+15] Xiaodong Liu, Jianfeng Gao, Xiaodong He, Li Deng, Kevin Duh, and Ye-Yi Wang. Representation
+learning using multi-task deep neural networks for semantic classiﬁcation and information retrieval. In
+Proceedings of the 2015 Conference of the North American Chapter of the Association for Computational
+Linguistics: Human Language Technologies, 2015.
+[LH17] Ilya Loshchilov and Frank Hutter.
+Decoupled weight decay regularization.
+arXiv preprint
+arXiv:1711.05101, 2017.
+[LHCG19a] Xiaodong Liu, Pengcheng He, Weizhu Chen, and Jianfeng Gao. Improving multi-task deep neural
+networks via knowledge distillation for natural language understanding. arXiv preprint arXiv:1904.09482,
+2019.
+[LHCG19b] Xiaodong Liu, Pengcheng He, Weizhu Chen, and Jianfeng Gao. Multi-task deep neural networks for
+natural language understanding. arXiv preprint arXiv:1901.11504, 2019.
+[Lin20] Tal Linzen. How can we accelerate progress towards human-like linguistic generalization? arXiv preprint
+arXiv:2005.00955, 2020.
+[LLG+19] Mike Lewis, Yinhan Liu, Naman Goyal, Marjan Ghazvininejad, Abdelrahman Mohamed, Omer Levy,
+Ves Stoyanov, and Luke Zettlemoyer. Bart: Denoising sequence-to-sequence pre-training for natural
+language generation, translation, and comprehension. arXiv preprint arXiv:1910.13461, 2019.
+[LM17] Ke Li and Jitendra Malik. Learning to optimize neural nets. arXiv preprint arXiv:1703.00441, 2017.
+[LOG+19] Yinhan Liu, Myle Ott, Naman Goyal, Jingfei Du, Mandar Joshi, Danqi Chen, Omer Levy, Mike Lewis,
+Luke Zettlemoyer, and Veselin Stoyanov. RoBERTa: A robustly optimized BERT pretraining approach.
+arXiv preprint arXiv:1907.11692, 2019.
+[LPP+20] Patrick Lewis, Ethan Perez, Aleksandra Piktus, Fabio Petroni, Vladimir Karpukhin, Naman Goyal,
+Heinrich K¨uttler, Mike Lewis, Wen-tau Yih, Tim Rockt¨aschel, Sebastian Riedel, and Kiela Douwe.
+Retrieval-augmented generation for knowledge-intensive nlp tasks. arXiv preprint arXiv:2005.11401,
+2020.
+[LSP+18] Peter J. Liu, Mohammad Saleh, Etienne Pot, Ben Goodrich, Ryan Sepassi, Lukasz Kaiser, and Noam
+Shazeer. Generating Wikipedia by summarizing long sequences. arXiv preprint arXiv:1801.10198, 2018.
+[LWS+20] Zhuohan Li, Eric Wallace, Sheng Shen, Kevin Lin, Kurt Keutzer, Dan Klein, and Joseph E. Gonzalez.
+Train large, then compress: Rethinking model size for efﬁcient training and inference of transformers,
+2020.
+[LXL+17] Guokun Lai, Qizhe Xie, Hanxiao Liu, Yiming Yang, and Eduard Hovy. Race: Large-scale reading
+comprehension dataset from examinations. arXiv preprint arXiv:1704.04683, 2017.
+[LYN+20] Sheng-Chieh Lin, Jheng-Hong Yang, Rodrigo Nogueira, Ming-Feng Tsai, Chuan-Ju Wang, and Jimmy
+Lin. Tttttackling winogrande schemas. arXiv preprint arXiv:2003.08380, 2020.
+[Mac92] David. MacKay. Information-based objective functions for active data selection. Neural Computation,
+1992.
+71
+
+[MBXS17] Bryan McCann, James Bradbury, Caiming Xiong, and Richard Socher. Learned in translation: Con-
+textualized word vectors. In Advances in Neural Information Processing Systems, pages 6294–6305,
+2017.
+[MCCD13] Tomas Mikolov, Kai Chen, Greg Corrado, and Jeffrey Dean. Efﬁcient estimation of word representations
+in vector space. arXiv preprint arXiv:1301.3781, 2013.
+[MCH+16] Nasrin Mostafazadeh, Nathanael Chambers, Xiaodong He, Devi Parikh, Dhruv Batra, Lucy Vanderwende,
+Pushmeet Kohli, and James Allen. A corpus and evaluation framework for deeper understanding of
+commonsense stories. arXiv preprint arXiv:1604.01696, 2016.
+[MCKS18] Todor Mihaylov, Peter Clark, Tushar Khot, and Ashish Sabharwal. Can a suit of armor conduct electricity?
+a new dataset for open book question answering. ArXiv, abs/1809.02789, 2018.
+[MKAT18] Sam McCandlish, Jared Kaplan, Dario Amodei, and OpenAI Dota Team. An empirical model of
+large-batch training, 2018.
+[MKM+94] Mitchell Marcus, Grace Kim, Mary Ann Marcinkiewicz, Robert MacIntyre, Ann Bies, Mark Ferguson,
+Karen Katz, and Britta Schasberger. The penn treebank: annotating predicate argument structure.
+In Proceedings of the workshop on Human Language Technology, pages 114–119. Association for
+Computational Linguistics, 1994.
+[MKXS18] Bryan McCann, Nitish Shirish Keskar, Caiming Xiong, and Richard Socher. The natural language
+decathlon: Multitask learning as question answering. arXiv preprint arXiv:1806.08730, 2018.
+[MPL19] R Thomas McCoy, Ellie Pavlick, and Tal Linzen. Right for the wrong reasons: Diagnosing syntactic
+heuristics in natural language inference. arXiv preprint arXiv:1902.01007, 2019.
+[MWZ+18] Margaret Mitchell, Simone Wu, Andrew Zaldivar, Parker Barnes, Lucy Vasserman, Ben Hutchinson,
+Elena Spitzer, Inioluwa Deborah Raji, and Timnit Gebru. Model cards for model reporting, 2018.
+[NBR20] Moin Nadeem, Anna Bethke, and Siva Reddy. Stereoset: Measuring stereotypical bias in pretrained
+language models. arXiv preprint arXiv:2004.09456, 2020.
+[NK19] Timothy Niven and Hung-Yu Kao. Probing neural network comprehension of natural language arguments.
+arXiv preprint arXiv:1907.07355, 2019.
+[Nor09] Peter Norvig. Natural language corpus data, 2009.
+[NvNvdG19] Malvina Nissim, Rik van Noord, and Rob van der Goot. Fair is better than sensational: Man is to doctor
+as woman is to doctor. arXiv preprint arXiv:1905.09866, 2019.
+[NWD+19] Yixin Nie, Adina Williams, Emily Dinan, Mohit Bansal, Jason Weston, and Douwe Kiela. Adversarial
+nli: A new benchmark for natural language understanding. arXiv preprint arXiv:1910.14599, 2019.
+[oR16] University of Regensburg. Fascha, 2016.
+[PCC18] Mohammad Taher Pilehvar and Jose Camacho-Collados. WIC: 10,000 example pairs for evaluating
+context-sensitive representations. arXiv preprint arXiv:1808.09121, 2018.
+[PFB18] Jason Phang, Thibault F´evry, and Samuel R. Bowman. Sentence encoders on STILTs: Supplementary
+training on intermediate labeled-data tasks. arXiv preprint arXiv:1811.01088, 2018.
+[PHR+18] Adam Poliak, Aparajita Haldar, Rachel Rudinger, J. Edward Hu, Ellie Pavlick, Aaron Steven White, and
+Benjamin Van Durme. Collecting diverse natural language inference problems for sentence representation
+evaluation. In Proceedings of EMNLP, 2018.
+[PKL+16] Denis Paperno, Germ´an Kruszewski, Angeliki Lazaridou, Quan Ngoc Pham, Raffaella Bernardi, Sandro
+Pezzelle, Marco Baroni, Gemma Boleda, and Raquel Fern´andez. The lambada dataset: Word prediction
+requiring a broad discourse context. arXiv preprint arXiv:1606.06031, 2016.
+[PNZtY18] Matthew E. Peters, Mark Neumann, Luke Zettlemoyer, and Wen tau Yih. Dissecting contextual word
+embeddings: Architecture and representation, 2018.
+[Pos18] Matt Post. A call for clarity in reporting BLEU scores. arXiv preprint arXiv:1804.08771, 2018.
+72
+
+[PSM14] Jeffrey Pennington, Richard Socher, and Christopher Manning.
+GloVe: Global vectors for word
+representation. In Proceedings of the 2014 conference on empirical methods in natural language
+processing (EMNLP), 2014.
+[QIA20] QIANXIN. Sa-net on albert (ensemble), April 2020.
+[QMZH19] Yusu Qian, Urwa Muaz, Ben Zhang, and Jae Won Hyun. Reducing gender bias in word-level language
+models with a gender-equalizing loss function. arXiv preprint arXiv:1905.12801, 2019.
+[RBG11] Melissa Roemmele, Cosmin Adrian Bejan, and Andrew S Gordon. Choice of plausible alternatives: An
+evaluation of commonsense causal reasoning. In 2011 AAAI Spring Symposium Series, 2011.
+[RCM19] Siva Reddy, Danqi Chen, and Christopher D Manning. Coqa: A conversational question answering
+challenge. Transactions of the Association for Computational Linguistics, 7:249–266, 2019.
+[RCP+17] Scott Reed, Yutian Chen, Thomas Paine, A¨aron van den Oord, SM Eslami, Danilo Rezende, Oriol
+Vinyals, and Nando de Freitas. Few-shot autoregressive density estimation: Towards learning to learn
+distributions. arXiv preprint arXiv:1710.10304, 2017.
+[RJL18] Pranav Rajpurkar, Robin Jia, and Percy Liang. Know what you don’t know: Unanswerable questions for
+squad. arXiv preprint arXiv:1806.03822, 2018.
+[RL16] Sachin Ravi and Hugo Larochelle. Optimization as a model for few-shot learning. ICLR 2017 (oral),
+2016.
+[RLL+19] Qiu Ran, Yankai Lin, Peng Li, Jie Zhou, and Zhiyuan Liu. NumNet: Machine reading comprehension
+with numerical reasoning. In Proceedings of EMNLP, 2019.
+[RNLVD18] Rachel Rudinger, Jason Naradowsky, Brian Leonard, and Benjamin Van Durme.
+Gender bias in
+coreference resolution. arXiv preprint arXiv:1804.09301, 2018.
+[RNSS18] Alec Radford, Karthik Narasimhan, Tim Salimans, and Ilya Sutskever. Improving language understanding
+by generative pre-training, 2018.
+[Ros12] R.S. Ross. Guide for conducting risk assessments. NIST Special Publication, 2012.
+[RRBS19] Jonathan S. Rosenfeld, Amir Rosenfeld, Yonatan Belinkov, and Nir Shavit. A constructive prediction of
+the generalization error across scales, 2019.
+[RRS20] Adam Roberts, Colin Raffel, and Noam Shazeer. How much knowledge can you pack into the parameters
+of a language model? arXiv preprint arXiv:2002.08910, 2020.
+[RSR+19] Colin Raffel, Noam Shazeer, Adam Roberts, Katherine Lee, Sharan Narang, Michael Matena, Yanqi
+Zhou, Wei Li, and Peter J. Liu. Exploring the limits of transfer learning with a uniﬁed text-to-text
+transformer, 2019.
+[RWC+19] Alec Radford, Jeffrey Wu, Rewon Child, David Luan, Dario Amodei, and Ilya Sutskever. Language
+models are unsupervised multitask learners, 2019.
+[SBBC19] Keisuke Sakaguchi, Ronan Le Bras, Chandra Bhagavatula, and Yejin Choi. Winogrande: An adversarial
+winograd schema challenge at scale, 2019.
+[SBC+19] Irene Solaiman, Miles Brundage, Jack Clark, Amanda Askell, Ariel Herbert-Voss, Jeff Wu, Alec Radford,
+Gretchen Krueger, Jong Wook Kim, Sarah Kreps, Miles McCain, Alex Newhouse, Jason Blazakis, Kris
+McGufﬁe, and Jasmine Wang. Release strategies and the social impacts of language models, 2019.
+[SCNP19] Emily Sheng, Kai-Wei Chang, Premkumar Natarajan, and Nanyun Peng. The woman worked as a
+babysitter: On biases in language generation. arXiv preprint arXiv:1909.01326, 2019.
+[SDCW19] Victor Sanh, Lysandre Debut, Julien Chaumond, and Thomas Wolf. DistilBERT, a distilled version of
+BERT: smaller, faster, cheaper and lighter. arXiv preprint arXiv:1910.01108, 2019.
+[SDSE19] Roy Schwartz, Jesse Dodge, Noah A. Smith, and Oren Etzioni. Green AI. CoRR, abs/1907.10597, 2019.
+[SHB15] Rico Sennrich, Barry Haddow, and Alexandra Birch. Improving neural machine translation models with
+monolingual data. arXiv preprint arXiv:1511.06709, 2015.
+73
+
+[SMM+17] Noam Shazeer, Azalia Mirhoseini, Krzysztof Maziarz, Andy Davis, Quoc Le, Geoffrey Hinton, and Jeff
+Dean. Outrageously large neural networks: The sparsely-gated mixture-of-experts layer. arXiv preprint
+arXiv:1701.06538, 2017.
+[SPP+19] Mohammad Shoeybi, Mostofa Patwary, Raul Puri, Patrick LeGresley, Jared Casper, and Bryan Catanzaro.
+Megatron-lm: Training multi-billion parameter language models using model parallelism, 2019.
+[SS20] Timo Schick and Hinrich Sch¨utze. Exploiting cloze questions for few-shot text classiﬁcation and natural
+language inference. arXiv preprint arXiv:2001.07676, 2020.
+[STQ+19] Kaitao Song, Xu Tan, Tao Qin, Jianfeng Lu, and Tie-Yan Liu. MASS: Masked sequence to sequence
+pre-training for language generation. arXiv preprint arXiv:1905.02450, 2019.
+[TFR+17] Josh Tobin, Rachel Fong, Alex Ray, Jonas Schneider, Wojciech Zaremba, and Pieter Abbeel. Domain
+randomization for transferring deep neural networks from simulation to the real world. In 2017 IEEE/RSJ
+international conference on intelligent robots and systems (IROS), pages 23–30. IEEE, 2017.
+[TL05] Peter D. Turney and Michael L. Littman. Corpus-based learning of analogies and semantic relations.
+CoRR, abs/cs/0508103, 2005.
+[TL18] Trieu H. Trinh and Quoc V. Le.
+A simple method for commonsense reasoning.
+arXiv preprint
+arXiv:1806.02847, 2018.
+[TLBS03] Peter D. Turney, Michael L. Littman, Jeffrey Bigham, and Victor Shnayder. Combining independent
+modules to solve multiple-choice synonym and analogy problems. CoRR, cs.CL/0309035, 2003.
+[Tur20] Project Turing. Microsoft research blog, Feb 2020.
+[VBL+16] Oriol Vinyals, Charles Blundell, Timothy Lillicrap, Daan Wierstra, et al. Matching Networks for One
+Shot Learning. In Advances in neural information processing systems, pages 3630–3638, 2016.
+[VSP+17] Ashish Vaswani, Noam Shazeer, Niki Parmar, Jakob Uszkoreit, Llion Jones, Aidan N. Gomez, Łukasz
+Kaiser, and Illia Polosukhin. Attention is all you need. In Advances in neural information processing
+systems, 2017.
+[WPN+19] Alex Wang, Yada Pruksachatkun, Nikita Nangia, Amanpreet Singh, Julian Michael, Felix Hill, Omer
+Levy, and Samuel Bowman. Superglue: A stickier benchmark for general-purpose language understand-
+ing systems. In Advances in Neural Information Processing Systems, pages 3261–3275, 2019.
+[WXH+18] Yiren Wang, Yingce Xia, Tianyu He, Fei Tian, Tao Qin, ChengXiang Zhai, and Tie-Yan Liu. Multi-agent
+dual learning. ICLR 2019, 2018.
+[XDH+19] Qizhe Xie, Zihang Dai, Eduard Hovy, Minh-Thang Luong, and Quoc V. Le.
+Unsupervised data
+augmentation for consistency training, 2019.
+[YdC+19] Dani Yogatama, Cyprien de Masson d’Autume, Jerome Connor, Tomas Kocisky, Mike Chrzanowski,
+Lingpeng Kong, Angeliki Lazaridou, Wang Ling, Lei Yu, Chris Dyer, et al. Learning and evaluating
+general linguistic intelligence. arXiv preprint arXiv:1901.11373, 2019.
+[YDY+19] Zhilin Yang, Zihang Dai, Yiming Yang, Jaime Carbonell, Ruslan Salakhutdinov, and Quoc V. Le. XLNet:
+Generalized autoregressive pretraining for language understanding. arXiv preprint arXiv:1906.08237,
+2019.
+[ZHB+19] Rowan Zellers, Ari Holtzman, Yonatan Bisk, Ali Farhadi, and Yejin Choi. Hellaswag: Can a machine
+really ﬁnish your sentence? arXiv preprint arXiv:1905.07830, 2019.
+[ZHR+19] Rowan Zellers, Ari Holtzman, Hannah Rashkin, Yonatan Bisk, Ali Farhadi, Franziska Roesner, and Yejin
+Choi. Defending against neural fake news. arXiv preprint arXiv:1905.12616, 2019.
+[ZLL+18] Sheng Zhang, Xiaodong Liu, Jingjing Liu, Jianfeng Gao, Kevin Duh, and Benjamin Van Durme.
+ReCoRD: Bridging the gap between human and machine commonsense reading comprehension. arXiv
+preprint arXiv:1810.12885, 2018.
+[ZSW+19a] Daniel M. Ziegler, Nisan Stiennon, Jeffrey Wu, Tom B. Brown, Alec Radford, Dario Amodei, Paul
+Christiano, and Geoffrey Irving. Fine-tuning language models from human preferences, 2019.
+74
+
+[ZSW+19b] Daniel M. Ziegler, Nisan Stiennon, Jeffrey Wu, Tom B. Brown, Alec Radford, Dario Amodei, Paul Chris-
+tiano, and Geoffrey Irving. Fine-tuning language models from human preferences. ArXiv, abs/1909.08593,
+2019.
+75

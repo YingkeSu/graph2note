@@ -45,7 +45,7 @@ const payload = {
       authors: ["Dzmitry Bahdanau"], year: 2015, doi: "10.3115/v1/D14-1179",
       resolved_document_id: "doc-ref-1" },
     { raw: "[2] Anonymous preprint", title: "", authors: [], year: null, doi: "",
-      resolved_document_id: null },
+      resolved_document_id: null, notes: ["authors-unparsed"] },
   ],
 };
 
@@ -127,6 +127,18 @@ assert.strictEqual((refHtml.match(/paper-ref-link/g) || []).length, 1,
   "only the resolved reference gets a link");
 assert.strictEqual(core.referenceHref({ resolved_document_id: "" }), "");
 assert.strictEqual(core.referenceLabel({ raw: "[9] raw only" }), "[9] raw only");
+// a failed/best-effort entry keeps its raw text *and* shows a status
+assert.deepStrictEqual(view.references[1].notes, ["authors-unparsed"]);
+assert.deepStrictEqual(view.references[0].notes, []);
+assert.ok(refHtml.includes("paper-ref-status"), "parse status is rendered");
+assert.ok(refHtml.includes("authors-unparsed"), "the status text is the evidence note");
+assert.ok(refHtml.includes("[2] Anonymous preprint"), "raw text is kept for the failed entry");
+
+// ---- 7b) import success vs metadata-extraction status are separate ---------
+assert.strictEqual(core.paperMetaStatusLabel("ok"), "元数据已提取");
+assert.ok(core.paperMetaStatusLabel("failed").includes("可重新提取"));
+assert.ok(core.paperMetaStatusLabel("empty").includes("可重新提取"));
+assert.strictEqual(core.paperMetaStatusLabel(""), "");
 
 // ---- 8) active-section picker ---------------------------------------------
 assert.strictEqual(core.activeSectionIndex([0, 500, 1200], 0), 0);

@@ -7,6 +7,7 @@ import { registerView, go } from "../router.js";
 import { pollJob, showWorking } from "../jobs.js";
 import { POLL_MS } from "../utils.js";
 import { showToast } from "../ui.js";
+import { paperMetaStatusLabel } from "../paper_view_core.js";
 
 function renderUpload() {
   el.uploadZone.classList.remove("hidden");
@@ -138,7 +139,11 @@ function pollPaper(paperId) {
     state.busy = false; setBusy(false);
     if (job.status === "done" && job.document_id) {
       const via = job.source === "text-layer" ? "文本层直提" : "VLM 逐页（扫描版）";
-      showToast(`论文导入完成：${via}，${job.sections} 个章节。`, "ok");
+      const meta = paperMetaStatusLabel(job.meta_status);
+      showToast(
+        `论文导入完成：${via}，${job.sections} 个章节${meta ? `；${meta}` : ""}。`,
+        "ok",
+      );
       go(`#doc/${encodeURIComponent(job.document_id)}`);
     } else {
       showToast((job.error || "论文导入失败") + "，可在重试后继续。", "err");

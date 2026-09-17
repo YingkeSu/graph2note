@@ -90,6 +90,9 @@ export function normalizeReference(reference) {
     resolvedDocumentId: text(
       source.resolved_document_id != null ? source.resolved_document_id : source.resolvedDocumentId,
     ),
+    // Best-effort parse status from references_provenance (e.g.
+    // "authors-unparsed"); the raw text above is always kept.
+    notes: textList(source.notes),
   };
 }
 
@@ -166,6 +169,19 @@ export function metaRows(meta) {
   if (m.doi) rows.push({ key: "doi", label: "DOI", value: m.doi });
   if (m.source) rows.push({ key: "source", label: "来源", value: m.source });
   return rows;
+}
+
+/** Human label for the import job's metadata status.
+ *
+ * Import success and metadata extraction are independent outcomes (issue
+ * PRR/02): the paper can import fine while extraction finds nothing or fails,
+ * so the two are surfaced separately instead of collapsing into one message.
+ */
+export function paperMetaStatusLabel(status) {
+  if (status === "ok") return "元数据已提取";
+  if (status === "failed") return "元数据提取失败（可重新提取）";
+  if (status === "empty") return "未提取到元数据（可重新提取）";
+  return "";
 }
 
 /** Prefer the parsed title, fall back to the raw citation text. */
@@ -259,10 +275,12 @@ export function referenceListHtml(payload, escape) {
     const metaLine = meta ? `<span class="paper-ref-meta dim">${esc(meta)}</span>` : "";
     const rawLine = reference.raw && reference.raw !== label
       ? `<span class="paper-ref-raw dim">${esc(reference.raw)}</span>` : "";
+    const statusLine = reference.notes.length
+      ? `<span class="paper-ref-status dim">${esc(reference.notes.join(" · "))}</span>` : "";
     return `<li class="paper-reference" id="paper-reference-${index}">
       <span class="paper-ref-index">[${index + 1}]</span>
       <span class="paper-ref-body">
-        <span class="paper-ref-title">${esc(label)}</span>${metaLine}${rawLine}
+        <span class="paper-ref-title">${esc(label)}</span>${metaLine}${rawLine}${statusLine}
       </span>${link}</li>`;
   }).join("");
 }

@@ -1061,6 +1061,8 @@ body {
 .paper-ref-body { display: flex; flex-direction: column; gap: 3px; min-width: 0; flex: 1 1 auto; }
 .paper-ref-title { font-size: 14px; line-height: 1.7; overflow-wrap: anywhere; }
 .paper-ref-meta, .paper-ref-raw { font-size: 12px; line-height: 1.6; overflow-wrap: anywhere; }
+/* PRR/02: best-effort parse status for a reference entry (raw text is kept). */
+.paper-ref-status { font-size: 11px; line-height: 1.6; color: var(--muted); overflow-wrap: anywhere; }
 .paper-ref-link { flex: 0 0 auto; align-self: flex-start; font-size: 12px; color: var(--accent-dark); }
 /* 390px: stack the section nav above the reading column; nothing scrolls sideways. */
 @media (max-width: 860px) {

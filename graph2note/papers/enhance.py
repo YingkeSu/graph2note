@@ -17,7 +17,7 @@ Nothing here is imported on the deterministic path.
 from __future__ import annotations
 
 import json
-from typing import Any, Callable, Optional
+from typing import Any, Callable, Iterable, Optional
 
 from pydantic import BaseModel, ConfigDict, ValidationError, field_validator
 
@@ -170,9 +170,19 @@ def apply_meta_proposal(
     proposal: MetaProposal,
     *,
     source: str = "vlm",
+    evidence: str = "llm-proposal",
+    note_label: str = "llm",
+    override_fields: Iterable[str] | None = None,
 ) -> tuple[PaperMetaResult, list[str]]:
-    """Fill only the empty fields of ``result``; report which were applied."""
+    """Fill only the empty fields of ``result``; report which were applied.
 
+    ``override_fields`` relaxes the fill-only rule for explicitly listed fields
+    (used by the optional GROBID seam to correct an evidence-backed but
+    low-confidence auto value).  Callers must never list a manual field — the
+    web layer builds that set from provenance and excludes ``manual``.
+    """
+
+    overridable = {str(field) for field in (override_fields or [])}
     meta = result.meta.model_copy(deep=True)
     provenance = {key: value.model_copy(deep=True) for key, value in result.provenance.items()}
     applied: list[str] = []
@@ -181,22 +191,25 @@ def apply_meta_proposal(
         if proposed in (None, "", []):
             continue
         current = getattr(meta, field)
-        if current not in (None, "", []):
+        if current not in (None, "", []) and field not in overridable:
             continue
         setattr(meta, field, proposed)
         provenance[field] = FieldProvenance(
             source=source,  # type: ignore[arg-type]
             confidence="medium",
-            evidence="llm-proposal",
+            evidence=evidence,
         )
         applied.append(field)
     if applied and result.meta.source == "none":
         meta.source = source  # type: ignore[assignment]
         provenance["source"] = FieldProvenance(
-            source=source, confidence="medium", evidence="llm-proposal"  # type: ignore[arg-type]
+            source=source, confidence="medium", evidence=evidence  # type: ignore[arg-type]
         )
     notes = list(result.notes)
-    notes.append(f"llm-fields:{','.join(applied)}" if applied else "llm-no-new-fields")
+    notes.append(
+        f"{note_label}-fields:{','.join(applied)}" if applied
+        else f"{note_label}-no-new-fields"
+    )
     return PaperMetaResult(meta=meta, provenance=provenance, notes=notes), applied
 
 

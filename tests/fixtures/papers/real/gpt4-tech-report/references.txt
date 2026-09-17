@@ -1,0 +1,308 @@
+[1] A. Tamkin, M. Brundage, J. Clark, and D. Ganguli, “Understanding the Capabilities, Limita-
+tions, and Societal Impact of Large Language Models,” Feb. 2021.
+[2] “Introducing the new Bing.” https://www.bing.com/new.
+[3] J. Hilton, R. Nakano, S. Balaji, and J. Schulman, “WebGPT: Improving the factual accuracy
+of language models through web browsing.” https://openai.com/research/webgpt, Dec. 2021.
+[4] “ACT-1: Transformer for Actions – Adept.” https://www.adept.ai/blog/act-1.
+[5] M. Chen, J. Tworek, H. Jun, Q. Yuan, H. P. d. O. Pinto, J. Kaplan, H. Edwards, Y. Burda,
+N. Joseph, G. Brockman, A. Ray, R. Puri, G. Krueger, M. Petrov, H. Khlaaf, G. Sastry,
+P. Mishkin, B. Chan, S. Gray, N. Ryder, M. Pavlov, A. Power, L. Kaiser, M. Bavarian, C. Winter,
+P. Tillet, F. P. Such, D. Cummings, M. Plappert, F. Chantzis, E. Barnes, A. Herbert-Voss, W. H.
+Guss, A. Nichol, A. Paino, N. Tezak, J. Tang, I. Babuschkin, S. Balaji, S. Jain, W. Saunders,
+C. Hesse, A. N. Carr, J. Leike, J. Achiam, V. Misra, E. Morikawa, A. Radford, M. Knight,
+M. Brundage, M. Murati, K. Mayer, P. Welinder, B. McGrew, D. Amodei, S. McCandlish,
+I. Sutskever, and W. Zaremba, “Evaluating Large Language Models Trained on Code,” July
+2021.
+[6] L. Weidinger, J. Mellor, M. Rauh, C. Griﬃn, J. Uesato, P.-S. Huang, M. Cheng, M. Glaese,
+B. Balle, A. Kasirzadeh, Z. Kenton, S. Brown, W. Hawkins, T. Stepleton, C. Biles, A. Birhane,
+J. Haas, L. Rimell, L. A. Hendricks, W. Isaac, S. Legassick, G. Irving, and I. Gabriel, “Ethical
+and social risks of harm from Language Models,” Dec. 2021.
+[7] I. Solaiman, M. Brundage, J. Clark, A. Askell, A. Herbert-Voss, J. Wu, A. Radford, G. Krueger,
+J. W. Kim, S. Kreps, M. McCain, A. Newhouse, J. Blazakis, K. McGuﬃe, and J. Wang,
+“Release Strategies and the Social Impacts of Language Models,” Nov. 2019.
+[8] A. Radford, “Improving language understanding with unsupervised learning.” https://ope-
+nai.com/research/language-unsupervised, June 2018.
+[9] A. Radford, J. Wu, D. Amodei, D. Amodei, J. Clark, M. Brundage, I. Sutskever, A. Askell,
+D. Lansky, D. Hernandez, and D. Luan, “Better language models and their implications.”
+https://openai.com/research/better-language-models, Feb. 2019.
+[10] T. B. Brown, B. Mann, N. Ryder, M. Subbiah, J. Kaplan, P. Dhariwal, A. Neelakantan,
+P. Shyam, G. Sastry, A. Askell, S. Agarwal, A. Herbert-Voss, G. Krueger, T. Henighan,
+R. Child, A. Ramesh, D. M. Ziegler, J. Wu, C. Winter, C. Hesse, M. Chen, E. Sigler, M. Litwin,
+S. Gray, B. Chess, J. Clark, C. Berner, S. McCandlish, A. Radford, I. Sutskever, and D. Amodei,
+“Language Models are Few-Shot Learners,” July 2020.
+[11] S. Altman, “Planning for AGI and beyond.” https://openai.com/blog/planning-for-agi-and-
+beyond, Feb. 2023.
+[12] L. Ouyang, J. Wu, X. Jiang, D. Almeida, C. L. Wainwright, P. Mishkin, C. Zhang, S. Agarwal,
+K. Slama, A. Ray, J. Schulman, J. Hilton, F. Kelton, L. Miller, M. Simens, A. Askell,
+P. Welinder, P. Christiano, J. Leike, and R. Lowe, “Training language models to follow
+instructions with human feedback,” Mar. 2022.
+71
+
+[13] P. Christiano, J. Leike, T. B. Brown, M. Martic, S. Legg, and D. Amodei, “Deep reinforcement
+learning from human preferences,” Feb. 2023.
+[14] M. Mitchell, S. Wu, A. Zaldivar, P. Barnes, L. Vasserman, B. Hutchinson, E. Spitzer, I. D.
+Raji, and T. Gebru, “Model Cards for Model Reporting,” in Proceedings of the Conference on
+Fairness, Accountability, and Transparency, pp. 220–229, Jan. 2019.
+[15] N. Green, C. Procope, A. Cheema, and A. Adediji, “System Cards, a new resource for under-
+standing how AI systems work.” https://ai.facebook.com/blog/system-cards-a-new-resource-
+for-understanding-how-ai-systems-work/, Feb. 2022.
+[16] “DALL·E 2 Preview - Risks and Limitations.” OpenAI, Apr. 2022.
+[17] J. Sandbrink, H. Hobbs, J. Swett, A. Dafoe, and A. Sandberg, “Diﬀerential Technology
+Development: A Responsible Innovation Principle for Navigating Technology Risks,” Sept.
+2022.
+[18] Y. Bai, A. Jones, K. Ndousse, A. Askell, A. Chen, N. DasSarma, D. Drain, S. Fort, D. Gan-
+guli, T. Henighan, N. Joseph, S. Kadavath, J. Kernion, T. Conerly, S. El-Showk, N. Elhage,
+Z. Hatﬁeld-Dodds, D. Hernandez, T. Hume, S. Johnston, S. Kravec, L. Lovitt, N. Nanda,
+C. Olsson, D. Amodei, T. Brown, J. Clark, S. McCandlish, C. Olah, B. Mann, and J. Ka-
+plan, “Training a Helpful and Harmless Assistant with Reinforcement Learning from Human
+Feedback,” Apr. 2022.
+[19] E. Perez, S. Ringer, K. Lukoši¯ut˙e, K. Nguyen, E. Chen, S. Heiner, C. Pettit, C. Olsson,
+S. Kundu, S. Kadavath, A. Jones, A. Chen, B. Mann, B. Israel, B. Seethor, C. McKinnon,
+C. Olah, D. Yan, D. Amodei, D. Amodei, D. Drain, D. Li, E. Tran-Johnson, G. Khundadze,
+J. Kernion, J. Landis, J. Kerr, J. Mueller, J. Hyun, J. Landau, K. Ndousse, L. Goldberg,
+L. Lovitt, M. Lucas, M. Sellitto, M. Zhang, N. Kingsland, N. Elhage, N. Joseph, N. Mercado,
+N. DasSarma, O. Rausch, R. Larson, S. McCandlish, S. Johnston, S. Kravec, S. E. Showk,
+T. Lanham, T. Telleen-Lawton, T. Brown, T. Henighan, T. Hume, Y. Bai, Z. Hatﬁeld-Dodds,
+J. Clark, S. R. Bowman, A. Askell, R. Grosse, D. Hernandez, D. Ganguli, E. Hubinger,
+N. Schiefer, and J. Kaplan, “Discovering Language Model Behaviors with Model-Written
+Evaluations,” Dec. 2022.
+[20] B. P. Kehoe, Zen and the Art of the Internet. Project Gutenberg, June 1992.
+[21] M. Brundage, K. Mayer, T. Eloundou, S. Agarwal, S. Adler, G. Krueger, J. Leike,
+and P. Mishkin, “Lessons learned on language model safety and misuse.” https://ope-
+nai.com/research/language-model-safety-and-misuse, Mar. 2022.
+[22] A. Radford, J. Wu, R. Child, D. Luan, D. Amodei, and I. Sutskever, “Language Models are
+Unsupervised Multitask Learners,” 2019.
+[23] G. C. Bowker and S. L. Star, Sorting Things Out. MIT Press, Aug. 2000.
+[24] L. Weidinger, J. Uesato, M. Rauh, C. Griﬃn, P.-S. Huang, J. Mellor, A. Glaese, M. Cheng,
+B. Balle, A. Kasirzadeh, C. Biles, S. Brown, Z. Kenton, W. Hawkins, T. Stepleton, A. Birhane,
+L. A. Hendricks, L. Rimell, W. Isaac, J. Haas, S. Legassick, G. Irving, and I. Gabriel, “Taxonomy
+of Risks posed by Language Models,” in 2022 ACM Conference on Fairness, Accountability,
+and Transparency, FAccT ’22, (New York, NY, USA), pp. 214–229, Association for Computing
+Machinery, June 2022.
+72
+
+[25] I. Solaiman and C. Dennison, “Process for Adapting Language Models to Society (PALMS)
+with Values-Targeted Datasets,” Nov. 2021.
+[26] H. Khlaaf, “Toward Comprehensive Risk Assessments and Assurance of AI-Based Systems,”
+Trail of Bits, 2023.
+[27] M. Brundage, S. Avin, J. Wang, H. Belﬁeld, G. Krueger, G. Hadﬁeld, H. Khlaaf, J. Yang,
+H. Toner, R. Fong, T. Maharaj, P. W. Koh, S. Hooker, J. Leung, A. Trask, E. Bluemke,
+J. Lebensold, C. O’Keefe, M. Koren, T. Ryﬀel, J. B. Rubinovitz, T. Besiroglu, F. Carugati,
+J. Clark, P. Eckersley, S. de Haas, M. Johnson, B. Laurie, A. Ingerman, I. Krawczuk, A. Askell,
+R. Cammarota, A. Lohn, D. Krueger, C. Stix, P. Henderson, L. Graham, C. Prunkl, B. Martin,
+E. Seger, N. Zilberman, S. Ó. hÉigeartaigh, F. Kroeger, G. Sastry, R. Kagan, A. Weller,
+B. Tse, E. Barnes, A. Dafoe, P. Scharre, A. Herbert-Voss, M. Rasser, S. Sodhani, C. Flynn,
+T. K. Gilbert, L. Dyer, S. Khan, Y. Bengio, and M. Anderljung, “Toward Trustworthy AI
+Development: Mechanisms for Supporting Veriﬁable Claims,” Apr. 2020.
+[28] D. Ganguli, L. Lovitt, J. Kernion, A. Askell, Y. Bai, S. Kadavath, B. Mann, E. Perez,
+N. Schiefer, K. Ndousse, A. Jones, S. Bowman, A. Chen, T. Conerly, N. DasSarma, D. Drain,
+N. Elhage, S. El-Showk, S. Fort, Z. Hatﬁeld-Dodds, T. Henighan, D. Hernandez, T. Hume,
+J. Jacobson, S. Johnston, S. Kravec, C. Olsson, S. Ringer, E. Tran-Johnson, D. Amodei,
+T. Brown, N. Joseph, S. McCandlish, C. Olah, J. Kaplan, and J. Clark, “Red Teaming
+Language Models to Reduce Harms: Methods, Scaling Behaviors, and Lessons Learned,” Nov.
+2022.
+[29] E. Perez, S. Huang, F. Song, T. Cai, R. Ring, J. Aslanides, A. Glaese, N. McAleese, and
+G. Irving, “Red Teaming Language Models with Language Models,” Feb. 2022.
+[30] H. Khlaaf, P. Mishkin, J. Achiam, G. Krueger, and M. Brundage, “A Hazard Analysis
+Framework for Code Synthesis Large Language Models,” July 2022.
+[31] J. Maynez, S. Narayan, B. Bohnet, and R. McDonald, “On Faithfulness and Factuality in
+Abstractive Summarization,” May 2020.
+[32] S. Lin, J. Hilton, and O. Evans, “TruthfulQA: Measuring How Models Mimic Human False-
+hoods,” May 2022.
+[33] J. A. Goldstein, G. Sastry, M. Musser, R. DiResta, M. Gentzel, and K. Sedova, “Forecasting
+potential misuses of language models for disinformation campaigns and how to reduce risk.”
+https://openai.com/research/forecasting-misuse, Jan. 2023.
+[34] O. Evans, O. Cotton-Barratt, L. Finnveden, A. Bales, A. Balwit, P. Wills, L. Righetti, and
+W. Saunders, “Truthful AI: Developing and governing AI that does not lie,” Oct. 2021.
+[35] A. Xu, E. Pathak, E. Wallace, S. Gururangan, M. Sap, and D. Klein, “Detoxifying Language
+Models Risks Marginalizing Minority Voices,” Apr. 2021.
+[36] L. Dixon, J. Li, J. Sorensen, N. Thain, and L. Vasserman, “Measuring and Mitigating
+Unintended Bias in Text Classiﬁcation,” in Proceedings of the 2018 AAAI/ACM Conference
+on AI, Ethics, and Society, AIES ’18, (New York, NY, USA), pp. 67–73, Association for
+Computing Machinery, Dec. 2018.
+[37] T. Markov, C. Zhang, S. Agarwal, T. Eloundou, T. Lee, S. Adler, A. Jiang, and L. Weng, “A
+Holistic Approach to Undesired Content Detection in the Real World,” Feb. 2023.
+73
+
+[38] OpenAI, “How should AI systems behave,
+and who should decide?.” https://ope-
+nai.com/blog/how-should-ai-systems-behave, Feb. 2023.
+[39] M. Rauh, J. Mellor, J. Uesato, P.-S. Huang, J. Welbl, L. Weidinger, S. Dathathri, A. Glaese,
+G. Irving, I. Gabriel, W. Isaac, and L. A. Hendricks, “Characteristics of Harmful Text: Towards
+Rigorous Benchmarking of Language Models,” Oct. 2022.
+[40] S. L. Blodgett, S. Barocas, H. Daumé III, and H. Wallach, “Language (Technology) is Power:
+A Critical Survey of "Bias" in NLP.” https://arxiv.org/abs/2005.14050v2, May 2020.
+[41] S. Dev, E. Sheng, J. Zhao, A. Amstutz, J. Sun, Y. Hou, M. Sanseverino, J. Kim, A. Nishi,
+N. Peng, and K.-W. Chang, “On Measures of Biases and Harms in NLP,” in Findings of the
+Association for Computational Linguistics: AACL-IJCNLP 2022, (Online only), pp. 246–267,
+Association for Computational Linguistics, Nov. 2022.
+[42] T. Bolukbasi, K.-W. Chang, J. Zou, V. Saligrama, and A. Kalai, “Man is to Computer
+Programmer as Woman is to Homemaker? Debiasing Word Embeddings,” July 2016.
+[43] H. Gonen and Y. Goldberg, “Lipstick on a Pig: Debiasing Methods Cover up Systematic
+Gender Biases in Word Embeddings But do not Remove Them,” in Proceedings of the 2019
+Conference of the North American Chapter of the Association for Computational Linguistics:
+Human Language Technologies, Volume 1 (Long and Short Papers), (Minneapolis, Minnesota),
+pp. 609–614, Association for Computational Linguistics, June 2019.
+[44] K. Webster, M. Recasens, V. Axelrod, and J. Baldridge, “Mind the GAP: A Balanced Corpus
+of Gendered Ambiguous Pronouns,” Oct. 2018.
+[45] E. M. Bender, T. Gebru, A. McMillan-Major, and S. Shmitchell, “On the Dangers of Stochastic
+Parrots: Can Language Models Be Too Big? ,” in Proceedings of the 2021 ACM Conference
+on Fairness, Accountability, and Transparency, (Virtual Event Canada), pp. 610–623, ACM,
+Mar. 2021.
+[46] R. Bommasani, D. A. Hudson, E. Adeli, R. Altman, S. Arora, S. von Arx, M. S. Bernstein,
+J. Bohg, A. Bosselut, E. Brunskill, E. Brynjolfsson, S. Buch, D. Card, R. Castellon, N. Chatterji,
+A. Chen, K. Creel, J. Q. Davis, D. Demszky, C. Donahue, M. Doumbouya, E. Durmus, S. Ermon,
+J. Etchemendy, K. Ethayarajh, L. Fei-Fei, C. Finn, T. Gale, L. Gillespie, K. Goel, N. Goodman,
+S. Grossman, N. Guha, T. Hashimoto, P. Henderson, J. Hewitt, D. E. Ho, J. Hong, K. Hsu,
+J. Huang, T. Icard, S. Jain, D. Jurafsky, P. Kalluri, S. Karamcheti, G. Keeling, F. Khani,
+O. Khattab, P. W. Koh, M. Krass, R. Krishna, R. Kuditipudi, A. Kumar, F. Ladhak, M. Lee,
+T. Lee, J. Leskovec, I. Levent, X. L. Li, X. Li, T. Ma, A. Malik, C. D. Manning, S. Mirchandani,
+E. Mitchell, Z. Munyikwa, S. Nair, A. Narayan, D. Narayanan, B. Newman, A. Nie, J. C.
+Niebles, H. Nilforoshan, J. Nyarko, G. Ogut, L. Orr, I. Papadimitriou, J. S. Park, C. Piech,
+E. Portelance, C. Potts, A. Raghunathan, R. Reich, H. Ren, F. Rong, Y. Roohani, C. Ruiz,
+J. Ryan, C. Ré, D. Sadigh, S. Sagawa, K. Santhanam, A. Shih, K. Srinivasan, A. Tamkin,
+R. Taori, A. W. Thomas, F. Tramèr, R. E. Wang, W. Wang, B. Wu, J. Wu, Y. Wu, S. M.
+Xie, M. Yasunaga, J. You, M. Zaharia, M. Zhang, T. Zhang, X. Zhang, Y. Zhang, L. Zheng,
+K. Zhou, and P. Liang, “On the Opportunities and Risks of Foundation Models,” Aug. 2021.
+[47] S. U. Noble, Algorithms of Oppression. NYU Press, Feb. 2018.
+[48] R. Richardson, J. Schultz, and K. Crawford, “Dirty Data, Bad Predictions: How Civil Rights
+Violations Impact Police Data, Predictive Policing Systems, and Justice,” Feb. 2019.
+74
+
+[49] W. MacAskill, What We Owe The Future. Basic Books, Aug. 2022.
+[50] OpenAI, “GPT-2: 1.5B release.” https://openai.com/research/gpt-2-1-5b-release, Nov. 2019.
+[51] S. Kreps, R. M. McCain, and M. Brundage, “All the News That’s Fit to Fabricate: AI-
+Generated Text as a Tool of Media Misinformation,” Journal of Experimental Political Science,
+vol. 9, no. 1, pp. 104–117, 2022/ed.
+[52] B. Buchanan, A. Lohn, M. Musser, and K. Sedova, “Truth, Lies, and Automation,” tech. rep.,
+Center for Security and Emerging Technology, May 2021.
+[53] A. Myers, “AI’s Powers of Political Persuasion.” https://hai.stanford.edu/news/ais-powers-
+political-persuasion, Feb. 2023.
+[54] H. Bai, J. Voelkel, J. Eichstaedt, and R. Willer, “Artiﬁcial intelligence can persuade humans
+on political issues,” 2023.
+[55] E. Horvitz, “On the Horizon: Interactive and Compositional Deepfakes,” in INTERNATIONAL
+CONFERENCE ON MULTIMODAL INTERACTION, pp. 653–661, Nov. 2022.
+[56] R. Chesney and D. K. Citron, “Deep Fakes: A Looming Challenge for Privacy, Democracy,
+and National Security,” July 2018.
+[57] U.S. Department of Commerce, “Dual use export licenses,” March 13 2023. accessed 2023-03-13.
+[58] NATO, “Arms control, disarmament and non-proliferation in nato,” February 27 2023. accessed
+2023-02-27.
+[59] N. Carlini, F. Tramer, E. Wallace, M. Jagielski, A. Herbert-Voss, K. Lee, A. Roberts, T. Brown,
+D. Song, U. Erlingsson, A. Oprea, and C. Raﬀel, “Extracting Training Data from Large
+Language Models,” June 2021.
+[60] N. Carlini, D. Ippolito, M. Jagielski, K. Lee, F. Tramer, and C. Zhang, “Quantifying Memo-
+rization Across Neural Language Models,” Mar. 2023.
+[61] D. Ganguli, D. Hernandez, L. Lovitt, N. DasSarma, T. Henighan, A. Jones, N. Joseph,
+J. Kernion, B. Mann, A. Askell, Y. Bai, A. Chen, T. Conerly, D. Drain, N. Elhage, S. E. Showk,
+S. Fort, Z. Hatﬁeld-Dodds, S. Johnston, S. Kravec, N. Nanda, K. Ndousse, C. Olsson, D. Amodei,
+D. Amodei, T. Brown, J. Kaplan, S. McCandlish, C. Olah, and J. Clark, “Predictability and
+Surprise in Large Generative Models,” in 2022 ACM Conference on Fairness, Accountability,
+and Transparency, pp. 1747–1764, June 2022.
+[62] J. Wei, Y. Tay, R. Bommasani, C. Raﬀel, B. Zoph, S. Borgeaud, D. Yogatama, M. Bosma,
+D. Zhou, D. Metzler, E. H. Chi, T. Hashimoto, O. Vinyals, P. Liang, J. Dean, and W. Fedus,
+“Emergent Abilities of Large Language Models,” Oct. 2022.
+[63] R. Ngo, L. Chan, and S. Mindermann, “The alignment problem from a deep learning perspec-
+tive,” Feb. 2023.
+[64] N. Bostrom, Superintelligence: Paths, Dangers, Strategies. United Kingdom: Oxford University
+Press, Sept. 2014.
+75
+
+[65] A. Chan, R. Salganik, A. Markelius, C. Pang, N. Rajkumar, D. Krasheninnikov, L. Langosco,
+Z. He, Y. Duan, M. Carroll, M. Lin, A. Mayhew, K. Collins, M. Molamohammadi, J. Burden,
+W. Zhao, S. Rismani, K. Voudouris, U. Bhatt, A. Weller, D. Krueger, and T. Maharaj, “Harms
+from Increasingly Agentic Algorithmic Systems,” Feb. 2023.
+[66] J. Andreas, “Language Models as Agent Models,” Dec. 2022.
+[67] J. Steinhardt,
+“Emergent Deception and Emergent Optimization.” https://bounded-
+regret.ghost.io/emergent-deception-optimization/, Feb. 2023.
+[68] S. M. Omohundro, “The Basic AI Drives,” in Proceedings of the 2008 Conference on Artiﬁcial
+General Intelligence 2008, (NLD), pp. 483–492, IOS Press, June 2008.
+[69] N. Bostrom, “The Superintelligent Will: Motivation and Instrumental Rationality in Advanced
+Artiﬁcial Agents,” Minds and Machines, vol. 22, pp. 71–85, May 2012.
+[70] A. M. Turner, L. Smith, R. Shah, A. Critch, and P. Tadepalli, “Optimal Policies Tend to Seek
+Power,” Jan. 2023.
+[71] A. M. Turner and P. Tadepalli, “Parametrically Retargetable Decision-Makers Tend To Seek
+Power,” Oct. 2022.
+[72] V. Krakovna and janos, “Power-seeking can be probable and predictive for trained agents,”
+Mar. 2023.
+[73] S. Russell, Human Compatible: Artiﬁcial Intelligence and the Problem of Control. Cham:
+Springer International Publishing, 2022.
+[74] J. Carlsmith, “Is Power-Seeking AI an Existential Risk?,” June 2022.
+[75] Alignment Research Center, “Update on arc’s recent eval eﬀorts,” March 2023 2023. accessed
+2023-03-17.
+[76] E. Karpas, O. Abend, Y. Belinkov, B. Lenz, O. Lieber, N. Ratner, Y. Shoham, H. Bata,
+Y. Levine, K. Leyton-Brown, D. Muhlgay, N. Rozen, E. Schwartz, G. Shachaf, S. Shalev-
+Shwartz, A. Shashua, and M. Tenenholtz, “MRKL Systems: A modular, neuro-symbolic
+architecture that combines large language models, external knowledge sources and discrete
+reasoning,” May 2022.
+[77] T. Schick, J. Dwivedi-Yu, R. Dessì, R. Raileanu, M. Lomeli, L. Zettlemoyer, N. Cancedda, and
+T. Scialom, “Toolformer: Language Models Can Teach Themselves to Use Tools,” Feb. 2023.
+[78] G. Mialon, R. Dessì, M. Lomeli, C. Nalmpantis, R. Pasunuru, R. Raileanu, B. Rozière,
+T. Schick, J. Dwivedi-Yu, A. Celikyilmaz, E. Grave, Y. LeCun, and T. Scialom, “Augmented
+Language Models: A Survey,” Feb. 2023.
+[79] A. Parisi, Y. Zhao, and N. Fiedel, “TALM: Tool Augmented Language Models,” May 2022.
+[80] D. Weininger, “Smiles, a chemical language and information system. 1. introduction to
+methodology and encoding rules,” Journal of chemical information and computer sciences,
+vol. 28, no. 1, pp. 31–36, 1988.
+[81] E. Calvano, G. Calzolari, V. Denicolò, and S. Pastorello, “Artiﬁcial Intelligence, Algorithmic
+Pricing and Collusion,” Apr. 2019.
+76
+
+[82] D. Krueger, T. Maharaj, and J. Leike, “Hidden Incentives for Auto-Induced Distributional
+Shift,” Sept. 2020.
+[83] S. J. DeCanio, “Robots and humans – complements or substitutes?,” Journal of Macroeco-
+nomics, vol. 49, pp. 280–291, Sept. 2016.
+[84] A. Korinek and J. E. Stiglitz, “Artiﬁcial Intelligence and Its Implications for Income Distribution
+and Unemployment,” in The Economics of Artiﬁcial Intelligence: An Agenda, pp. 349–390,
+University of Chicago Press, Jan. 2018.
+[85] J. H. Choi, K. E. Hickman, A. Monahan, and D. Schwarcz, “ChatGPT Goes to Law School,”
+Jan. 2023.
+[86] L. R. Raymond, E. Brynjolfsson, and D. Li, “Augmented intelligence: The eﬀects of ai on
+productivity and work practices,” Sep 2022.
+[87] E. van Inwegen, Z. Munyikwa, and J. J. Horton, “Algorithmic Writing Assistance on Jobseekers’
+Resumes Increases Hires,” Jan. 2023.
+[88] A. Ziegler, E. Kalliamvakou, S. Simister, G. Sittampalam, A. Li, A. Rice, D. Rifkin, and
+E. Aftandilian, “Productivity Assessment of Neural Code Completion,” May 2022.
+[89] S. Noy and W. Zhang, “Experimental evidence on the productivity eﬀects of generative artiﬁcial
+intelligence,” Available at SSRN 4375283, 2023.
+[90] S. Peng, E. Kalliamvakou, P. Cihon, and M. Demirer, “The impact of ai on developer
+productivity: Evidence from github copilot,” arXiv preprint arXiv:2302.06590, 2023.
+[91] D. Acemoglu and P. Restrepo, “Demographics and Automation,” The Review of Economic
+Studies, vol. 89, pp. 1–44, Jan. 2022.
+[92] Partnership on AI, “AI and Job Quality,” tech. rep., Partnership on AI, Sept. 2022.
+[93] “OpenAI Charter.” https://openai.com/charter, Apr. 2018.
+[94] S. Armstrong, N. Bostrom, and C. Shulman, “Racing to the precipice: A model of artiﬁcial
+intelligence development,” Technical 2013-1, Future of Humanity Institute, Oct. 2013.
+[95] P. E. Tetlock and D. Gardner, Superforecasting: The Art and Science of Prediction. Crown,
+Sept. 2015.
+[96] S. Passi and M. Vorvoreanu, “Overreliance on AI Literature Review,” tech. rep., AI Ethics
+and Eﬀects in Engineering and Research, June 2022.
+[97] PAI, “Data enrichment sourcing guidelines,” November 2022 2022. accessed 2023-03-13.
+[98] PAI, “Responsible sourcing of data enrichment services,” June 2021 2021. accessed 2023-03-13.
+[99] J. Schulman, F. Wolski, P. Dhariwal, A. Radford, and O. Klimov, “Proximal Policy Optimiza-
+tion Algorithms,” Aug. 2017.
+77
+
+[100] A. Glaese, N. McAleese, M. Trębacz, J. Aslanides, V. Firoiu, T. Ewalds, M. Rauh, L. Weidinger,
+M. Chadwick, P. Thacker, L. Campbell-Gillingham, J. Uesato, P.-S. Huang, R. Comanescu,
+F. Yang, A. See, S. Dathathri, R. Greig, C. Chen, D. Fritz, J. S. Elias, R. Green, S. Mokrá,
+N. Fernando, B. Wu, R. Foley, S. Young, I. Gabriel, W. Isaac, J. Mellor, D. Hassabis,
+K. Kavukcuoglu, L. A. Hendricks, and G. Irving, “Improving alignment of dialogue agents via
+targeted human judgements,” Sept. 2022.
+[101] Y. Bai, S. Kadavath, S. Kundu, A. Askell, J. Kernion, A. Jones, A. Chen, A. Goldie, A. Mirho-
+seini, C. McKinnon, C. Chen, C. Olsson, C. Olah, D. Hernandez, D. Drain, D. Ganguli, D. Li,
+E. Tran-Johnson, E. Perez, J. Kerr, J. Mueller, J. Ladish, J. Landau, K. Ndousse, K. Lukosuite,
+L. Lovitt, M. Sellitto, N. Elhage, N. Schiefer, N. Mercado, N. DasSarma, R. Lasenby, R. Lar-
+son, S. Ringer, S. Johnston, S. Kravec, S. E. Showk, S. Fort, T. Lanham, T. Telleen-Lawton,
+T. Conerly, T. Henighan, T. Hume, S. R. Bowman, Z. Hatﬁeld-Dodds, B. Mann, D. Amodei,
+N. Joseph, S. McCandlish, T. Brown, and J. Kaplan, “Constitutional AI: Harmlessness from
+AI Feedback,” Dec. 2022.
+[102] S. Gehman, S. Gururangan, M. Sap, Y. Choi, and N. A. Smith, “RealToxicityPrompts:
+Evaluating Neural Toxic Degeneration in Language Models,” Findings of the Association for
+Computational Linguistics: EMNLP 2020, pp. 3356–3369, 2020.
+[103] OpenAI, “Introducing chatgpt,” November 2022 2020. accessed 2023-03-13.
+[104] OpenAI, “Openai api,” June 2020 2020. accessed 2023-03-13.
+[105] T. Davidson, D. Bhattacharya, and I. Weber, “Racial Bias in Hate Speech and Abusive
+Language Detection Datasets,” in Proceedings of the Third Workshop on Abusive Language
+Online, (Florence, Italy), pp. 25–35, Association for Computational Linguistics, Aug. 2019.
+78

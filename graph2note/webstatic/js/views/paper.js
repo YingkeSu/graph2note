@@ -118,6 +118,40 @@ function setPaperError(message) {
   el.paperStatus.appendChild(panel);
 }
 
+function setPaperStatus(message) {
+  if (!el.paperStatus) return;
+  el.paperStatus.textContent = message || "";
+}
+
+/* Explicit historical back-fill: re-run the metadata/reference extractor over
+   the already-imported paper text.  Manual fields are preserved server-side
+   and a failed pass is retryable (nothing destructive happens). */
+async function reextractPaperMetadata() {
+  const id = state.docId;
+  if (!id || state.busy) return;
+  state.busy = true;
+  setPaperStatus("正在重新提取元数据…");
+  try {
+    const result = await api(
+      `/api/papers/${encodeURIComponent(id)}/metadata/extract`, { method: "POST" });
+    const view = await api(`/api/papers/${encodeURIComponent(id)}/view`);
+    renderPaperView(view);
+    const extraction = result.extraction || {};
+    const preserved = (extraction.preserved || []).length;
+    if (extraction.status === "failed") {
+      setPaperStatus(`元数据提取失败：${extraction.error || "未知错误"}（可重试）`);
+    } else if (preserved) {
+      setPaperStatus(`元数据已更新，保留了 ${preserved} 个手工字段。`);
+    } else {
+      setPaperStatus("元数据已更新。");
+    }
+  } catch (e) {
+    setPaperStatus(`元数据提取失败：${e.message}（可重试）`);
+  } finally {
+    state.busy = false;
+  }
+}
+
 export function renderPaperView(payload) {
   const view = normalizePaperView(payload);
   if (!el.paperZone) return;
@@ -133,6 +167,11 @@ export function renderPaperView(payload) {
   }
   wireSectionNav();
   setupActiveHighlight();
+  const metaEmpty = !view.meta.title && !view.meta.authors.length
+    && !view.meta.abstract;
+  if (metaEmpty) {
+    setPaperStatus("未提取到元数据，可点击「重新提取元数据」重试。");
+  }
   const heading = view.meta.title || view.title;
   document.title = heading ? `${heading} — graph2note` : DEFAULT_TITLE;
 }
@@ -175,6 +214,10 @@ registerView("doc", renderPaperRoute);
 
 if (el.paperBack) {
   el.paperBack.addEventListener("click", () => go("#library"));
+}
+
+if (el.paperReextract) {
+  el.paperReextract.addEventListener("click", reextractPaperMetadata);
 }
 
 /* P1 puts ``doc_kind`` on the ``/api/documents`` summary, so the Library grid

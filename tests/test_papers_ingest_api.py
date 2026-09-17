@@ -172,7 +172,14 @@ def test_paper_import_text_layer_chain(tmp_path):
     assert titles == ["A Study of Things", "Abstract", "Introduction",
                       "Method", "Overview", "References"]
     assert body["sections"][-1]["page_start"] == 1
-    assert body["meta"]["title"] == "" and body["references"] == []
+    # import now runs the deterministic P2 pass: the result reflects the meta
+    # that the reading view will show (no more filename-only titles).
+    assert body["meta"]["title"] == "A Study of Things"
+    assert body["meta"]["authors"] == ["Alice", "Bob"]
+    assert body["meta"]["abstract"].startswith("We study things deeply")
+    assert body["meta_status"] == "ok" and body["meta_error"] is None
+    assert body["references"][0]["raw"].startswith("[1] Foo")
+    assert body["references"][0]["resolved_document_id"] is None
     assert body["pages"][0]["page_number"] == 1
 
     # the paper is a normal library document with doc_kind provenance

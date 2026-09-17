@@ -128,6 +128,26 @@ def normalize_doi(doi: str) -> str:
 # ---------------------------------------------------------------------------
 
 _DOI_RE = re.compile(r"10\.\d{4,9}/[-._;()/:A-Za-z0-9<>]+", re.I)
+#: An explicit DOI label / resolver URL on the front page.
+_DOI_LABEL_RE = re.compile(
+    r"(?:doi\s*:?\s*|https?://(?:dx\.)?doi\.org/)\s*(10\.\d{4,9}/[-._;()/:A-Za-z0-9<>]+)",
+    re.I,
+)
+#: A line that reads like a reference/citation, not this paper's metadata.
+_CITATION_HINT_RE = re.compile(
+    r"(?:et\s+al\.?|in\s+proceedings|proceedings\s+of|journal\s+of|"
+    r"conference\s+on|workshop\s+on|symposium|arxiv\s+preprint|"
+    r"\(\d{4}[a-z]?\)|\[\d+\]|\bpp\.\s*\d|\bvol\.\s*\d|"
+    r"\bdoi:\s*10\.\d{4,9}/[^\s]+,\s*\d{4})",
+    re.I,
+)
+#: Copyright / identifier markers that make a front-page line metadata.
+_DOI_METADATA_MARKER_RE = re.compile(
+    r"(?:©|\(c\)|copyright|all\s+rights\s+reserved|issn|isbn|arxiv|"
+    r"preprint|received|accepted|published|available\s+at|"
+    r"digital\s+object\s+identifier)",
+    re.I,
+)
 _ARXIV_RE = re.compile(r"arXiv[:\s]*(\d{2})(\d{2})\.\d{4,5}", re.I)
 _COPYRIGHT_RE = re.compile(r"(?:©|\(c\)|copyright)\s*(\d{4})", re.I)
 _YEAR_RE = re.compile(r"(?<!\d)(19\d{2}|20\d{2})(?!\d)")
@@ -155,7 +175,7 @@ _HEADER_JUNK_RE = re.compile(
 )
 _AFFIL_RE = re.compile(
     r"\b(?:universit|institut|laborator|department|school|college|academy|"
-    r"research|inc\.|ltd\.|corp\.|gmbh)\b",
+    r"research|inc\.|ltd\.|corp\.|gmbh)",
     re.I,
 )
 _ABSTRACT_RE = re.compile(r"^\s*(?:abstract|摘要)\b[\s:：—\-–]*", re.I)
@@ -202,6 +222,65 @@ _PROSE_LEAD_RE = re.compile(
     r"we|our|it|its|can|could|will|would|should|not|also|however)\b",
     re.I,
 )
+
+#: A title continues on the next line when the current one ends with a
+#: connector/colon (real preprints wrap long titles before a noun, e.g.
+#: ``… Transformers for`` / ``Language Understanding``).  This is what keeps a
+#: wrapped title out of the byline without needing font metrics.
+_TITLE_CONTINUES_RE = re.compile(
+    r"(?:\b(?:of|for|the|a|an|and|or|in|on|at|to|with|from|by|as|is|are|was|"
+    r"were|that|which|toward|towards|via|using|based|under|over|between|into|"
+    r"onto|about|against|without|within|through|across|after|before|"
+    r"when|where|while)\b|[:\-–—,;])\s*$",
+    re.I,
+)
+#: Footnote / correspondence markers that end the abstract body.
+_FOOTNOTE_RE = re.compile(r"^\s*[∗*†‡§¶#]")
+#: A canonical abstract label alone on its line.  This (not any line that merely
+#: starts with the word) is the reliable front-matter boundary: wrapped titles
+#: such as ``… for`` / ``Abstract Meaning Representation`` must stay in the
+#: title block.
+_ABSTRACT_LABEL_ONLY_RE = re.compile(r"^\s*(?:abstract|摘要)\s*[:：.\-—]?\s*$", re.I)
+#: A standalone section number (``1``, ``2.``, ``IV``).
+_STANDALONE_NUMBER_RE = re.compile(r"^\s*(?:\d+(?:\.\d+)*|[IVXLC]+)\.?\s*$")
+#: A numbered heading on one line (``1 Introduction``).
+_NUMBERED_HEADING_RE = re.compile(
+    r"^\s*(?:\d+(?:\.\d+)*|[IVXLC]+)\.?\s+[A-Z\u4e00-\u9fff]"
+)
+#: Common section words that start a heading line.
+_SECTION_WORD_RE = re.compile(
+    r"^\s*(?:abstract|introduction|related\s+work|background|motivation|"
+    r"preliminar(?:y|ies)|method(?:s|ology)?|approach|experiment(?:s|al)?|"
+    r"result(?:s)?|evaluation|discussion|conclusion(?:s)?|references|"
+    r"bibliography|acknowledg(?:e?ments?)|appendix|摘要|引言|相关工作|背景|"
+    r"方法|实验|结果|讨论|结论|参考文献|致谢)(?![A-Za-z])",
+    re.I,
+)
+#: Name particles and separators allowed inside a byline candidate.
+_NAME_PARTICLES = {
+    "de", "van", "von", "der", "la", "le", "el", "da", "di", "dos",
+    "del", "bin", "al", "st", "saint", "mac", "mc",
+}
+#: Organisation names that appear on a byline without a person (``OpenAI``).
+_ORG_NAMES = {
+    "openai", "google", "deepmind", "meta", "microsoft", "anthropic", "amazon",
+    "apple", "nvidia", "ibm", "baidu", "alibaba", "tencent", "bytedance",
+    "facebook", "ai", "mit", "stanford", "berkeley", "mozilla", "salesforce",
+}
+#: Department/affiliation words that never belong to a personal name.
+_DEPT_WORDS = {
+    "university", "universities", "institute", "institution", "laboratory", "lab",
+    "labs", "department", "school", "college", "academy", "research", "group",
+    "team", "center", "centre", "language", "inc", "ltd", "corp", "gmbh",
+}
+#: Organisation/acronym tokens that can stand alone as a byline (``OpenAI``).
+_ORG_TOKEN_RE = re.compile(r"^[A-Z][A-Za-z0-9]*[A-Z][A-Za-z0-9]*$|^[A-Z]{2,}$")
+_INITIALS_RE = re.compile(r"^(?:[A-Z]\.){1,4}$")
+
+#: A parsed title longer than this (or with "Abstract"/"Introduction" in it)
+#: is front-page body text that leaked in, not a title — never persist it.
+_MAX_TITLE_CHARS = 300
+_MAX_TITLE_WORDS = 45
 
 
 def _clean(text: str) -> str:
@@ -266,7 +345,18 @@ def _looks_like_author_line(line: str) -> bool:
     return has_sep and (has_initial or len(text.split()) >= 2)
 
 
+#: PDF text layers often use Unicode ligatures (``Hatﬁeld``); fold them
+#: before name matching so a real author is not dropped as non-name-like.
+_LIGATURES = {
+    "\ufb00": "ff", "\ufb01": "fi", "\ufb02": "fl", "\ufb03": "ffi",
+    "\ufb04": "ffl", "\ufb05": "ft", "\ufb06": "st",
+}
+
+
 def _strip_author_noise(text: str) -> str:
+    text = str(text or "")
+    for ligature, plain in _LIGATURES.items():
+        text = text.replace(ligature, plain)
     text = _EMAIL_RE.sub("", text)
     text = _SUPERSCRIPT_RE.sub("", text)
     return _clean(text)
@@ -279,6 +369,171 @@ def _looks_like_sentence_line(line: str) -> bool:
     if len(text) < 40 or not _SENTENCE_STOP_RE.search(text):
         return False
     return bool(_SENTENCE_HINT_RE.search(text))
+
+
+def _looks_like_name_line(line: str) -> bool:
+    """True for a short line whose words all read as name/affiliation tokens.
+
+    Real preprints and conference papers put **one author per line** (``Jacob
+    Devlin`` / ``Ming-Wei Chang``) or a single organisation on its own line
+    (``OpenAI``).  Those lack the comma/``and`` separator
+    :func:`_looks_like_author_line` requires, so the byline parser needs a
+    shape test of its own that still rejects prose ('Language Understanding',
+    'We report the development …').
+    """
+
+    text = _strip_author_noise(line)
+    text = re.sub(r"[\d∗*†‡§¶#]+", "", text).strip(" ,;、，&")
+    if not text or len(text) > 120 or "@" in text:
+        return False
+    if _is_header_line(text) or _SENTENCE_STOP_RE.search(text):
+        return False
+    # A group byline may carry a leading article (``the Ming Li Group``).
+    text = re.sub(r"^the\s+", "", text, flags=re.I)
+    words = text.split()
+    if not words or len(words) > 14:
+        return False
+    for word in words:
+        folded = word.casefold()
+        if folded in {"and", "et", "al"} or folded in _NAME_PARTICLES:
+            continue
+        bare = word.strip(".,;:()[]{}")
+        if _NAME_TOKEN_RE.fullmatch(bare):
+            continue
+        if (_INITIAL_RE.fullmatch(word) or _INITIALS_RE.fullmatch(word)
+                or _INITIALS_RE.fullmatch(bare)):
+            continue
+        if _ORG_TOKEN_RE.match(bare):
+            continue
+        return False
+    return True
+
+
+def _is_org_only(name: str) -> bool:
+    """A single organisation token (``OpenAI``) — kept only if no person name."""
+
+    words = [word for word in re.sub(r"[^\w ]", " ", name).split() if word]
+    return len(words) == 1 and bool(_ORG_TOKEN_RE.match(words[0]))
+
+
+def _personal_name_tokens(name: str) -> list[str]:
+    """Capitalised tokens of ``name`` that are neither org nor department words."""
+
+    tokens = re.findall(r"[A-Za-z][A-Za-z'\-]*", name or "")
+    return [
+        token for token in tokens
+        if token.casefold() not in _ORG_NAMES
+        and token.casefold() not in _DEPT_WORDS
+        and token.casefold() not in _NAME_PARTICLES
+        and token.casefold() not in {"and", "the", "of", "et", "al"}
+    ]
+
+
+def _is_affiliation_like(name: str) -> bool:
+    """True for an affiliation/organisation candidate, not a personal name.
+
+    ``Google AI Language`` is an affiliation even though it is not matched by
+    ``_AFFIL_RE``; ``the Ming Li Group`` carries a personal name (``Ming Li``)
+    and must survive.  Only used to prune a byline that already contains
+    personal names, so a paper whose *only* byline is ``OpenAI`` keeps it.
+    """
+
+    if _AFFIL_RE.search(name or ""):
+        return True
+    words = [w.casefold() for w in re.findall(r"[A-Za-z][A-Za-z'\-]*", name or "")]
+    if not words:
+        return False
+    has_org = any(w in _ORG_NAMES for w in words)
+    has_dept = any(w in _DEPT_WORDS for w in words)
+    if not (has_org or has_dept):
+        return False
+    return len(_personal_name_tokens(name)) < 2
+
+
+def _looks_like_byline_paragraph(paragraph: list[str]) -> bool:
+    """True when the paragraph right after the title is a byline block.
+
+    Used only for the paragraph *following* the title paragraph, so it can
+    accept a run of separate name lines that :func:`_looks_like_author_line`
+    (built for comma lists) would reject.
+    """
+
+    if not paragraph:
+        return False
+    head = paragraph[0].strip()
+    if _ABSTRACT_RE.match(head) or _is_header_line(head):
+        return False
+    if _looks_like_author_line(head):
+        return True
+    if _looks_like_sentence_line(head):
+        return False
+    return any(_looks_like_name_line(line) for line in paragraph)
+
+
+def _title_end_index(front: list[str]) -> int:
+    """Number of leading lines that form the title (wrapped-title aware)."""
+
+    end = 1
+    while end < len(front) and _TITLE_CONTINUES_RE.search(front[end - 1]):
+        end += 1
+    return min(end, len(front))
+
+
+def _title_is_plausible(title: str) -> bool:
+    """Shape gate: a title must not be a 2 KB front-page block.
+
+    The front-page heuristics can still over-claim on unusual layouts; a title
+    that is implausibly long or contains a body heading is dropped (empty) so
+    it is never persisted as ``record.title`` and the caller can degrade
+    honestly instead of showing a wall of front matter.
+    """
+
+    text = _clean(title)
+    if not text:
+        return False
+    if len(text) > _MAX_TITLE_CHARS or len(text.split()) > _MAX_TITLE_WORDS:
+        return False
+    if len(re.findall(r"[.!?。！？]", text)) > 1:
+        return False
+    if _SECTION_WORD_RE.search(text):
+        return False
+    return True
+
+
+def _is_abstract_boundary_line(line: str, previous: str | None) -> bool:
+    """True when a front-block line is the abstract heading, not a title wrap.
+
+    A wrapped title can start a line with ``Abstract`` (``Abstract Meaning
+    Representation``, ``Abstract Syntax Trees``) so only a standalone label, or
+    a label followed by a sentence-like body, ends the title block.
+    """
+
+    if _ABSTRACT_LABEL_ONLY_RE.match(line):
+        return True
+    match = _ABSTRACT_RE.match(line)
+    if match is None:
+        return False
+    tail = _clean(line[match.end():])
+    if not tail:
+        return True
+    if previous and _TITLE_CONTINUES_RE.search(previous):
+        return False
+    return bool(_SENTENCE_STOP_RE.search(tail)) or len(tail.split()) >= 6
+
+
+def _is_abstract_stop(line: str) -> bool:
+    """True when the abstract body ended and a new block began."""
+
+    text = line.strip()
+    if not text:
+        return True
+    if _STOP_RE.match(text) or _HEADER_JUNK_RE.match(text):
+        return True
+    if _FOOTNOTE_RE.match(text):
+        return True
+    if _STANDALONE_NUMBER_RE.match(text) or _NUMBERED_HEADING_RE.match(text):
+        return True
+    return bool(_SECTION_WORD_RE.match(text))
 
 
 def _author_lines_before_abstract(lines: list[str]) -> list[str]:
@@ -314,56 +569,133 @@ def _author_lines_before_abstract(lines: list[str]) -> list[str]:
 
 
 def _parse_authors(author_lines: list[str]) -> list[str]:
-    text = _strip_author_noise(" ".join(_author_lines_before_abstract(author_lines)))
-    if not text:
-        return []
-    if _CJK_NAMES_RE.match(text):
-        return [part.strip() for part in re.split(r"[,，、]", text) if part.strip()]
-    text = re.sub(r"\s+\band\b\s+", ", ", text, flags=re.I).replace("&", ",")
-    authors: list[str] = []
-    for part in text.split(","):
-        name = _clean(part).strip(". ")
-        if not name or name.casefold() in {"and", "et al"}:
+    """Names from the byline block, one-per-line and comma-list aware.
+
+    The real text layer puts each author on its own line as often as it puts a
+    comma-separated list on one line, so both shapes are parsed.  Affiliation
+    / email / header fragments are dropped, and a single organisation token
+    (``OpenAI`` on its own) is kept only when it is the *only* byline — a paper
+    that lists people keeps the people and drops the org affiliation lines.
+    """
+
+    lines = _author_lines_before_abstract(author_lines)
+    candidates: list[str] = []
+    for line in lines:
+        cleaned = re.sub(r"[\d∗*†‡§¶#]+", "", _strip_author_noise(line)).strip()
+        if not cleaned or "@" in cleaned or _is_header_line(cleaned):
             continue
-        # Drop affiliation fragments glued onto the author list.
-        if _AFFIL_RE.search(name):
+        if _CJK_NAMES_RE.match(cleaned):
+            candidates.extend(
+                part.strip() for part in re.split(r"[,，、]", cleaned) if part.strip()
+            )
             continue
-        authors.append(name)
-    return authors
+        for part in re.split(r"\s*(?:[,;、，]|&|\band\b)\s*", cleaned, flags=re.I):
+            name = _clean(part).strip(". ")
+            if not name or name.casefold() in {"and", "et al"}:
+                continue
+            if _AFFIL_RE.search(name):
+                continue
+            if not _looks_like_name_line(name):
+                continue
+            candidates.append(name)
+    candidates = list(dict.fromkeys(candidates))
+    # A paper that lists people keeps the people and drops affiliation / org
+    # lines (``Google AI Language``, ``OpenAI``); a paper whose only byline is
+    # an organisation keeps it (GPT-4 → ``OpenAI``).
+    if any(len(_personal_name_tokens(name)) >= 2 for name in candidates):
+        candidates = [name for name in candidates if not _is_affiliation_like(name)]
+    return candidates
 
 
 def _title_lines(paragraphs: list[list[str]]) -> tuple[list[str], list[str], list[list[str]]]:
-    """Split (title, author lines, remaining paragraphs) from front paragraphs."""
+    """Split (title, author lines, remaining paragraphs) from front paragraphs.
+
+    The abstract label is a hard boundary: everything from it onward is the
+    summary and must never be absorbed into the title (the real-library
+    regression put a 2 KB title+byline+abstract block into ``record.title``).
+    Within the front block the title is the leading line(s) — a wrapped title
+    continues while the previous line ends with a connector — and the byline is
+    either a comma list inside the block, a separate byline paragraph, or a
+    run of one-name-per-line entries.
+    """
 
     if not paragraphs:
         return [], [], []
     first = paragraphs[0]
-    author_at = next((i for i, line in enumerate(first) if _looks_like_author_line(line)), None)
+    abstract_at = next(
+        (i for i, line in enumerate(first)
+         if _is_abstract_boundary_line(line, first[i - 1] if i else None)),
+        None)
+    header_at = next(
+        (i for i, line in enumerate(first) if i > 0 and _is_header_line(line)), None)
+    block_end = min(
+        [index for index in (abstract_at, header_at) if index is not None],
+        default=len(first),
+    )
+    front = first[:block_end]
+    tail = [first[block_end:]] if block_end < len(first) else []
+    rest = tail + paragraphs[1:]
+    if not front:
+        return [], [], rest
+
+    author_at = next(
+        (i for i, line in enumerate(front) if _looks_like_author_line(line)), None)
     if author_at is not None and author_at > 0:
         return (
-            first[:author_at],
-            _author_lines_before_abstract(first[author_at:]),
-            paragraphs[1:],
+            front[:author_at],
+            _author_lines_before_abstract(front[author_at:]),
+            rest,
         )
     if author_at == 0:
-        return [], _author_lines_before_abstract(first), paragraphs[1:]
-    rest = paragraphs[1:]
-    if rest and _looks_like_author_line(rest[0][0]):
-        return first, _author_lines_before_abstract(rest[0]), rest[1:]
-    return first, [], rest
+        return [], _author_lines_before_abstract(front), rest
+
+    # No comma-separated byline inside the block: either a dedicated byline
+    # paragraph follows the title paragraph, or the byline shares the block as
+    # one-name-per-line lines (real preprints).
+    if rest and _looks_like_byline_paragraph(rest[0]):
+        return front, _author_lines_before_abstract(rest[0]), rest[1:]
+
+    title_end = _title_end_index(front)
+    if title_end < len(front):
+        return front[:title_end], _author_lines_before_abstract(front[title_end:]), rest
+    return front, [], rest
 
 
 def _abstract_block(
-    para: list[str], index: int, line: str, match: "re.Match[str]"
+    para: list[str],
+    index: int,
+    line: str,
+    match: "re.Match[str]",
+    following_paragraphs: tuple[list[str], ...] = (),
+    author_keys: Optional[set[str]] = None,
 ) -> tuple[str, str]:
-    """Body of an abstract whose label matched in ``line`` plus its evidence."""
+    """Body of an abstract whose label matched in ``line`` plus its evidence.
+
+    When the label heads its own paragraph (``Abstract`` then a blank line) the
+    body is taken from the following paragraph, up to the first stop line — but
+    never from an author byline (a title that is exactly the word ``Abstract``
+    must not absorb the author paragraph).
+    """
 
     body = _clean(line[match.end():])
     pieces = [body] if body else []
     for following in para[index + 1:]:
-        if _STOP_RE.match(following):
-            break
+        if _is_abstract_stop(following):
+            return _clean(" ".join(pieces)), line[:200]
         pieces.append(following)
+    if not pieces:
+        for nxt in following_paragraphs:
+            if not nxt:
+                continue
+            head = _clean(nxt[0])
+            if (author_keys and head in author_keys) or _looks_like_author_line(head):
+                return "", line[:200]
+            for following in nxt:
+                if _is_abstract_stop(following):
+                    return _clean(" ".join(pieces)), line[:200]
+                pieces.append(following)
+            if pieces:
+                break
     return _clean(" ".join(pieces)), line[:200]
 
 
@@ -400,7 +732,8 @@ def _extract_abstract(
     head_candidate: Optional[tuple[str, str]] = None
     mid_candidate: Optional[tuple[str, str]] = None
     inline_candidate: Optional[tuple[str, str]] = None
-    for para in paragraphs:
+    for para_index, para in enumerate(paragraphs):
+        following_paragraphs = tuple(paragraphs[para_index + 1: para_index + 2])
         for index, line in enumerate(para):
             if index > 0 and _clean(line) in title_keys:
                 continue
@@ -411,9 +744,11 @@ def _extract_abstract(
                 if inline is None or lead not in author_keys:
                     continue
                 if inline_candidate is None:
-                    inline_candidate = _abstract_block(para, index, line, inline)
+                    inline_candidate = _abstract_block(
+                        para, index, line, inline, following_paragraphs, author_keys)
                 continue
-            block = _abstract_block(para, index, line, match)
+            block = _abstract_block(
+                para, index, line, match, following_paragraphs, author_keys)
             if not block[0]:
                 continue
             if index == 0:
@@ -443,15 +778,93 @@ def _extract_keywords(paragraphs: list[list[str]]) -> tuple[list[str], str]:
     return [], ""
 
 
-def _extract_doi(front_text: str, full_text: str) -> tuple[str, str]:
-    doi, evidence = "", ""
-    for source in (front_text, full_text):
-        match = _DOI_RE.search(source or "")
-        if match:
-            doi = normalize_doi(match.group(0))
-            evidence = match.group(0)[:200]
-            break
-    return doi, evidence
+def _doi_line_is_metadata(line: str) -> bool:
+    """True only for a front-page line that presents the paper's own DOI.
+
+    A ``doi:`` label is not enough — reference lists use it too, and a bare DOI
+    inside body prose is a citation.  Rule:
+
+    - citation/reference lines never qualify;
+    - a metadata marker (©/copyright/ISSN/arXiv/…/``Digital Object
+      Identifier``) qualifies a line whose remaining text is only the marker
+      context (no sentence), even without a ``doi:`` label;
+    - otherwise the line must be essentially just the DOI/URL (a ``doi:`` /
+      ``doi.org`` label with no other prose also qualifies).
+    """
+
+    if _CITATION_HINT_RE.search(line):
+        return False
+    marked = _DOI_METADATA_MARKER_RE.search(line) is not None
+    residual = _DOI_LABEL_RE.sub(" ", line)
+    residual = _DOI_RE.sub(" ", residual)
+    residual = re.sub(r"https?://\S+|www\.\S+", " ", residual)
+    if marked:
+        residual = _DOI_METADATA_MARKER_RE.sub(" ", residual)
+    prose = len(re.findall(r"[A-Za-z]{2,}", residual))
+    if marked:
+        return prose <= 1
+    return prose == 0
+
+
+#: A single whitespace-free DOI-charset token (a plausible wrap continuation).
+_DOI_TOKEN_RE = re.compile(r"^[-._;()/:A-Za-z0-9<>]+$")
+
+
+def _is_doi_token(token: str) -> bool:
+    return bool(token) and bool(_DOI_TOKEN_RE.match(token))
+
+
+def _doi_continuation(line: str, match, next_line: str) -> str:
+    """How the next line relates to a DOI that ends ``line``.
+
+    Returns ``"ambiguous"`` when the next line is a single DOI-charset token
+    that could be either the rest of a wrapped DOI or the next value (a year,
+    a page, a chapter word, a filename), and ``"none"`` otherwise (a blank
+    line, prose, or the DOI is not at end of line).  Cross-line DOI
+    reconstruction is deliberately **not** attempted: plain text carries no
+    independent layout evidence, so an ambiguous continuation is reported
+    (``doi-wrap-ambiguous``) instead of being joined or persisted truncated.
+    """
+
+    if match is None or line[match.end():].strip():
+        return "none"
+    token = (next_line or "").strip()
+    if not token or not _is_doi_token(token):
+        return "none"
+    return "ambiguous"
+
+
+def _extract_doi(front_text: str) -> tuple[str, str, Optional[str]]:
+    """DOI from the paper's own front-matter region — never a bibliography hit.
+
+    Returns ``(doi, evidence, note)``.  A DOI is evidence only when it appears
+    on a front-page line that reads as metadata (see
+    :func:`_doi_line_is_metadata`); no registry check and no minimum-length or
+    digit heuristic is applied (short/alpha-only DOIs such as the DOI
+    Handbook's ``10.1000/182`` are legitimate).  A cross-line continuation is
+    not reconstructed from plain text: when a DOI ends a line and the next
+    line is a single DOI-charset token, the value is left empty with
+    ``note="doi-wrap-ambiguous"`` rather than joining a guess or persisting a
+    known fragment.
+    """
+
+    raw_lines = [line.strip() for line in str(front_text or "").splitlines()]
+    for index, line in enumerate(raw_lines):
+        if not line:
+            continue
+        labeled = _DOI_LABEL_RE.search(line)
+        bare = _DOI_RE.search(line)
+        if labeled is None and bare is None:
+            continue
+        if not _doi_line_is_metadata(line):
+            continue
+        match = labeled if labeled is not None else bare
+        next_line = raw_lines[index + 1] if index + 1 < len(raw_lines) else ""
+        if _doi_continuation(line, match, next_line) == "ambiguous":
+            return "", line[:200], "doi-wrap-ambiguous"
+        value = labeled.group(1) if labeled is not None else bare.group(0)
+        return normalize_doi(value), line[:200], None
+    return "", "", None
 
 
 def _extract_year(
@@ -538,10 +951,16 @@ def parse_paper_meta(
 
     title_block, author_lines, _rest = _title_lines(paragraphs)
     title = _clean(" ".join(title_block)).rstrip(".")
+    if title and not _title_is_plausible(title):
+        # A leaked front-page block is not a title: drop it (never persist it)
+        # and let the caller degrade to the filename with an honest note.
+        notes.append("title-untrusted")
+        title = ""
+        title_block = []
     authors = _parse_authors(author_lines)
     abstract, abstract_evidence = _extract_abstract(paragraphs, author_lines, title_block)
     keywords, keywords_evidence = _extract_keywords(paragraphs)
-    doi, doi_evidence = _extract_doi(text, full_text)
+    doi, doi_evidence, doi_note = _extract_doi(text)
     venue, venue_confidence, venue_evidence = _extract_venue(header_lines, text)
     year, year_confidence, year_evidence = _extract_year(text, header_lines, venue)
 
@@ -555,6 +974,8 @@ def parse_paper_meta(
         notes.append("keywords-not-found")
     if not venue:
         notes.append("venue-not-found")
+    if not doi:
+        notes.append(doi_note or "doi-not-found")
     if year is None:
         notes.append("year-not-found")
 
