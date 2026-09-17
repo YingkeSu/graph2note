@@ -232,6 +232,7 @@ export const el = {
   // P3 论文阅读视图（paper.js 注册；只读展示）。
   paperZone: $("#paper-zone"),
   paperBack: $("#paper-back"),
+  paperReextract: $("#paper-reextract"),
   paperStatus: $("#paper-status"),
   paperMeta: $("#paper-meta"),
   paperSectionNav: $("#paper-section-nav"),
