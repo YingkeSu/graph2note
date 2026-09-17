@@ -44,6 +44,7 @@
         <button class="nav-item" id="nav-timeline" data-view="timeline" data-route="#timeline/day" title="时间轴">时间轴</button>
         <button class="nav-item" id="nav-graph" data-view="graph" data-route="#graph" title="知识图谱">知识图谱</button>
         <button class="nav-item" id="nav-dashboard" data-view="dashboard" data-route="#dashboard" title="数据看板">数据看板</button>
+        <button class="nav-item" id="nav-reports" data-view="reports" data-route="#reports" title="科研周报">科研周报</button>
         <button class="nav-item" id="nav-inbox" data-view="inbox" data-route="#inbox" title="待整理">待整理</button>
         <button class="nav-item" id="nav-tags" data-view="tags" data-route="#tags" title="标签词表">标签词表</button>
         <button class="nav-item" id="nav-ask" data-view="ask" data-route="#ask" title="PDF 问答（对话式，多轮追问）">问答</button>
@@ -407,6 +408,58 @@
               </div>
             </div>
           </section>
+        </section>
+
+        <!-- 科研周报 (research-weekly-template issue 01) -->
+        <section id="report-zone" class="report-zone hidden">
+          <div class="report-head">
+            <div>
+              <h2>科研周报</h2>
+              <p class="dim">按日期范围生成有来源证据的科研周报。可选专题可开关与排序，未启用不生成也不调用模型；旧版四节小结仍可在「数据看板 · 每周小结」使用。</p>
+            </div>
+          </div>
+          <div class="report-controls">
+            <label class="report-field"><span class="dim">模板</span>
+              <select id="report-template" aria-label="周报模板"></select>
+            </label>
+            <label class="report-field"><span class="dim">范围</span>
+              <select id="report-range" aria-label="周报范围">
+                <option value="this_week">本周</option>
+                <option value="last_week">上周</option>
+                <option value="custom">自定义</option>
+              </select>
+            </label>
+            <input id="report-from" class="input-date hidden" type="date" aria-label="起始日期" />
+            <span id="report-from-sep" class="dim hidden">至</span>
+            <input id="report-to" class="input-date hidden" type="date" aria-label="结束日期" />
+            <label class="report-field"><span class="dim">汇报人</span>
+              <input id="report-reporter" class="report-input" type="text" placeholder="选填" />
+            </label>
+            <label class="report-field"><span class="dim">日期</span>
+              <input id="report-date" class="input-date" type="date" aria-label="周报日期" />
+            </label>
+            <label class="report-force"><input id="report-force" type="checkbox" /> 强制重新生成</label>
+            <button id="report-export" class="btn" type="button" disabled>导出 Markdown</button>
+            <button id="report-generate" class="btn primary" type="button">生成科研周报</button>
+          </div>
+          <div id="report-modules" class="report-modules">
+            <div class="report-modules-head"><span>专题章节</span><span class="dim">勾选启用，用 ↑ ↓ 调整顺序；未勾选不生成也不调用模型。</span></div>
+            <ul id="report-module-list" class="report-module-list"></ul>
+          </div>
+          <p id="report-status" class="dim report-status" role="status" aria-live="polite"></p>
+          <div id="report-actions" class="report-actions hidden"></div>
+          <div class="report-body">
+            <div class="report-history-wrap">
+              <div class="report-history-head dim">历史周报</div>
+              <ul id="report-history" class="report-history"></ul>
+            </div>
+            <div id="report-viewer" class="report-viewer">
+              <div id="report-viewer-meta" class="dim report-viewer-meta"></div>
+              <div id="report-viewer-stats" class="report-stats"></div>
+              <div id="report-viewer-content" class="report-content preview"></div>
+              <p id="report-empty" class="report-empty dim">还没有生成过科研周报。</p>
+            </div>
+          </div>
         </section>
 
         <!-- Upload / intro state -->
