@@ -170,6 +170,8 @@ def apply_meta_proposal(
     proposal: MetaProposal,
     *,
     source: str = "vlm",
+    evidence: str = "llm-proposal",
+    note_label: str = "llm",
 ) -> tuple[PaperMetaResult, list[str]]:
     """Fill only the empty fields of ``result``; report which were applied."""
 
@@ -187,16 +189,19 @@ def apply_meta_proposal(
         provenance[field] = FieldProvenance(
             source=source,  # type: ignore[arg-type]
             confidence="medium",
-            evidence="llm-proposal",
+            evidence=evidence,
         )
         applied.append(field)
     if applied and result.meta.source == "none":
         meta.source = source  # type: ignore[assignment]
         provenance["source"] = FieldProvenance(
-            source=source, confidence="medium", evidence="llm-proposal"  # type: ignore[arg-type]
+            source=source, confidence="medium", evidence=evidence  # type: ignore[arg-type]
         )
     notes = list(result.notes)
-    notes.append(f"llm-fields:{','.join(applied)}" if applied else "llm-no-new-fields")
+    notes.append(
+        f"{note_label}-fields:{','.join(applied)}" if applied
+        else f"{note_label}-no-new-fields"
+    )
     return PaperMetaResult(meta=meta, provenance=provenance, notes=notes), applied
 
 

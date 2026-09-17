@@ -32,7 +32,7 @@ from urllib.parse import quote
 
 from .. import pdflib
 from ..ir import DocumentIR, dumps_ir
-from . import model, structure, textlayer
+from . import extract, model, structure, textlayer
 
 #: Sub-directory (under the store root) holding paper job state.
 PAPERS_DIRNAME = "papers"
@@ -109,6 +109,11 @@ class PaperJob:
     error_kind: str | None = None   # parse|timeout|interrupted|vlm_empty|partial|failed
     total_pages: int = 0
     sections_count: int = 0
+    #: Metadata extraction outcome (separate from the import status):
+    #: ``ok`` / ``empty`` / ``failed``.  A paper can import ``done`` while the
+    #: deterministic metadata pass found nothing or errored.
+    meta_status: str = ""
+    meta_error: str | None = None
     page_documents: list[str] = field(default_factory=list)
     decision: dict = field(default_factory=dict)
     model: str = ""
@@ -148,6 +153,8 @@ class PaperJob:
                 "document_id": self.document_id,
                 "total_pages": self.total_pages,
                 "sections": self.sections_count,
+                "meta_status": self.meta_status,
+                "meta_error": self.meta_error,
                 "page_documents": list(self.page_documents),
                 "decision": dict(self.decision),
                 "error": self.error,
@@ -170,6 +177,8 @@ class PaperJob:
                 "document_id": self.document_id,
                 "total_pages": self.total_pages,
                 "sections": self.sections_count,
+                "meta_status": self.meta_status,
+                "meta_error": self.meta_error,
                 "running": self._running,
                 "interrupted": self.status == "interrupted",
             }
@@ -186,6 +195,8 @@ class PaperJob:
                 "error_kind": self.error_kind,
                 "total_pages": self.total_pages,
                 "sections_count": self.sections_count,
+                "meta_status": self.meta_status,
+                "meta_error": self.meta_error,
                 "page_documents": list(self.page_documents),
                 "decision": dict(self.decision),
                 "model": self.model,
@@ -210,6 +221,8 @@ class PaperJob:
         job.error_kind = data.get("error_kind")
         job.total_pages = data.get("total_pages", 0)
         job.sections_count = data.get("sections_count", 0)
+        job.meta_status = data.get("meta_status", "")
+        job.meta_error = data.get("meta_error")
         job.page_documents = list(data.get("page_documents") or [])
         job.decision = dict(data.get("decision") or {})
         job.model = data.get("model", "")
@@ -311,7 +324,12 @@ def _empty_ir_json() -> str:
 
 
 def result_payload(job: PaperJob, store) -> dict | None:
-    """Read-only paper result built from the job + committed store payload."""
+    """Read-only paper result built from the job + committed store payload.
+
+    Metadata/references are read from the P2 slot first so the import result is
+    the *same* value the metadata endpoint and the reading view expose; the P1
+    placeholder is only a fallback for a paper committed before P2 ran.
+    """
     if not job.document_id:
         return None
     payload = store.get_paper_payload(job.document_id)
@@ -319,6 +337,12 @@ def result_payload(job: PaperJob, store) -> dict | None:
         return None
     document_id = job.document_id
     paper_id = job.paper_id
+    reader = getattr(store, "paper_payload", None)
+    p2 = reader(document_id) if callable(reader) else None
+    p2 = p2 if isinstance(p2, dict) else {}
+    meta = p2.get("meta") if isinstance(p2.get("meta"), dict) else payload.get("meta")
+    references = (p2.get("references") if isinstance(p2.get("references"), list)
+                  else payload.get("references"))
     return {
         "paper_id": paper_id,
         "pdf_id": paper_id,
@@ -329,9 +353,13 @@ def result_payload(job: PaperJob, store) -> dict | None:
         "sections": payload.get("sections") or [],
         "pages": payload.get("page_map") or [],
         "fulltext": payload.get("fulltext") or "",
-        "meta": payload.get("meta") or {},
-        "references": payload.get("references") or [],
+        "meta": meta or {},
+        "meta_provenance": p2.get("meta_provenance") or {},
+        "references": references or [],
+        "references_provenance": p2.get("references_provenance") or [],
         "provenance": payload.get("provenance") or {},
+        "meta_status": job.meta_status,
+        "meta_error": job.meta_error,
         "source_page_url": f"/api/documents/{quote(document_id, safe='')}/source-page",
         "original_url": f"/api/papers/{quote(paper_id, safe='')}/original",
     }
@@ -352,6 +380,38 @@ def _fail(job: PaperJob, message: str, kind: str) -> PaperJob:
     return job
 
 
+def run_metadata_extraction(
+    job: PaperJob,
+    *,
+    store,
+    document_id: str,
+    fulltext: str,
+    front_text: str = "",
+    source: str = "text-layer",
+    proposal=None,
+):
+    """Run the deterministic P2 pass and record it on the job (never raises).
+
+    The import result stays ``done`` even when metadata extraction fails; the
+    job carries ``meta_status`` / ``meta_error`` so the caller can show the two
+    outcomes separately and offer a retry.
+    """
+    try:
+        result = extract.extract_and_persist(
+            store, document_id, fulltext=fulltext, front_text=front_text,
+            source=source, proposal=proposal,
+        )
+    except Exception as exc:  # noqa: BLE001 - import success is independent
+        with job.lock:
+            job.meta_status = "failed"
+            job.meta_error = f"{type(exc).__name__}: {exc}"
+        return None
+    with job.lock:
+        job.meta_status = result.status
+        job.meta_error = result.error
+    return result
+
+
 def _commit_text_layer(
     job: PaperJob,
     *,
@@ -362,6 +422,13 @@ def _commit_text_layer(
     title: str,
 ) -> PaperJob:
     document_id = job.document_id or paper_document_id(job.paper_id)
+    front_text = layer.pages[0].text if layer.pages else ""
+    # Commit with the extracted title (falling back to the filename) so the
+    # library card / search index / reading view agree from the first read.
+    display_title = extract.preferred_document_title(
+        title, fulltext=layer.fulltext, front_text=front_text,
+        source="text-layer",
+    )
     payload = model.PaperPayload(
         source="text-layer",
         sections=sections,
@@ -380,8 +447,8 @@ def _commit_text_layer(
     )
     store.save_paper_document(
         document_id=document_id,
-        title=title,
-        markdown=render_paper_markdown(title, sections),
+        title=display_title,
+        markdown=render_paper_markdown(display_title, sections),
         paper=payload.as_dict(),
         source_job_id=f"paper-{job.paper_id}",
         model=TEXT_LAYER_MODEL,
@@ -419,6 +486,14 @@ def _commit_text_layer(
         job.error = None
         job.error_kind = None
         job.finished_at = time.time()
+    run_metadata_extraction(
+        job,
+        store=store,
+        document_id=document_id,
+        fulltext=layer.fulltext,
+        front_text=front_text,
+        source="text-layer",
+    )
     save_job(job)
     return job
 
@@ -480,6 +555,10 @@ def _commit_vlm_fallback(
 
     document_id = job.document_id or paper_document_id(job.paper_id)
     fulltext = "\n\n".join(section.text for section in sections).strip()
+    display_title = extract.preferred_document_title(
+        title, fulltext=fulltext,
+        front_text=sections[0].text if sections else "", source="vlm",
+    )
     payload = model.PaperPayload(
         source="vlm",
         sections=sections,
@@ -507,8 +586,8 @@ def _commit_vlm_fallback(
     )
     store.save_paper_document(
         document_id=document_id,
-        title=title,
-        markdown=render_paper_markdown(title, sections),
+        title=display_title,
+        markdown=render_paper_markdown(display_title, sections),
         paper=payload.as_dict(),
         source_job_id=f"paper-{job.paper_id}",
         model=pdf_job.model or TEXT_LAYER_MODEL,
@@ -554,6 +633,14 @@ def _commit_vlm_fallback(
             job.error = None
             job.error_kind = None
         job.finished_at = time.time()
+    run_metadata_extraction(
+        job,
+        store=store,
+        document_id=document_id,
+        fulltext=fulltext,
+        front_text=sections[0].text if sections else "",
+        source="vlm",
+    )
     save_job(job)
     return job
 
