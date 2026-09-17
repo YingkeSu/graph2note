@@ -58,15 +58,27 @@ None — 可立即开始
   - **测试**：定向 `test_papers_meta.py` 65 例、`test_papers_meta_import.py` 26 例、真实 fixture 套件全绿；全量见 R2 handoff。
   - **保留**：B1–B3/M1/L1 全部回归保留，未回退。
 - 2026-09-17 复审 R3 整改（报告 `graph2note-136/.scratch/reviews/prr-02-metadata-r3.md`，裁决 CHANGES_REQUESTED；口径更正见其 4dcc26c）：
-  - **R4a（高，阻塞）删除任意最小长度/必须数字阈值**：DOI 规范（ISO 26324 / DOI Handbook）对后缀无最小长度要求、允许纯字母。`_extract_doi` 不再用 `len(suffix)<8 or no digit`，改为**语法有效性**（`_DOI_RE`）与**本论文来源归属**（`_doi_line_is_metadata`）分离；截断改由**折行上下文**判定：仅当行尾 DOI 断在分隔符后或下一行以 `. - _ /` 开头且拼接后匹配更长时才重建跨行 DOI，避免把完整短 DOI 误并（如 `10.1000/182` + 下一行 `2023` 不得变 `10.1000/1822023`）。正例：DOI Handbook 示例 `10.1000/182`/`10.1000/186` 与纯语法合成 `10.1000/xyz123`/`10.1234/abcdefgh` 均接受（注释明确区分“Handbook 示例”与“未声称注册的合成压测值”）；跨行 `10.48550/arXiv.2405` + `.04434` 重建为 `10.48550/arxiv.2405.04434`。
+  - **R4a（高，阻塞）删除任意最小长度/必须数字阈值**：DOI 规范（ISO 26324 / DOI Handbook）对后缀无最小长度要求、允许纯字母。`_extract_doi` 不再用 `len(suffix)<8 or no digit`，改为**语法有效性**（`_DOI_RE`）与**本论文来源归属**（`_doi_line_is_metadata`）分离；截断改由**折行上下文**判定：仅当行尾 DOI 断在分隔符后或下一行以 `. - _ /` 开头且拼接后匹配更长时才重建跨行 DOI，避免把完整短 DOI 误并（如 `10.1000/182` + 下一行 `2023` 不得变 `10.1000/1822023`）。正例：DOI Handbook 示例 `10.1000/182`/`10.1000/186` 与纯语法合成 `10.1000/xyz123`/`10.1234/abcdefgh` 均接受（注释明确区分“Handbook 示例”与“未声称注册的合成压测值”）；跨行 `10.48550/arXiv.2405`+`.04434`、`10.1109/TKDE.2023.1234`+`567890` 经 R5 复测均为 **ambiguous**（`meta.doi` 空 + note），**不是** join 正例（先前表述已更正）。
   - **R4b（中）裸 DOI 仅在整行基本只含 DOI/URL 时接受**：含散文的裸引用（`See 10.1145/… for details.`、`Abstract… See …`）不再成为论文 DOI；显式 `doi:`/`doi.org` 标签仅在带元数据标记（©/copyright/ISSN/ISBN/arXiv/preprint/received/accepted/published/available at）或该行基本只含标签+DOI 时接受；参考文献 `doi:` 标签仍拒绝。新增负例 `test_bare_doi_in_body_prose_is_not_the_paper_doi`。
   - **矩阵回归**（离线，不依赖在线解析）：短/纯字母/长/URL/`doi:`/本论文元数据正例、首页正文裸引用负例、参考 doi: 负例、折行正例与“完整 DOI 行尾不误并”负例。
   - 真实库只读复测 DOI 仍 **0/17**（无误报）；front_single_column 正例仍 `10.1109/tkde.2023.1234567`(high)。保留 R1–R3/B1–B3/M1/L1 行为。
   - 残留不确定性（如实记录）：若 DOI 在字母后断行且下一行以字母续接，无法与下一个词可靠区分，按“无法可靠重建即不接受拼接、保留行内完整候选”处理；这是有意保守，不伪造。
   - **规范来源核实**（2026-09-17，只读联网）：官方 doi.org“What is a DOI?”页面明确 DOI = prefix + suffix（斜杠分隔），并以其官方示例 `10.1000/182`（解析为 https://doi.org/10.1000/182）说明后缀可以很短；未发现“后缀最小长度/必须含数字”的规则，与 reviewer 引用的 ISO 26324 一致。`10.1000/xyz123`/`10.1234/abcdefgh` 仅作语法压测，未声称在线注册。
 - 2026-09-17 复审 R4 整改（报告 `graph2note-136/.scratch/reviews/prr-02-metadata-r4.md`，裁决 CHANGES_REQUESTED）：
-  - **R4e（高，阻塞）折行残片不再以 high 持久化**：`_doi_continuation` 明确三态——`join`（断在分隔符 `/ . - _ :` 后，或续行以数字开头且是无空白 DOI 字符集 token）、`ambiguous`（单 token 但无法与下一个词可靠区分，如 `.pdf`/`Abstract`/字母续接）、`none`。`join` 合并后再匹配（必须更长）；`ambiguous` **不落库**，`meta.doi=""`、confidence low、note `doi-wrap-ambiguous`（不再出现“语法合法即 high 残片”）。例：`DOI: 10.1109/TKDE.2023.1234`+`567890` → `10.1109/tkde.2023.1234567890`；`DOI: 10.1000/abc`+`defgh` → 空 + `doi-wrap-ambiguous`。
+  - **R4e（高，阻塞）折行残片不再以 high 持久化**：`_doi_continuation` 明确三态——`join`（断在分隔符 `/ . - _ :` 后（**已在 R5 取消按数字/标点自动拼接**））、`ambiguous`（单 token 但无法与下一个词可靠区分，如 `.pdf`/`Abstract`/字母续接）、`none`。`join` 合并后再匹配（必须更长）；`ambiguous` **不落库**，`meta.doi=""`、confidence low、note `doi-wrap-ambiguous`（不再出现“语法合法即 high 残片”）。例：`DOI: 10.1109/TKDE.2023.1234`+`567890`、`DOI: 10.1109/TKDE.2023.1234`+`2023`、`DOI: 10.1000/abc`+`defgh`、`DOI: 10.1000/abc-`+`def` 均为空 + `doi-wrap-ambiguous`（R5 更正）。
   - **R4d（中）非续行不拼接**：续行必须是真正的单 token 续接；项目符号/带空白行（`- Note…`、`_ appendix`）不拼接、保留完整 DOI `10.1000/182`；`.pdf` 判为 ambiguous 不落库。
   - **R4c（中）带元数据标记但无 `doi:` 标签的首页自 DOI 被接受**：marker 不再只作用于 labeled 分支；`Digital Object Identifier` 纳入 marker 词表；标记行仅在剩余文本基本无散文（≤1 个词）时接受，避免把“© 行里引用的他人 DOI”误当本论文 DOI（负例已加）。
-  - 新增布局 fixture `tests/fixtures/papers/front_wrapped_doi.txt`（页脚 DOI 数字处折行）与矩阵回归；真实库只读 DOI 仍 0/17；front_single_column 正例仍接受。
+  - 新增布局 fixture `tests/fixtures/papers/front_wrapped_doi.txt`（页脚跨行 DOI → 留空+`doi-wrap-ambiguous`，测试已更正）与参数化矩阵回归；真实库只读 DOI 仍 0/17；front_single_column 正例仍接受。
   - 保留 R1–R4a/R4b/B1–B3/M1/L1 行为。
+
+## Rework R5 — 收敛跨行契约（R4g/R4f）：不自动重建跨行 DOI
+
+审查报告：`graph2note-136/.scratch/reviews/prr-02-metadata-r5.md`（针对 `c70e124`）。
+
+- **R4g（阻塞）** ✅ 取消“下一行以数字开头即 join”：数字 token（年份/页码/编号）不是续行证据。`DOI: 10.1000/182`+`2023`/`182`/`0421`、`10.1109/TKDE.2023.1234`+`567890` 现均为 `meta.doi=""` + `confidence=low` + `doi-wrap-ambiguous`。
+- **R4f（中）** ✅ 取消“句末 `.`/`:` 即 join”。`DOI: 10.1000/182.`+`Abstract|Introduction|References` → 空+note；单独 `DOI: 10.1000/182.` 仍得 `10.1000/182`。
+- **收敛口径**：**完全不自动重建跨行 DOI**（`_doi_continuation` 仅 `ambiguous`/`none`）——纯文本输入无独立布局证据，无法区分“折行续接”与“下一个值”，因此留空并说明，不强拼、不保留已知残片。单行自身元数据 DOI 与有空行/明确段落边界的正常短 DOI 保持。
+- **矩阵**：把 R3–R5 reviewer 复现的矩阵整体参数化纳入 `tests/test_papers_meta.py::test_doi_contract_matrix`——数字年份/页码、字母词、`Abstract`/`Introduction`/`References`、标点、空行/段落边界、引用/参考、短合法 DOI（Handbook 示例与合成）、URL/标签/标记；manual 清空由 `test_papers_meta_import.py` 覆盖。测试期望与实际证据逐行给出。
+- **更正**：先前的 `arXiv.2405`+`.04434` / `TKDE.2023.1234`+`567890`“join 正例”说法与实测不符，已改为 ambiguous；`join` 一词在文档中标注为已取消。
+- **保留**：R4a/R4b/R4c/R4d/R1–R3/B1–B3/M1/L1 未回退；真实库只读 DOI 0/17；front_single_column 正例仍接受。
+- **验证（R5）**：参数化矩阵（数字年份/页码、字母词、章节词、标点、空行/段落边界、引用/参考、短合法 DOI、URL/标签/标记）+ 真实 fixture + 定向全绿；全量离线 pytest **1468 passed / 0 failed / 0 error / 0 skipped**；mutation 有牙（重新启用数字/分隔符自动 join → 矩阵多例红）。manual 清空仍由 `test_manual_clear_is_preserved_by_reextract_and_restart` 覆盖。

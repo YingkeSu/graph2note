@@ -817,12 +817,13 @@ def _is_doi_token(token: str) -> bool:
 def _doi_continuation(line: str, match, next_line: str) -> str:
     """How the next line relates to a DOI that ends ``line``.
 
-    Returns ``"join"`` when the next line is clearly the rest of a wrapped
-    DOI (the break was after a separator, or it continues with a digit),
-    ``"ambiguous"`` when it is a single DOI-charset token we cannot safely
-    distinguish from the next word (``.pdf``, ``Abstract``, ``abcdefgh``), and
-    ``"none"`` otherwise (prose / a label / not at end of line).  Ambiguous
-    fragments are not persisted — syntax validity is not value completeness.
+    Returns ``"ambiguous"`` when the next line is a single DOI-charset token
+    that could be either the rest of a wrapped DOI or the next value (a year,
+    a page, a chapter word, a filename), and ``"none"`` otherwise (a blank
+    line, prose, or the DOI is not at end of line).  Cross-line DOI
+    reconstruction is deliberately **not** attempted: plain text carries no
+    independent layout evidence, so an ambiguous continuation is reported
+    (``doi-wrap-ambiguous``) instead of being joined or persisted truncated.
     """
 
     if match is None or line[match.end():].strip():
@@ -830,11 +831,6 @@ def _doi_continuation(line: str, match, next_line: str) -> str:
     token = (next_line or "").strip()
     if not token or not _is_doi_token(token):
         return "none"
-    previous = line.rstrip()
-    if previous and previous[-1] in "/.-_:":
-        return "join"
-    if token[0].isdigit():
-        return "join"
     return "ambiguous"
 
 
@@ -845,9 +841,11 @@ def _extract_doi(front_text: str) -> tuple[str, str, Optional[str]]:
     on a front-page line that reads as metadata (see
     :func:`_doi_line_is_metadata`); no registry check and no minimum-length or
     digit heuristic is applied (short/alpha-only DOIs such as the DOI
-    Handbook's ``10.1000/182`` are legitimate).  A DOI wrapped across a line
-    break is re-joined when the break is unambiguous; an ambiguous fragment is
-    **not** persisted as a high-confidence value (``note="doi-wrap-ambiguous"``).
+    Handbook's ``10.1000/182`` are legitimate).  A cross-line continuation is
+    not reconstructed from plain text: when a DOI ends a line and the next
+    line is a single DOI-charset token, the value is left empty with
+    ``note="doi-wrap-ambiguous"`` rather than joining a guess or persisting a
+    known fragment.
     """
 
     raw_lines = [line.strip() for line in str(front_text or "").splitlines()]
@@ -862,17 +860,7 @@ def _extract_doi(front_text: str) -> tuple[str, str, Optional[str]]:
             continue
         match = labeled if labeled is not None else bare
         next_line = raw_lines[index + 1] if index + 1 < len(raw_lines) else ""
-        kind = _doi_continuation(line, match, next_line)
-        if kind == "join":
-            joined = line + next_line
-            joined_label = _DOI_LABEL_RE.search(joined)
-            joined_bare = _DOI_RE.search(joined)
-            joined_match = joined_label if joined_label is not None else joined_bare
-            if joined_match is not None and joined_match.end() > match.end():
-                value = (joined_label.group(1) if joined_label is not None
-                         else joined_bare.group(0))
-                return normalize_doi(value), joined[:200], None
-        elif kind == "ambiguous":
+        if _doi_continuation(line, match, next_line) == "ambiguous":
             return "", line[:200], "doi-wrap-ambiguous"
         value = labeled.group(1) if labeled is not None else bare.group(0)
         return normalize_doi(value), line[:200], None
