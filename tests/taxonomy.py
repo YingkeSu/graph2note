@@ -82,6 +82,7 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_papers_meta": "workspace",  # SPW P2（论文元数据/参考文献确定性解析 + citegraph）
     "test_papers_meta_real": "workspace",  # SPW Y4（真实论文元数据/参考文献 regression fixture）
     "test_papers_meta_api": "webapp",  # SPW P2（/api/papers/* + store 契约）
+    "test_papers_meta_import": "ingest",  # SPW PRR/02（导入→元数据→view 接线）
     "test_tags": "workspace",
     "test_autotag": "workspace",  # A1: 识别自动打标签
     "test_tagorg": "workspace",  # auto-organization 01: 标签语义聚类与批量治理
@@ -158,6 +159,7 @@ INTEGRATION_FILES: frozenset[str] = frozenset({
     "test_continuity_api",  # issue 03（API/CLI/UI 契约）
     "test_papers_ingest_api",  # SPW I/P1（论文导入 API 契约）
     "test_papers_meta_api",  # SPW P2（/api/papers/* + store 契约）
+    "test_papers_meta_import",  # SPW PRR/02（导入元数据接线 API/批量补提取）
 })
 
 # 成本：slow = 较重（TestClient 全链 / 全链装配 / 图渲染）

@@ -326,13 +326,14 @@ def test_i4_view_merges_the_two_slots_field_by_field(tmp_path):
             {"level": 2, "title": "1.1 Background", "text": "Background text",
              "page_start": 0, "page_end": 1, "page_label": "p.1–2"},
         ],
-        # references come from the P2 slot, normalised (None -> "")
+        # references come from the P2 slot, normalised (None -> "") plus the
+        # per-entry parse status from references_provenance
         "references": [
             {"raw": "[1] Bahdanau et al. 2015", "title": "Neural Machine Translation",
              "authors": ["Dzmitry Bahdanau"], "year": 2015, "doi": "",
-             "resolved_document_id": "doc-ref-1"},
+             "resolved_document_id": "doc-ref-1", "notes": []},
             {"raw": "[2] Anonymous", "title": "", "authors": [], "year": None,
-             "doi": "", "resolved_document_id": ""},
+             "doi": "", "resolved_document_id": "", "notes": ["unparseable"]},
         ],
     }
 
