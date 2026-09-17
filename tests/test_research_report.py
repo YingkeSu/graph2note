@@ -199,8 +199,11 @@ def test_build_sections_keeps_empty_issues_and_drops_evidence_free_module():
     modes = {k: "model" for k in bodies}
     sections = research_report.build_report_sections(material, bodies, modes, modules)
     keys = [s["key"] for s in sections]
-    # core → enabled modules with content (in order) → appendix
-    assert keys == ["overview", "progress", "issues", "process", "appendix"]
+    # TEMPLATE order: 概览 → 进展 → 可选专题 → 问题与求助 → 附录
+    assert keys == ["overview", "progress", "process", "issues", "appendix"]
+    # continuous numbering over the chapters actually present
+    assert [s["title"] for s in sections] == [
+        "1、本周概览", "2、本周进展", "3、过程记录", "4、问题与求助", "附录：来源材料"]
     issues = next(s for s in sections if s["key"] == "issues")
     assert issues["markdown"] == ""            # 空求助仅标题
     # 无依据实验不出现: an enabled-but-empty 实验结果 module is omitted
@@ -208,6 +211,47 @@ def test_build_sections_keeps_empty_issues_and_drops_evidence_free_module():
     appendix = sections[-1]
     assert appendix["generated_by"] == "deterministic"
     assert appendix["source_document_ids"] == ["doc-a", "doc-b"]
+
+
+def test_optional_module_with_body_but_no_evidence_is_not_rendered():
+    """F2: 有正文但空/无效/不属于当前输入 source_document_ids 的专题不得输出。"""
+    material = digest.assemble_material(_records(), CUSTOM)
+    modules = research_report.normalize_modules([
+        {"key": "experiments", "enabled": True},
+        {"key": "process", "enabled": True},
+    ])
+    bodies = {
+        "overview": {"markdown": "主线。", "source_document_ids": ["doc-a"]},
+        "progress": {"markdown": "进展。", "source_document_ids": ["doc-a"]},
+        "issues": {"markdown": "", "source_document_ids": []},
+        # invented conclusion, no evidence at all
+        "experiments": {"markdown": "实验已完成，准确率 99%。", "source_document_ids": []},
+        # evidence id that is not part of the current material
+        "process": {"markdown": "过程结论。", "source_document_ids": ["ghost-doc"]},
+    }
+    modes = {k: "model" for k in bodies}
+    sections = research_report.build_report_sections(material, bodies, modes, modules)
+    keys = [s["key"] for s in sections]
+    assert "experiments" not in keys and "process" not in keys
+    assert keys == ["overview", "progress", "issues", "appendix"]
+    # numbering closes the gap left by the omitted modules
+    assert [s["title"] for s in sections][:3] == ["1、本周概览", "2、本周进展", "3、问题与求助"]
+
+
+def test_optional_module_with_valid_evidence_is_rendered():
+    material = digest.assemble_material(_records(), CUSTOM)
+    modules = research_report.normalize_modules([{"key": "experiments", "enabled": True}])
+    bodies = {
+        "overview": {"markdown": "主线。", "source_document_ids": ["doc-a"]},
+        "progress": {"markdown": "进展。", "source_document_ids": ["doc-a"]},
+        "issues": {"markdown": "", "source_document_ids": []},
+        "experiments": {"markdown": "- 已知：完成对比实验", "source_document_ids": ["doc-b"]},
+    }
+    sections = research_report.build_report_sections(
+        material, bodies, {k: "model" for k in bodies}, modules)
+    experiment = next(s for s in sections if s["key"] == "experiments")
+    assert experiment["title"] == "3、实验结果"
+    assert experiment["source_document_ids"] == ["doc-b"]
 
 
 def test_render_markdown_lists_sections_and_reporter_without_submit_label():
@@ -244,15 +288,45 @@ def test_same_input_reuses_cache_with_zero_calls(tmp_path):
     assert second["report"]["report_id"] == first["report"]["report_id"]
 
 
-def test_reporter_and_date_changes_do_not_invalidate_cache(tmp_path):
+def test_reporter_and_date_change_rerenders_with_zero_calls(tmp_path):
+    """F1: a display change must return correct meta/content with zero calls,
+    reuse the model result, and leave the older snapshot untouched."""
     planner = RecordingPlanner()
-    research_report.generate_report(
+    first = research_report.generate_report(
         _records(), CUSTOM, storage_dir=tmp_path, planner=planner,
         reporter="张三", report_date="2026-09-13")
     again = research_report.generate_report(
         _records(), CUSTOM, storage_dir=tmp_path, planner=planner,
         reporter="李四", report_date="2026-09-14")
-    assert again["cached"] is True and len(planner.calls) == 1
+    assert len(planner.calls) == 1                      # zero extra model calls
+    assert again["cached"] is True and again["rerendered"] is True
+    assert again["llm_calls"] == 0
+    assert again["meta"]["reporter"] == "李四" and again["meta"]["report_date"] == "2026-09-14"
+    assert "李四" in again["markdown"] and "2026-09-14" in again["markdown"]
+    assert "张三" not in again["markdown"]
+    # a new revision is written; the old snapshot is byte-for-byte unchanged
+    assert again["report"]["report_id"] != first["report"]["report_id"]
+    old = research_report.load_report(tmp_path, first["report"]["report_id"])
+    assert old["meta"]["reporter"] == "张三" and "张三" in old["markdown"]
+    assert len(research_report.list_reports(tmp_path)) == 2
+    # the rerendered revision reuses the same fingerprint (model result reused)
+    assert again["fingerprint"] == first["fingerprint"]
+
+
+def test_range_label_change_rerenders_with_the_new_label(tmp_path):
+    """F6: same dates but a different range kind/label must not return the old label."""
+    planner = RecordingPlanner()
+    first = research_report.generate_report(
+        _records(), CUSTOM, storage_dir=tmp_path, planner=planner)
+    assert "自定义" in first["markdown"]
+    alt = {"kind": "this_week", "from": "2026-09-01", "to": "2026-09-07",
+           "label": "本周（2026-09-01 ~ 2026-09-07）"}
+    again = research_report.generate_report(
+        _records(), alt, storage_dir=tmp_path, planner=planner)
+    assert len(planner.calls) == 1 and again["llm_calls"] == 0
+    assert again["rerendered"] is True
+    assert "本周（2026-09-01 ~ 2026-09-07）" in again["markdown"]
+    assert "自定义" not in again["markdown"]
 
 
 def test_module_change_never_reuses_a_stale_result(tmp_path):
@@ -308,6 +382,8 @@ def test_model_failure_is_a_status_and_persists_nothing(tmp_path):
         _records(), CUSTOM, storage_dir=tmp_path, planner=boom)
     assert result["status"] == "error" and "gateway down" in result["message"]
     assert result["report"] is None
+    # F5: the call was attempted, so the count must match the empty-reply branch
+    assert result["llm_calls"] == 1
     assert research_report.list_reports(tmp_path) == []
 
 
@@ -338,7 +414,7 @@ def test_report_persists_meta_sections_sources_stats_budget(tmp_path):
     assert meta["stats"]["document_count"] == 2                    # 统计可见
     assert meta["budget"]["max_docs"] >= 2                         # 预算可见
     assert [s["key"] for s in meta["sections"]] == ["overview", "progress",
-                                                    "issues", "process", "appendix"]
+                                                    "process", "issues", "appendix"]
     assert meta["sections"][0]["source_document_ids"] == ["doc-a"]
     assert stored["markdown"].startswith("# 科研周报")
     assert "## 附录：来源材料" in stored["markdown"]
@@ -348,7 +424,7 @@ def test_report_persists_meta_sections_sources_stats_budget(tmp_path):
 def test_list_reports_ignores_corrupt_meta(tmp_path):
     planner = RecordingPlanner()
     research_report.generate_report(_records(), CUSTOM, storage_dir=tmp_path, planner=planner)
-    (tmp_path / "reports" / "broken.meta.json").write_text("{not json", encoding="utf-8")
+    (tmp_path / "digests" / "broken.meta.json").write_text("{not json", encoding="utf-8")
     assert len(research_report.list_reports(tmp_path)) == 1
 
 
@@ -366,7 +442,8 @@ def test_api_full_chain_generate_restart_read(tmp_path):
     assert {t["id"] for t in templates.json()["templates"]} == {
         "research_weekly", "weekly_summary"}
 
-    created = client.post("/api/reports", json={
+    created = client.post("/api/digests", json={
+        "template": research_report.TEMPLATE_ID,
         "range": "custom", "from": "2026-09-01", "to": "2026-09-07",
         "modules": [{"key": "process", "enabled": True}],
         "reporter": "张三", "report_date": "2026-09-13",
@@ -374,39 +451,45 @@ def test_api_full_chain_generate_restart_read(tmp_path):
     assert created.status_code == 200
     payload = created.json()
     assert payload["status"] == "ok" and payload["generated"] is True
+    assert payload["template_id"] == research_report.TEMPLATE_ID
     assert [d["document_id"] for d in payload["documents"]] == ["doc-a", "doc-b"]
     assert "content" not in payload["documents"][0]
     assert [s["key"] for s in payload["sections"]] == [
-        "overview", "progress", "issues", "process", "appendix"]
+        "overview", "progress", "process", "issues", "appendix"]
     report_id = payload["report"]["report_id"]
+    assert payload["report"]["digest_id"] == report_id      # shared history id
     assert len(planner.calls) == 1
 
     # restart: a brand new app over the same storage still lists and loads it
     restarted = TestClient(create_app(document_store=store, storage_dir=storage,
                                       digest_planner=planner))
-    listing = restarted.get("/api/reports")
+    listing = restarted.get("/api/digests")
     assert listing.status_code == 200 and listing.json()["total"] == 1
-    assert listing.json()["reports"][0]["report_id"] == report_id
-    one = restarted.get(f"/api/reports/{report_id}")
+    assert listing.json()["digests"][0]["report_id"] == report_id
+    one = restarted.get(f"/api/digests/{report_id}")
     assert one.status_code == 200
     assert one.json()["markdown"] == payload["markdown"]
     assert one.json()["sections"] == payload["sections"]
-    assert restarted.get("/api/reports/nope").status_code == 404
+    assert restarted.get("/api/digests/nope").status_code == 404
 
-    # fingerprint cache over the API: identical POST makes no new call
-    again = client.post("/api/reports", json={
+    # fingerprint cache over the shared boundary: identical POST makes no new call
+    again = client.post("/api/digests", json={
+        "template": research_report.TEMPLATE_ID,
         "range": "custom", "from": "2026-09-01", "to": "2026-09-07",
         "modules": [{"key": "process", "enabled": True}],
+        "reporter": "张三", "report_date": "2026-09-13",
     })
     assert again.json()["cached"] is True and len(planner.calls) == 1
 
 
 def test_api_rejects_bad_range_and_modules(tmp_path):
     _store, _storage, client = _app(tmp_path, RecordingPlanner())
-    bad_range = client.post("/api/reports", json={
+    bad_range = client.post("/api/digests", json={
+        "template": research_report.TEMPLATE_ID,
         "range": "custom", "from": "2026-09-07", "to": "2026-09-01"})
     assert bad_range.status_code == 422
-    bad_module = client.post("/api/reports", json={
+    bad_module = client.post("/api/digests", json={
+        "template": research_report.TEMPLATE_ID,
         "range": "custom", "from": "2026-09-01", "to": "2026-09-07",
         "modules": [{"key": "issues"}]})
     assert bad_module.status_code == 422
@@ -422,17 +505,19 @@ def test_api_reports_model_failure_as_502(tmp_path):
           metadata={"document_time": _slot("2026-09-02", "manual")})
     client = TestClient(create_app(document_store=store, storage_dir=storage,
                                    digest_planner=boom))
-    failed = client.post("/api/reports", json={
+    failed = client.post("/api/digests", json={
+        "template": research_report.TEMPLATE_ID,
         "range": "custom", "from": "2026-09-01", "to": "2026-09-07"})
     assert failed.status_code == 502
     assert "model down" in failed.json()["detail"]
-    assert client.get("/api/reports").json()["total"] == 0
+    assert client.get("/api/digests").json()["total"] == 0
 
 
 def test_api_empty_range_is_explicit_and_offline(tmp_path):
     planner = RecordingPlanner()
     _store, _storage, client = _app(tmp_path, planner)
-    response = client.post("/api/reports", json={
+    response = client.post("/api/digests", json={
+        "template": research_report.TEMPLATE_ID,
         "range": "custom", "from": "2019-01-01", "to": "2019-01-07"})
     assert response.status_code == 200
     payload = response.json()
@@ -455,5 +540,15 @@ def test_legacy_digest_endpoint_still_works_alongside_reports(tmp_path):
     assert one.status_code == 200
     assert [s["key"] for s in one.json()["meta"]["sections"]] == [
         k for k, _ in digest.SECTION_DEFS]
-    # the research endpoints stay empty — the two stores never mix
-    assert client.get("/api/reports").json()["total"] == 0
+    # one shared history: a research report joins the same list/detail boundary
+    research = client.post("/api/digests", json={
+        "template": research_report.TEMPLATE_ID,
+        "range": "custom", "from": "2026-09-01", "to": "2026-09-07"}).json()
+    research_id = research["report"]["report_id"]
+    listing = client.get("/api/digests").json()
+    assert listing["total"] == 2
+    assert {m["digest_id"] for m in listing["digests"]} == {digest_id, research_id}
+    assert client.get(f"/api/digests/{research_id}").json()["meta"]["template_id"] \
+        == research_report.TEMPLATE_ID
+    # the legacy detail shape stays unchanged (no sections key for legacy)
+    assert "sections" not in client.get(f"/api/digests/{digest_id}").json()

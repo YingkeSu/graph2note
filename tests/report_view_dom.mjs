@@ -218,7 +218,6 @@ const el = (selector) => documentShim.querySelector(selector);
 
 const calls = [];
 let reportList = [];
-let digestList = [];
 let researchPost = null;
 let digestPost = null;
 let listFails = false;
@@ -259,28 +258,29 @@ globalThis.fetch = async (url, opts = {}) => {
   if (route === "/api/report-templates" && method === "GET") {
     return jsonResponse(TEMPLATES);
   }
-  if (route === "/api/reports" && method === "GET") {
-    if (listFails) return jsonResponse({ detail: "历史读取失败" }, 500);
-    return jsonResponse({ reports: reportList, total: reportList.length });
-  }
-  if (route === "/api/reports" && method === "POST") {
-    if (!researchPost) throw new Error("no POST handler configured");
-    return researchPost();
-  }
-  const singleReport = /^\/api\/reports\/(.+)$/.exec(route);
-  if (singleReport && method === "GET") {
-    return jsonResponse({ meta: RESEARCH_META, markdown: RESEARCH_MARKDOWN, sections: RESEARCH_META.sections });
-  }
   if (route === "/api/digests" && method === "GET") {
-    return jsonResponse({ digests: digestList, total: digestList.length });
+    if (listFails) return jsonResponse({ detail: "历史读取失败" }, 500);
+    return jsonResponse({ digests: reportList, total: reportList.length });
   }
   if (route === "/api/digests" && method === "POST") {
-    if (!digestPost) throw new Error("no POST handler configured");
+    const body = opts.body ? JSON.parse(opts.body) : {};
+    if (body.template === "research_weekly") {
+      if (!researchPost) throw new Error("no research POST handler configured");
+      return researchPost();
+    }
+    if (!digestPost) throw new Error("no legacy POST handler configured");
     return digestPost();
   }
   const singleDigest = /^\/api\/digests\/(.+)$/.exec(route);
   if (singleDigest && method === "GET") {
-    return jsonResponse({ meta: LEGACY_META, markdown: LEGACY_MARKDOWN, sections: LEGACY_META.sections });
+    const id = decodeURIComponent(singleDigest[1]);
+    if (id === RESEARCH_META.report_id) {
+      return jsonResponse({ meta: RESEARCH_META, markdown: RESEARCH_MARKDOWN, sections: RESEARCH_META.sections });
+    }
+    if (id === LEGACY_META.digest_id) {
+      return jsonResponse({ meta: LEGACY_META, markdown: LEGACY_MARKDOWN });
+    }
+    return jsonResponse({ detail: "小结不存在。" }, 404);
   }
   throw new Error(`unexpected fetch ${method} ${route}`);
 };
@@ -314,10 +314,10 @@ const RESEARCH_META = {
   },
   budget: { max_docs: 60, topic_floor: 2, total: 3, kept: 2, omitted: 1 },
   sections: [
-    { key: "overview", title: "本周概览", source_document_ids: ["doc-a"], generated_by: "model", chars: 20 },
-    { key: "progress", title: "本周进展", source_document_ids: ["doc-a", "doc-b"], generated_by: "model", chars: 30 },
-    { key: "issues", title: "问题与求助", source_document_ids: [], generated_by: "model", chars: 0 },
-    { key: "process", title: "过程记录", source_document_ids: ["doc-b"], generated_by: "model", chars: 12 },
+    { key: "overview", title: "1、本周概览", source_document_ids: ["doc-a"], generated_by: "model", chars: 20 },
+    { key: "progress", title: "2、本周进展", source_document_ids: ["doc-a", "doc-b"], generated_by: "model", chars: 30 },
+    { key: "process", title: "3、过程记录", source_document_ids: ["doc-b"], generated_by: "model", chars: 12 },
+    { key: "issues", title: "4、问题与求助", source_document_ids: [], generated_by: "model", chars: 0 },
     { key: "appendix", title: "附录：来源材料", source_document_ids: ["doc-a", "doc-b", "doc-zzz"], generated_by: "deterministic", chars: 40 },
   ],
 };
@@ -327,18 +327,18 @@ const RESEARCH_MARKDOWN = [
   "时间范围：上周（2026-09-08 ~ 2026-09-14）",
   "汇报人：张三　　2026-09-13",
   "",
-  "## 本周概览",
+  "## 1、本周概览",
   "主线：编码推导。",
   "",
-  "## 本周进展",
+  "## 2、本周进展",
   "（一）信道编码",
   "- 已知：完成步骤",
   "",
-  "## 问题与求助",
-  "_（本节暂无内容）_",
-  "",
-  "## 过程记录",
+  "## 3、过程记录",
   "记录过程与踩坑。",
+  "",
+  "## 4、问题与求助",
+  "_（本节暂无内容）_",
   "",
   "## 附录：来源材料",
   "- [线性代数讲义](#doc/doc-a)",
@@ -375,9 +375,9 @@ assert.strictEqual(reportView.reportSectionAnchor("weird key!"), "report-section
 
 const parsed = reportView.splitReportMarkdown(RESEARCH_MARKDOWN, RESEARCH_META.sections);
 assert.deepStrictEqual(parsed.sections.map((s) => s.key),
-  ["overview", "progress", "issues", "process", "appendix"], "markdown order follows meta.sections");
+  ["overview", "progress", "process", "issues", "appendix"], "markdown order follows meta.sections");
 assert.ok(parsed.lead.includes("汇报人：张三"), "lead keeps the reporter line");
-assert.strictEqual(parsed.sections[2].body, "_（本节暂无内容）_", "title-only issues section still renders");
+assert.strictEqual(parsed.sections[3].body, "_（本节暂无内容）_", "title-only issues section still renders");
 
 const merged = reportView.normalizeModuleConfig(TEMPLATES.modules, [
   { key: "process", enabled: true },
@@ -437,8 +437,9 @@ researchPost = () => jsonResponse({
 reportList = [RESEARCH_META];
 el("#report-generate").click();
 await delay(30);
-const post = calls.filter((c) => c.route === "/api/reports" && c.method === "POST").pop();
-assert.ok(post, "generate posts to /api/reports");
+const post = calls.filter((c) => c.route === "/api/digests" && c.method === "POST").pop();
+assert.ok(post, "generate posts to /api/digests");
+assert.strictEqual(post.body.template, "research_weekly", "research template is sent");
 assert.deepStrictEqual(post.body.modules.map((m) => `${m.key}:${m.enabled}`),
   ["experiments:true", "process:false", "method:false"], "the exact module config is sent");
 
@@ -447,9 +448,9 @@ assert.deepStrictEqual(post.body.modules.map((m) => `${m.key}:${m.enabled}`),
 const sections = () => viewerContent.querySelectorAll("section.report-section");
 assert.strictEqual(sections().length, 5, "five sections rendered");
 assert.deepStrictEqual(sections().map((s) => s.getAttribute("data-section")),
-  ["overview", "progress", "issues", "process", "appendix"]);
+  ["overview", "progress", "process", "issues", "appendix"]);
 const sectionByKey = (key) => viewerContent.querySelector(`#report-section-${key}`);
-assert.ok(sectionByKey("progress").children[0].textContent === "本周进展");
+assert.ok(sectionByKey("progress").children[0].textContent === "2、本周进展");
 assert.ok(sectionByKey("progress").querySelector(".report-section-body").innerHTML.includes("信道编码"), "section body markdown rendered");
 assert.strictEqual(sectionByKey("appendix").querySelector(".report-section-title").textContent, "附录：来源材料", "appendix rendered");
 assert.ok(el("#report-viewer-meta").textContent.includes("生成方式：模型分节"), "llm mode visible");
@@ -457,7 +458,7 @@ assert.ok(viewerContent.querySelector(".report-stats"), "stats strip rendered");
 assert.ok(viewerContent.querySelector(".report-budget-note").textContent.includes("材料预算"), "budget visible");
 
 const navLabels = viewerContent.querySelectorAll("button.report-nav-link").map((b) => b.textContent);
-assert.deepStrictEqual(navLabels, ["本周概览", "本周进展", "问题与求助", "过程记录", "附录：来源材料"]);
+assert.deepStrictEqual(navLabels, ["1、本周概览", "2、本周进展", "3、过程记录", "4、问题与求助", "附录：来源材料"]);
 viewerContent.querySelectorAll("button.report-nav-link")[1].click();
 assert.strictEqual(sectionByKey("progress").scrolled, 1, "nav scrolls to the section");
 
@@ -513,7 +514,7 @@ el("#report-template").value = "weekly_summary";
 el("#report-template").dispatch("change", { target: el("#report-template") });
 await delay(10);
 assert.strictEqual(el("#report-modules").classList.contains("hidden"), true, "legacy template hides 专题");
-digestList = [LEGACY_META];
+reportList = [LEGACY_META];
 await reportView.renderReportView();
 const legacyHistory = el("#report-history").querySelectorAll("button.report-item");
 assert.strictEqual(legacyHistory.length, 1, "legacy history comes from /api/digests");
@@ -527,6 +528,7 @@ el("#report-generate").click();
 await delay(30);
 const legacyPost = calls.filter((c) => c.route === "/api/digests" && c.method === "POST").pop();
 assert.ok(legacyPost, "legacy template posts to /api/digests");
+assert.strictEqual(legacyPost.body.template, "weekly_summary", "legacy template is sent");
 assert.strictEqual(legacyPost.body.modules, undefined, "legacy request carries no module config");
 assert.ok(viewerContent.querySelector(".report-section-body").innerHTML.includes("旧版整篇渲染正文"), "legacy markdown rendered whole");
 

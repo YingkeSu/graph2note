@@ -2,9 +2,10 @@
 
 This module is the *research* template layered on top of the existing weekly
 digest primitives (:mod:`graph2note.digest`).  It deliberately does **not**
-change the legacy four-section digest: the legacy path keeps its own schema,
-cache and ``/api/digests`` endpoints, while a research report is a distinct,
-independently versioned artifact.
+change the legacy four-section digest schema; instead it shares the **same
+create/list/detail boundary and the same on-disk history** (``digests/``) so the
+two templates cannot drift into parallel stores (PRD: 复用现有周报创建/列表/
+详情边界，避免平行存储各自漂移).
 
 Design guarantees (issue 01 acceptance criteria):
 
@@ -12,26 +13,29 @@ Design guarantees (issue 01 acceptance criteria):
   the research template; ``SCHEMA_VERSION`` / ``PROMPT_VERSION`` version the
   report schema and the model prompt separately.  ``templates_payload`` exposes
   both the research template and the legacy ``weekly_summary`` template.
-- **Core sections + optional 专题.**  Every research report renders 本周概览 /
-  本周进展 / 问题与求助 in a fixed order, then the *enabled* optional modules in
-  the user's configured order, then a deterministic 附录.  The default module
-  catalog (实验结果 / 过程记录 / 方法备忘) is **disabled by default**, so an
-  evidence-free week never shows a fabricated 实验结果 section.  An enabled
-  module whose model body is empty is omitted too; 问题与求助 keeps its heading
-  even when empty ("空求助仅标题").
+- **TEMPLATE order + continuous numbering.**  Chapters render as
+  概览 → 进展 → 可选专题 → 问题与求助, then the deterministic 附录; numbering is
+  computed over the sections actually present (an omitted 专题 closes the gap).
+- **Core sections + optional 专题.**  The default module catalog is disabled, so
+  an evidence-free week never shows a fabricated 实验结果 section.  An enabled
+  optional 专题 renders only when it has a body **and** at least one evidence
+  source drawn from the current material; a body with no (or dangling) evidence
+  is dropped rather than presented as an evidenced result.  问题与求助 keeps its
+  heading even when empty ("空求助仅标题").
 - **Deterministic statistics + material budget.**  Counts, sources and the
   material budget come from :func:`graph2note.digest.assemble_material`; the
   model never produces numbers.
 - **Cache key covers every generation input.**  The report fingerprint hashes
   the template id/version, schema/prompt version, the normalized module config
   (keys, titles, enabled flag, order) and the material fingerprint.  A pure
-  layout/reporter/date change therefore reuses the cache with **zero** model
-  calls, while a template or module change can never reuse a stale result.  The
-  legacy digest cache lives in a different directory with a different
-  fingerprint and is never consulted here.
+  display change (汇报人 / 日期 / range 标签) does **not** invalidate the model
+  result, but it must never return stale content: the report persists its full
+  structured section bodies and re-renders from them with **zero** model calls,
+  writing a new revision while the older snapshot stays untouched.
 - **Empty material never calls the model.**
-- **Persisted history.**  Reports are stored as ``<storage>/reports/<id>.md`` +
-  ``<id>.meta.json`` and survive a process restart.
+- **Persisted history.**  Reports live in the shared ``<storage>/digests/``
+  directory as ``<id>.md`` + ``<id>.meta.json`` (+ ``<id>.report.json`` bodies)
+  and survive a process restart; legacy digest files are never rewritten.
 
 Nothing here talks to the network unless the default (live) planner is used;
 tests inject a recorded golden planner.
@@ -63,8 +67,8 @@ PROMPT_VERSION = "research-report-sections-1"
 REPORT_TITLE = "# 科研周报"
 
 # The legacy four-section weekly summary stays available as a template.  Its
-# version is the digest schema version; the reading UI just links to the digest
-# endpoints, this module only advertises it.
+# version is the digest schema version; both templates share the digest
+# endpoints and the ``digests/`` history.
 LEGACY_TEMPLATE_ID = "weekly_summary"
 LEGACY_TEMPLATE_LABEL = "旧版四节小结"
 
@@ -79,13 +83,15 @@ SECTION_PROGRESS = "progress"
 SECTION_ISSUES = "issues"
 SECTION_APPENDIX = "appendix"
 
-# Fixed-order core sections.  概览 / 进展 / 问题与求助 always render.
+# Fixed core chapters (TEMPLATE order): 概览 → 进展 → [可选专题] → 问题与求助.
+SECTION_OVERVIEW_KEY = SECTION_OVERVIEW
 CORE_SECTIONS: tuple[tuple[str, str], ...] = (
     (SECTION_OVERVIEW, "本周概览"),
     (SECTION_PROGRESS, "本周进展"),
     (SECTION_ISSUES, "问题与求助"),
 )
 CORE_TITLES = dict(CORE_SECTIONS)
+# Narrative sections the model fills (概览 / 进展 / 问题与求助); 附录 is deterministic.
 CORE_NARRATIVE_SECTIONS: tuple[str, ...] = (SECTION_OVERVIEW, SECTION_PROGRESS, SECTION_ISSUES)
 APPENDIX_TITLE = "附录：来源材料"
 
@@ -117,6 +123,10 @@ DEFAULT_MODULES: tuple[dict[str, Any], ...] = tuple(
     {"key": m["key"], "title": m["title"], "enabled": False} for m in MODULE_CATALOG
 )
 
+#: Suffix of the structured section-body sidecar (kept separate from the
+#: digest section cache ``<id>.sections.json`` used by the legacy template).
+BODIES_SUFFIX = ".report.json"
+
 
 class ReportError(ValueError):
     """Raised for an invalid report request (range / module config)."""
@@ -142,6 +152,7 @@ def templates_payload() -> dict[str, Any]:
                 "schema_version": SCHEMA_VERSION,
                 "prompt_version": PROMPT_VERSION,
                 "supports_modules": True,
+                "endpoint": "/api/digests",
                 "sections": [
                     {"key": key, "title": title, "optional": False}
                     for key, title in CORE_SECTIONS
@@ -241,8 +252,10 @@ def compute_report_fingerprint(
 ) -> str:
     """SHA-256 over template/schema/prompt versions, module config and material.
 
-    Reporter / report date are intentionally **not** part of the payload: they
-    are presentational and must not trigger a new model call.
+    Reporter / report date / range kind+label are intentionally **not** part of
+    the payload: they are presentational and must not trigger a new model call
+    (they are handled by a zero-call re-render on a cache hit, see
+    :func:`generate_report`).
     """
     payload = {
         "schema": SCHEMA_VERSION,
@@ -270,6 +283,24 @@ def compute_report_fingerprint(
         ],
     }
     return hashlib.sha256(_canonical(payload).encode("utf-8")).hexdigest()
+
+
+def _display_matches(
+    meta: dict[str, Any],
+    range_spec: dict[str, Any],
+    reporter: str | None,
+    report_date: str | None,
+) -> bool:
+    """Whether a cached revision already carries the requested display fields."""
+    stored_range = meta.get("range") if isinstance(meta.get("range"), dict) else {}
+    for key in ("kind", "from", "to", "label"):
+        if str(stored_range.get(key) or "") != str(range_spec.get(key) or ""):
+            return False
+    if (meta.get("reporter") or None) != (reporter or None):
+        return False
+    if (meta.get("report_date") or None) != (report_date or None):
+        return False
+    return True
 
 
 # ---------------------------------------------------------------------------
@@ -300,10 +331,10 @@ def _material_block(documents: list[dict[str, Any]]) -> list[str]:
 
 
 def requested_sections(modules: list[dict[str, Any]]) -> list[str]:
-    """Core narrative sections + enabled module keys, in render order."""
-    return list(CORE_NARRATIVE_SECTIONS) + [
+    """Core narrative sections + enabled module keys (TEMPLATE render order)."""
+    return [SECTION_OVERVIEW, SECTION_PROGRESS] + [
         str(m["key"]) for m in enabled_modules(modules)
-    ]
+    ] + [SECTION_ISSUES]
 
 
 def build_report_prompt(
@@ -337,7 +368,7 @@ def build_report_prompt(
         "5. 问题与求助可以留空字符串，标题由系统保留。",
         "6. 不要输出周报标题、不要输出「来源」清单；Markdown 标题从三级（###）开始。",
         "7. source_document_ids 只能取自材料的 document id，逐条列出本节实际依据的文档；",
-        "   没有把握时给空列表。",
+        "   没有把握时给空列表。没有来源的专题不会被展示。",
         "8. 只输出上面 JSON 里出现的分节，不要新增分节。",
         "",
         f"时间范围：{range_spec.get('label') or range_spec.get('from')}",
@@ -380,9 +411,19 @@ def _section(key: str, title: str, body: str, ids: list[str], generated_by: str)
         "key": key,
         "title": title,
         "markdown": body,
-        "source_document_ids": ids,
+        "source_document_ids": list(ids),
         "generated_by": generated_by,
     }
+
+
+def _evidence_ids(body: dict[str, Any], allowed: set[str]) -> list[str]:
+    """Source ids of one section that actually belong to the current material."""
+    out: list[str] = []
+    for raw in body.get("source_document_ids") or []:
+        text = str(raw)
+        if text and text in allowed and text not in out:
+            out.append(text)
+    return out
 
 
 def render_appendix_body(documents: list[dict[str, Any]]) -> tuple[str, list[str]]:
@@ -401,6 +442,54 @@ def render_appendix_body(documents: list[dict[str, Any]]) -> tuple[str, list[str
     return "\n".join(lines), ids
 
 
+def _numbered_entries(
+    material: dict[str, Any],
+    bodies: dict[str, dict[str, Any]],
+    modes: dict[str, str],
+    modules: list[dict[str, Any]],
+) -> list[tuple[str, str, str, list[str], str]]:
+    """The numbered chapters in TEMPLATE order (概览 → 进展 → 专题 → 问题与求助).
+
+    Returns ``(key, base_title, body, evidence_ids, generated_by)`` tuples; the
+    caller adds the continuous number.  An enabled optional 专题 is included
+    only when it has a non-empty body **and** at least one evidence id from the
+    current material (无依据专题不出现).
+    """
+    allowed = {str(d.get("document_id")) for d in material.get("documents") or []}
+    entries: list[tuple[str, str, str, list[str], str]] = []
+
+    overview = bodies.get(SECTION_OVERVIEW) or {}
+    entries.append((
+        SECTION_OVERVIEW, CORE_TITLES[SECTION_OVERVIEW],
+        (overview.get("markdown") or "").strip() or "（本期没有可归纳的内容）",
+        _evidence_ids(overview, allowed), modes.get(SECTION_OVERVIEW, "empty"),
+    ))
+
+    progress = bodies.get(SECTION_PROGRESS) or {}
+    entries.append((
+        SECTION_PROGRESS, CORE_TITLES[SECTION_PROGRESS],
+        (progress.get("markdown") or "").strip() or "（本期没有可归纳的进展）",
+        _evidence_ids(progress, allowed), modes.get(SECTION_PROGRESS, "empty"),
+    ))
+
+    for module in enabled_modules(modules):
+        key = str(module["key"])
+        body = bodies.get(key) or {}
+        body_text = (body.get("markdown") or "").strip()
+        ids = _evidence_ids(body, allowed)
+        # 来源存在是必要条件：有正文但无有效来源的专题不得作为有依据成果输出。
+        if not body_text or not ids:
+            continue
+        entries.append((key, str(module["title"]), body_text, ids, modes.get(key, "model")))
+
+    issues = bodies.get(SECTION_ISSUES) or {}
+    entries.append((
+        SECTION_ISSUES, CORE_TITLES[SECTION_ISSUES], (issues.get("markdown") or "").strip(),
+        _evidence_ids(issues, allowed), modes.get(SECTION_ISSUES, "empty"),
+    ))
+    return entries
+
+
 def build_report_sections(
     material: dict[str, Any],
     bodies: dict[str, dict[str, Any]],
@@ -409,44 +498,11 @@ def build_report_sections(
 ) -> list[dict[str, Any]]:
     """Assemble the ordered research sections from bodies + deterministic parts."""
     sections: list[dict[str, Any]] = []
-
-    overview = bodies.get(SECTION_OVERVIEW) or {}
-    overview_body = (overview.get("markdown") or "").strip() or "（本期没有可归纳的内容）"
-    sections.append(_section(
-        SECTION_OVERVIEW, CORE_TITLES[SECTION_OVERVIEW], overview_body,
-        list(overview.get("source_document_ids") or []),
-        modes.get(SECTION_OVERVIEW, "empty"),
-    ))
-
-    progress = bodies.get(SECTION_PROGRESS) or {}
-    progress_body = (progress.get("markdown") or "").strip() or "（本期没有可归纳的进展）"
-    sections.append(_section(
-        SECTION_PROGRESS, CORE_TITLES[SECTION_PROGRESS], progress_body,
-        list(progress.get("source_document_ids") or []),
-        modes.get(SECTION_PROGRESS, "empty"),
-    ))
-
-    # 问题与求助 may be title-only: keep the section even when the model body is empty.
-    issues = bodies.get(SECTION_ISSUES) or {}
-    sections.append(_section(
-        SECTION_ISSUES, CORE_TITLES[SECTION_ISSUES], (issues.get("markdown") or "").strip(),
-        list(issues.get("source_document_ids") or []),
-        modes.get(SECTION_ISSUES, "empty"),
-    ))
-
-    # Optional 专题: only enabled modules, and only when they carry a body
-    # (无依据实验不出现 — an empty module is omitted, never padded).
-    for module in enabled_modules(modules):
-        key = str(module["key"])
-        body = bodies.get(key) or {}
-        body_text = (body.get("markdown") or "").strip()
-        if not body_text:
-            continue
-        sections.append(_section(
-            key, str(module["title"]), body_text,
-            list(body.get("source_document_ids") or []),
-            modes.get(key, "model"),
-        ))
+    # Continuous numbering: computed over the chapters actually present so an
+    # omitted 专题 closes the gap (TEMPLATE: 编号随可选章节连续计算).
+    for index, (key, base, body, ids, generated_by) in enumerate(
+            _numbered_entries(material, bodies, modes, modules), start=1):
+        sections.append(_section(key, f"{index}、{base}", body, ids, generated_by))
 
     appendix_body, appendix_ids = render_appendix_body(material.get("documents") or [])
     sections.append(_section(
@@ -496,13 +552,32 @@ def public_sections(sections: list[dict[str, Any]]) -> list[dict[str, Any]]:
     ]
 
 
+def _sections_from_bodies(bodies: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Rebuild the section list from a persisted body sidecar (order kept)."""
+    out: list[dict[str, Any]] = []
+    for item in bodies or []:
+        if not isinstance(item, dict) or not item.get("key"):
+            continue
+        out.append({
+            "key": str(item["key"]),
+            "title": str(item.get("title") or item["key"]),
+            "markdown": str(item.get("markdown") or ""),
+            "source_document_ids": [
+                str(i) for i in (item.get("source_document_ids") or [])
+            ],
+            "generated_by": item.get("generated_by"),
+        })
+    return out
+
+
 # ---------------------------------------------------------------------------
-# Persistence (the only IO in this module)
+# Persistence (shared ``digests/`` history; the only IO in this module)
 # ---------------------------------------------------------------------------
 
 
 def reports_dir(storage_dir: str | Path) -> Path:
-    return Path(storage_dir) / "reports"
+    """The shared report/digest history directory (single store, no parallel)."""
+    return digest.digests_dir(storage_dir)
 
 
 def _meta_path(storage_dir: str | Path, report_id: str) -> Path:
@@ -513,8 +588,12 @@ def _markdown_path(storage_dir: str | Path, report_id: str) -> Path:
     return reports_dir(storage_dir) / f"{report_id}.md"
 
 
+def _bodies_path(storage_dir: str | Path, report_id: str) -> Path:
+    return reports_dir(storage_dir) / f"{report_id}{BODIES_SUFFIX}"
+
+
 def list_reports(storage_dir: str | Path) -> list[dict[str, Any]]:
-    """All persisted research report metas, newest first (restart-safe)."""
+    """All persisted *research* report metas, newest first (restart-safe)."""
     directory = reports_dir(storage_dir)
     if not directory.is_dir():
         return []
@@ -524,17 +603,26 @@ def list_reports(storage_dir: str | Path) -> list[dict[str, Any]]:
             meta = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, ValueError, TypeError):
             continue
-        if isinstance(meta, dict) and meta.get("report_id"):
+        if not isinstance(meta, dict):
+            continue
+        if str(meta.get("template_id") or "") != TEMPLATE_ID:
+            continue
+        if meta.get("report_id") or meta.get("digest_id"):
             metas.append(meta)
     metas.sort(
-        key=lambda meta: (str(meta.get("created_at") or ""), meta["report_id"]),
+        key=lambda meta: (str(meta.get("created_at") or ""),
+                          str(meta.get("report_id") or meta.get("digest_id"))),
         reverse=True,
     )
     return metas
 
 
+def _report_id_of(meta: dict[str, Any]) -> str:
+    return str(meta.get("report_id") or meta.get("digest_id") or "")
+
+
 def load_report(storage_dir: str | Path, report_id: str) -> dict[str, Any] | None:
-    """Return ``{meta, markdown, sections}`` for one report, or ``None``."""
+    """Return ``{meta, markdown, sections, bodies}`` for one report, or ``None``."""
     meta_path = _meta_path(storage_dir, report_id)
     if not meta_path.is_file():
         return None
@@ -546,11 +634,45 @@ def load_report(storage_dir: str | Path, report_id: str) -> dict[str, Any] | Non
         return None
     markdown_path = _markdown_path(storage_dir, report_id)
     markdown = markdown_path.read_text(encoding="utf-8") if markdown_path.is_file() else ""
-    return {"meta": meta, "markdown": markdown, "sections": meta.get("sections") or []}
+    return {
+        "meta": meta,
+        "markdown": markdown,
+        "sections": meta.get("sections") or [],
+        "bodies": load_section_bodies(storage_dir, report_id),
+    }
+
+
+def load_section_bodies(storage_dir: str | Path, report_id: str) -> list[dict[str, Any]]:
+    """Structured section bodies of one report (``[]`` when absent/corrupt)."""
+    path = _bodies_path(storage_dir, report_id)
+    if not path.is_file():
+        return []
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return []
+    sections = payload.get("sections") if isinstance(payload, dict) else None
+    return [item for item in (sections or []) if isinstance(item, dict)]
+
+
+def save_section_bodies(
+    storage_dir: str | Path,
+    report_id: str,
+    sections: list[dict[str, Any]],
+) -> Path:
+    """Persist the structured section bodies so display changes can re-render."""
+    path = _bodies_path(storage_dir, report_id)
+    reports_dir(storage_dir).mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"report_id": report_id, "sections": sections},
+                   ensure_ascii=False, indent=2),
+        encoding="utf-8",
+    )
+    return path
 
 
 def find_cached_report(storage_dir: str | Path, fingerprint: str) -> dict[str, Any] | None:
-    """Newest persisted report with the same fingerprint (budget cache)."""
+    """Newest persisted research report with the same fingerprint (budget cache)."""
     if not fingerprint:
         return None
     for meta in list_reports(storage_dir):
@@ -560,7 +682,7 @@ def find_cached_report(storage_dir: str | Path, fingerprint: str) -> dict[str, A
 
 
 def _new_report_id(storage_dir: str | Path, created_at: str, fingerprint: str) -> str:
-    base = "rp-" + (re.sub(r"[^0-9]", "", created_at) or "0")
+    base = "dg-" + (re.sub(r"[^0-9]", "", created_at) or "0")
     report_id = f"{base}-{fingerprint[:8]}"
     suffix = 1
     while _meta_path(storage_dir, report_id).exists():
@@ -589,7 +711,12 @@ def save_report(
     llm_calls: int,
     created_at: str | None = None,
 ) -> dict[str, Any]:
-    """Write ``<id>.md`` + ``<id>.meta.json`` and return the meta."""
+    """Write ``<id>.md`` + ``<id>.meta.json`` (+ bodies) and return the meta.
+
+    Writes into the shared ``digests/`` directory and carries both ``report_id``
+    and ``digest_id`` so the digest list/detail boundary (and the legacy
+    template) can see it without a parallel store.
+    """
     directory = reports_dir(storage_dir)
     directory.mkdir(parents=True, exist_ok=True)
     created_at = created_at or datetime.now().isoformat(timespec="seconds")
@@ -602,6 +729,7 @@ def save_report(
         "template_version": TEMPLATE_VERSION,
         "prompt_version": PROMPT_VERSION,
         "report_id": report_id,
+        "digest_id": report_id,
         "created_at": created_at,
         "range": range_spec,
         "fingerprint": fingerprint,
@@ -638,6 +766,7 @@ def save_report(
     _meta_path(storage_dir, report_id).write_text(
         json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8"
     )
+    save_section_bodies(storage_dir, report_id, sections)
     return meta
 
 
@@ -648,6 +777,36 @@ def save_report(
 
 def _normalize_reply(reply: Any) -> tuple[str, dict, str | None, str | None]:
     return digest._normalize_reply(reply)
+
+
+def _cached_result(
+    storage_dir: str | Path,
+    meta: dict[str, Any],
+    *,
+    stored: dict[str, Any],
+    range_spec: dict[str, Any],
+    modules: list[dict[str, Any]],
+    public_documents: list[dict[str, Any]],
+    rerendered: bool,
+    message: str,
+) -> dict[str, Any]:
+    return {
+        "status": "ok",
+        "generated": False,
+        "cached": True,
+        "rerendered": rerendered,
+        "llm_calls": 0,
+        "range": meta.get("range") or range_spec,
+        "fingerprint": meta.get("fingerprint") or "",
+        "documents": public_documents,
+        "sections": meta.get("sections") or stored.get("sections") or [],
+        "modules": modules,
+        "message": message,
+        "template_id": TEMPLATE_ID,
+        "report": meta,
+        "meta": meta,
+        "markdown": stored.get("markdown") or "",
+    }
 
 
 def generate_report(
@@ -667,18 +826,28 @@ def generate_report(
 ) -> dict[str, Any]:
     """Generate (or fingerprint-cache reuse) one research weekly report.
 
-    Returns ``{status, generated, cached, llm_calls, range, fingerprint,
-    documents, sections, modules, message, report, meta, markdown}``.
+    Cache ladder: a matching fingerprint **and** display fields reuse the stored
+    revision with zero calls; a matching fingerprint with changed display fields
+    (汇报人 / 日期 / range 标签) re-renders from the persisted section bodies with
+    zero calls and writes a new revision while the old snapshot stays untouched;
+    otherwise one model call fills every section.
+
+    Returns ``{status, generated, cached, rerendered, llm_calls, range,
+    fingerprint, documents, sections, modules, message, report, meta, markdown}``.
     ``status`` is one of ``ok`` / ``empty`` / ``error``.
     """
     modules_norm = normalize_modules(modules)
     material = digest.assemble_material(records, range_spec)
     public = digest.public_documents(material["documents"])
+    reporter = (str(reporter).strip() or None) if reporter else None
+    report_date = (str(report_date).strip() or None) if report_date else None
+
     if not material["documents"]:
         return {
             "status": "empty",
             "generated": False,
             "cached": False,
+            "rerendered": False,
             "llm_calls": 0,
             "range": range_spec,
             "fingerprint": material["fingerprint"],
@@ -686,36 +855,62 @@ def generate_report(
             "sections": [],
             "modules": modules_norm,
             "message": EMPTY_MESSAGE,
+            "template_id": TEMPLATE_ID,
             "report": None,
             "meta": None,
             "markdown": "",
         }
 
     fingerprint = compute_report_fingerprint(range_spec, material, modules_norm)
-    reporter = (str(reporter).strip() or None) if reporter else None
-    report_date = (str(report_date).strip() or None) if report_date else None
 
     if not force:
         cached = find_cached_report(storage_dir, fingerprint)
         if cached is not None:
-            stored = load_report(storage_dir, cached["report_id"]) or {
-                "meta": cached, "markdown": "", "sections": [],
+            stored = load_report(storage_dir, _report_id_of(cached)) or {
+                "meta": cached, "markdown": "", "sections": [], "bodies": [],
             }
-            return {
-                "status": "ok",
-                "generated": False,
-                "cached": True,
-                "llm_calls": 0,
-                "range": cached.get("range") or range_spec,
-                "fingerprint": fingerprint,
-                "documents": public,
-                "sections": stored.get("sections") or [],
-                "modules": modules_norm,
-                "message": "命中指纹缓存，未重新调用模型。",
-                "report": cached,
-                "meta": cached,
-                "markdown": stored.get("markdown") or "",
-            }
+            if _display_matches(cached, range_spec, reporter, report_date):
+                return _cached_result(
+                    storage_dir, cached, stored=stored, range_spec=range_spec,
+                    modules=modules_norm, public_documents=public, rerendered=False,
+                    message="命中指纹缓存，未重新调用模型。",
+                )
+            # Display-only change: reuse the model result, re-render correctly
+            # from persisted structured bodies (never string-patch the markdown).
+            bodies = stored.get("bodies") or []
+            if bodies:
+                sections = _sections_from_bodies(bodies)
+                markdown = render_report_markdown(
+                    range_spec, sections, reporter=reporter, report_date=report_date)
+                meta = save_report(
+                    storage_dir,
+                    range_spec=range_spec,
+                    material=material,
+                    markdown=markdown,
+                    sections=sections,
+                    modules=modules_norm,
+                    fingerprint=fingerprint,
+                    reporter=reporter,
+                    report_date=report_date,
+                    model=cached.get("model"),
+                    provider=cached.get("provider"),
+                    session=cached.get("session"),
+                    usage=cached.get("usage") or {},
+                    elapsed=0.0,
+                    llm_mode="display-rerender",
+                    llm_calls=0,
+                    created_at=created_at,
+                )
+                return _cached_result(
+                    storage_dir, meta,
+                    stored={"markdown": markdown, "sections": meta.get("sections") or []},
+                    range_spec=range_spec, modules=modules_norm, public_documents=public,
+                    rerendered=True,
+                    message="复用模型结果，按新的汇报信息重渲染（未调用模型）。",
+                )
+            # No persisted bodies (should not happen for this template): fall
+            # through to a real generation so the user never gets stale content.
+            force = True
 
     requested = requested_sections(modules_norm)
     channel = digest.resolve_digest_channel()
@@ -744,7 +939,6 @@ def generate_report(
         )
 
     call = planner or _live
-    llm_calls = 0
     usage: dict[str, Any] = {}
     reply_model: str | None = None
     reply_provider: str | None = None
@@ -757,13 +951,16 @@ def generate_report(
             "status": "error",
             "generated": False,
             "cached": False,
-            "llm_calls": 0,
+            "rerendered": False,
+            # The call was attempted: report the real count (F5), not 0.
+            "llm_calls": 1,
             "range": range_spec,
             "fingerprint": fingerprint,
             "documents": public,
             "sections": [],
             "modules": modules_norm,
             "message": f"模型生成失败：{exc}",
+            "template_id": TEMPLATE_ID,
             "report": None,
             "meta": None,
             "markdown": "",
@@ -775,6 +972,7 @@ def generate_report(
             "status": "error",
             "generated": False,
             "cached": False,
+            "rerendered": False,
             "llm_calls": 1,
             "range": range_spec,
             "fingerprint": fingerprint,
@@ -782,6 +980,7 @@ def generate_report(
             "sections": [],
             "modules": modules_norm,
             "message": "模型返回了空周报。",
+            "template_id": TEMPLATE_ID,
             "report": None,
             "meta": None,
             "markdown": "",
@@ -836,6 +1035,7 @@ def generate_report(
         "status": "ok",
         "generated": True,
         "cached": False,
+        "rerendered": False,
         "llm_calls": llm_calls,
         "range": range_spec,
         "fingerprint": fingerprint,
@@ -843,6 +1043,7 @@ def generate_report(
         "sections": meta["sections"],
         "modules": modules_norm,
         "message": "",
+        "template_id": TEMPLATE_ID,
         "report": meta,
         "meta": meta,
         "markdown": markdown,
@@ -868,6 +1069,7 @@ __all__ = [
     "EVIDENCE_LABELS",
     "MODULE_CATALOG",
     "DEFAULT_MODULES",
+    "BODIES_SUFFIX",
     "ReportError",
     "ModuleError",
     "templates_payload",
@@ -883,6 +1085,8 @@ __all__ = [
     "reports_dir",
     "list_reports",
     "load_report",
+    "load_section_bodies",
+    "save_section_bodies",
     "find_cached_report",
     "save_report",
     "generate_report",

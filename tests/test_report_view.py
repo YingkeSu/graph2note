@@ -85,12 +85,13 @@ def test_style_appends_rw01_rules():
     assert (WEBSTATIC / "style.css").read_text(encoding="utf-8").rstrip().endswith("}")
 
 
-def test_webapp_serves_report_assets_and_endpoints(tmp_path):
+def test_webapp_serves_report_assets_and_unified_boundary(tmp_path):
     client = TestClient(webapp.create_app(storage_dir=tmp_path))
     view = client.get("/static/js/views/report.js")
     assert view.status_code == 200
     assert "renderReportView" in view.text
-    assert "api(\"/api/reports\"" in view.text or "/api/reports" in view.text
+    # F3: the research template reuses the existing digest create/list/detail boundary
+    assert "/api/digests" in view.text
     assert client.get("/api/report-templates").status_code == 200
-    assert client.get("/api/reports").json() == {"reports": [], "total": 0}
-    assert client.get("/api/reports/nope").status_code == 404
+    assert client.get("/api/digests").json() == {"digests": [], "total": 0}
+    assert client.get("/api/digests/nope").status_code == 404

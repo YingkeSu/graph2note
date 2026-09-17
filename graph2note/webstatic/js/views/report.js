@@ -46,7 +46,9 @@ const el = (id) => document.getElementById(id);
 /* ------------------------------------------------------------------ pure */
 
 export function reportTemplateLabel(id) {
-  if (id === LEGACY_TEMPLATE) return "旧版四节小结";
+  // A legacy digest meta predates the template_id field: treat it as the legacy
+  // four-section summary rather than "unknown".
+  if (id == null || id === "" || id === LEGACY_TEMPLATE) return "旧版四节小结";
   if (id === RESEARCH_TEMPLATE) return "科研周报";
   return String(id || "未知模板");
 }
@@ -204,7 +206,8 @@ export function reportExportFilename(meta) {
   const part = (value) => String(value || "")
     .replace(/[^0-9A-Za-z._-]+/g, "-").replace(/^-+|-+$/g, "") || "unknown";
   const created = part(String((meta && meta.created_at) || "").slice(0, 10));
-  const prefix = meta && meta.template_id === LEGACY_TEMPLATE ? "weekly-summary" : "research-weekly";
+  const legacy = !meta || !meta.template_id || meta.template_id === LEGACY_TEMPLATE;
+  const prefix = legacy ? "weekly-summary" : "research-weekly";
   return `${prefix}_${part(range.from)}_${part(range.to)}_${created}.md`;
 }
 
@@ -637,6 +640,9 @@ function historyList(metas) {
     button.className = "report-item" + (id === reportView.reportId ? " selected" : "");
     button.dataset.reportId = id;
     if (id === reportView.reportId) button.setAttribute("aria-current", "true");
+    const tmpl = document.createElement("span");
+    tmpl.className = "report-item-template dim";
+    tmpl.textContent = reportTemplateLabel(meta.template_id);
     const range = document.createElement("span");
     range.className = "report-item-range";
     range.textContent = (meta.range || {}).label || (meta.range || {}).from || "未知范围";
@@ -646,6 +652,7 @@ function historyList(metas) {
     const summary = document.createElement("span");
     summary.className = "report-item-summary dim";
     summary.textContent = reportHistorySummary(meta);
+    button.appendChild(tmpl);
     button.appendChild(range);
     button.appendChild(time);
     button.appendChild(summary);
@@ -658,14 +665,10 @@ function historyList(metas) {
 async function loadReportHistory() {
   const list = el("report-history");
   if (!list) return [];
-  const legacy = reportView.template === LEGACY_TEMPLATE;
   try {
-    const payload = legacy
-      ? await api("/api/digests")
-      : await api("/api/reports");
-    const metas = legacy
-      ? (Array.isArray(payload && payload.digests) ? payload.digests : [])
-      : (Array.isArray(payload && payload.reports) ? payload.reports : []);
+    // One history for both templates (shared digest boundary).
+    const payload = await api("/api/digests");
+    const metas = Array.isArray(payload && payload.digests) ? payload.digests : [];
     historyList(metas);
     return metas;
   } catch (e) {
@@ -686,14 +689,12 @@ async function loadReportHistory() {
 
 export async function openReport(reportId, template) {
   if (!reportId) return;
-  const legacy = (template || reportView.template) === LEGACY_TEMPLATE;
   reportView.reportId = reportId;
   setReportStatus("读取周报…");
   setReportActions([]);
   try {
-    const payload = legacy
-      ? await api(`/api/digests/${encodeURIComponent(reportId)}`)
-      : await api(`/api/reports/${encodeURIComponent(reportId)}`);
+    // Shared detail boundary for both templates.
+    const payload = await api(`/api/digests/${encodeURIComponent(reportId)}`);
     const meta = payload.meta || null;
     await showReport(meta, payload.markdown || "");
     setReportStatus("");
@@ -712,6 +713,7 @@ async function generateReport() {
   const legacy = template === LEGACY_TEMPLATE;
   const rangeNode = el("report-range");
   const payload = {
+    template,
     range: rangeNode ? rangeNode.value : "this_week",
     force: !!(el("report-force") && el("report-force").checked),
   };
@@ -724,12 +726,12 @@ async function generateReport() {
     payload.reporter = el("report-reporter") ? el("report-reporter").value : "";
     payload.report_date = el("report-date") ? el("report-date").value : "";
   }
-  const endpoint = legacy ? "/api/digests" : "/api/reports";
   setReportBusy(true);
   setReportStatus("生成中…（同一指纹会直接复用缓存）");
   setReportActions([]);
   try {
-    const result = await api(endpoint, {
+    // Shared create boundary; the template picks the generator server-side.
+    const result = await api("/api/digests", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -746,7 +748,9 @@ async function generateReport() {
       const report = result.report || result.digest || null;
       reportView.reportId = report ? (report.report_id || report.digest_id) : null;
       await showReport(report, result.markdown || "");
-      setReportStatus(result.cached ? "命中缓存，未重新调用模型。" : "已生成并保存。");
+      setReportStatus(result.cached
+        ? (result.rerendered ? "复用模型结果，已按新的汇报信息重渲染（未调用模型）。" : "命中缓存，未重新调用模型。")
+        : "已生成并保存。");
       setReportActions([]);
     }
     await loadReportHistory();
