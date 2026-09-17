@@ -194,3 +194,76 @@ Sidecar note (from the R1 review): a missing/corrupt `<id>.report.json` falls ba
   A hunk-level resolution is required — `git checkout --ours <file>` is wrong (it drops the metadata endpoints too); resolve only the conflict block.
 - Rehearsal result (candidate + WIP + resolution): cross-feature 373 passed, all node contracts; **full offline suite 1499 passed / 0 failed / 0 skipped** (`/tmp/prr02-integration/combined-rehearsal.xml`).
 - **Note**: main-checkout `graph2note/papers/view.py` is uncommitted WIP and is **not** part of any approved branch (the approved preview branch `dev/prr-01-preview` does not track it). It must not leak into the candidate.
+
+---
+
+## Two-feature main merge plan (PLAN ONLY — not executed)
+
+**Default candidate**: `dev/prr-02-integration-rwt-01` @ `6c98d17` (code merge `a104050`, APPROVE). The 3F candidate stays on hold (AC3 blocked, no default release).
+
+### Precondition facts (read-only, current main checkout)
+
+- Tracked WIP modified: 11 files (`graph2note/webapp.py`, `graph2note/webstatic/index.html`, `ui.js`, `views/graph-layout.js`, `views/graph.js`, `reading.css`, `pyproject.toml`, `tests/graph_interaction.mjs`, `tests/graph_layout.mjs`, `tests/test_papers_view.py`, `.scratch/baseline-and-next-iteration/issues/06-…md`).
+- Untracked WIP: **192** paths (includes large evidence PNG dirs, `graph2note/papers/view.py`, `workspace.js/css`, scripts, docs).
+- Candidate-vs-untracked **collisions = 18** paths; of these **16 are byte-identical** to the candidate and **2 differ**:
+  - `.scratch/paper-reading-reliability/issues/02-metadata-import.md` (candidate = updated with delivery/review Comments)
+  - `.scratch/research-weekly-template/issues/01-research-report.md` (candidate = `in-review` + delivery records)
+  - identical: `paper-reading-reliability/DIAGNOSIS.md` + the 15 other `research-weekly-template/*` docs.
+- Tracked WIP the candidate also changes (⇒ stash-pop conflicts): `graph2note/webapp.py`, `graph2note/webstatic/index.html`. No other tracked WIP file overlaps the 2F candidate.
+
+### Executable steps
+
+```bash
+MAIN=/Users/suyingke/Programs/OHO/graph2note            # main checkout, currently f771b9d
+BAK=/tmp/prr02-2f-merge-backup                          # outside the repo
+CAND=6c98d17                                            # approved two-feature candidate
+mkdir -p "$BAK/untracked" "$BAK/aside"
+
+# 0) lossless backup of the WIP (no commits to main)
+git -C "$MAIN" status --porcelain=v1 -uall > "$BAK/status.txt"
+git -C "$MAIN" diff --binary > "$BAK/wip-tracked.patch"
+git -C "$MAIN" ls-files --others --exclude-standard > "$BAK/untracked.list"
+(cd "$MAIN" && rsync -a --files-from="$BAK/untracked.list" ./ "$BAK/untracked/")
+(cd "$MAIN" && git diff --name-only | while read -r f; do shasum -a 256 "$f"; done > "$BAK/tracked.sha256")
+
+# 1) move the 18 colliding untracked files aside (keep them; do NOT delete)
+git -C "$MAIN" ls-files --others --exclude-standard \
+  | grep -E '^\.scratch/(paper-reading-reliability/(DIAGNOSIS\.md|issues/02-metadata-import\.md)|research-weekly-template/)' \
+  > "$BAK/colliding.list"
+(cd "$MAIN" && while read -r f; do
+   mkdir -p "$BAK/aside/$(dirname "$f")"; mv "$f" "$BAK/aside/$f"; done < "$BAK/colliding.list")
+
+# 2) stash ONLY the tracked WIP (untracked non-colliding files stay in place)
+git -C "$MAIN" stash push -m "pre-2f-merge WIP $(date +%F)"
+
+# 3) merge the approved candidate
+git -C "$MAIN" merge --no-ff "$CAND" -m "merge: research weekly report + paper metadata import (approved 6c98d17)"
+
+# 4) restore tracked WIP as uncommitted changes (conflicts expected, see below)
+git -C "$MAIN" stash pop
+
+# 5) reconcile the colliding docs
+#    - 16 identical: nothing to do (merged tracked == the WIP copy, byte-for-byte)
+#    - 2 differing: keep the candidate (authoritative) versions; the user's old copies
+#      remain at "$BAK/aside/<path>". Optionally keep them in-tree under a non-colliding
+#      name (e.g. issues/01-research-report.main-wip.md) — user's choice.
+```
+
+### Conflicts and restorability
+
+- `git stash pop` conflicts only in `graph2note/webapp.py` and `graph2note/webstatic/index.html` (both sides changed them). All other tracked WIP restores cleanly.
+  - `webapp.py`: the WIP extracts the inline paper-view projection into the untracked `papers/view.py`; the candidate changed the same region (`references_provenance` → per-entry `notes`). Resolution (rehearsed): keep the WIP deletion of the inline block and port the metadata `notes` into `build_paper_view` (2F = notes-only), then delete the conflict markers (`git checkout --ours <file>` is wrong — it drops the candidate's other webapp changes).
+  - `index.html`: combine the WIP changes with the merged paper-zone markup; none of the paper-toolbar additions conflict textually beyond this file.
+- After resolution the tracked WIP is again **uncommitted** on top of the merge commit — i.e. not committed to `main`.
+- **Losslessness**: the 192 untracked paths are backed up; the 16 identical docs are provably unchanged; the 2 differing docs are preserved in `$BAK/aside`; the 11 tracked WIP files are preserved via the stash/patch. The only manual step is the `webapp.py`/`index.html` conflict resolution, which is inherent (both sides genuinely changed those files) — there is no zero-touch lossless path.
+
+### Explicit user decision points (cannot be resolved mechanically)
+
+1. Accept the two authoritative issue-file versions (candidate) and keep the stale copies only in `$BAK/aside` (or also as `*.main-wip.md` in-tree)?
+2. `webapp.py` / `index.html` post-merge resolution: keep the WIP `papers/view.py` extraction and port the metadata view fields, **or** drop the WIP extraction and keep the inline projection? (Without the port, the reading view loses the reference parse-status `notes`.)
+3. Is landing the untracked `papers/view.py` refactor as its own reviewed commit (with the port) required before the merge? It is not part of any approved branch.
+
+### Not done / boundaries
+
+- Plan only: nothing was executed on `main`; no commit/stash/merge/reset/clean was run in the main checkout.
+- 3F stays AC3-blocked and is not proposed for merge by default.
