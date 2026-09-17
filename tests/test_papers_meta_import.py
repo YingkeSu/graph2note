@@ -493,3 +493,182 @@ def test_import_job_json_roundtrip_keeps_the_metadata_status(tmp_path):
     job.meta_error = "boom"
     restored = PaperJob.from_dict(job.to_dict())
     assert restored.meta_status == "failed" and restored.meta_error == "boom"
+
+
+# ---------------------------------------------------------------------------
+# PRR/02 review fixes: B1/B2 (real front matter + title gate), B3 (manual
+# clear), M1 (GROBID override), L1 (batch per-item status), L2 (gold)
+# ---------------------------------------------------------------------------
+
+REAL_GOLD = [
+    ("gpt4-tech-report", "GPT-4 Technical Report", ["OpenAI"],
+     "We report the development"),
+    ("gpt3-few-shot", "Language Models are Few-Shot Learners", ["Tom B. Brown"],
+     "Recent work has demonstrated"),
+]
+
+
+@pytest.mark.parametrize(("key", "title", "authors_prefix", "abstract_prefix"), REAL_GOLD)
+def test_real_frozen_text_import_persists_and_views_gold(
+    tmp_path, monkeypatch, key, title, authors_prefix, abstract_prefix
+):
+    """B1/B2: the real GPT-4 / GPT-3 front matter must import, persist and read
+    back with the correct title/authors/abstract — not a 2 KB front-page block
+    in ``record.title``.
+
+    The frozen real text layer (``tests/fixtures/papers/real/<key>``) is fed
+    through the real import wiring by patching the PDF read to return it, so
+    the test stays offline and needs no 5 MB PDF.
+    """
+
+    from graph2note.papers import textlayer as textlayer_mod
+    from tests.test_papers_ingest_real import _layer
+
+    frozen = _layer(key)
+    monkeypatch.setattr(textlayer_mod, "read_text_layer", lambda path: frozen)
+
+    doc = pymupdf.open()
+    doc.new_page()
+    buffer = io.BytesIO()
+    doc.save(buffer)
+    doc.close()
+
+    client = TestClient(_app(tmp_path))
+    response = _import(client, buffer.getvalue(), f"{key}.pdf")
+    status = _wait(client, response.json()["paper_id"])
+    assert status["status"] == "done" and status["source"] == "text-layer"
+    document_id = status["document_id"]
+
+    meta = client.get(f"/api/papers/{document_id}/metadata").json()["meta"]
+    assert meta["title"] == title
+    assert meta["authors"][:len(authors_prefix)] == authors_prefix
+    assert meta["abstract"].startswith(abstract_prefix)
+
+    # B2: the library record title is the clean title, never the front-page block
+    record = client.get(f"/api/documents/{document_id}").json()
+    assert record["title"] == title
+    assert len(record["title"]) < 120
+
+    view = client.get(f"/api/papers/{document_id}/view").json()
+    assert view["meta"]["title"] == title
+    assert view["meta"]["authors"][:len(authors_prefix)] == authors_prefix
+    assert view["meta"]["abstract"].startswith(abstract_prefix)
+
+
+def test_implausible_title_is_gated_and_falls_back_to_the_filename():
+    """B2 shape gate: a leaked front-page block is never persisted as a title."""
+
+    from graph2note.papers import metadata
+    from graph2note.papers import extract as papers_extract
+
+    leaked = " ".join(["Word"] * 80)
+    result = metadata.parse_paper_meta(
+        f"{leaked}\n\nAlice, Bob\n\nAbstract\n\nWe study things.")
+    assert result.meta.title == ""
+    assert "title-untrusted" in result.notes
+    assert papers_extract.preferred_document_title(
+        "study.pdf", fulltext=leaked, source="text-layer") == "study.pdf"
+
+
+def test_manual_clear_is_preserved_by_reextract_and_restart(tmp_path):
+    """B3: an explicit clear is a manual edit, protected like a non-empty one."""
+
+    root = tmp_path / "store"
+    store = FileDocumentStore(root)
+    client = TestClient(_app(tmp_path, store))
+    status = _imported_paper(client, tmp_path)
+    document_id = status["document_id"]
+
+    patched = client.patch(f"/api/papers/{document_id}/metadata",
+                           json={"meta": {"title": "", "authors": []}}).json()
+    assert patched["meta"]["title"] == "" and patched["meta"]["authors"] == []
+    assert patched["meta_provenance"]["title"]["source"] == "manual"
+
+    first = client.post(f"/api/papers/{document_id}/metadata/extract").json()
+    assert first["meta"]["title"] == "" and first["meta"]["authors"] == []
+    assert {"title", "authors"} <= set(first["extraction"]["preserved"])
+
+    second = client.post(f"/api/papers/{document_id}/metadata/extract").json()
+    assert second["meta"] == first["meta"]
+    assert second["meta_provenance"] == first["meta_provenance"]
+
+    reopened = FileDocumentStore(root)
+    restarted = TestClient(_app(tmp_path, reopened))
+    view = restarted.get(f"/api/papers/{document_id}/view").json()
+    assert view["meta"]["title"] == "" and view["meta"]["authors"] == []
+
+
+def test_grobid_corrects_low_confidence_auto_value_but_never_manual(tmp_path):
+    """M1: GROBID may override a low/medium-confidence auto value; ``manual``
+    (including a clear) is never touched."""
+
+    store = FileDocumentStore(tmp_path / "store")
+    client = TestClient(_app(tmp_path, store))
+    status = _imported_paper(client, tmp_path)
+    document_id = status["document_id"]
+    # A medium-confidence but wrong auto venue (as the header heuristic can
+    # produce), plus a manual clear of another field.
+    store.set_paper_meta(
+        document_id,
+        {"title": "A Study of Things", "authors": ["Alice", "Bob"], "year": None,
+         "venue": "Wrong Venue", "doi": "", "abstract": "We study things.",
+         "keywords": [], "source": "text-layer"},
+        provenance={
+            "title": {"source": "text-layer", "confidence": "high", "evidence": "x"},
+            "venue": {"source": "text-layer", "confidence": "medium", "evidence": "hdr"},
+        },
+        source="text-layer",
+    )
+    client.patch(f"/api/papers/{document_id}/metadata", json={"meta": {"doi": ""}})
+
+    client.app.state.grobid_transport = (
+        lambda url, data, timeout: TEI_FIXTURE.encode("utf-8"))
+    body = client.post(f"/api/papers/{document_id}/metadata/extract",
+                       json={"grobid": True}).json()
+
+    # the medium-confidence auto venue is corrected, with GROBID evidence
+    assert body["meta"]["venue"] == "Journal of Graphs"
+    assert body["meta_provenance"]["venue"]["evidence"] == "grobid:tei"
+    # the high-confidence deterministic title is kept
+    assert body["meta"]["title"] == "A Study of Things"
+
+
+def test_grobid_never_overrides_a_manual_field(tmp_path):
+    store = FileDocumentStore(tmp_path / "store")
+    client = TestClient(_app(tmp_path, store))
+    status = _imported_paper(client, tmp_path)
+    document_id = status["document_id"]
+    patched = client.patch(f"/api/papers/{document_id}/metadata",
+                           json={"meta": {"title": "手工标题", "venue": "手工会场"}}).json()
+    assert patched["meta_provenance"]["title"]["source"] == "manual"
+
+    client.app.state.grobid_transport = (
+        lambda url, data, timeout: TEI_FIXTURE.encode("utf-8"))
+    body = client.post(f"/api/papers/{document_id}/metadata/extract",
+                       json={"grobid": True}).json()
+    assert body["meta"]["title"] == "手工标题"
+    assert body["meta"]["venue"] == "手工会场"
+
+
+def test_batch_reports_unknown_and_not_paper_ids(tmp_path):
+    """L1: every requested id gets a result (ok/unknown/not-paper/failed)."""
+
+    store = FileDocumentStore(tmp_path / "store")
+    client = TestClient(_app(tmp_path, store))
+    status = _imported_paper(client, tmp_path)
+    store.save_document(
+        document_id="note-1", title="笔记", source_job_id="job-note",
+        model="fixture", markdown="# note\n", ir_json=json.dumps({"blocks": []}),
+        original_path="", original_ext=".jpg", preprocessed_path="",
+        preprocessed_raw_path="", assets_dir="", timing_json={},
+    )
+
+    body = client.post("/api/papers/extract-metadata", json={
+        "document_ids": [status["document_id"], "ghost", "note-1"],
+    }).json()
+    by_id = {item["document_id"]: item["status"] for item in body["results"]}
+    assert by_id[status["document_id"]] == "ok"
+    assert by_id["ghost"] == "unknown"
+    assert by_id["note-1"] == "not-paper"
+    assert body["total"] == 3
+    assert body["counts"]["unknown"] == 1 and body["counts"]["not-paper"] == 1

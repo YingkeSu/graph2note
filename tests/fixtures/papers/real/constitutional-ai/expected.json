@@ -37,13 +37,14 @@
     "spurious_heading_examples": [
       "1010",
       "Revisions"
-    ]
+    ],
+    "text_pages": 34
   },
   "p2": {
     "meta": {
       "title": "Constitutional AI: Harmlessness from AI Feedback",
       "authors": [
-        "Yuntao Bai∗",
+        "Yuntao Bai",
         "Saurav Kadavath",
         "Sandipan Kundu",
         "Amanda Askell",
@@ -87,18 +88,18 @@
         "Tom Henighan",
         "Tristan Hume",
         "Samuel R. Bowman",
-        "Zac Hatﬁeld-Dodds",
         "Ben Mann",
         "Dario Amodei",
         "Nicholas Joseph",
         "Sam McCandlish",
         "Tom Brown",
-        "Jared Kaplan∗ Anthropic"
+        "Jared Kaplan",
+        "Anthropic"
       ],
       "year": 2022,
       "venue": "",
       "doi": "",
-      "abstract": "As AI systems become more capable, we would like to enlist their help to supervise other AIs. We experiment with methods for training a harmless AI assistant through self- improvement, without any human labels identifying harmful outputs. The only human oversight is provided through a list of rules or principles, and so we refer to the method as ‘Constitutional AI’. The process involves both a supervised learning and a reinforcement learning phase. In the supervised phase we sample from an initial model, then generate self-critiques and revisions, and then ﬁnetune the original model on revised responses. In the RL phase, we sample from the ﬁnetuned model, use a model to evaluate which of the two samples is better, and then train a preference model from this dataset of AI prefer- ences. We then train with RL using the preference model as the reward signal, i.e. we use ‘RL from AI Feedback’ (RLAIF). As a result we are able to train a harmless but non- evasive AI assistant that engages with harmful queries by explaining its objections to them. Both the SL and RL methods can leverage chain-of-thought style reasoning to improve the human-judged performance and transparency of AI decision making. These methods make it possible to control AI behavior more precisely and with far fewer human labels. ∗Correspondence to: {yuntao,jared}@anthropic.com Author contributions are detailed in 7. arXiv:2212.08073v1 [cs.CL] 15 Dec 2022",
+      "abstract": "As AI systems become more capable, we would like to enlist their help to supervise other AIs. We experiment with methods for training a harmless AI assistant through self- improvement, without any human labels identifying harmful outputs. The only human oversight is provided through a list of rules or principles, and so we refer to the method as ‘Constitutional AI’. The process involves both a supervised learning and a reinforcement learning phase. In the supervised phase we sample from an initial model, then generate self-critiques and revisions, and then ﬁnetune the original model on revised responses. In the RL phase, we sample from the ﬁnetuned model, use a model to evaluate which of the two samples is better, and then train a preference model from this dataset of AI prefer- ences. We then train with RL using the preference model as the reward signal, i.e. we use ‘RL from AI Feedback’ (RLAIF). As a result we are able to train a harmless but non- evasive AI assistant that engages with harmful queries by explaining its objections to them. Both the SL and RL methods can leverage chain-of-thought style reasoning to improve the human-judged performance and transparency of AI decision making. These methods make it possible to control AI behavior more precisely and with far fewer human labels.",
       "keywords": [],
       "source": "text-layer"
     },
@@ -118,7 +119,7 @@
     },
     "field_status": {
       "title": "ok",
-      "authors": "degraded",
+      "authors": "ok",
       "year": "ok",
       "venue": "missing",
       "doi": "missing",
@@ -127,26 +128,21 @@
     },
     "known_failures": [
       {
-        "field": "authors",
-        "tag": "authors-absorb-affiliation",
-        "detail": "最后一位作者与机构粘连：'Jared Kaplan∗ Anthropic'（Y5 已挡住摘要，但机构行未切干净）。"
-      },
-      {
         "field": "venue",
         "tag": "venue-not-found",
-        "detail": "arXiv 预印本首页没有 venue 行。"
+        "detail": "首页没有 venue 行（arXiv 预印本）。"
       },
       {
         "field": "keywords",
         "tag": "keywords-not-found",
-        "detail": "arXiv 预印本没有 Index Terms/Keywords 段。"
+        "detail": "首页没有 Index Terms/Keywords 段。"
       }
     ],
     "references": {
       "heading": "References",
       "count": 9,
       "style": "author-year",
-      "first_raw_startswith": "[Askell et al., ",
+      "first_raw_startswith": "[Askell et al., 20",
       "under_split": true,
       "provenance_notes": [
         "authors-unparsed",
@@ -161,5 +157,14 @@
     "51 人作者名单跨越多个 block，机构名（Anthropic）与末位作者粘在同一行。",
     "首页含 arXiv 页眉（'arXiv:2212.08073v1 [cs.CL] 15 Dec 2022'）与页脚数字，进入正文行序。",
     "真实 References 为作者-年 + 字母键混排，无空行分隔。"
-  ]
+  ],
+  "gold": {
+    "title": "Constitutional AI: Harmlessness from AI Feedback",
+    "authors_prefix": [
+      "Yuntao Bai",
+      "Saurav Kadavath"
+    ],
+    "author_count": 51,
+    "abstract_startswith": "As AI systems become more capable"
+  }
 }

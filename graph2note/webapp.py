@@ -2525,6 +2525,29 @@ def create_app(
         except papers_grobid.GrobidUnavailable as exc:
             return None, f"grobid-unavailable:{exc}"
 
+    def _grobid_override_fields(existing: dict) -> list[str]:
+        """Fields GROBID may replace even when non-empty — never manual.
+
+        Selection rule: an *evidence-backed but low/medium-confidence* auto
+        value may be corrected by the optional external parser.  ``manual``
+        provenance (including an explicit clear) is always excluded, so a user
+        edit can never be overwritten.  Evidence is re-stamped as
+        ``grobid:tei`` by :func:`apply_meta_proposal`.
+        """
+
+        provenance = existing.get("meta_provenance") or {}
+        fields = ("title", "authors", "year", "venue", "doi", "abstract", "keywords")
+        out: list[str] = []
+        for field in fields:
+            prov = provenance.get(field) if isinstance(provenance, dict) else None
+            if not isinstance(prov, dict):
+                continue
+            if prov.get("source") == "manual":
+                continue
+            if prov.get("confidence") in ("low", "medium"):
+                out.append(field)
+        return out
+
     def _re_extract_paper(document_id: str, body: dict | None = None):
         """Run the deterministic pass (optionally GROBID) and persist it."""
 
@@ -2538,11 +2561,13 @@ def create_app(
         if payload.get("grobid"):
             fields, reason = _grobid_fields(document_id, record, payload)
             if fields is not None:
+                existing = store.paper_payload(document_id) or {}
                 kwargs.update(
                     proposal=papers_grobid.fields_to_proposal(fields),
                     proposal_source=source,
                     proposal_evidence="grobid:tei",
                     proposal_label="grobid",
+                    proposal_override_fields=_grobid_override_fields(existing),
                     external_references=papers_grobid.references_from_fields(fields),
                     external_reference_source="grobid",
                 )
@@ -2569,6 +2594,12 @@ def create_app(
         not configured/reachable.
         """
 
+        record = store.get_document(document_id)
+        if record is None:
+            raise HTTPException(status_code=404, detail="文档不存在或已被删除。")
+        if str(record.get("doc_kind") or "") != "paper":
+            raise HTTPException(status_code=422,
+                                detail="该文档不是论文，无法提取论文元数据。")
         result, error = _re_extract_paper(document_id, body)
         if result is None:
             raise HTTPException(status_code=422, detail=error)
@@ -2578,29 +2609,49 @@ def create_app(
 
     @app.post("/api/papers/extract-metadata")
     def papers_extract_metadata_batch(body: dict | None = None):
-        """Batch back-fill over the imported papers (per-item failure isolated)."""
+        """Batch back-fill; every requested id gets a per-item status.
+
+        ``document_ids`` entries that are unknown (``unknown``) or not a paper
+        (``not-paper``) are reported per item instead of being silently
+        dropped, and a failing item is isolated as ``failed``.
+        """
 
         payload = body or {}
         requested = payload.get("document_ids")
         if requested is not None and not isinstance(requested, list):
             raise HTTPException(status_code=422, detail="document_ids 必须是数组。")
-        wanted = {str(item) for item in requested} if requested else None
-        counts = {"ok": 0, "empty": 0, "failed": 0}
+        counts = {"ok": 0, "empty": 0, "failed": 0, "unknown": 0, "not-paper": 0}
         results: list[dict] = []
-        for summary in store.list_documents():
-            if str(summary.get("doc_kind") or "") != "paper":
-                continue
-            document_id = str(summary.get("document_id") or "")
-            if not document_id or (wanted is not None and document_id not in wanted):
-                continue
-            result, error = _re_extract_paper(document_id, payload)
-            if result is None:
-                outcome = papers_extract.ExtractionResult(
-                    status="failed", error=error)
-            else:
-                outcome = result
+
+        def _emit(document_id: str, outcome) -> None:
             counts[outcome.status] = counts.get(outcome.status, 0) + 1
             results.append({"document_id": document_id, **outcome.as_dict()})
+
+        def _run(document_id: str) -> None:
+            result, error = _re_extract_paper(document_id, payload)
+            _emit(document_id, result or papers_extract.ExtractionResult(
+                status="failed", error=error))
+
+        if requested:
+            for raw_id in requested:
+                document_id = str(raw_id)
+                record = store.get_document(document_id)
+                if record is None:
+                    _emit(document_id, papers_extract.ExtractionResult(
+                        status="unknown", error="文档不存在或已被删除。"))
+                    continue
+                if str(record.get("doc_kind") or "") != "paper":
+                    _emit(document_id, papers_extract.ExtractionResult(
+                        status="not-paper", error="该文档不是论文。"))
+                    continue
+                _run(document_id)
+        else:
+            for summary in store.list_documents():
+                if str(summary.get("doc_kind") or "") != "paper":
+                    continue
+                document_id = str(summary.get("document_id") or "")
+                if document_id:
+                    _run(document_id)
         return {"total": len(results), "counts": counts, "results": results}
 
     def _metadata_body(body: dict | None) -> dict:

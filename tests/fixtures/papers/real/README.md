@@ -3,7 +3,7 @@
 The P1/P2 suites (`tests/test_papers_ingest.py`, `tests/test_papers_meta.py`)
 were built entirely from synthetic PDFs and hand-written front pages. These
 fixtures lift the regression to **real born-digital papers**: the raw PyMuPDF
-text layer of four arXiv papers, a curated `expected.json` per paper, and two
+text layer of six arXiv papers, a curated `expected.json` per paper, and two
 offline test files (`tests/test_papers_ingest_real.py`,
 `tests/test_papers_meta_real.py`).
 
@@ -20,6 +20,8 @@ reference section.
 | `constitutional-ai` | Constitutional AI: Harmlessness from AI Feedback (Anthropic) | [2212.08073](https://arxiv.org/abs/2212.08073) | arXiv.org perpetual, non-exclusive 1.0 | 34 | single-column preprint, 51-author byline |
 | `deepseek-moe` | DeepSeekMoE (DeepSeek) | [2401.06066](https://arxiv.org/abs/2401.06066) | arXiv.org perpetual, non-exclusive 1.0 | 33 | single-column technical report, multi-affiliation byline |
 | `bert` | BERT (Google) | [1810.04805](https://arxiv.org/abs/1810.04805) | arXiv.org perpetual, non-exclusive 1.0 | 16 | **two-column conference** (NAACL) |
+| `gpt4-tech-report` | GPT-4 Technical Report (OpenAI) | [2303.08774](https://arxiv.org/abs/2303.08774) | arXiv.org perpetual, non-exclusive 1.0 | 100 | single-column technical report, one-line org byline |
+| `gpt3-few-shot` | Language Models are Few-Shot Learners (OpenAI) | [2005.14165](https://arxiv.org/abs/2005.14165) | arXiv.org perpetual, non-exclusive 1.0 | 75 | single-column preprint, 31-author one-per-line byline |
 
 `manifest.json` is the machine-readable version of this table (including each
 PDF's `sha256_16`). Only short extracted text is stored — no PDF is committed.
@@ -35,7 +37,9 @@ real/<key>/
 ```
 
 `expected.json` records, per paper: the P1 text-layer decision and section
-snapshot, the full P2 `PaperMeta` snapshot + notes + provenance confidence, a
+snapshot, the full P2 `PaperMeta` snapshot + notes + provenance confidence, an
+explicit `gold` block (human-checked title / author prefix / abstract opening;
+accuracy is asserted against gold, not a non-empty count), a
 `field_status` map (`ok` / `degraded` / `wrong` / `missing`), the
 `known_failures` list, the reference-section count/style/provenance and a
 `differences_from_synthetic` note.
@@ -56,20 +60,24 @@ python tests/fixtures/papers/real/_generate.py bert /path/to/1810.04805.pdf
 **not** overwritten: the fixtures exist to freeze current real-layout behaviour,
 including the failures below.
 
-## Known real-layout failures (recorded, not fixed here)
+## Known real-layout failures
 
-Y4 does **not** change the parser; it exposes where synthetic fixtures were too
-kind. Per-paper detail lives in each `expected.json`; the common patterns are:
+Y4 originally recorded where synthetic fixtures were too kind.  **PRR/02**
+(`paper-reading-reliability/02`) fixed the front-matter boundary and the byline
+parser and added the two GPT samples, so the table below is split into
+*addressed* and *open*.  Per-paper detail lives in each `expected.json`; the
+"Regenerating" note above no longer means the parser is frozen — a parser fix
+recalibrates the snapshot on purpose (and asserts gold in `test_real_gold_*`).
 
-| # | finding | where | proposed follow-up |
+| # | finding | where | status |
 | --- | --- | --- | --- |
-| 1 | `structure.split_sections` promotes figure/table/axis text (`Layers`, `+ 16`, `1010`, `1024`, `91.2`) to headings — 42–76 sections on 16–34 page papers | all four | new issue: spurious-heading guard for real layouts |
-| 2 | the byline melts into `title` when the text layer merges title/byline/abstract into one block (`scaling-laws`, `bert`) | `metadata._title_lines` | new issue (P2 title/byline boundary) |
-| 3 | affiliation/URL/email fragments land in `authors` (all) and, on two-column pages, abstract sentences do too (`bert`) | `metadata._parse_authors` | Y5 family, **not** fixed by the Y5 final (R1–R5) |
-| 4 | `doi` falls back to `full_text` and picks a DOI out of the reference list (`scaling-laws`, `deepseek-moe`) | `metadata._extract_doi` | new issue (DOI must come from the front page) |
-| 5 | real unnumbered / alphabetic-key reference lists under-split into 3–9 multi-page entries (`[ACDE12]`, `[Askell et al., 2021]`) | `references.split_reference_entries` | new issue (real reference-list splitting) |
+| 1 | `structure.split_sections` promotes figure/table/axis text (`Layers`, `+ 16`, `1010`, `1024`, `91.2`) to headings — 42–76 sections on real papers | `structure` | **open** — issue 03 (spurious-heading guard) |
+| 2 | the byline melted into `title` when the text layer merges title/byline/abstract into one block (`scaling-laws`, `bert`, both GPT samples) | `metadata._title_lines` | **fixed (PRR/02)** — abstract label is a hard front-matter boundary; wrapped-title and one-name-per-line bylines are split out |
+| 3 | affiliation/URL/email fragments landed in `authors` | `metadata._parse_authors` | **mostly fixed (PRR/02)** — line-aware parsing + fixed `_AFFIL_RE`; the two-column `bert` still absorbs `Google AI Language` (recorded `authors-absorb-affiliation`) |
+| 4 | `doi` falls back to `full_text` and picks a DOI out of the reference list (`scaling-laws`, `deepseek-moe`) | `metadata._extract_doi` | **open** — recorded `doi-from-references` |
+| 5 | real unnumbered / alphabetic-key reference lists under-split into 3–9 multi-page entries (`[ACDE12]`, `[Askell et al., 2021]`) | `references.split_reference_entries` | **open** |
 | 6 | `venue`/`keywords` are `missing` on every sample (arXiv preprints carry neither) | `metadata` | expected for this source; not a defect |
-| 7 | **post-Y5 final:** on the two-column `bert` reflow the swallowed `'Abstract'` line is in `title_keys` and `_extract_abstract` skips it, so the real summary is lost entirely (`abstract-not-found`) — the R1–R5 wrapped-title guard also removes the abstract entry point | `metadata._extract_abstract` | new issue (two-column abstract after Y5) |
+| 7 | the two-column `bert` reflow put the swallowed `'Abstract'` line in `title_keys`, so the real summary was lost (`abstract-not-found`) | `metadata._extract_abstract` | **fixed (PRR/02)** — `bert` now recovers the abstract; the old regression test was replaced by a recovery assertion |
 
 The under-split in #5 is **conservative**: the entries keep `merged-continuation`
 / `merged-incomplete` / `dehyphenated` / `authors-unparsed` provenance and never

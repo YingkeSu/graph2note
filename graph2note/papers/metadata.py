@@ -155,7 +155,7 @@ _HEADER_JUNK_RE = re.compile(
 )
 _AFFIL_RE = re.compile(
     r"\b(?:universit|institut|laborator|department|school|college|academy|"
-    r"research|inc\.|ltd\.|corp\.|gmbh)\b",
+    r"research|inc\.|ltd\.|corp\.|gmbh)",
     re.I,
 )
 _ABSTRACT_RE = re.compile(r"^\s*(?:abstract|摘要)\b[\s:：—\-–]*", re.I)
@@ -202,6 +202,53 @@ _PROSE_LEAD_RE = re.compile(
     r"we|our|it|its|can|could|will|would|should|not|also|however)\b",
     re.I,
 )
+
+#: A title continues on the next line when the current one ends with a
+#: connector/colon (real preprints wrap long titles before a noun, e.g.
+#: ``… Transformers for`` / ``Language Understanding``).  This is what keeps a
+#: wrapped title out of the byline without needing font metrics.
+_TITLE_CONTINUES_RE = re.compile(
+    r"(?:\b(?:of|for|the|a|an|and|or|in|on|at|to|with|from|by|as|is|are|was|"
+    r"were|that|which|toward|towards|via|using|based|under|over|between|into|"
+    r"onto|about|against|without|within|through|across|after|before|"
+    r"when|where|while)\b|[:\-–—,;])\s*$",
+    re.I,
+)
+#: Footnote / correspondence markers that end the abstract body.
+_FOOTNOTE_RE = re.compile(r"^\s*[∗*†‡§¶#]")
+#: A canonical abstract label alone on its line.  This (not any line that merely
+#: starts with the word) is the reliable front-matter boundary: wrapped titles
+#: such as ``… for`` / ``Abstract Meaning Representation`` must stay in the
+#: title block.
+_ABSTRACT_LABEL_ONLY_RE = re.compile(r"^\s*(?:abstract|摘要)\s*[:：.\-—]?\s*$", re.I)
+#: A standalone section number (``1``, ``2.``, ``IV``).
+_STANDALONE_NUMBER_RE = re.compile(r"^\s*(?:\d+(?:\.\d+)*|[IVXLC]+)\.?\s*$")
+#: A numbered heading on one line (``1 Introduction``).
+_NUMBERED_HEADING_RE = re.compile(
+    r"^\s*(?:\d+(?:\.\d+)*|[IVXLC]+)\.?\s+[A-Z\u4e00-\u9fff]"
+)
+#: Common section words that start a heading line.
+_SECTION_WORD_RE = re.compile(
+    r"^\s*(?:abstract|introduction|related\s+work|background|motivation|"
+    r"preliminar(?:y|ies)|method(?:s|ology)?|approach|experiment(?:s|al)?|"
+    r"result(?:s)?|evaluation|discussion|conclusion(?:s)?|references|"
+    r"bibliography|acknowledg(?:e?ments?)|appendix|摘要|引言|相关工作|背景|"
+    r"方法|实验|结果|讨论|结论|参考文献|致谢)(?![A-Za-z])",
+    re.I,
+)
+#: Name particles and separators allowed inside a byline candidate.
+_NAME_PARTICLES = {
+    "de", "van", "von", "der", "la", "le", "el", "da", "di", "dos",
+    "del", "bin", "al", "st", "saint", "mac", "mc",
+}
+#: Organisation/acronym tokens that can stand alone as a byline (``OpenAI``).
+_ORG_TOKEN_RE = re.compile(r"^[A-Z][A-Za-z0-9]*[A-Z][A-Za-z0-9]*$|^[A-Z]{2,}$")
+_INITIALS_RE = re.compile(r"^(?:[A-Z]\.){1,4}$")
+
+#: A parsed title longer than this (or with "Abstract"/"Introduction" in it)
+#: is front-page body text that leaked in, not a title — never persist it.
+_MAX_TITLE_CHARS = 300
+_MAX_TITLE_WORDS = 45
 
 
 def _clean(text: str) -> str:
@@ -281,6 +328,137 @@ def _looks_like_sentence_line(line: str) -> bool:
     return bool(_SENTENCE_HINT_RE.search(text))
 
 
+def _looks_like_name_line(line: str) -> bool:
+    """True for a short line whose words all read as name/affiliation tokens.
+
+    Real preprints and conference papers put **one author per line** (``Jacob
+    Devlin`` / ``Ming-Wei Chang``) or a single organisation on its own line
+    (``OpenAI``).  Those lack the comma/``and`` separator
+    :func:`_looks_like_author_line` requires, so the byline parser needs a
+    shape test of its own that still rejects prose ('Language Understanding',
+    'We report the development …').
+    """
+
+    text = _strip_author_noise(line)
+    text = re.sub(r"[\d∗*†‡§¶#]+", "", text).strip(" ,;、，&")
+    if not text or len(text) > 120 or "@" in text:
+        return False
+    if _is_header_line(text) or _SENTENCE_STOP_RE.search(text):
+        return False
+    # A group byline may carry a leading article (``the Ming Li Group``).
+    text = re.sub(r"^the\s+", "", text, flags=re.I)
+    words = text.split()
+    if not words or len(words) > 14:
+        return False
+    for word in words:
+        folded = word.casefold()
+        if folded in {"and", "et", "al"} or folded in _NAME_PARTICLES:
+            continue
+        bare = word.strip(".,;:()[]{}")
+        if _NAME_TOKEN_RE.fullmatch(bare):
+            continue
+        if (_INITIAL_RE.fullmatch(word) or _INITIALS_RE.fullmatch(word)
+                or _INITIALS_RE.fullmatch(bare)):
+            continue
+        if _ORG_TOKEN_RE.match(bare):
+            continue
+        return False
+    return True
+
+
+def _is_org_only(name: str) -> bool:
+    """A single organisation token (``OpenAI``) — kept only if no person name."""
+
+    words = [word for word in re.sub(r"[^\w ]", " ", name).split() if word]
+    return len(words) == 1 and bool(_ORG_TOKEN_RE.match(words[0]))
+
+
+def _looks_like_byline_paragraph(paragraph: list[str]) -> bool:
+    """True when the paragraph right after the title is a byline block.
+
+    Used only for the paragraph *following* the title paragraph, so it can
+    accept a run of separate name lines that :func:`_looks_like_author_line`
+    (built for comma lists) would reject.
+    """
+
+    if not paragraph:
+        return False
+    head = paragraph[0].strip()
+    if _ABSTRACT_RE.match(head) or _is_header_line(head):
+        return False
+    if _looks_like_author_line(head):
+        return True
+    if _looks_like_sentence_line(head):
+        return False
+    return any(_looks_like_name_line(line) for line in paragraph)
+
+
+def _title_end_index(front: list[str]) -> int:
+    """Number of leading lines that form the title (wrapped-title aware)."""
+
+    end = 1
+    while end < len(front) and _TITLE_CONTINUES_RE.search(front[end - 1]):
+        end += 1
+    return min(end, len(front))
+
+
+def _title_is_plausible(title: str) -> bool:
+    """Shape gate: a title must not be a 2 KB front-page block.
+
+    The front-page heuristics can still over-claim on unusual layouts; a title
+    that is implausibly long or contains a body heading is dropped (empty) so
+    it is never persisted as ``record.title`` and the caller can degrade
+    honestly instead of showing a wall of front matter.
+    """
+
+    text = _clean(title)
+    if not text:
+        return False
+    if len(text) > _MAX_TITLE_CHARS or len(text.split()) > _MAX_TITLE_WORDS:
+        return False
+    if len(re.findall(r"[.!?。！？]", text)) > 1:
+        return False
+    if _SECTION_WORD_RE.search(text):
+        return False
+    return True
+
+
+def _is_abstract_boundary_line(line: str, previous: str | None) -> bool:
+    """True when a front-block line is the abstract heading, not a title wrap.
+
+    A wrapped title can start a line with ``Abstract`` (``Abstract Meaning
+    Representation``, ``Abstract Syntax Trees``) so only a standalone label, or
+    a label followed by a sentence-like body, ends the title block.
+    """
+
+    if _ABSTRACT_LABEL_ONLY_RE.match(line):
+        return True
+    match = _ABSTRACT_RE.match(line)
+    if match is None:
+        return False
+    tail = _clean(line[match.end():])
+    if not tail:
+        return True
+    if previous and _TITLE_CONTINUES_RE.search(previous):
+        return False
+    return bool(_SENTENCE_STOP_RE.search(tail)) or len(tail.split()) >= 6
+
+
+def _is_abstract_stop(line: str) -> bool:
+    """True when the abstract body ended and a new block began."""
+
+    text = line.strip()
+    if not text:
+        return True
+    if _STOP_RE.match(text) or _HEADER_JUNK_RE.match(text):
+        return True
+    if _FOOTNOTE_RE.match(text):
+        return True
+    if _STANDALONE_NUMBER_RE.match(text) or _NUMBERED_HEADING_RE.match(text):
+        return True
+    return bool(_SECTION_WORD_RE.match(text))
+
+
 def _author_lines_before_abstract(lines: list[str]) -> list[str]:
     """Cut author lines at the abstract start (label or prose sentence).
 
@@ -314,43 +492,93 @@ def _author_lines_before_abstract(lines: list[str]) -> list[str]:
 
 
 def _parse_authors(author_lines: list[str]) -> list[str]:
-    text = _strip_author_noise(" ".join(_author_lines_before_abstract(author_lines)))
-    if not text:
-        return []
-    if _CJK_NAMES_RE.match(text):
-        return [part.strip() for part in re.split(r"[,，、]", text) if part.strip()]
-    text = re.sub(r"\s+\band\b\s+", ", ", text, flags=re.I).replace("&", ",")
-    authors: list[str] = []
-    for part in text.split(","):
-        name = _clean(part).strip(". ")
-        if not name or name.casefold() in {"and", "et al"}:
+    """Names from the byline block, one-per-line and comma-list aware.
+
+    The real text layer puts each author on its own line as often as it puts a
+    comma-separated list on one line, so both shapes are parsed.  Affiliation
+    / email / header fragments are dropped, and a single organisation token
+    (``OpenAI`` on its own) is kept only when it is the *only* byline — a paper
+    that lists people keeps the people and drops the org affiliation lines.
+    """
+
+    lines = _author_lines_before_abstract(author_lines)
+    candidates: list[str] = []
+    for line in lines:
+        cleaned = re.sub(r"[\d∗*†‡§¶#]+", "", _strip_author_noise(line)).strip()
+        if not cleaned or "@" in cleaned or _is_header_line(cleaned):
             continue
-        # Drop affiliation fragments glued onto the author list.
-        if _AFFIL_RE.search(name):
+        if _CJK_NAMES_RE.match(cleaned):
+            candidates.extend(
+                part.strip() for part in re.split(r"[,，、]", cleaned) if part.strip()
+            )
             continue
-        authors.append(name)
-    return authors
+        for part in re.split(r"\s*(?:[,;、，]|&|\band\b)\s*", cleaned, flags=re.I):
+            name = _clean(part).strip(". ")
+            if not name or name.casefold() in {"and", "et al"}:
+                continue
+            if _AFFIL_RE.search(name):
+                continue
+            if not _looks_like_name_line(name):
+                continue
+            candidates.append(name)
+    candidates = list(dict.fromkeys(candidates))
+    if any(len(re.sub(r"[^A-Za-z]", " ", name).split()) >= 2 for name in candidates):
+        candidates = [name for name in candidates if not _is_org_only(name)]
+    return candidates
 
 
 def _title_lines(paragraphs: list[list[str]]) -> tuple[list[str], list[str], list[list[str]]]:
-    """Split (title, author lines, remaining paragraphs) from front paragraphs."""
+    """Split (title, author lines, remaining paragraphs) from front paragraphs.
+
+    The abstract label is a hard boundary: everything from it onward is the
+    summary and must never be absorbed into the title (the real-library
+    regression put a 2 KB title+byline+abstract block into ``record.title``).
+    Within the front block the title is the leading line(s) — a wrapped title
+    continues while the previous line ends with a connector — and the byline is
+    either a comma list inside the block, a separate byline paragraph, or a
+    run of one-name-per-line entries.
+    """
 
     if not paragraphs:
         return [], [], []
     first = paragraphs[0]
-    author_at = next((i for i, line in enumerate(first) if _looks_like_author_line(line)), None)
+    abstract_at = next(
+        (i for i, line in enumerate(first)
+         if _is_abstract_boundary_line(line, first[i - 1] if i else None)),
+        None)
+    header_at = next(
+        (i for i, line in enumerate(first) if i > 0 and _is_header_line(line)), None)
+    block_end = min(
+        [index for index in (abstract_at, header_at) if index is not None],
+        default=len(first),
+    )
+    front = first[:block_end]
+    tail = [first[block_end:]] if block_end < len(first) else []
+    rest = tail + paragraphs[1:]
+    if not front:
+        return [], [], rest
+
+    author_at = next(
+        (i for i, line in enumerate(front) if _looks_like_author_line(line)), None)
     if author_at is not None and author_at > 0:
         return (
-            first[:author_at],
-            _author_lines_before_abstract(first[author_at:]),
-            paragraphs[1:],
+            front[:author_at],
+            _author_lines_before_abstract(front[author_at:]),
+            rest,
         )
     if author_at == 0:
-        return [], _author_lines_before_abstract(first), paragraphs[1:]
-    rest = paragraphs[1:]
-    if rest and _looks_like_author_line(rest[0][0]):
-        return first, _author_lines_before_abstract(rest[0]), rest[1:]
-    return first, [], rest
+        return [], _author_lines_before_abstract(front), rest
+
+    # No comma-separated byline inside the block: either a dedicated byline
+    # paragraph follows the title paragraph, or the byline shares the block as
+    # one-name-per-line lines (real preprints).
+    if rest and _looks_like_byline_paragraph(rest[0]):
+        return front, _author_lines_before_abstract(rest[0]), rest[1:]
+
+    title_end = _title_end_index(front)
+    if title_end < len(front):
+        return front[:title_end], _author_lines_before_abstract(front[title_end:]), rest
+    return front, [], rest
 
 
 def _abstract_block(
@@ -361,7 +589,7 @@ def _abstract_block(
     body = _clean(line[match.end():])
     pieces = [body] if body else []
     for following in para[index + 1:]:
-        if _STOP_RE.match(following):
+        if _is_abstract_stop(following):
             break
         pieces.append(following)
     return _clean(" ".join(pieces)), line[:200]
@@ -538,6 +766,12 @@ def parse_paper_meta(
 
     title_block, author_lines, _rest = _title_lines(paragraphs)
     title = _clean(" ".join(title_block)).rstrip(".")
+    if title and not _title_is_plausible(title):
+        # A leaked front-page block is not a title: drop it (never persist it)
+        # and let the caller degrade to the filename with an honest note.
+        notes.append("title-untrusted")
+        title = ""
+        title_block = []
     authors = _parse_authors(author_lines)
     abstract, abstract_evidence = _extract_abstract(paragraphs, author_lines, title_block)
     keywords, keywords_evidence = _extract_keywords(paragraphs)

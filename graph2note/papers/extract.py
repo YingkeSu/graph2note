@@ -102,9 +102,12 @@ def merge_manual_meta(
     """Overlay a fresh parse while keeping fields the user edited by hand.
 
     A field is treated as manual when its stored provenance source is
-    ``"manual"`` and it currently holds a non-empty value.  Every other field
-    is replaced by the fresh deterministic parse (which is what makes a repeat
-    run idempotent).  Returns ``(meta, provenance, preserved_fields)``.
+    ``"manual"`` — **including an explicitly cleared empty value** (the Y1
+    PATCH write marks the field ``manual`` even when the user empties it, and
+    that clear must survive a re-extraction exactly like a non-empty edit).
+    Every non-manual field is replaced by the fresh deterministic parse (which
+    is what makes a repeat run idempotent).  Returns
+    ``(meta, provenance, preserved_fields)``.
     """
 
     stored = existing_meta if isinstance(existing_meta, dict) else {}
@@ -114,13 +117,13 @@ def merge_manual_meta(
                   if isinstance(value, dict)}
     preserved: list[str] = []
     for field_name in _META_FIELDS:
-        value = stored.get(field_name)
         prov = stored_prov.get(field_name)
         if not isinstance(prov, dict):
             continue
-        if prov.get("source") != MANUAL_SOURCE or _is_empty(value):
+        if prov.get("source") != MANUAL_SOURCE:
             continue
-        meta[field_name] = value
+        # Manual wins even when the stored value is empty (explicit clear).
+        meta[field_name] = stored.get(field_name)
         provenance[field_name] = dict(prov)
         preserved.append(field_name)
     if preserved:
@@ -221,6 +224,7 @@ def extract_and_persist(
     proposal_source: str = "vlm",
     proposal_evidence: str = "llm-proposal",
     proposal_label: str = "llm",
+    proposal_override_fields: Any = None,
     external_references: Any = None,
     external_reference_source: str = "vlm",
     extra_notes: Any = None,
@@ -283,6 +287,7 @@ def extract_and_persist(
         enhanced, applied = apply_meta_proposal(
             base, proposal_obj, source=proposal_source,
             evidence=proposal_evidence, note_label=proposal_label,
+            override_fields=proposal_override_fields,
         )
         meta = enhanced.meta.model_dump()
         provenance = {

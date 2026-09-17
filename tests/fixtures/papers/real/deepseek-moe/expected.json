@@ -38,21 +38,22 @@
       "+ 16",
       "+ 0",
       "Experimental Setup"
-    ]
+    ],
+    "text_pages": 33
   },
   "p2": {
     "meta": {
       "title": "DeepSeekMoE: Towards Ultimate Expert Specialization in Mixture-of-Experts Language Models",
       "authors": [
-        "Damai Dai∗",
+        "Damai Dai",
         "Chengqi Deng",
-        "Chenggang Zhao∗",
+        "Chenggang Zhao",
         "R.X. Xu",
         "Huazuo Gao",
         "Deli Chen",
         "Jiashi Li",
         "Wangding Zeng",
-        "Xingkai Yu∗",
+        "Xingkai Yu",
         "Y. Wu",
         "Zhenda Xie",
         "Y.K. Li",
@@ -60,11 +61,7 @@
         "Fuli Luo",
         "Chong Ruan",
         "Zhifang Sui",
-        "Wenfeng Liang DeepSeek-AI National Key Laboratory for Multimedia Information Processing",
-        "Peking University Institute for Interdisciplinary Information Sciences",
-        "Tsinghua University National Key Laboratory for Novel Software Technology",
-        "Nanjing University {daidamai",
-        "https://github.com/deepseek-ai/DeepSeek-MoE"
+        "Wenfeng Liang"
       ],
       "year": 2024,
       "venue": "",
@@ -89,7 +86,7 @@
     },
     "field_status": {
       "title": "ok",
-      "authors": "degraded",
+      "authors": "ok",
       "year": "ok",
       "venue": "missing",
       "doi": "wrong",
@@ -98,31 +95,26 @@
     },
     "known_failures": [
       {
-        "field": "authors",
-        "tag": "authors-absorb-affiliation",
-        "detail": "末位作者与多机构脚注粘连：'Wenfeng Liang DeepSeek-AI National Key Laboratory ...'，并混入 '{daidamai'、'https://github.com/...' 等非作者片段。"
+        "field": "venue",
+        "tag": "venue-not-found",
+        "detail": "首页没有 venue 行（arXiv 预印本）。"
       },
       {
         "field": "doi",
         "tag": "doi-from-references",
-        "detail": "首页无 DOI，回退 full_text 命中参考文献里的 10.18653/v1/2022（错误 DOI）。"
-      },
-      {
-        "field": "venue",
-        "tag": "venue-not-found",
-        "detail": "技术报告首页没有 venue 行。"
+        "detail": "首页无 DOI，回退到 full_text 命中参考文献里的 DOI（错误来源）。"
       },
       {
         "field": "keywords",
         "tag": "keywords-not-found",
-        "detail": "技术报告没有 Index Terms/Keywords 段。"
+        "detail": "首页没有 Index Terms/Keywords 段。"
       }
     ],
     "references": {
       "heading": "References",
       "count": 9,
       "style": "author-year",
-      "first_raw_startswith": "E. Almazrouei, H",
+      "first_raw_startswith": "E. Almazrouei, H. ",
       "under_split": true,
       "provenance_notes": [
         "authors-unparsed",
@@ -137,5 +129,13 @@
     "合成首页把作者与机构分成独立段落；真实首页作者+机构脚注+邮箱+GitHub 全挤在一起。",
     "标题在真实文本层被拆成两行两个 heading（'...Specialization in' / 'Mixture-of-Experts Language Models'）。",
     "真实表格单元的 '+ 16'、'+ 0'、'+ 63' 被当成一级标题。"
-  ]
+  ],
+  "gold": {
+    "title": "DeepSeekMoE: Towards Ultimate Expert Specialization in Mixture-of-Experts Language Models",
+    "authors_prefix": [
+      "Damai Dai",
+      "Chengqi Deng"
+    ],
+    "abstract_startswith": "In the era of large language models"
+  }
 }
