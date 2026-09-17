@@ -1,3 +1,7 @@
+# F7 reproducible browser evidence
+# command: PORT=8823 PYTHON=python3 bash scripts/rw01_browser_evidence.sh
+# then: ao browser open http://127.0.0.1:8823/#reports; ao browser wait --selector '#report-section-overview'; ao browser get text '#report-viewer-content'
+
 <<<BEGIN UNTRUSTED EXTERNAL CONTENT>>>
 范围内
 3 篇
@@ -16,12 +20,12 @@
 
 时间范围：自定义（2026-09-01 ~ 2026-09-07） 汇报人：张三　　2026-09-13
 
-本周概览
-本周进展
-问题与求助
-过程记录
+1、本周概览
+2、本周进展
+3、过程记录
+4、问题与求助
 附录：来源材料
-本周概览
+1、本周概览
 model
 
 主线：信道编码容量推导。 副线：估计方法对比。
@@ -29,7 +33,7 @@ model
 来源文档
 信道编码推导
 方法笔记
-本周进展
+2、本周进展
 model
 
 （一）信道编码
@@ -40,18 +44,18 @@ model
 来源文档
 信道编码推导
 实验备忘
-问题与求助
+3、过程记录
+model
+踩坑：环境依赖版本不一致。
+来源文档
+实验备忘
+4、问题与求助
 无模型内容
 
 （本节暂无内容）
 
 来源文档
 本节没有可跳转的来源。
-过程记录
-model
-踩坑：环境依赖版本不一致。
-来源文档
-实验备忘
 附录：来源材料
 确定性生成
 信道编码推导（doc-a，2026-09-02）
@@ -61,7 +65,4 @@ model
 信道编码推导
 实验备忘
 方法笔记
-<<<END UNTRUSTED EXTERNAL CONTENT>>>
-<<<BEGIN UNTRUSTED EXTERNAL CONTENT>>>
-科研周报 · v1 · 自定义（2026-09-01 ~ 2026-09-07） · 汇报人：张三 · 日期：2026-09-13 · 3 篇材料 · 生成方式：模型分节 · 指纹 1f7dad6d657b
 <<<END UNTRUSTED EXTERNAL CONTENT>>>

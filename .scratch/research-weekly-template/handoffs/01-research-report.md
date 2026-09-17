@@ -119,3 +119,39 @@ REFERENCES.md 中的绝对路径仍指向主检出）。若评审需要，可单
 - `/code-review`（dispatcher 验收步骤 3）。
 - `/impeccable`（若继续打磨 `#report-zone` 的视觉与信息层级；当前为功能级样式）。
 - `/diagnose`（仅当后续出现缓存命中错误或指纹漂移类 bug）。
+
+---
+
+## Rework R1（2026-09-17）— 回应 reviewer `graph2note-138` 的 CHANGES_REQUESTED
+
+审查报告：`/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-138/.scratch/reviews/rwt-01-report.md`（e558de5）。
+逐项回应与修复：
+
+| # | 结论 | 修复与证据 |
+|---|---|---|
+| **F1** 高（阻塞）| 已修 | `research_report.generate_report` 命中指纹但 `_display_matches` 为假（汇报人/日期不同）时：从 `<id>.report.json` 结构化分节正文重渲染 markdown + 新 meta，`llm_calls=0`、`rerendered=True`，写入**新修订**，旧 `.md/.meta.json` 不改。回归：`test_reporter_and_date_change_rerenders_with_zero_calls`（断言 0 调用、新值、旧快照仍 张三、2 个修订、同指纹）。 |
+| **F2** 高 | 已修 | `_numbered_entries` 对启用专题要求 `body 非空` **且** `_evidence_ids(body, allowed)` 非空（allowed=当前材料 document_ids）；有正文但空/失效/不属于当前输入的来源 → 整节省略。回归：`test_optional_module_with_body_but_no_evidence_is_not_rendered`、`test_optional_module_with_valid_evidence_is_rendered`。来源存在仅是必要条件，报告不声称已验证事实真实性；prompt 保留「已知/推论/猜想/待验证/计划」不确定性标注。 |
+| **F3** 中（PRD 偏离）| 已按协调决定修 | 复用既有 `/api/digests` 创建/列表/详情边界：`POST /api/digests` 新增 `template`（默认 legacy `weekly_summary`，`research_weekly` 走科研生成）；列表/详情同一边界；科研报告写入共享 `digests/`（meta 含 `digest_id`+`template_id`），移除 `storage/reports/` 与 `/api/reports*` 平行端点/历史。旧四节 `.md/.meta.json` 不改写、不迁移、不删除；legacy 详情响应形状不变。回归：`test_legacy_digest_endpoint_still_works_alongside_reports`（两模板同列一张历史，legacy 无 `sections` 键）、`test_api_full_chain_generate_restart_read`。 |
+| **F4** 中 | 已修 | 顺序改为 概览→进展→可选专题→问题与求助→附录；编号按实际章节连续（`1、`…），省略专题不留空号，附录不编号。回归：`test_build_sections_...` 与 node DOM 契约。 |
+| **F5** 低 | 已修 | 模型异常分支 `llm_calls=1`（与空回复分支一致）。回归：`test_model_failure_is_a_status_and_persists_nothing`。 |
+| **F6** 低 | 已修 | 指纹仍不含 kind/label（展示变化不触发模型）；`_display_matches` 比较 kind/from/to/label，不同则零调用重渲染新标签、写新修订。回归：`test_range_label_change_rerenders_with_the_new_label`。 |
+| **F7** 提示 | 已补 | `scripts/rw01_browser_evidence.sh`：临时 store + 离线生成 + 注入 stub planner 起本地服务，打印 `ao browser open/get text/errors/screenshot` 命令；证据 `.scratch/research-weekly-template/handoffs/evidence/rw01-browser-report-text.txt`（实测 1、概览→2、进展→3、过程记录→4、问题与求助→附录，`实验结果` 无证据不显示，无 console error）。 |
+
+### 影响面 / 冲突点更新
+
+- `graph2note/research_report.py`：持久化改为共享 `digests/`（新增 `<id>.report.json` 分节正文 sidecar，与 legacy 的 `<id>.sections.json` 不冲突）；新增 `_display_matches`/`_sections_from_bodies`/`load_section_bodies`/`save_section_bodies`；`generate_report` 增加 `rerendered`。
+- `graph2note/webapp.py`：`POST/GET /api/digests` 统一两模板（`template` 派发）；`GET /api/reports*` 已移除，保留只读 `GET /api/report-templates`。**02/03 若扩展周报，应在 `/api/digests` 边界内追加，不要再开平行存储。**
+- `graph2note/webstatic/js/views/report.js`：全部改走 `/api/digests`；历史显示模板徽章。
+- `scripts/rw01_browser_evidence.sh`（新）。
+- `tests/test_research_report.py`（+5 回归相关）、`tests/test_report_view.py`、`tests/report_view_dom.mjs`、issue Comments。
+
+### 证据
+
+```bash
+OPENCODE_API_KEY=dummy uv run pytest tests/test_research_report.py tests/test_report_view.py -o addopts="" -q  # 28 passed
+node tests/report_view_dom.mjs                                     # all assertions passed
+OPENCODE_API_KEY=dummy uv run pytest -o addopts="" -p no:randomly -q  # 1395 passed, 1 skipped
+PORT=8823 PYTHON=python3 bash scripts/rw01_browser_evidence.sh     # then ao browser get text ...
+```
+
+未 push、未建 PR、未合并 main、未改 BOARD、未改他人分支或主检出。
