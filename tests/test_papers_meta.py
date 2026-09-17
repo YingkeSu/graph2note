@@ -753,12 +753,53 @@ def test_reference_and_citation_dois_are_not_the_paper_doi():
     assert "doi-not-found" in result.notes
 
 
-def test_truncated_doi_fragment_is_rejected():
-    """A DOI split by a PDF line break must not be persisted as a fragment."""
+def test_truncated_doi_fragment_at_a_wrap_is_reconstructed():
+    """A DOI broken across a line break is re-joined, never stored truncated.
+
+    The suffix has no minimum length or digit requirement (ISO 26324 / DOI
+    Handbook), so truncation is handled by line-wrap context only.
+    """
 
     result = metadata.parse_paper_meta(
-        "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\nDOI: 10.1109/tse")
+        "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+        "https://doi.org/10.48550/arXiv.2405\n.04434")
+    assert result.meta.doi == "10.48550/arxiv.2405.04434"
+
+
+def test_short_and_alpha_only_doi_suffixes_are_accepted():
+    """DOI syntax has no minimum suffix length and allows letters only.
+
+    ``10.1000/182`` / ``10.1000/186`` are the DOI Handbook's own example
+    DOIs; ``10.1000/xyz123`` and ``10.1234/abcdefgh`` are syntactically valid
+    synthetic probes (not claimed to be registered).  All are accepted as
+    *syntax*; provenance is still the front-matter metadata line.
+    """
+
+    for raw in ("10.1000/182", "10.1000/186", "10.1000/xyz123",
+                "10.1234/abcdefgh"):
+        result = metadata.parse_paper_meta(
+            f"Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+            f"© 2023 ACM. DOI: {raw}")
+        assert result.meta.doi == raw.casefold(), raw
+
+
+def test_a_complete_doi_at_line_end_is_not_merged_with_the_next_line():
+    """Wrap reconstruction must not corrupt a complete short DOI."""
+
+    result = metadata.parse_paper_meta(
+        "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+        "© 2023 ACM. DOI: 10.1000/182\n2023 IEEE")
+    assert result.meta.doi == "10.1000/182"
+
+
+def test_bare_doi_in_body_prose_is_not_the_paper_doi():
+    """R4b: a bare DOI inside front-page prose is a citation, not the paper's."""
+
+    result = metadata.parse_paper_meta(
+        "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+        "See 10.1145/3293883.3295710 for details.")
     assert result.meta.doi == ""
+    assert "doi-not-found" in result.notes
 
 
 def test_front_page_labeled_doi_is_still_accepted():

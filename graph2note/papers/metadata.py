@@ -780,33 +780,91 @@ def _extract_keywords(paragraphs: list[list[str]]) -> tuple[list[str], str]:
 def _doi_line_is_metadata(line: str) -> bool:
     """True only for a front-page line that presents the paper's own DOI.
 
-    A ``doi:`` label is not enough — reference lists use it too.  The line must
-    look like metadata (copyright/identifier marker) or be dominated by the
-    DOI/URL itself rather than prose (``See also … for details``).
+    A ``doi:`` label is not enough — reference lists use it too, and a bare DOI
+    inside body prose is a citation.  Rule:
+
+    - citation/reference lines never qualify;
+    - an explicit ``doi:`` / ``doi.org`` label qualifies when the line also
+      carries a metadata marker (©/copyright/ISSN/…), or when nothing but the
+      label+DOI is on it;
+    - a bare DOI qualifies only when the whole line is essentially just the
+      DOI/URL (no prose).
     """
 
     if _CITATION_HINT_RE.search(line):
         return False
-    if _DOI_METADATA_MARKER_RE.search(line):
-        return True
+    labeled = _DOI_LABEL_RE.search(line) is not None
+    has_marker = _DOI_METADATA_MARKER_RE.search(line) is not None
     residual = _DOI_LABEL_RE.sub(" ", line)
     residual = _DOI_RE.sub(" ", residual)
     residual = re.sub(r"https?://\S+|www\.\S+", " ", residual)
-    return len(re.findall(r"[A-Za-z]{2,}", residual)) <= 3
+    prose = len(re.findall(r"[A-Za-z]{2,}", residual))
+    if labeled:
+        return has_marker or prose == 0
+    return prose == 0
+
+
+_DOI_CONTINUATION_HEAD_RE = re.compile(r"^[0-9A-Za-z._/();:<>-]")
+
+
+def _doi_match_at_line_end(line: str):
+    match = _DOI_RE.search(line)
+    if match is None or line[match.end():].strip():
+        return None
+    return match
+
+
+def _joins_as_wrapped_doi(line: str, next_line: str) -> bool:
+    """Whether ``next_line`` looks like the continuation of a wrapped DOI.
+
+    Conservative on purpose: only a break right after a DOI separator or a
+    next line that *starts* with a separator is treated as a wrap.  A line
+    that ended on an alphanumeric and is followed by another alphanumeric
+    token is ambiguous, so it is **not** joined (a complete short DOI such as
+    ``10.1000/182`` followed by a year must not become ``10.1000/1822023``).
+    """
+
+    if not next_line or not _DOI_CONTINUATION_HEAD_RE.match(next_line):
+        return False
+    stripped = line.rstrip()
+    if stripped and stripped[-1] in "/.-_:":
+        return True
+    return next_line[0] in ".-_/"
+
+
+def _iter_front_doi_lines(text: str):
+    """Front-page lines with a wrapped DOI re-joined before matching."""
+
+    raw = [line.strip() for line in str(text or "").splitlines()]
+    index = 0
+    while index < len(raw):
+        line = raw[index]
+        while index + 1 < len(raw):
+            match = _doi_match_at_line_end(line)
+            if match is None or not _joins_as_wrapped_doi(line, raw[index + 1]):
+                break
+            candidate = line + raw[index + 1]
+            longer = _DOI_RE.search(candidate)
+            if longer is None or longer.end() <= match.end():
+                break
+            line = candidate
+            index += 1
+        yield line
+        index += 1
 
 
 def _extract_doi(front_text: str) -> tuple[str, str]:
     """DOI from the paper's own front-matter region — never a bibliography hit.
 
     A DOI is evidence only when it appears on a front-page line that reads as
-    metadata (``doi:`` / ``doi.org`` label, copyright/footer line).  Reference
-    and in-text citation lines are not the paper's own DOI even when they carry
-    a ``doi:`` label, so they are skipped; a truncated fragment (``10.1109/tse``)
-    is dropped rather than persisted.  No reliable evidence ⇒ empty.
+    metadata (see :func:`_doi_line_is_metadata`).  A DOI wrapped across a line
+    break is re-joined first, so a truncated fragment is not persisted; there
+    is no registry check and no minimum-length heuristic (short/alpha-only
+    DOIs such as ``10.1000/182`` are legitimate).  No reliable evidence ⇒
+    empty.
     """
 
-    for raw_line in str(front_text or "").splitlines():
-        line = raw_line.strip()
+    for line in _iter_front_doi_lines(front_text):
         if not line:
             continue
         labeled = _DOI_LABEL_RE.search(line)
@@ -816,12 +874,7 @@ def _extract_doi(front_text: str) -> tuple[str, str]:
         if not _doi_line_is_metadata(line):
             continue
         raw = labeled.group(1) if labeled is not None else bare.group(0)
-        doi = normalize_doi(raw)
-        suffix = doi.split("/", 1)[1] if "/" in doi else ""
-        # Reject truncated fragments: a real suffix is not a bare short word.
-        if len(suffix) < 8 or not any(ch.isdigit() for ch in suffix):
-            continue
-        return doi, line[:200]
+        return normalize_doi(raw), line[:200]
     return "", ""
 
 
