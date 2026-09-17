@@ -150,3 +150,4 @@ node tests/paper_view.mjs && node tests/upload_pdf_intercept.mjs
     tests/test_papers_meta_real.py tests/test_papers_ingest_real.py tests/test_papers_meta_dualslot.py
 # 全量：1439 passed / 0 failed / 0 skipped
 ```
+  - **规范来源核实**（2026-09-17，只读联网）：官方 doi.org“What is a DOI?”页面明确 DOI = prefix + suffix（斜杠分隔），并以其官方示例 `10.1000/182`（解析为 https://doi.org/10.1000/182）说明后缀可以很短；未发现“后缀最小长度/必须含数字”的规则，与 reviewer 引用的 ISO 26324 一致。`10.1000/xyz123`/`10.1234/abcdefgh` 仅作语法压测，未声称在线注册。
