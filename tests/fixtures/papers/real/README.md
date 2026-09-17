@@ -73,11 +73,11 @@ recalibrates the snapshot on purpose (and asserts gold in `test_real_gold_*`).
 | --- | --- | --- | --- |
 | 1 | `structure.split_sections` promotes figure/table/axis text (`Layers`, `+ 16`, `1010`, `1024`, `91.2`) to headings — 42–76 sections on real papers | `structure` | **open** — issue 03 (spurious-heading guard) |
 | 2 | the byline melted into `title` when the text layer merges title/byline/abstract into one block (`scaling-laws`, `bert`, both GPT samples) | `metadata._title_lines` | **fixed (PRR/02)** — abstract label is a hard front-matter boundary; wrapped-title and one-name-per-line bylines are split out |
-| 3 | affiliation/URL/email fragments landed in `authors` | `metadata._parse_authors` | **mostly fixed (PRR/02)** — line-aware parsing + fixed `_AFFIL_RE`; the two-column `bert` still absorbs `Google AI Language` (recorded `authors-absorb-affiliation`) |
-| 4 | `doi` falls back to `full_text` and picks a DOI out of the reference list (`scaling-laws`, `deepseek-moe`) | `metadata._extract_doi` | **open** — recorded `doi-from-references` |
+| 3 | affiliation/URL/email fragments landed in `authors` | `metadata._parse_authors` | **fixed (PRR/02 R2)** — line-aware parsing + fixed `_AFFIL_RE` + affiliation/org pruning + PDF-ligature folding; `bert` now yields exactly the four people (gold `author_count: 4`) |
+| 4 | `doi` falls back to `full_text` and picks a DOI out of the reference list (`scaling-laws`, `deepseek-moe`) | `metadata._extract_doi` | **fixed (PRR/02 R2)** — DOI only from a front-page metadata line (copyright/identifier marker or DOI-dominated line), citation lines and truncated fragments rejected; no evidence ⇒ empty + `doi-not-found` |
 | 5 | real unnumbered / alphabetic-key reference lists under-split into 3–9 multi-page entries (`[ACDE12]`, `[Askell et al., 2021]`) | `references.split_reference_entries` | **open** |
 | 6 | `venue`/`keywords` are `missing` on every sample (arXiv preprints carry neither) | `metadata` | expected for this source; not a defect |
-| 7 | the two-column `bert` reflow put the swallowed `'Abstract'` line in `title_keys`, so the real summary was lost (`abstract-not-found`) | `metadata._extract_abstract` | **fixed (PRR/02)** — `bert` now recovers the abstract; the old regression test was replaced by a recovery assertion |
+| 7 | the two-column `bert` reflow put the swallowed `'Abstract'` line in `title_keys`, so the real summary was lost (`abstract-not-found`) | `metadata._extract_abstract` | **fixed (PRR/02)** — `bert` recovers the abstract; a label whose body is in the next paragraph is now collected too (R3) |
 
 The under-split in #5 is **conservative**: the entries keep `merged-continuation`
 / `merged-incomplete` / `dehyphenated` / `authors-unparsed` provenance and never

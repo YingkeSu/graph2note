@@ -92,7 +92,8 @@
     },
     "notes": [
       "keywords-not-found",
-      "venue-not-found"
+      "venue-not-found",
+      "doi-not-found"
     ],
     "provenance_confidence": {
       "title": "high",
@@ -148,6 +149,7 @@
       "Jared Kaplan"
     ],
     "author_count": 31,
-    "abstract_startswith": "Recent work has demonstrated substantial gains"
+    "abstract_startswith": "Recent work has demonstrated substantial gains",
+    "doi": ""
   }
 }

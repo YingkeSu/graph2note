@@ -58,21 +58,22 @@
       ],
       "year": 2020,
       "venue": "",
-      "doi": "10.1145/3293883.3295710",
+      "doi": "",
       "abstract": "We study empirical scaling laws for language model performance on the cross-entropy loss. The loss scales as a power-law with model size, dataset size, and the amount of compute used for training, with some trends spanning more than seven orders of magnitude. Other architectural details such as network width or depth have minimal effects within a wide range. Simple equations govern the dependence of overﬁtting on model/dataset size and the dependence of training speed on model size. These relationships allow us to determine the optimal allocation of a ﬁxed compute budget. Larger models are signiﬁcantly more sample- efﬁcient, such that optimally compute-efﬁcient training involves training very large models on a relatively modest amount of data and stopping signiﬁcantly before convergence.",
       "keywords": [],
       "source": "text-layer"
     },
     "notes": [
       "keywords-not-found",
-      "venue-not-found"
+      "venue-not-found",
+      "doi-not-found"
     ],
     "provenance_confidence": {
       "title": "high",
       "authors": "high",
       "year": "high",
       "venue": "low",
-      "doi": "high",
+      "doi": "low",
       "abstract": "high",
       "keywords": "low",
       "source": "high"
@@ -82,7 +83,7 @@
       "authors": "ok",
       "year": "ok",
       "venue": "missing",
-      "doi": "wrong",
+      "doi": "missing",
       "abstract": "ok",
       "keywords": "missing"
     },
@@ -91,11 +92,6 @@
         "field": "venue",
         "tag": "venue-not-found",
         "detail": "首页没有 venue 行（arXiv 预印本）。"
-      },
-      {
-        "field": "doi",
-        "tag": "doi-from-references",
-        "detail": "首页无 DOI，回退到 full_text 命中参考文献里的 DOI（错误来源）。"
       },
       {
         "field": "keywords",
@@ -127,6 +123,7 @@
       "Jared Kaplan",
       "Sam McCandlish"
     ],
-    "abstract_startswith": "We study empirical scaling laws"
+    "abstract_startswith": "We study empirical scaling laws",
+    "doi": ""
   }
 }

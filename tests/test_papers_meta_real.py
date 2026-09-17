@@ -145,6 +145,10 @@ def test_real_gold_title_authors_abstract(key):
     if "author_count" in gold:
         assert len(meta.authors) == gold["author_count"], key
     assert meta.abstract.startswith(gold["abstract_startswith"]), key
+    if "doi" in gold:
+        # R1: a paper without its own front-page DOI must not inherit a
+        # bibliography DOI (GPT-4/scaling-laws used to get one).
+        assert meta.doi == gold["doi"], key
 
 
 @pytest.mark.parametrize("key", KEYS)

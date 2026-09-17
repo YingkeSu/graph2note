@@ -734,3 +734,49 @@ def test_proposal_sets_vlm_source_only_when_baseline_is_empty():
 
 def test_extra_proposal_keys_are_forbidden():
     assert enhance.validate_meta_proposal({"title": "ok", "extra": 1}) is None
+
+
+# ---------------------------------------------------------------------------
+# PRR/02 Rework R2: DOI must come from the paper's own front matter (R1)
+# ---------------------------------------------------------------------------
+
+def test_reference_and_citation_dois_are_not_the_paper_doi():
+    """R1: a bibliography / in-text DOI is not this paper's own DOI."""
+
+    text = (
+        "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+        "[12] Foo et al. 2019. Some title. doi:10.1145/3293883.3295710\n"
+        "See also https://doi.org/10.18653/v1/p19-1472 for details.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.doi == ""
+    assert "doi-not-found" in result.notes
+
+
+def test_truncated_doi_fragment_is_rejected():
+    """A DOI split by a PDF line break must not be persisted as a fragment."""
+
+    result = metadata.parse_paper_meta(
+        "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\nDOI: 10.1109/tse")
+    assert result.meta.doi == ""
+
+
+def test_front_page_labeled_doi_is_still_accepted():
+    """A positive case: the paper's own front-page DOI is kept."""
+
+    result = metadata.parse_paper_meta(
+        "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+        "https://doi.org/10.1145/3293883.3295710")
+    assert result.meta.doi == "10.1145/3293883.3295710"
+    assert result.provenance["doi"].confidence == "high"
+
+
+def test_abstract_label_own_paragraph_collects_the_next_paragraph():
+    """R3: ``Abstract`` heads its own paragraph, body in the next one."""
+
+    text = ("Graph Neural Networks for\nAbstract Meaning Representation\n\n"
+            "Alice, Bob\n\nAbstract\n\nWe study meaning.")
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.abstract == "We study meaning."
+    assert result.meta.title == "Graph Neural Networks for Abstract Meaning Representation"
+    assert result.meta.authors == ["Alice", "Bob"]

@@ -55,21 +55,22 @@
       ],
       "year": 2023,
       "venue": "",
-      "doi": "10.18653/v1/p19-1472",
+      "doi": "",
       "abstract": "We report the development of GPT-4, a large-scale, multimodal model which can accept image and text inputs and produce text outputs. While less capable than humans in many real-world scenarios, GPT-4 exhibits human-level performance on various professional and academic benchmarks, including passing a simulated bar exam with a score around the top 10% of test takers. GPT-4 is a Transformer- based model pre-trained to predict the next token in a document. The post-training alignment process results in improved performance on measures of factuality and adherence to desired behavior. A core component of this project was developing infrastructure and optimization methods that behave predictably across a wide range of scales. This allowed us to accurately predict some aspects of GPT-4’s performance based on models trained with no more than 1/1,000th the compute of GPT-4.",
       "keywords": [],
       "source": "text-layer"
     },
     "notes": [
       "keywords-not-found",
-      "venue-not-found"
+      "venue-not-found",
+      "doi-not-found"
     ],
     "provenance_confidence": {
       "title": "high",
       "authors": "high",
       "year": "high",
       "venue": "low",
-      "doi": "high",
+      "doi": "low",
       "abstract": "high",
       "keywords": "low",
       "source": "high"
@@ -79,7 +80,7 @@
       "authors": "degraded",
       "year": "ok",
       "venue": "missing",
-      "doi": "wrong",
+      "doi": "missing",
       "abstract": "ok",
       "keywords": "missing"
     },
@@ -93,11 +94,6 @@
         "field": "venue",
         "tag": "venue-not-found",
         "detail": "首页没有 venue 行（arXiv 预印本）。"
-      },
-      {
-        "field": "doi",
-        "tag": "doi-from-references",
-        "detail": "首页无 DOI，回退到 full_text 命中参考文献里的 DOI（错误来源）。"
       },
       {
         "field": "keywords",
@@ -125,6 +121,7 @@
     "authors_prefix": [
       "OpenAI"
     ],
-    "abstract_startswith": "We report the development of GPT-4"
+    "abstract_startswith": "We report the development of GPT-4",
+    "doi": ""
   }
 }

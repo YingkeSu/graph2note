@@ -543,6 +543,8 @@ def test_real_frozen_text_import_persists_and_views_gold(
     assert meta["title"] == title
     assert meta["authors"][:len(authors_prefix)] == authors_prefix
     assert meta["abstract"].startswith(abstract_prefix)
+    # R1: no front-page DOI evidence -> empty, never a bibliography DOI
+    assert meta["doi"] == ""
 
     # B2: the library record title is the clean title, never the front-page block
     record = client.get(f"/api/documents/{document_id}").json()
@@ -553,6 +555,19 @@ def test_real_frozen_text_import_persists_and_views_gold(
     assert view["meta"]["title"] == title
     assert view["meta"]["authors"][:len(authors_prefix)] == authors_prefix
     assert view["meta"]["abstract"].startswith(abstract_prefix)
+    assert view["meta"]["doi"] == ""
+
+
+def test_real_bert_authors_exclude_the_affiliation_row():
+    """R2: the two-column BERT byline must keep the four people and drop
+    ``Google AI Language`` (an affiliation, not an author)."""
+
+    from tests.test_papers_meta_real import _meta
+
+    authors = _meta("bert").meta.authors
+    assert authors == ["Jacob Devlin", "Ming-Wei Chang", "Kenton Lee",
+                       "Kristina Toutanova"]
+    assert "Google AI Language" not in authors
 
 
 def test_implausible_title_is_gated_and_falls_back_to_the_filename():
