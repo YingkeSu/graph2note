@@ -2,12 +2,57 @@
 
 - **审查人**：AO worker `graph2note-138`（独立于被审 worker `graph2note-136`）
 - **被审对象**：`/Users/suyingke/.ao/data/worktrees/graph2note/graph2note-136`，分支 `dev/rwt-01-report`
-- **核实提交**：HEAD = `b27c4df`（`bcfe1a6` + `b27c4df`，基线 `f771b9d`；工作树 clean）
+- **初审提交**：`b27c4df` → CHANGES_REQUESTED（下面正文保留原判决）
+- **复审提交（本裁决依据）**：**`83270eb`**（实现 `3e17c5b`，文档 `83270eb`；基线 `b27c4df`；工作树 clean）
 - **handoff**：`.scratch/research-weekly-template/handoffs/01-research-report.md`
-- **审查方式**：只读快照 `git archive b27c4df` → `/tmp/rwt01-snap`；所有测试/复现脚本在 `/tmp/rwt01-review/` 内运行。**未修改被审分支、worktree、主检出或真实用户库。**
+- **审查方式**：初审只读快照 `git archive b27c4df` → `/tmp/rwt01-snap`；复审只读快照 `git archive 83270eb` → `/tmp/rwt01b-snap`；复现脚本 `/tmp/rwt01b-review/{probe.py,probe2.py}`。**未修改被审分支、worktree、主检出或真实用户库。**
 - **日期**：2026-09-17
 
-## 裁决：**CHANGES_REQUESTED**
+## 复审 R1（SHA `83270eb`）：**APPROVE**
+
+原报告 F1–F7 逐项关闭，复审在其独立快照上复跑并独立复现：
+
+| # | 初审 | 复审结论 | 独立证据 |
+|---|---|---|---|
+| **F1** 高（阻塞）| CHANGES_REQUESTED | **关闭** | 改汇报人/日期后：`llm_calls=0`、`cached=True`、`rerendered=True`，返回 meta/markdown 内含新值且不含旧值；旧修订 `.md` 与 `.meta.json` 字节不变；新修订同指纹；重启后旧修订仍“张三”、新修订“李四”。 |
+| **F2** 高 | CHANGES_REQUESTED | **关闭** | 启用专题 `process`（有正文无来源）与 `experiments`（正文+**非本材料**的外来来源）均不出现；`method`（正文+有效来源）出现。 |
+| **F3** 中（PRD 偏离）| 需追认或改共享 store | **关闭（按协调决定）** | `POST/GET /api/digests` 统一边界：无 `template` → legacy（无 `report` 键）；`research_weekly` 走科研；同一张历史列表含两种模板；详情 legacy `{meta,markdown}`、research `{meta,markdown,sections}`；存储只有 `digests/`，未再建 `reports/`。 |
+| **F4** 中 | CHANGES_REQUESTED | **关闭** | 顺序 `1、本周概览 → 2、本周进展 → 3、专题(存在的) → 4、问题与求助 → 附录：来源材料`；省略专题不留空号，附录不编号（API 与浏览器均核对）。 |
+| **F5** 低 | 计数不一致 | **关闭** | 模型异常分支模块级返回 `llm_calls=1`；API 层为 502。 |
+| **F6** 低 | range 旧标签 | **关闭** | 同日 `custom` vs `this_week`：`llm_calls=0`、`rerendered=True`、markdown 用新标签且不含旧标签、新修订同指纹。 |
+| **F7** 提示 | 无可复跑命令 | **关闭** | `scripts/rw01_browser_evidence.sh` 实跑成功：临时 store + stub planner，浏览器文本复现 `1、本周概览 → 2、本周进展 → 3、过程记录 → 4、问题与求助 → 附录：来源材料`，无证据的「实验结果」不显示，meta 行 `汇报人：张三 · 日期：2026-09-13`，8823 无 console/网络错误。 |
+
+### 复审复跑
+
+```bash
+# 只读快照
+rm -rf /tmp/rwt01b-snap && mkdir -p /tmp/rwt01b-snap
+ git -C /Users/suyingke/.ao/data/worktrees/graph2note/graph2note-136 archive 83270eb | tar -x -C /tmp/rwt01b-snap
+cd /tmp/rwt01b-snap && PYTHONPATH=/tmp/rwt01b-snap <venv>/python -m pytest -o addopts="" -p no:warnings -q \
+  tests/test_research_report.py tests/test_report_view.py     # 28 passed
+node tests/report_view_dom.mjs                                # all assertions passed
+# legacy 不受影响
+... -m pytest -o addopts="" -q tests/test_weekly_digest.py tests/test_digest_structure.py \
+  tests/test_digest_budget.py tests/test_digest_view.py       # 99 passed
+node tests/digest_view_dom.mjs                                # OK
+# 全量（junit）
+... -m pytest -o addopts="" -p no:warnings -q --junitxml=...  # 1396 passed / 0 failed / 0 skipped
+# 浏览器证据
+PORT=8823 PYTHON=<venv>/bin/python bash scripts/rw01_browser_evidence.sh   # 见上
+```
+
+### 兼容性观察（非阻塞，如实记录，未做迁移）
+
+- **旧 dev `storage/reports/` 产物会被孤立**：b27c4df 开发版把科研报告写在 `storage/reports/`；统一到 `digests/` 后，这些文件仍在磁盘但不再被列表/详情读取（`GET /api/digests/<旧id>` → 404）。影响仅限未发布的开发版本地 store；按指示**未迁移**，需用户/维护者决定是否一次性搬迁。
+- **`.report.json` 分节 sidecar 缺失/损坏有明确行为**：`load_section_bodies` 返回 `[]`，展示字段变化时不再重渲染而是回落到一次真实模型生成（1 次调用）并写新修订 —— 不会返回旧内容、不会崩溃；详情端点仍 200（用 meta 的 public sections + markdown）。代价是“缺失/损坏 sidecar + 纯展示变更”会多一次模型调用。
+- **`resolve_range` 会重算 `label`**：API 无法注入任意 range 标签；F6 在 API 侧以同日不同 `kind`（custom/this_week）复现并通过。
+- **旧 dashboard 可消费混合历史**：research meta 带 `digest_id` 与 `sections`（标题与 markdown `##` 标题一致），legacy `dashboard.js` 能列出/分段渲染；仅缺少模板徽章，属外观差异。
+
+### 初审报告保留（历史记录）
+
+以下为针对 `b27c4df` 的初审内容，保留以备追溯。
+
+## 初审裁决（`b27c4df`）：**CHANGES_REQUESTED**
 
 问题不在单测数量，而在两个用户可见的正确性缺陷 + 一个需明确裁决的 PRD 边界偏离。目标分支自测全绿（我复跑全量 **1393 passed**），但现有测试没有覆盖“改汇报信息后的返回内容”和“有正文但无证据的专题”，因此绿并不代表 AC 达成。
 
