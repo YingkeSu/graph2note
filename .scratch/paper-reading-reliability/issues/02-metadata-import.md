@@ -57,3 +57,9 @@ None — 可立即开始
   - **year 同源检查**：真实 17 篇只读探针的 year 均来自论文自身 arXiv 印记/版权/页眉（2020–2025），未观察到参考文献年份污染，本轮未改 year 逻辑。
   - **测试**：定向 `test_papers_meta.py` 65 例、`test_papers_meta_import.py` 26 例、真实 fixture 套件全绿；全量见 R2 handoff。
   - **保留**：B1–B3/M1/L1 全部回归保留，未回退。
+- 2026-09-17 复审 R3 整改（报告 `graph2note-136/.scratch/reviews/prr-02-metadata-r3.md`，裁决 CHANGES_REQUESTED；口径更正见其 4dcc26c）：
+  - **R4a（高，阻塞）删除任意最小长度/必须数字阈值**：DOI 规范（ISO 26324 / DOI Handbook）对后缀无最小长度要求、允许纯字母。`_extract_doi` 不再用 `len(suffix)<8 or no digit`，改为**语法有效性**（`_DOI_RE`）与**本论文来源归属**（`_doi_line_is_metadata`）分离；截断改由**折行上下文**判定：仅当行尾 DOI 断在分隔符后或下一行以 `. - _ /` 开头且拼接后匹配更长时才重建跨行 DOI，避免把完整短 DOI 误并（如 `10.1000/182` + 下一行 `2023` 不得变 `10.1000/1822023`）。正例：DOI Handbook 示例 `10.1000/182`/`10.1000/186` 与纯语法合成 `10.1000/xyz123`/`10.1234/abcdefgh` 均接受（注释明确区分“Handbook 示例”与“未声称注册的合成压测值”）；跨行 `10.48550/arXiv.2405` + `.04434` 重建为 `10.48550/arxiv.2405.04434`。
+  - **R4b（中）裸 DOI 仅在整行基本只含 DOI/URL 时接受**：含散文的裸引用（`See 10.1145/… for details.`、`Abstract… See …`）不再成为论文 DOI；显式 `doi:`/`doi.org` 标签仅在带元数据标记（©/copyright/ISSN/ISBN/arXiv/preprint/received/accepted/published/available at）或该行基本只含标签+DOI 时接受；参考文献 `doi:` 标签仍拒绝。新增负例 `test_bare_doi_in_body_prose_is_not_the_paper_doi`。
+  - **矩阵回归**（离线，不依赖在线解析）：短/纯字母/长/URL/`doi:`/本论文元数据正例、首页正文裸引用负例、参考 doi: 负例、折行正例与“完整 DOI 行尾不误并”负例。
+  - 真实库只读复测 DOI 仍 **0/17**（无误报）；front_single_column 正例仍 `10.1109/tkde.2023.1234567`(high)。保留 R1–R3/B1–B3/M1/L1 行为。
+  - 残留不确定性（如实记录）：若 DOI 在字母后断行且下一行以字母续接，无法与下一个词可靠区分，按“无法可靠重建即不接受拼接、保留行内完整候选”处理；这是有意保守，不伪造。

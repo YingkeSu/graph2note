@@ -130,5 +130,23 @@ node tests/paper_view.mjs && node tests/upload_pdf_intercept.mjs
 ```bash
 … -m pytest -p no:warnings tests/test_papers_meta.py tests/test_papers_meta_import.py \
     tests/test_papers_meta_real.py tests/test_papers_ingest_real.py
-# 全量：见下（本次交付运行 1436 passed / 0 failed / 0 skipped）
+# 全量：见下（本次交付运行 1439 passed / 0 failed / 0 skipped）
+```
+
+## Rework R3 — DOI 规范与来源归属分离（R4a/R4b）
+
+审查报告：`graph2note-136/.scratch/reviews/prr-02-metadata-r3.md`（针对 `389b49e`/`b79d2fd`）。
+
+- **R4a** ✅ 删除 `len(suffix)<8 or not any(digit)`：DOI 语法无最小长度/必须数字要求（ISO 26324 / DOI Handbook）。改为“语法（`_DOI_RE`）+ 来源归属（`_doi_line_is_metadata`）”分离；截断用折行上下文：仅当断在分隔符后、或下一行以 `. - _ /` 开头且拼接得到更长 DOI 时重建（保守，避免误并 `10.1000/182`+`2023`）。
+  - 正例：DOI Handbook 示例 `10.1000/182`、`10.1000/186`；纯语法合成 `10.1000/xyz123`、`10.1234/abcdefgh`（注释标明未必注册）；跨行 `10.48550/arXiv.2405`+`.04434` → `10.48550/arxiv.2405.04434`。
+- **R4b** ✅ 裸 DOI 仅在整行基本只含 DOI/URL 时接受；含散文的 `See 10.… for details.` 不接受；显式 `doi:` 需元数据标记或整行基本只含标签+DOI；参考条目 doi: 仍拒绝。
+- **保留**：R1–R3/B1–B3/M1/L1 回归未变。真实库只读 DOI 0/17；front_single_column 正例仍接受。
+- **矩阵**：短/纯字母/长/URL/doi:/本论文元数据/正文裸引用/参考文献/折行正负例，全部离线断言。
+
+### R3 证据
+
+```bash
+… -m pytest -p no:warnings tests/test_papers_meta.py tests/test_papers_meta_import.py \
+    tests/test_papers_meta_real.py tests/test_papers_ingest_real.py tests/test_papers_meta_dualslot.py
+# 全量：1439 passed / 0 failed / 0 skipped
 ```
