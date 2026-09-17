@@ -170,3 +170,27 @@ Sidecar note (from the R1 review): a missing/corrupt `<id>.report.json` falls ba
 4. Run the full offline suite (candidate already 1396 passed; combined rehearsal 1399 passed).
 
 **Resume state**: candidate `d191467` retained at the path above; no main/WIP/push/merge changes; awaiting 136's re-review of the metadata SHA `fd083c2`. No new features, no issue set to `merged`.
+
+---
+
+## Checkpoint — combined two-feature candidate + WIP rehearsal (2026-09-17)
+
+### Two-feature candidate (weekly + metadata), kept separately mergeable
+
+- Branch `dev/prr-02-integration-rwt-01`; combined merge commit
+  **`a104050`** = `git merge --no-ff a747d12` onto `d191467`.
+  - Parents: `d1914671abbf…` (weekly `83270eb` on `f771b9d`) + `a747d1213fee…` (approved metadata).
+  - **No conflicts**; `webapp.py` keeps `/api/digests` (3), `/api/report-templates` (1) and the metadata endpoints/content-extract (7) side by side; `index.html` has `paper-reextract` + `report-zone`/`nav-reports`; `style.css` has `.paper-ref-status` + RW01; all three review docs present; no conflict markers.
+  - Tests: cross-feature 465 passed + all four node contracts; **full offline suite 1496 passed / 0 failed / 0 skipped** (`/tmp/prr02-integration/combined.xml` sha256 `5b0988dc…`).
+
+### WIP rehearsal (read-only snapshot; isolated copy; no storage/creds/WIP committed)
+
+- Rehearsal dir `/tmp/rwt01-combined-rehearsal` (temp worktree + branch, removed after evidence): `f771b9d` + main WIP patch + untracked code/docs (excluding `references/`, storage, `.venv`), then merge `a104050`.
+- Direct merge refused (local changes `webapp.py`/`index.html`; 16 untracked `.scratch/research-weekly-template/*`).
+- After the WIP is preserved: **one conflict in `graph2note/webapp.py`** — a delete-vs-modify. The WIP extracts the inline paper-view projection into the untracked `graph2note/papers/view.py` (`build_paper_view`), while the metadata feature had added reference parse-status `notes` (and `references_provenance`) to the inline `_paper_references_payload`.
+- **Resolution (validated in the rehearsal, NOT applied to the branch)**: take the WIP deletion of the inline block, then port the metadata view change into `papers/view.py`:
+  - `_paper_references_payload(value, provenance=None)` → per-entry `notes` from `references_provenance`;
+  - `build_paper_view` passes `p2["references_provenance"]`.
+  A hunk-level resolution is required — `git checkout --ours <file>` is wrong (it drops the metadata endpoints too); resolve only the conflict block.
+- Rehearsal result (candidate + WIP + resolution): cross-feature 373 passed, all node contracts; **full offline suite 1499 passed / 0 failed / 0 skipped** (`/tmp/prr02-integration/combined-rehearsal.xml`).
+- **Note**: main-checkout `graph2note/papers/view.py` is uncommitted WIP and is **not** part of any approved branch (the approved preview branch `dev/prr-01-preview` does not track it). It must not leak into the candidate.
