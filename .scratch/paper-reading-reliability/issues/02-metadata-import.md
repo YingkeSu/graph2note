@@ -64,3 +64,9 @@ None — 可立即开始
   - 真实库只读复测 DOI 仍 **0/17**（无误报）；front_single_column 正例仍 `10.1109/tkde.2023.1234567`(high)。保留 R1–R3/B1–B3/M1/L1 行为。
   - 残留不确定性（如实记录）：若 DOI 在字母后断行且下一行以字母续接，无法与下一个词可靠区分，按“无法可靠重建即不接受拼接、保留行内完整候选”处理；这是有意保守，不伪造。
   - **规范来源核实**（2026-09-17，只读联网）：官方 doi.org“What is a DOI?”页面明确 DOI = prefix + suffix（斜杠分隔），并以其官方示例 `10.1000/182`（解析为 https://doi.org/10.1000/182）说明后缀可以很短；未发现“后缀最小长度/必须含数字”的规则，与 reviewer 引用的 ISO 26324 一致。`10.1000/xyz123`/`10.1234/abcdefgh` 仅作语法压测，未声称在线注册。
+- 2026-09-17 复审 R4 整改（报告 `graph2note-136/.scratch/reviews/prr-02-metadata-r4.md`，裁决 CHANGES_REQUESTED）：
+  - **R4e（高，阻塞）折行残片不再以 high 持久化**：`_doi_continuation` 明确三态——`join`（断在分隔符 `/ . - _ :` 后，或续行以数字开头且是无空白 DOI 字符集 token）、`ambiguous`（单 token 但无法与下一个词可靠区分，如 `.pdf`/`Abstract`/字母续接）、`none`。`join` 合并后再匹配（必须更长）；`ambiguous` **不落库**，`meta.doi=""`、confidence low、note `doi-wrap-ambiguous`（不再出现“语法合法即 high 残片”）。例：`DOI: 10.1109/TKDE.2023.1234`+`567890` → `10.1109/tkde.2023.1234567890`；`DOI: 10.1000/abc`+`defgh` → 空 + `doi-wrap-ambiguous`。
+  - **R4d（中）非续行不拼接**：续行必须是真正的单 token 续接；项目符号/带空白行（`- Note…`、`_ appendix`）不拼接、保留完整 DOI `10.1000/182`；`.pdf` 判为 ambiguous 不落库。
+  - **R4c（中）带元数据标记但无 `doi:` 标签的首页自 DOI 被接受**：marker 不再只作用于 labeled 分支；`Digital Object Identifier` 纳入 marker 词表；标记行仅在剩余文本基本无散文（≤1 个词）时接受，避免把“© 行里引用的他人 DOI”误当本论文 DOI（负例已加）。
+  - 新增布局 fixture `tests/fixtures/papers/front_wrapped_doi.txt`（页脚 DOI 数字处折行）与矩阵回归；真实库只读 DOI 仍 0/17；front_single_column 正例仍接受。
+  - 保留 R1–R4a/R4b/B1–B3/M1/L1 行为。

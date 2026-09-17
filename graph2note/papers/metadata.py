@@ -144,7 +144,8 @@ _CITATION_HINT_RE = re.compile(
 #: Copyright / identifier markers that make a front-page line metadata.
 _DOI_METADATA_MARKER_RE = re.compile(
     r"(?:©|\(c\)|copyright|all\s+rights\s+reserved|issn|isbn|arxiv|"
-    r"preprint|received|accepted|published|available\s+at)",
+    r"preprint|received|accepted|published|available\s+at|"
+    r"digital\s+object\s+identifier)",
     re.I,
 )
 _ARXIV_RE = re.compile(r"arXiv[:\s]*(\d{2})(\d{2})\.\d{4,5}", re.I)
@@ -784,87 +785,73 @@ def _doi_line_is_metadata(line: str) -> bool:
     inside body prose is a citation.  Rule:
 
     - citation/reference lines never qualify;
-    - an explicit ``doi:`` / ``doi.org`` label qualifies when the line also
-      carries a metadata marker (©/copyright/ISSN/…), or when nothing but the
-      label+DOI is on it;
-    - a bare DOI qualifies only when the whole line is essentially just the
-      DOI/URL (no prose).
+    - a metadata marker (©/copyright/ISSN/arXiv/…/``Digital Object
+      Identifier``) qualifies a line whose remaining text is only the marker
+      context (no sentence), even without a ``doi:`` label;
+    - otherwise the line must be essentially just the DOI/URL (a ``doi:`` /
+      ``doi.org`` label with no other prose also qualifies).
     """
 
     if _CITATION_HINT_RE.search(line):
         return False
-    labeled = _DOI_LABEL_RE.search(line) is not None
-    has_marker = _DOI_METADATA_MARKER_RE.search(line) is not None
+    marked = _DOI_METADATA_MARKER_RE.search(line) is not None
     residual = _DOI_LABEL_RE.sub(" ", line)
     residual = _DOI_RE.sub(" ", residual)
     residual = re.sub(r"https?://\S+|www\.\S+", " ", residual)
+    if marked:
+        residual = _DOI_METADATA_MARKER_RE.sub(" ", residual)
     prose = len(re.findall(r"[A-Za-z]{2,}", residual))
-    if labeled:
-        return has_marker or prose == 0
+    if marked:
+        return prose <= 1
     return prose == 0
 
 
-_DOI_CONTINUATION_HEAD_RE = re.compile(r"^[0-9A-Za-z._/();:<>-]")
+#: A single whitespace-free DOI-charset token (a plausible wrap continuation).
+_DOI_TOKEN_RE = re.compile(r"^[-._;()/:A-Za-z0-9<>]+$")
 
 
-def _doi_match_at_line_end(line: str):
-    match = _DOI_RE.search(line)
-    if match is None or line[match.end():].strip():
-        return None
-    return match
+def _is_doi_token(token: str) -> bool:
+    return bool(token) and bool(_DOI_TOKEN_RE.match(token))
 
 
-def _joins_as_wrapped_doi(line: str, next_line: str) -> bool:
-    """Whether ``next_line`` looks like the continuation of a wrapped DOI.
+def _doi_continuation(line: str, match, next_line: str) -> str:
+    """How the next line relates to a DOI that ends ``line``.
 
-    Conservative on purpose: only a break right after a DOI separator or a
-    next line that *starts* with a separator is treated as a wrap.  A line
-    that ended on an alphanumeric and is followed by another alphanumeric
-    token is ambiguous, so it is **not** joined (a complete short DOI such as
-    ``10.1000/182`` followed by a year must not become ``10.1000/1822023``).
+    Returns ``"join"`` when the next line is clearly the rest of a wrapped
+    DOI (the break was after a separator, or it continues with a digit),
+    ``"ambiguous"`` when it is a single DOI-charset token we cannot safely
+    distinguish from the next word (``.pdf``, ``Abstract``, ``abcdefgh``), and
+    ``"none"`` otherwise (prose / a label / not at end of line).  Ambiguous
+    fragments are not persisted — syntax validity is not value completeness.
     """
 
-    if not next_line or not _DOI_CONTINUATION_HEAD_RE.match(next_line):
-        return False
-    stripped = line.rstrip()
-    if stripped and stripped[-1] in "/.-_:":
-        return True
-    return next_line[0] in ".-_/"
+    if match is None or line[match.end():].strip():
+        return "none"
+    token = (next_line or "").strip()
+    if not token or not _is_doi_token(token):
+        return "none"
+    previous = line.rstrip()
+    if previous and previous[-1] in "/.-_:":
+        return "join"
+    if token[0].isdigit():
+        return "join"
+    return "ambiguous"
 
 
-def _iter_front_doi_lines(text: str):
-    """Front-page lines with a wrapped DOI re-joined before matching."""
-
-    raw = [line.strip() for line in str(text or "").splitlines()]
-    index = 0
-    while index < len(raw):
-        line = raw[index]
-        while index + 1 < len(raw):
-            match = _doi_match_at_line_end(line)
-            if match is None or not _joins_as_wrapped_doi(line, raw[index + 1]):
-                break
-            candidate = line + raw[index + 1]
-            longer = _DOI_RE.search(candidate)
-            if longer is None or longer.end() <= match.end():
-                break
-            line = candidate
-            index += 1
-        yield line
-        index += 1
-
-
-def _extract_doi(front_text: str) -> tuple[str, str]:
+def _extract_doi(front_text: str) -> tuple[str, str, Optional[str]]:
     """DOI from the paper's own front-matter region — never a bibliography hit.
 
-    A DOI is evidence only when it appears on a front-page line that reads as
-    metadata (see :func:`_doi_line_is_metadata`).  A DOI wrapped across a line
-    break is re-joined first, so a truncated fragment is not persisted; there
-    is no registry check and no minimum-length heuristic (short/alpha-only
-    DOIs such as ``10.1000/182`` are legitimate).  No reliable evidence ⇒
-    empty.
+    Returns ``(doi, evidence, note)``.  A DOI is evidence only when it appears
+    on a front-page line that reads as metadata (see
+    :func:`_doi_line_is_metadata`); no registry check and no minimum-length or
+    digit heuristic is applied (short/alpha-only DOIs such as the DOI
+    Handbook's ``10.1000/182`` are legitimate).  A DOI wrapped across a line
+    break is re-joined when the break is unambiguous; an ambiguous fragment is
+    **not** persisted as a high-confidence value (``note="doi-wrap-ambiguous"``).
     """
 
-    for line in _iter_front_doi_lines(front_text):
+    raw_lines = [line.strip() for line in str(front_text or "").splitlines()]
+    for index, line in enumerate(raw_lines):
         if not line:
             continue
         labeled = _DOI_LABEL_RE.search(line)
@@ -873,9 +860,23 @@ def _extract_doi(front_text: str) -> tuple[str, str]:
             continue
         if not _doi_line_is_metadata(line):
             continue
-        raw = labeled.group(1) if labeled is not None else bare.group(0)
-        return normalize_doi(raw), line[:200]
-    return "", ""
+        match = labeled if labeled is not None else bare
+        next_line = raw_lines[index + 1] if index + 1 < len(raw_lines) else ""
+        kind = _doi_continuation(line, match, next_line)
+        if kind == "join":
+            joined = line + next_line
+            joined_label = _DOI_LABEL_RE.search(joined)
+            joined_bare = _DOI_RE.search(joined)
+            joined_match = joined_label if joined_label is not None else joined_bare
+            if joined_match is not None and joined_match.end() > match.end():
+                value = (joined_label.group(1) if joined_label is not None
+                         else joined_bare.group(0))
+                return normalize_doi(value), joined[:200], None
+        elif kind == "ambiguous":
+            return "", line[:200], "doi-wrap-ambiguous"
+        value = labeled.group(1) if labeled is not None else bare.group(0)
+        return normalize_doi(value), line[:200], None
+    return "", "", None
 
 
 def _extract_year(
@@ -971,7 +972,7 @@ def parse_paper_meta(
     authors = _parse_authors(author_lines)
     abstract, abstract_evidence = _extract_abstract(paragraphs, author_lines, title_block)
     keywords, keywords_evidence = _extract_keywords(paragraphs)
-    doi, doi_evidence = _extract_doi(text)
+    doi, doi_evidence, doi_note = _extract_doi(text)
     venue, venue_confidence, venue_evidence = _extract_venue(header_lines, text)
     year, year_confidence, year_evidence = _extract_year(text, header_lines, venue)
 
@@ -986,7 +987,7 @@ def parse_paper_meta(
     if not venue:
         notes.append("venue-not-found")
     if not doi:
-        notes.append("doi-not-found")
+        notes.append(doi_note or "doi-not-found")
     if year is None:
         notes.append("year-not-found")
 

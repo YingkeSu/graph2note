@@ -151,3 +151,15 @@ node tests/paper_view.mjs && node tests/upload_pdf_intercept.mjs
 # 全量：1439 passed / 0 failed / 0 skipped
 ```
   - **规范来源核实**（2026-09-17，只读联网）：官方 doi.org“What is a DOI?”页面明确 DOI = prefix + suffix（斜杠分隔），并以其官方示例 `10.1000/182`（解析为 https://doi.org/10.1000/182）说明后缀可以很短；未发现“后缀最小长度/必须含数字”的规则，与 reviewer 引用的 ISO 26324 一致。`10.1000/xyz123`/`10.1234/abcdefgh` 仅作语法压测，未声称在线注册。
+
+## Rework R4 — 折行残片的 high 持久化与标记归属（R4c/R4d/R4e）
+
+审查报告：`graph2note-136/.scratch/reviews/prr-02-metadata-r4.md`（针对 `fd083c2`）。
+
+- **R4e（阻塞）** ✅ `_doi_continuation` 三态：`join`（断在 `/ . - _ :` 后，或续行以数字开头的无空白 DOI token）、`ambiguous`（单 token 但无法与下一个词区分）、`none`。`join` 合并后必须得到更长匹配；`ambiguous` 不落库（低置信 + `doi-wrap-ambiguous`），不再出现“语法合法即 high 残片”。
+- **R4d** ✅ 续行须为真续接 token：`- Note…`/`_ appendix`（含空白）不拼接、保留 `10.1000/182`；`.pdf` 判 ambiguous 不落库。
+- **R4c** ✅ 元数据标记（含 `Digital Object Identifier`）可独立于 `doi:` 标签认定本论文首页 DOI；标记行要求剩余文本基本无散文（≤1 词），避免“© 行引用他人 DOI”误判（负例已加）。
+- **fixture**：`tests/fixtures/papers/front_wrapped_doi.txt`（页脚数字处折行）及矩阵回归（短/字母/长/URL/doi:/标记/正文/参考/折行正负）。
+- **保留**：R1–R4a/R4b/B1–B3/M1/L1 未回退；真实库只读 DOI 0/17；front_single_column 正例仍接受。
+- **残留**：字母后续接 token 的单 token 情况一律按 ambiguous 保守不落库（可能放弃少数完整 DOI），符合 reviewer 选项 (b)，已在测试与文档标注。
+- **验证**：定向 `tests/test_papers_meta.py`（含折行/标记/正文/参考矩阵）与 `test_papers_meta_import.py`/真实 fixture 全绿；全量离线 pytest **1444 passed / 0 failed / 0 error / 0 skipped**；mutation 有牙（ambiguous 改回落库→2 例红；去掉标记支持→1 例红）。

@@ -753,17 +753,66 @@ def test_reference_and_citation_dois_are_not_the_paper_doi():
     assert "doi-not-found" in result.notes
 
 
-def test_truncated_doi_fragment_at_a_wrap_is_reconstructed():
-    """A DOI broken across a line break is re-joined, never stored truncated.
-
-    The suffix has no minimum length or digit requirement (ISO 26324 / DOI
-    Handbook), so truncation is handled by line-wrap context only.
-    """
+def test_wrapped_doi_at_a_digit_break_is_reconstructed():
+    """R4e: a DOI broken at a digit is re-joined, never stored as a fragment."""
 
     result = metadata.parse_paper_meta(
         "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
-        "https://doi.org/10.48550/arXiv.2405\n.04434")
-    assert result.meta.doi == "10.48550/arxiv.2405.04434"
+        "© 2023 IEEE. DOI: 10.1109/TKDE.2023.1234\n567890")
+    assert result.meta.doi == "10.1109/tkde.2023.1234567890"
+    assert result.provenance["doi"].confidence == "high"
+
+
+def test_letter_break_fragment_is_not_persisted_as_high():
+    """R4e: an ambiguous letter continuation is not persisted as a value."""
+
+    result = metadata.parse_paper_meta(
+        "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+        "DOI: 10.1000/abc\ndefgh")
+    assert result.meta.doi == ""
+    assert result.provenance["doi"].confidence == "low"
+    assert "doi-wrap-ambiguous" in result.notes
+
+
+def test_non_continuation_lines_are_not_merged_into_the_doi():
+    """R4d: bullets / file extensions are not DOI continuations."""
+
+    for tail in ("- Note about the paper", "_ appendix"):
+        result = metadata.parse_paper_meta(
+            "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+            f"© 2023 ACM. DOI: 10.1000/182\n{tail}")
+        assert result.meta.doi == "10.1000/182", tail
+    dotted = metadata.parse_paper_meta(
+        "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+        "© 2023 ACM. DOI: 10.1000/182\n.pdf")
+    assert dotted.meta.doi == ""
+    assert "doi-wrap-ambiguous" in dotted.notes
+
+
+def test_copyright_line_citing_another_paper_is_not_the_paper_doi():
+    result = metadata.parse_paper_meta(
+        "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+        "© 2023 IEEE. See 10.1145/3293883.3295710 for details.")
+    assert result.meta.doi == ""
+
+
+def test_doi_marker_without_a_label_is_accepted():
+    """R4c: an explicit metadata marker identifies the line without ``doi:``."""
+
+    for line in ("Digital Object Identifier 10.1109/TKDE.2023.1234567",
+                 "© 2023 IEEE 10.1109/TKDE.2023.1234567"):
+        result = metadata.parse_paper_meta(
+            f"Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n{line}")
+        assert result.meta.doi == "10.1109/tkde.2023.1234567", line
+
+
+def test_wrapped_doi_layout_fixture_is_reconstructed():
+    """A frozen real-layout fixture: DOI wrapped at a digit in a footer."""
+
+    result = metadata.parse_paper_meta(_fixture("front_wrapped_doi.txt"))
+    assert result.meta.doi == "10.1109/tkde.2023.1234567890"
+    assert result.meta.title == "A Study of Things"
+    assert result.meta.authors == ["Alice", "Bob"]
 
 
 def test_short_and_alpha_only_doi_suffixes_are_accepted():
