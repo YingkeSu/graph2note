@@ -1,0 +1,29 @@
+# 06 — 诊断当前 PDF 无法正确渲染的入口与根因
+
+Publication: draft — 待拆分确认，尚未发布
+Proposed status: ready-for-agent
+User stories: 24
+
+## Parent
+
+[科研周报 PRD](../PRD.md)
+
+## What to build
+
+在实际运行应用中复现用户所说的 PDF 渲染异常，产出可重复步骤、最小样本、故障层和明确修复去向。本单只诊断与建立回归依据，不预设为周报导出问题。
+
+## Acceptance criteria
+
+- [ ] 记录应用版本/源码对应关系、真实存储位置、具体入口、文件标识/页码、期望与实际；截图和相关请求/console 日志脱敏保存。
+- [ ] 比较至少一个文本 PDF 与一个扫描 PDF：原件、页图、结构化阅读、浏览器与 macOS WebView；检查字体/资源路径/状态码，区分解析错误与渲染错误。
+- [ ] 先重查既有论文预览 issue 01 的 thumbnail 404 与原件/page 端点证据；若相同，追加本单诊断报告并链接既有修复单，不复制实现票。
+- [ ] 确认根因时提供最小复现及可失败的回归检查；无法复现时记录已检查范围、缺失样本与一次具体补充请求，停止等待，不能宣称已修复。
+- [ ] 完成标准为诊断报告与修复归属明确；不清库、不重新解析全部材料、不无限轮询。
+
+## Blocked by
+
+None - can start immediately
+
+## Related
+
+[既有论文预览修复单](../../paper-reading-reliability/issues/01-paper-preview.md)。本次只提出诊断要求，未执行该诊断。若发现影响周报新 PDF 输出的共享故障，再更新第 05 单依赖；目前二者无已证实阻塞关系。

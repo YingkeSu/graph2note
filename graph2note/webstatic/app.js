@@ -25,6 +25,7 @@ import "./js/views/settings.js";
 import "./js/views/timeline.js";
 import "./js/views/graph.js";
 import "./js/views/dashboard.js";
+import "./js/views/report.js";   // RW01 科研周报（研究模板 + 可选专题）
 import "./js/views/vault.js";
 import "./js/views/upload.js";
 import "./js/views/document.js";

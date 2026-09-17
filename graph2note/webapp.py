@@ -66,6 +66,7 @@ from . import continuity
 from . import evolution
 from . import versiondiff
 from . import digest
+from . import research_report
 from . import pipeline
 from . import pdflib
 from . import pdfsearch
@@ -891,8 +892,15 @@ def create_app(
 
     @app.post("/api/digests")
     def digest_create(body: dict | None = None):
-        """Generate (or fingerprint-cache reuse) one weekly digest."""
+        """Generate (or cache-reuse) one weekly summary / research report.
+
+        One create boundary for both templates: ``template`` defaults to the
+        legacy four-section summary; ``research_weekly`` selects the research
+        template (modules / reporter / report_date).  Both persist into the
+        shared ``digests/`` history.
+        """
         payload = body or {}
+        template = str(payload.get("template") or research_report.LEGACY_TEMPLATE_ID)
         spec = payload.get("range") or payload.get("kind") or "this_week"
         if isinstance(spec, dict):
             kind = spec.get("kind") or spec.get("range") or "custom"
@@ -902,21 +910,38 @@ def create_app(
             kind, from_, to = spec, payload.get("from"), payload.get("to")
         try:
             range_spec = digest.resolve_range(kind, from_=from_, to=to)
-        except digest.RangeError as exc:
+            if template == research_report.TEMPLATE_ID:
+                modules = research_report.normalize_modules(payload.get("modules"))
+            else:
+                modules = None
+        except (digest.RangeError, research_report.ModuleError) as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
-        result = digest.generate_digest(
-            _all_records(),
-            range_spec,
-            storage_dir=app.state.storage_dir,
-            planner=app.state.digest_planner,
-            force=bool(payload.get("force")),
-        )
+        if template == research_report.TEMPLATE_ID:
+            result = research_report.generate_report(
+                _all_records(),
+                range_spec,
+                storage_dir=app.state.storage_dir,
+                planner=app.state.digest_planner,
+                force=bool(payload.get("force")),
+                modules=modules,
+                reporter=payload.get("reporter"),
+                report_date=payload.get("report_date") or payload.get("date"),
+            )
+        else:
+            result = digest.generate_digest(
+                _all_records(),
+                range_spec,
+                storage_dir=app.state.storage_dir,
+                planner=app.state.digest_planner,
+                force=bool(payload.get("force")),
+            )
         if result["status"] == "error":
             raise HTTPException(status_code=502, detail=result["message"]) from None
         return result
 
     @app.get("/api/digests")
     def digest_list():
+        """One history for both templates (newest first)."""
         metas = digest.list_digests(app.state.storage_dir)
         return {"digests": metas, "total": len(metas)}
 
@@ -925,7 +950,22 @@ def create_app(
         stored = digest.load_digest(app.state.storage_dir, digest_id)
         if stored is None:
             raise HTTPException(status_code=404, detail="小结不存在。")
+        if stored["meta"].get("template_id") == research_report.TEMPLATE_ID:
+            full = research_report.load_report(app.state.storage_dir, digest_id)
+            if full is not None:
+                return {
+                    "meta": full["meta"],
+                    "markdown": full["markdown"],
+                    "sections": full["sections"],
+                }
         return {"meta": stored["meta"], "markdown": stored["markdown"]}
+
+    # ---- research weekly report template registry (issue 01) ---------------
+
+    @app.get("/api/report-templates")
+    def report_templates():
+        """Research template + the legacy four-section summary template."""
+        return research_report.templates_payload()
 
     # ---- LLM provider/model settings (issue 16) ----------------------------
 
