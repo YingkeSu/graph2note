@@ -41,3 +41,11 @@ None — 可立即开始
   - **测试**：`tests/test_papers_meta_import.py`（18 例，离线）+ 既有套件；`pytest -p no:warnings` 全量 **1386 passed / 0 failed / 0 error / 0 skipped**（基线 1368，+18）；`node tests/paper_view.mjs`、`node tests/upload_pdf_intercept.mjs` 绿。mutation：关掉导入接线 → 8 例红；关掉手工字段保护 → 1 例红；去掉 view `notes` → 1 例红。
   - **真实资料只读验证**：对用户库 17 篇真实论文（未写入）跑确定性解析 → 标题 15/17、摘要 8/17、参考文献 17/17。`rlhf-helpful-harmless`、`deepseek-v2` 标题仍为空（首页/版式启发式限制，属 03/Z2 领地）；部分标题含作者/摘要残尾（同属标题边界问题）。**未批量修改用户库**，需另行授权。
   - **限制**：GROBID live 未验证；`size/位置` 型标题边界缺陷由 issue 03 处理；历史论文的库卡片标题在补提取后经 `_paper_card_fields` 读同一 P2 值，但记录 title 本身不变。
+- 2026-09-17 复审整改（独立审查 `graph2note-136` 裁决 CHANGES_REQUESTED，报告在 `graph2note-136/.scratch/reviews/prr-02-metadata.md`；本分支 `dev/prr-02-metadata`）：
+  - **B1/B2 修复**：`metadata._title_lines` 改为以“独立成行的 Abstract 标签”作为首页硬边界，标题按折行连接词（`… for` / `… in` 之类）截断；`_parse_authors` 改为逐行 + 逗号双形态解析，修复 `_AFFIL_RE` 的 `\b` 截断 bug（University/Institute 等此前根本匹配不上）。新增标题**形状门禁** `_title_is_plausible`：超长/含 Abstract/Introduction/多句的“首页大段文本”直接判为未提取（note `title-untrusted`）→ `record.title` 回落文件名，绝不写入 2 KB 首页块。真实 GPT-4/GPT-3 现在解析为 `GPT-4 Technical Report` / `Language Models are Few-Shot Learners`，作者/摘要正确。
+  - **B3 修复**：`extract.merge_manual_meta` 只要 `provenance.source == "manual"` 就保留存储值（**含空值**），人工清空 title/authors 不再被重新提取填回；重复提取与重启后一致。
+  - **M1**：`enhance.apply_meta_proposal` 增加 `override_fields`；GROBID 可选择覆盖“非 manual 且 confidence 为 low/medium”的自动字段（规则与证据 `grobid:tei` 写在 `webapp._grobid_override_fields`），manual（含清空）永不覆盖。
+  - **L1**：批量端点对 `document_ids` 中未知/非论文/失败分别返回 `unknown` / `not-paper` / `failed`，`total` 等于请求条目数。
+  - **L2**：真实 fixture 增加显式 `gold`（人工核对标题/作者前缀/摘要开头），新增 `test_real_gold_title_authors_abstract` 按 gold 断言，不再以“非空标题数”当正确率。新增真实来源/哈希可追溯 fixture `gpt3-few-shot`（arXiv 2005.14165，sha256_16 `97fd272f1fdfc186`）与 `gpt4-tech-report`（arXiv 2303.08774，sha256_16 `c33a66dadca2388d`），来源即用户库对应 PDF 内容哈希。
+  - **测试**：`tests/test_papers_meta_import.py` 25 例 + 真实 fixture 套件；全量 `pytest -p no:warnings` **1431 passed / 0 failed / 0 error / 0 skipped**。真实库只读复测：17 篇摘要 **17/17**（此前 8/17）、标题 15/17 非空且形状合理（2 篇诚实为空）。**未写入用户库**。
+  - **残留（诚实记录）**：`Transformer Circuits Thread AUTHORS` 类页眉仍可能被当标题（形状合理但语义错误，属 issue 03/Z2 的首页印记/页眉抑制）；`doi` 仍可能回退到参考文献（`doi-from-references`，issue 03 领地）；GROBID live 仍未调用。

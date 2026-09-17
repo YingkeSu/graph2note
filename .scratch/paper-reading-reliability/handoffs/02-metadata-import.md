@@ -52,7 +52,8 @@ node tests/paper_view.mjs && node tests/upload_pdf_intercept.mjs
 ```
 
 - mutation 有牙（实测后已回退）：关掉导入接线 → `test_papers_meta_import.py` 8 例红；关掉手工字段保护 → 1 例红；删 view `notes` → 1 例红。
-- 真实资料**只读**探针（脚本内联，未写用户库）：17 篇真实论文 → 标题 15/17、摘要 8/17、参考文献 17/17；`rlhf-helpful-harmless`、`deepseek-v2` 标题为空。
+- 真实资料**只读**探针（脚本内联，未写用户库）：17 篇真实论文 → 标题 15/17 非空且形状合理、**摘要 17/17**、参考文献 17/17；`rlhf-helpful-harmless`、`deepseek-v2` 标题诚实为空；`Transformer Circuits Thread AUTHORS` 类页眉仍可能被当标题（见残留）。
+- **L2 口径更正**：上面的“15/17”是**非空计数，不等于正确**。正确性以真实 fixture 的显式 `gold`（人工核对标题/作者前缀/摘要开头）为准，由 `test_real_gold_title_authors_abstract` 断言；`gpt3-few-shot` / `gpt4-tech-report` 已纳入 `tests/fixtures/papers/real/`（来源 arXiv 2005.14165 / 2303.08774，sha256_16 = `97fd272f1fdfc186` / `c33a66dadca2388d`，与用户库 PDF 内容哈希一致）。
 - live 浏览器验证（本地 uvicorn + 临时 store，非用户库）：导入合成 PDF 后库卡片显示 “A Study of Things”（非文件名）；`#paper/...` 阅读页有「重新提取元数据」按钮；点击（focus+Enter）触发 `POST /api/papers/{id}/metadata/extract` 200，状态显示“元数据已更新。”；参考文献区显示 `[1] Foo et al…` 与状态 `authors-unparsed`；无 console error。服务器已停止、临时目录已删。
 
 ## 未完成 / 限制（诚实标注）
@@ -73,3 +74,40 @@ node tests/paper_view.mjs && node tests/upload_pdf_intercept.mjs
 - **GROBID 试点**：部署验证时用 `diagnose`（外部服务超时/降级）+ 新增 live 标记测试，保持默认离线。
 - **记录标题写回**：若维护者要“历史卡片彻底一致”，先裁决是否允许 `record.json.title` 迁移，再用本模块的 `preferred_document_title` 复用。
 - **代码评审**：`code-review`（重点：P2 槽写入的幂等、失败隔离、view 契约加法）。
+
+## Rework R1 — 独立审查整改（graph2note-136 裁决 CHANGES_REQUESTED）
+
+审查报告：`graph2note-136/.scratch/reviews/prr-02-metadata.md`（复现快照 `/tmp/rwt-review-prr02`）。逐项回应：
+
+- **B1（高，阻塞）真实 GPT-4/GPT-3 元数据** ✅
+  - 根因：首页标题/作者/Abstract/引言常在同一段无空行；`_title_lines` 只找“带逗号的作者行”，找不到就把整段当标题；`_extract_abstract` 又因 `title_keys` 跳过被吞掉的 Abstract 标签。
+  - 修复：`metadata._title_lines` 以**独立成行的 Abstract 标签**为硬边界 + 折行标题连接词判定；`_parse_authors` 逐行/逗号双形态；`_AFFIL_RE` 修正 `\b` 截断（University/Institute 等此前匹配不上）。
+  - 证据：真实 GPT-4 → `GPT-4 Technical Report` / `["OpenAI"]` / 摘要 877 字符；GPT-3 → `Language Models are Few-Shot Learners` / 31 位作者 / 摘要 1778 字符。
+- **B2（高，阻塞）错误标题写入 `record.title`** ✅
+  - 新增 `metadata._title_is_plausible` 形状门禁（>300 字符 / >45 词 / 含 Abstract/Introduction / 多句 → 判为未提取），`parse_paper_meta` 记 `title-untrusted` 并置空；`preferred_document_title` 随之回落文件名。
+  - 回归 `test_implausible_title_is_gated_and_falls_back_to_the_filename`；真实样本 `test_real_frozen_text_import_persists_and_views_gold` 断言 `record.title == gold title` 且 <120 字符。
+- **B3（高，阻塞）人工清空被填回** ✅
+  - `extract.merge_manual_meta` 改为“`source == manual` 即保留（含空值）”。回归 `test_manual_clear_is_preserved_by_reextract_and_restart`（幂等 + 重启 + view）。
+- **M1（中）GROBID 可纠正低可信自动字段** ✅
+  - `enhance.apply_meta_proposal(override_fields=…)`；`webapp._grobid_override_fields` 规则：非 `manual` 且 confidence ∈ {low, medium} 才可覆盖，证据标 `grobid:tei`。回归 `test_grobid_corrects_low_confidence_auto_value_but_never_manual` / `test_grobid_never_overrides_a_manual_field`。
+- **L1（低）批量逐条状态** ✅
+  - `POST /api/papers/extract-metadata` 对未知/非论文/失败分别返回 `unknown` / `not-paper` / `failed`，`total` = 请求条目数。回归 `test_batch_reports_unknown_and_not_paper_ids`。
+- **L2（低）计数口径** ✅
+  - 真实 fixture 增 `gold` 块 + `test_real_gold_title_authors_abstract`；本 handoff 与 issue 已改为“非空 ≠ 正确”，正确性以 gold 为准。新增 2 个真实 fixture（见上）。
+
+### 证据与命令
+
+```bash
+# 定向
+… -m pytest -p no:warnings tests/test_papers_meta_import.py tests/test_papers_meta_real.py \
+    tests/test_papers_ingest_real.py tests/test_papers_meta.py
+# 全量（离线，junit 计数）
+… -m pytest -p no:warnings -q --junitxml=/tmp/prr02-fix/full.xml
+# → 1431 passed / 0 failures / 0 errors / 0 skipped
+```
+
+真实库只读复测（未写入）：摘要 17/17（原 8/17）；标题 15/17 非空且形状合理，2 篇诚实为空。
+
+### 残留（未转嫁、如实记录）
+
+`Transformer Circuits Thread AUTHORS` 类**页眉**仍可能被当标题（形状合理但语义错误）；`doi` 仍可能回退到参考文献（`doi-from-references`）；`venue`/`keywords` 在 arXiv 样本上缺失（预期）。这些属 issue 03 / Z2 的首页印记与页眉抑制领地，本轮按约束未扩张到章节重排。
