@@ -1,6 +1,6 @@
 # 02 — 接通论文导入的元数据与参考文献提取
 
-Status: in-review
+Status: merged
 Priority: P1
 
 ## 现状与证据
@@ -82,3 +82,4 @@ None — 可立即开始
 - **更正**：先前的 `arXiv.2405`+`.04434` / `TKDE.2023.1234`+`567890`“join 正例”说法与实测不符，已改为 ambiguous；`join` 一词在文档中标注为已取消。
 - **保留**：R4a/R4b/R4c/R4d/R1–R3/B1–B3/M1/L1 未回退；真实库只读 DOI 0/17；front_single_column 正例仍接受。
 - **验证（R5）**：参数化矩阵（数字年份/页码、字母词、章节词、标点、空行/段落边界、引用/参考、短合法 DOI、URL/标签/标记）+ 真实 fixture + 定向全绿；全量离线 pytest **1468 passed / 0 failed / 0 error / 0 skipped**；mutation 有牙（重新启用数字/分隔符自动 join → 矩阵多例红）。manual 清空仍由 `test_manual_clear_is_preserved_by_reextract_and_restart` 覆盖。
+- 2026-09-18：已合入 main（merge `03e01b2`，候选代码 `a104050`，经 R1–R6 独立复审 APPROVE @ `a747d12`）。本 issue 关闭；相关历史补提取仍由用户在应用内显式触发。

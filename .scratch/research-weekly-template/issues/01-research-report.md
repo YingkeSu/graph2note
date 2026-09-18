@@ -1,6 +1,6 @@
 # 01 — 生成并阅读有证据的科研周报
 
-Status: in-review
+Status: merged
 User stories: 1–6、12–13、21–23
 
 ## Parent
@@ -38,3 +38,4 @@ None - can start immediately
   - F6 修复：不同 range kind/label 但同日期不再返回旧标签；零调用重渲染新标签。
   - F7 修复：新增可复跑浏览器证据脚本 `scripts/rw01_browser_evidence.sh`（注入 stub planner，附 `ao browser` 命令）。
   - 全量离线 `pytest` **1395 passed, 1 skipped**；新增回归见 `tests/test_research_report.py`（F1/F2/F4/F5/F6）与统一边界断言。未 push/PR/合并。
+- 2026-09-18：已合入 main（merge `03e01b2`，候选代码 `a104050`，两功能集成；不含预览）。本 issue 关闭；后续 02–06 按依赖推进。
