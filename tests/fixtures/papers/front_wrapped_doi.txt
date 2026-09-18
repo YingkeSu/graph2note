@@ -1,0 +1,11 @@
+A Study of Things
+
+Alice, Bob
+
+Abstract
+
+We study things deeply and report a long series of measurements that together
+describe the behaviour of the system we built.
+
+https://doi.org/10.1000/abc-
+def

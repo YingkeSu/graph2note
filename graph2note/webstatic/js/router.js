@@ -77,6 +77,7 @@ export function parseHash(hash = location.hash) {
     return route;
   }
   if (parts[0] === "dashboard") return { name: "dashboard" };
+  if (parts[0] === "reports") return { name: "reports" };
   if (parts[0] === "library" && parts[1] === "topic" && parts[2]) {
     return { name: "library", topic: decodeURIComponent(parts.slice(2).join("/")) };
   }

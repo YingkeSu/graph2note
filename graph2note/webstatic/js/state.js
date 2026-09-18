@@ -77,6 +77,7 @@ export const el = {
   graphClearFilters: $("#graph-clear-filters"),
   graphClustersToggle: $("#graph-clusters-toggle"),
   dashboardZone: $("#dashboard-zone"),
+  reportZone: $("#report-zone"),
   dashboardEmpty: $("#dashboard-empty"),
   dashboardContent: $("#dashboard-content"),
   dashboardQualityLabel: $("#dashboard-quality-label"),
@@ -232,6 +233,7 @@ export const el = {
   // P3 论文阅读视图（paper.js 注册；只读展示）。
   paperZone: $("#paper-zone"),
   paperBack: $("#paper-back"),
+  paperReextract: $("#paper-reextract"),
   paperStatus: $("#paper-status"),
   paperMeta: $("#paper-meta"),
   paperSectionNav: $("#paper-section-nav"),
@@ -246,7 +248,7 @@ export const ZONES = [
   el.libraryZone, el.tagsZone, el.askZone, el.inboxZone, el.settingsZone,
   el.timelineZone, el.graphZone, el.dashboardZone, el.uploadZone,
   el.workingZone, el.workZone, el.vaultExportZone, el.pdfZone, el.repairZone,
-  el.paperZone,
+  el.paperZone, el.reportZone,
 ];
 
 export function hideAll() {

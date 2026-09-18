@@ -734,3 +734,216 @@ def test_proposal_sets_vlm_source_only_when_baseline_is_empty():
 
 def test_extra_proposal_keys_are_forbidden():
     assert enhance.validate_meta_proposal({"title": "ok", "extra": 1}) is None
+
+
+# ---------------------------------------------------------------------------
+# PRR/02 Rework R2: DOI must come from the paper's own front matter (R1)
+# ---------------------------------------------------------------------------
+
+def test_reference_and_citation_dois_are_not_the_paper_doi():
+    """R1: a bibliography / in-text DOI is not this paper's own DOI."""
+
+    text = (
+        "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+        "[12] Foo et al. 2019. Some title. doi:10.1145/3293883.3295710\n"
+        "See also https://doi.org/10.18653/v1/p19-1472 for details.\n"
+    )
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.doi == ""
+    assert "doi-not-found" in result.notes
+
+
+def test_separator_break_is_ambiguous_without_layout_evidence():
+    """Plain text has no layout evidence, so a cross-line DOI is not joined."""
+
+    result = metadata.parse_paper_meta(
+        "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+        "DOI: 10.1000/abc-\ndef")
+    assert result.meta.doi == ""
+    assert result.provenance["doi"].confidence == "low"
+    assert "doi-wrap-ambiguous" in result.notes
+
+
+def test_digit_break_fragment_is_ambiguous_and_not_persisted():
+    """R4g: a digit token is not wrap evidence; do not persist the fragment."""
+
+    for tail in ("2023", "182", "0421", "567890"):
+        result = metadata.parse_paper_meta(
+            "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+            f"© 2023 IEEE. DOI: 10.1000/182\n{tail}")
+        assert result.meta.doi == "", tail
+        assert result.provenance["doi"].confidence == "low", tail
+        assert "doi-wrap-ambiguous" in result.notes, tail
+
+
+def test_letter_break_fragment_is_not_persisted_as_high():
+    """R4e: an ambiguous letter continuation is not persisted as a value."""
+
+    result = metadata.parse_paper_meta(
+        "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+        "DOI: 10.1000/abc\ndefgh")
+    assert result.meta.doi == ""
+    assert result.provenance["doi"].confidence == "low"
+    assert "doi-wrap-ambiguous" in result.notes
+
+
+def test_non_continuation_lines_are_not_merged_into_the_doi():
+    """R4d: bullets / file extensions are not DOI continuations."""
+
+    for tail in ("- Note about the paper", "_ appendix"):
+        result = metadata.parse_paper_meta(
+            "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+            f"© 2023 ACM. DOI: 10.1000/182\n{tail}")
+        assert result.meta.doi == "10.1000/182", tail
+    dotted = metadata.parse_paper_meta(
+        "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+        "© 2023 ACM. DOI: 10.1000/182\n.pdf")
+    assert dotted.meta.doi == ""
+    assert "doi-wrap-ambiguous" in dotted.notes
+
+
+def test_copyright_line_citing_another_paper_is_not_the_paper_doi():
+    result = metadata.parse_paper_meta(
+        "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+        "© 2023 IEEE. See 10.1145/3293883.3295710 for details.")
+    assert result.meta.doi == ""
+
+
+def test_doi_marker_without_a_label_is_accepted():
+    """R4c: an explicit metadata marker identifies the line without ``doi:``."""
+
+    for line in ("Digital Object Identifier 10.1109/TKDE.2023.1234567",
+                 "© 2023 IEEE 10.1109/TKDE.2023.1234567"):
+        result = metadata.parse_paper_meta(
+            f"Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n{line}")
+        assert result.meta.doi == "10.1109/tkde.2023.1234567", line
+
+
+def test_trailing_period_is_not_wrap_evidence():
+    """R4f: a sentence-ending ``.``/``:`` does not prove a wrap."""
+
+    for tail in ("Abstract", "Introduction", "References"):
+        result = metadata.parse_paper_meta(
+            "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+            f"DOI: 10.1000/182.\n{tail}")
+        assert result.meta.doi == "", tail
+        assert "doi-wrap-ambiguous" in result.notes, tail
+    # the trailing period is just punctuation on a complete DOI
+    alone = metadata.parse_paper_meta(
+        "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\nDOI: 10.1000/182.")
+    assert alone.meta.doi == "10.1000/182"
+
+
+def test_wrapped_doi_layout_fixture_is_rejected_honestly():
+    """A frozen real-layout fixture: a wrapped footer DOI is not guessed."""
+
+    result = metadata.parse_paper_meta(_fixture("front_wrapped_doi.txt"))
+    assert result.meta.doi == ""
+    assert "doi-wrap-ambiguous" in result.notes
+    assert result.meta.title == "A Study of Things"
+    assert result.meta.authors == ["Alice", "Bob"]
+
+
+@pytest.mark.parametrize(
+    ("lines", "expected_doi", "note"),
+    [
+        # --- own front-matter positives (single line / blank-line boundary) ---
+        (["© 2023 ACM. DOI: 10.1000/182"], "10.1000/182", None),
+        (["10.1000/186"], "10.1000/186", None),
+        (["10.1000/xyz123"], "10.1000/xyz123", None),
+        (["10.1234/abcdefgh"], "10.1234/abcdefgh", None),
+        (["https://doi.org/10.1145/3293883.3295710"],
+         "10.1145/3293883.3295710", None),
+        (["Digital Object Identifier 10.1109/TKDE.2023.1234567"],
+         "10.1109/tkde.2023.1234567", None),
+        (["© 2023 IEEE 10.1109/TKDE.2023.1234567"],
+         "10.1109/tkde.2023.1234567", None),
+        (["DOI: 10.1000/182."], "10.1000/182", None),
+        (["© 2023 ACM. DOI: 10.1000/182", "", "2023"], "10.1000/182", None),
+        (["© 2023 ACM. DOI: 10.1000/182", "2023 IEEE"], "10.1000/182", None),
+        # --- cross-line without layout evidence -> empty + doi-wrap-ambiguous ---
+        (["© 2023 IEEE. DOI: 10.1000/182", "2023"], "", "doi-wrap-ambiguous"),
+        (["© 2023 IEEE. DOI: 10.1000/182", "182"], "", "doi-wrap-ambiguous"),
+        (["© 2023 IEEE. DOI: 10.1109/TKDE.2023.1234", "567890"],
+         "", "doi-wrap-ambiguous"),
+        (["DOI: 10.1000/abc", "defgh"], "", "doi-wrap-ambiguous"),
+        (["DOI: 10.1000/abc-", "def"], "", "doi-wrap-ambiguous"),
+        (["DOI: 10.1000/182.", "Abstract"], "", "doi-wrap-ambiguous"),
+        (["DOI: 10.1000/182.", "Introduction"], "", "doi-wrap-ambiguous"),
+        (["DOI: 10.1000/182.", "References"], "", "doi-wrap-ambiguous"),
+        (["© 2023 ACM. DOI: 10.1000/182", ".pdf"], "", "doi-wrap-ambiguous"),
+        # --- attribution negatives ---
+        (["[12] Foo et al. 2019. doi:10.1145/3293883.3295710"], "", "doi-not-found"),
+        (["See 10.1145/3293883.3295710 for details."], "", "doi-not-found"),
+        (["© 2023 IEEE. See 10.1145/3293883.3295710 for details."],
+         "", "doi-not-found"),
+    ],
+)
+def test_doi_contract_matrix(lines, expected_doi, note):
+    """R3-R5 reviewer matrix: attribution + cross-line contract, one table."""
+
+    text = ("Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+            + "\n".join(lines))
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.doi == expected_doi, lines
+    if note:
+        assert note in result.notes, lines
+    if not expected_doi:
+        assert result.provenance["doi"].confidence == "low", lines
+
+
+def test_short_and_alpha_only_doi_suffixes_are_accepted():
+    """DOI syntax has no minimum suffix length and allows letters only.
+
+    ``10.1000/182`` / ``10.1000/186`` are the DOI Handbook's own example
+    DOIs; ``10.1000/xyz123`` and ``10.1234/abcdefgh`` are syntactically valid
+    synthetic probes (not claimed to be registered).  All are accepted as
+    *syntax*; provenance is still the front-matter metadata line.
+    """
+
+    for raw in ("10.1000/182", "10.1000/186", "10.1000/xyz123",
+                "10.1234/abcdefgh"):
+        result = metadata.parse_paper_meta(
+            f"Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+            f"© 2023 ACM. DOI: {raw}")
+        assert result.meta.doi == raw.casefold(), raw
+
+
+def test_a_complete_doi_at_line_end_is_not_merged_with_the_next_line():
+    """Wrap reconstruction must not corrupt a complete short DOI."""
+
+    result = metadata.parse_paper_meta(
+        "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+        "© 2023 ACM. DOI: 10.1000/182\n2023 IEEE")
+    assert result.meta.doi == "10.1000/182"
+
+
+def test_bare_doi_in_body_prose_is_not_the_paper_doi():
+    """R4b: a bare DOI inside front-page prose is a citation, not the paper's."""
+
+    result = metadata.parse_paper_meta(
+        "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+        "See 10.1145/3293883.3295710 for details.")
+    assert result.meta.doi == ""
+    assert "doi-not-found" in result.notes
+
+
+def test_front_page_labeled_doi_is_still_accepted():
+    """A positive case: the paper's own front-page DOI is kept."""
+
+    result = metadata.parse_paper_meta(
+        "Title\n\nAlice, Bob\n\nAbstract\n\nBody text.\n\n"
+        "https://doi.org/10.1145/3293883.3295710")
+    assert result.meta.doi == "10.1145/3293883.3295710"
+    assert result.provenance["doi"].confidence == "high"
+
+
+def test_abstract_label_own_paragraph_collects_the_next_paragraph():
+    """R3: ``Abstract`` heads its own paragraph, body in the next one."""
+
+    text = ("Graph Neural Networks for\nAbstract Meaning Representation\n\n"
+            "Alice, Bob\n\nAbstract\n\nWe study meaning.")
+    result = metadata.parse_paper_meta(text)
+    assert result.meta.abstract == "We study meaning."
+    assert result.meta.title == "Graph Neural Networks for Abstract Meaning Representation"
+    assert result.meta.authors == ["Alice", "Bob"]

@@ -56,6 +56,42 @@
       "expected": "deepseek-moe/expected.json"
     },
     {
+      "key": "gpt3-few-shot",
+      "vendor": "openai",
+      "title": "Language Models are Few-Shot Learners",
+      "arxiv_id": "2005.14165",
+      "source_url": "https://arxiv.org/abs/2005.14165",
+      "download_url": "https://arxiv.org/pdf/2005.14165",
+      "license": "arXiv.org perpetual, non-exclusive license 1.0",
+      "sha256_16": "97fd272f1fdfc186",
+      "pages": 75,
+      "layout": {
+        "kind": "single-column-arxiv",
+        "body_columns": 1,
+        "note": "arXiv 预印本，单栏正文；31 人作者名单每行一人，标题/作者/Abstract 同段"
+      },
+      "fixture": "gpt3-few-shot/",
+      "expected": "gpt3-few-shot/expected.json"
+    },
+    {
+      "key": "gpt4-tech-report",
+      "vendor": "openai",
+      "title": "GPT-4 Technical Report",
+      "arxiv_id": "2303.08774",
+      "source_url": "https://arxiv.org/abs/2303.08774",
+      "download_url": "https://arxiv.org/pdf/2303.08774",
+      "license": "arXiv.org perpetual, non-exclusive license 1.0",
+      "sha256_16": "c33a66dadca2388d",
+      "pages": 100,
+      "layout": {
+        "kind": "single-column-tech-report",
+        "body_columns": 1,
+        "note": "OpenAI 技术报告，单栏正文；首页标题/机构署名/Abstract/引言连续无空行"
+      },
+      "fixture": "gpt4-tech-report/",
+      "expected": "gpt4-tech-report/expected.json"
+    },
+    {
       "key": "scaling-laws",
       "vendor": "openai",
       "title": "Scaling Laws for Neural Language Models",

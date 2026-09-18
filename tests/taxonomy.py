@@ -75,6 +75,8 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_digest_structure": "notes",  # SPW W1（四节骨架/分节来源/节级缓存）
     "test_digest_budget": "notes",  # SPW W1（确定性统计 + 材料预算取舍）
     "test_digest_view": "notes",  # SPW W2（周报分节视图/来源跳转/导出，离线 DOM）
+    "test_research_report": "notes",  # research-weekly-template 01（科研周报模型/缓存/API）
+    "test_report_view": "notes",  # research-weekly-template 01（科研周报阅读视图，离线 DOM）
     # knowledge-workspace（collections/graph/inbox/metadata/tags/timeline/telemetry）
     "test_collections": "workspace",
     "test_collection_organize": "workspace",  # auto-organization 02（相似度/归类/API/CLI）
@@ -82,6 +84,7 @@ FILE_TO_MODULE: dict[str, str] = {
     "test_papers_meta": "workspace",  # SPW P2（论文元数据/参考文献确定性解析 + citegraph）
     "test_papers_meta_real": "workspace",  # SPW Y4（真实论文元数据/参考文献 regression fixture）
     "test_papers_meta_api": "webapp",  # SPW P2（/api/papers/* + store 契约）
+    "test_papers_meta_import": "ingest",  # SPW PRR/02（导入→元数据→view 接线）
     "test_tags": "workspace",
     "test_autotag": "workspace",  # A1: 识别自动打标签
     "test_tagorg": "workspace",  # auto-organization 01: 标签语义聚类与批量治理
@@ -153,11 +156,13 @@ INTEGRATION_FILES: frozenset[str] = frozenset({
     "test_evolution_api",  # issue S2（版本链/候选 API 契约）
     "test_versiondiff_api",  # issue S3（版本对比 API/静态接线）
     "test_weekly_digest",   # issue A2（新文件）
+    "test_research_report",  # research-weekly-template 01（TestClient 全链 + 重启）
     "test_collection_organize",  # auto-organization 02（相似度/归类/API/CLI）
     "test_timeline_visual",  # U5（新文件，TestClient API 契约）
     "test_continuity_api",  # issue 03（API/CLI/UI 契约）
     "test_papers_ingest_api",  # SPW I/P1（论文导入 API 契约）
     "test_papers_meta_api",  # SPW P2（/api/papers/* + store 契约）
+    "test_papers_meta_import",  # SPW PRR/02（导入元数据接线 API/批量补提取）
 })
 
 # 成本：slow = 较重（TestClient 全链 / 全链装配 / 图渲染）

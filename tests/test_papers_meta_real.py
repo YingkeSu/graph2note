@@ -131,25 +131,48 @@ def test_real_meta_degradation_is_explicitly_documented(key):
 
 
 @pytest.mark.parametrize("key", KEYS)
+def test_real_gold_title_authors_abstract(key):
+    """L2: accuracy is asserted against explicit gold, not a non-empty count.
+
+    ``expected.json.gold`` records the human-checked title / author prefix /
+    abstract opening for each real paper; a non-empty but wrong value fails.
+    """
+
+    gold = _expected(key)["gold"]
+    meta = _meta(key).meta
+    assert meta.title == gold["title"], key
+    assert meta.authors[:len(gold["authors_prefix"])] == gold["authors_prefix"], key
+    if "author_count" in gold:
+        assert len(meta.authors) == gold["author_count"], key
+    assert meta.abstract.startswith(gold["abstract_startswith"]), key
+    if "doi" in gold:
+        # R1: a paper without its own front-page DOI must not inherit a
+        # bibliography DOI (GPT-4/scaling-laws used to get one).
+        assert meta.doi == gold["doi"], key
+
+
+@pytest.mark.parametrize("key", KEYS)
 def test_real_meta_is_pure_and_replayable(key):
     first = _meta(key)
     second = _meta(key)
     assert first.model_dump() == second.model_dump()
 
 
-def test_two_column_byline_absorption_drops_the_real_abstract():
-    """Y4 finding on the post-Y5 baseline: the two-column reflow feeds
-    ``'Abstract'`` into ``title_keys`` (the title block swallowed the byline and
-    the label), and ``_extract_abstract`` skips ``title_keys`` lines, so the
-    real summary is lost (``abstract-not-found``).  If a later fix recovers it,
-    this test turns red and the ``bert`` fixture must be recalibrated.
-    """
+def test_two_column_byline_is_separated_and_the_real_abstract_is_recovered():
+    """PRR/02 B1 regression: the two-column reflow used to melt title+byline+
+    abstract into one block and lose the summary.  The front-matter boundary
+    must now separate them."""
+
     result = _meta("bert")
-    assert result.meta.title.startswith("BERT: Pre-training of Deep Bidirectional")
-    assert "Google AI Language" in result.meta.title  # byline inside the title block
-    assert result.meta.abstract == ""
-    assert "abstract-not-found" in result.notes
-    assert result.provenance["abstract"].confidence == "low"
+    assert result.meta.title == (
+        "BERT: Pre-training of Deep Bidirectional Transformers for "
+        "Language Understanding"
+    )
+    assert "Google AI Language" not in result.meta.title
+    assert result.meta.authors[:4] == [
+        "Jacob Devlin", "Ming-Wei Chang", "Kenton Lee", "Kristina Toutanova"]
+    assert result.meta.abstract.startswith("We introduce a new language")
+    assert "abstract-not-found" not in result.notes
 
 
 # ---------------------------------------------------------------------------
