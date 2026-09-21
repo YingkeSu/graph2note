@@ -28,6 +28,7 @@ import {
   computeLayout,
   focusSet,
   nodeRadius,
+  nodeBox,
   pointerToLayout,
   solveFromPositions,
   subgraph,
@@ -136,6 +137,7 @@ function nodesHtml(list, positions, active) {
   return list.map((node) => {
     const point = positions[node.id] || { x: 0, y: 0 };
     const radius = nodeRadius(node);
+    const hit = nodeBox(node, 0, 0);
     const label = nodeText(node);
     const classes = [
       "graph-node",
@@ -148,6 +150,7 @@ function nodesHtml(list, positions, active) {
       `data-node-id="${esc(node.id)}"`,
       node.kind === "cluster" ? `data-cluster="${esc(node.id)}"` : `data-route="${esc(node.route)}"`,
       `data-kind="${esc(node.kind)}"`,
+      `aria-label="${esc(nodeTooltip(node))}"`,
       'role="button"',
       'tabindex="0"',
       `transform="translate(${point.x} ${point.y})"`,
@@ -157,9 +160,10 @@ function nodesHtml(list, positions, active) {
       : "";
     return `<g ${attributes}>
       <title>${esc(nodeTooltip(node))}</title>
+      <rect class="graph-node-hit" x="${hit.left}" y="${hit.top}" width="${hit.right - hit.left}" height="${hit.bottom - hit.top}"></rect>
       ${aggregate}
       <circle r="${radius}"></circle>
-      <text text-anchor="middle" dy="4">${esc(label)}</text>
+      <text text-anchor="middle" dy="${radius + LAYOUT.labelOffset}">${esc(label)}</text>
     </g>`;
   }).join("");
 }
@@ -191,6 +195,10 @@ function focusFor(layoutView) {
 
 function renderSvg() {
   const layoutView = view.rendered;
+  const empty = !layoutView.nodes.length;
+  el.graphEmpty.classList.toggle("hidden", !empty);
+  el.graphScroll.classList.toggle("hidden", empty);
+  if (empty) el.graphEmpty.querySelector("p").textContent = "没有符合筛选条件的节点，请清除过滤后重试。";
   const active = focusFor(layoutView);
   const edges = edgesHtml(layoutView.edges, layoutView.positions, active);
   const nodes = nodesHtml(layoutView.nodes, layoutView.positions, active);
@@ -205,7 +213,10 @@ function renderSvg() {
   view.version += 1;
 }
 
+let loadSequence = 0;
+
 async function loadGraph() {
+  const sequence = ++loadSequence;
   clearViewError(el.graphZone);
   el.graphZone.classList.remove("hidden");
   el.graphEmpty.classList.add("hidden");
@@ -214,11 +225,18 @@ async function loadGraph() {
   el.graphEmpty.querySelector("p").textContent = "暂无可导航的关系图谱。";
   try {
     const payload = await api("/api/graph");
+    if (sequence !== loadSequence) return;
     view.payload = payload;
+    view.subgraph = null;
+    view.layout = null;
+    view.rendered = null;
     if (payload.empty) {
       el.graphEmpty.classList.remove("hidden");
       el.graphScroll.classList.add("hidden");
       renderStatus(null);
+      renderFilterChips();
+      renderClusterToggle();
+      view.version += 1;
       return;
     }
     if (view.clusters === "auto" && payload.counts.documents > CLUSTER_THRESHOLD) {
@@ -228,6 +246,7 @@ async function loadGraph() {
     renderSvg();
     wireGraphInteractions();
   } catch (e) {
+    if (sequence !== loadSequence) return;
     el.graphEmpty.classList.add("hidden");
     el.graphScroll.classList.add("hidden");
     showViewError(el.graphZone, "加载图谱失败：" + e.message, loadGraph);
@@ -247,7 +266,7 @@ function renderStatus(active) {
   const shown = view.rendered ? view.rendered.nodes.length : 0;
   const total = (counts && counts.nodes) || 0;
   const pieces = [];
-  pieces.push(view.subgraph && view.subgraph.nodes.length !== total
+  pieces.push(shown !== total
     ? `显示 ${shown} / ${total} 个节点`
     : `${total} 个节点`);
   pieces.push(`${view.rendered ? view.rendered.edges.length : 0} 条边`);
@@ -264,7 +283,7 @@ function renderStatus(active) {
   if (view.topic) pieces.push(`主题：${view.topic}`);
   if (active) pieces.push("聚焦邻域（点击空白恢复）");
   if (view.clusters === "collapse" && view.payload && view.payload.clusters.length) {
-    const collapsed = (view.rendered.aggregates || []).length;
+    const collapsed = (view.rendered?.aggregates || []).length;
     pieces.push(`聚类收敛：${collapsed} 个主题聚合`);
   }
   setStatus(pieces.join(" · "), active || hasActiveFilter());
@@ -524,21 +543,21 @@ function wireGraphControls() {
         else next.add(source);
         if (!next.size) return; // never hide every edge silently
         view.filters.sources = next;
-        commit({ focus: null });
+        commit({ focusId: null });
       } else if (button.dataset.collection) {
         const id = button.dataset.collection;
         const next = new Set(view.filters.collections);
         if (next.has(id)) next.delete(id);
         else next.add(id);
         view.filters.collections = next;
-        commit({ focus: null });
+        commit({ focusId: null });
       } else if (button.dataset.tag) {
         const tag = button.dataset.tag;
         const next = new Set(view.filters.tags);
         if (next.has(tag)) next.delete(tag);
         else next.add(tag);
         view.filters.tags = next;
-        commit({ focus: null });
+        commit({ focusId: null });
       }
     });
   }

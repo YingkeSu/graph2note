@@ -362,3 +362,89 @@ input::placeholder, textarea::placeholder { color: var(--muted); opacity: 1; }
 .version-readonly-note code, .diff-chip, .diff-version-id, .diff-no-image,
 .vault-export-status code { font-size: 12px; }
 .search-panel-foot { flex-wrap: wrap; }
+
+/* Same-direction polish, 2026-09-16. The paper is the reading surface;
+   navigation and metadata stay quiet. Keep the scroll inside the app shell. */
+.paper-zone {
+  flex: 1 1 0; min-height: 0; min-width: 0; overflow: auto;
+  padding: 28px 34px 48px; scrollbar-gutter: stable;
+}
+.paper-toolbar { margin-bottom: 24px; }
+.paper-layout {
+  grid-template-columns: minmax(180px, 220px) minmax(0, 780px);
+  gap: clamp(24px, 3vw, 48px); max-width: 1080px; margin-inline: auto;
+}
+.paper-nav {
+  top: 0; max-height: calc(100dvh - 180px); padding: 12px 0;
+  border: 0; border-top: 1px solid var(--line); border-radius: 0;
+  background: transparent;
+}
+.paper-nav-link { padding: 9px 12px; font-size: 14px; }
+.paper-nav-item.level-2 .paper-nav-link { font-size: 13px; }
+.paper-nav-item.level-3 .paper-nav-link,
+.paper-nav-item.level-4 .paper-nav-link { font-size: 12px; }
+.paper-content { gap: 32px; }
+.paper-meta {
+  padding: 26px 28px; border-radius: 4px;
+  border-top: 2px solid var(--ink);
+}
+.paper-title { font-size: clamp(24px, 2.2vw, 32px); line-height: 1.45; margin-bottom: 20px; }
+.paper-meta-grid { gap: 8px; }
+.paper-abstract { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 20px; line-height: 1.9; }
+.paper-body { gap: 32px; }
+.paper-section { max-width: none; scroll-margin-top: 24px; }
+.paper-section-title { font-size: 22px; margin-bottom: 12px; }
+.paper-section-text { font-size: 16px; line-height: 1.95; }
+.paper-references { padding-top: 24px; border-top: 1px solid var(--line); }
+.paper-reference { border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 14px 0; background: transparent; }
+.paper-ref-link { max-width: 30%; overflow-wrap: anywhere; }
+
+/* Filter selection reads as a single control, not a row of unrelated buttons. */
+.library-density { gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 7px; background: var(--surface); }
+.density-chip { border-color: transparent; background: transparent; border-radius: 4px; }
+.density-chip.active { border-color: var(--line); background: var(--panel); }
+.filter-chip { background: transparent; }
+.filter-chip:hover { background: var(--surface); }
+.filter-chip.active { background: var(--accent-soft); }
+.suggestions-empty { border-style: solid; border-radius: 6px; background: var(--surface); flex-wrap: wrap; }
+.doc-collection-chip { background: var(--accent-soft); color: var(--accent-dark); border-color: var(--line); }
+.doc-collection-chip:hover { background: #e8d3c8; }
+.search-panel { background: #302d2959; }
+.search-panel-box { border-radius: 8px; box-shadow: 0 20px 60px #302d2926; }
+.search-panel-head { padding: 16px; }
+.search-panel-head input[type="search"] { min-height: 44px; font-size: 16px; }
+.search-panel-foot { background: var(--surface); }
+
+/* Weekly review shares the document's paper-and-ink hierarchy. */
+.digest-item { border-radius: 5px; padding: 10px 12px; gap: 5px; }
+.digest-item.selected { background: var(--accent-soft); }
+.digest-item-range { font-size: 14px; }
+.digest-item-summary { line-height: 1.6; }
+.digest-viewer { padding: 20px; }
+.digest-section-nav { gap: 8px; padding-block: 12px; }
+.digest-nav-link { border-radius: 5px; font-size: 14px; background: var(--panel); }
+.digest-section { border: 0; border-top: 1px solid var(--line); border-radius: 0; padding: 20px 0 0; background: transparent; }
+.digest-section-title { font: 600 21px/1.5 var(--display); margin-bottom: 12px; }
+.digest-source { background: var(--accent-soft); color: var(--accent-dark); border-color: var(--line); border-radius: 4px; overflow-wrap: anywhere; }
+.digest-source:hover { background: #e8d3c8; }
+.digest-source-missing { background: var(--surface); color: var(--muted); }
+.digest-extra-block { border-top-style: dashed; }
+
+@media (max-width: 900px) {
+  .paper-zone { padding: 24px 24px 40px; }
+}
+@media (max-width: 860px) {
+  .paper-layout { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .paper-nav { position: static; max-height: 220px; padding: 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--surface); }
+  .paper-content { gap: 26px; }
+}
+@media (max-width: 600px) {
+  .paper-zone { padding: 22px 18px 32px; }
+  .paper-toolbar { margin-bottom: 18px; }
+  .paper-meta { padding: 22px 18px; }
+  .paper-title { font-size: 25px; }
+  .paper-section-title { font-size: 21px; }
+  .paper-section-text { font-size: 15px; line-height: 1.9; }
+  .paper-nav { max-height: 180px; }
+  .digest-viewer { padding: 14px; }
+}

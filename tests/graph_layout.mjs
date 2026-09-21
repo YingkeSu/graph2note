@@ -282,11 +282,12 @@ check("collection_and_tag_filter_narrow_documents", () => {
 check("labels_are_truncated_to_fit", () => {
   const long = { kind: "tag", label: "这是一个非常长的标签名称" };
   const width = L.labelWidth(long);
-  // Seven rendered CJK glyph slots at 18px must fit even outside a 60px circle.
-  assert.ok(width >= 7 * 18);
+  // Ten rendered CJK glyph slots at 12px must fit below the small node.
+  assert.ok(width >= 10 * 12, "reserve ten 12px CJK glyphs below the node");
   const box = L.nodeBox(long, 0, 0);
+  assert.ok(box.bottom >= L.nodeRadius(long) + 18, "below-node label stays inside collision box");
   assert.ok(box.right - box.left >= width + 2 * L.LAYOUT.labelPadX);
-  assert.ok(L.labelWidth({kind: "tag", label: "数学"}) >= 3 * 18, "reserve the # prefix");
+  assert.ok(L.labelWidth({kind: "tag", label: "数学"}) >= 3 * 12, "reserve the # prefix");
   assert.ok(L.LAYOUT.labelCharWidth > 0);
 });
 

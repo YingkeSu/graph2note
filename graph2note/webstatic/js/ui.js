@@ -5,6 +5,7 @@
 
 import { el, state } from "./state.js";
 import { api } from "./api.js";
+import { wireWorkspace, syncWorkspace } from "./workspace.js";
 import { esc } from "./utils.js";
 import { go, render, libraryHash, onRender } from "./router.js";
 
@@ -58,6 +59,12 @@ export function syncNav(routeName) {
       if (active) node.setAttribute("aria-current", "page");
       else node.removeAttribute("aria-current");
     });
+  document.querySelectorAll(".nav-group").forEach((group) => {
+    const active = group.querySelector('.nav-item[aria-current="page"]');
+    group.classList.toggle("has-current", Boolean(active));
+    // Deep links and browser history reveal the destination's actual location.
+    if (active) group.open = true;
+  });
 }
 
 /* ---------- sidebar collapse ---------- */
@@ -102,18 +109,32 @@ export async function refreshCollectionTree() {
   el.collectionTree.innerHTML = collections.length ? collections.map((item) => `
     <span class="collection-tree-item ${selected === item.collection_id ? "selected" : ""}">
       <button class="workspace-link collection-open" data-collection-id="${esc(item.collection_id)}">${esc(item.name)} <span class="dim">${item.document_count}</span></button>
-      <span class="collection-tree-actions">
-        <button class="tag-action" data-collection-action="rename" data-collection-id="${esc(item.collection_id)}">改名</button>
-        <button class="tag-action" data-collection-action="delete" data-collection-id="${esc(item.collection_id)}">删除</button>
-      </span>
+      <details class="collection-tree-actions disclosure" data-popover>
+        <summary aria-label="管理集合：${esc(item.name)}">更多</summary>
+        <div class="collection-actions-panel">
+          <button class="tag-action" aria-label="重命名集合：${esc(item.name)}" data-collection-action="rename" data-collection-id="${esc(item.collection_id)}">重命名</button>
+          <button class="tag-action" aria-label="删除集合：${esc(item.name)}" data-collection-action="delete" data-collection-id="${esc(item.collection_id)}">删除集合</button>
+        </div>
+      </details>
     </span>`).join("") : `<span class="dim">暂无集合</span>`;
 
   el.collectionTree.querySelectorAll("button.collection-open").forEach((button) => {
     button.addEventListener("click", () => go(libraryHash({ collection: button.dataset.collectionId })));
   });
+  if (selected) {
+    const collection = collections.find((item) => item.collection_id === selected);
+    const browser = document.getElementById("collection-browser");
+    if (browser) browser.open = true;
+    if (collection && el.libraryFilterLabel) el.libraryFilterLabel.textContent = `集合：${collection.name}`;
+  }
   el.collectionTree.querySelectorAll("button[data-collection-action]").forEach((button) => {
     button.addEventListener("click", async () => {
       const cid = button.dataset.collectionId;
+      const menu = button.closest("details");
+      if (menu) {
+        menu.open = false;
+        menu.querySelector("summary").focus();
+      }
       try {
         if (button.dataset.collectionAction === "delete") {
           await api(`/api/collections/${encodeURIComponent(cid)}`, { method: "DELETE" });
@@ -146,6 +167,11 @@ function wireCollectionCreate() {
       });
       el.collectionCreateInput.value = "";
       await refreshCollectionTree();
+      const disclosure = document.getElementById("collection-create-disclosure");
+      if (disclosure) {
+        disclosure.open = false;
+        disclosure.querySelector("summary").focus();
+      }
     } catch (e) { showToast("新建集合失败：" + e.message, "err"); }
   });
 }
@@ -154,7 +180,9 @@ function wireCollectionCreate() {
 
 export function wireShell() {
   applyCollapsed(readCollapsed());
-  onRender((route) => syncNav(route.name));
+  wireWorkspace();
+  wireDisclosures();
+  onRender((route) => { syncNav(route.name); syncWorkspace(route); });
   const skipLink = document.querySelector(".skip-link");
   if (skipLink) skipLink.addEventListener("click", (event) => {
     // Keep the active hash route: #content is a focus target, not a view.
@@ -172,4 +200,34 @@ export function wireShell() {
   });
   wireGlobalSearch();
   wireCollectionCreate();
+}
+
+/* Native disclosures keep secondary controls out of the tab order while closed.
+   Popovers also dismiss on outside click, route changes and Escape. */
+function wireDisclosures() {
+  const close = (details, restoreFocus = false) => {
+    details.open = false;
+    if (restoreFocus) details.querySelector("summary").focus();
+  };
+  document.addEventListener("click", (event) => {
+    document.querySelectorAll("details[data-popover][open]").forEach((details) => {
+      if (!details.contains(event.target)) close(details);
+    });
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+    const details = event.target.closest("details[open]");
+    if (details && details.matches(".nav-group, .disclosure, .sidebar-collections")) {
+      event.preventDefault();
+      close(details, true);
+    }
+  });
+  window.addEventListener("hashchange", () => {
+    document.querySelectorAll("details[data-popover][open]").forEach((details) => {
+      close(details, details.contains(document.activeElement));
+    });
+  });
+  document.getElementById("collection-create-disclosure")?.addEventListener("toggle", (event) => {
+    if (event.target.open) el.collectionCreateInput.focus();
+  });
 }

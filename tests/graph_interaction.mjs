@@ -399,4 +399,39 @@ await check("zoom_button_anchor_uses_rendered_layout", async () => {
   };
 });
 
+await check("filters_clear_focused_document", async () => {
+  await render({ clusters: "expand" });
+  const first = canvas()._nodes.find(node => node.dataset.kind === "document");
+  click(first);
+  const button = new FakeElement("button");
+  button.dataset.source = "topic";
+  button.closest = () => button;
+  document.querySelector("#graph-filters").trigger("click", { target: button });
+  assert.equal(graph.view.focusId, null);
+  assert.ok(!location.hash.includes("focus="));
+});
+
+await check("latest_request_wins_and_empty_clears_state", async () => {
+  const originalFetch = globalThis.fetch;
+  const full = payload;
+  const empty = { ...full, empty: true, nodes: [], edges: [], clusters: [],
+    counts: { nodes: 0, documents: 0, edges: 0 }, filters: {} };
+  const pending = [];
+  globalThis.fetch = () => new Promise(resolve => pending.push(data => resolve({
+    ok: true, headers: { get: () => "application/json" }, json: async () => data,
+  })));
+  try {
+    const older = render({ clusters: "collapse" });
+    const newer = render({ clusters: "expand" });
+    pending[1](empty);
+    await newer;
+    assert.deepEqual(seam.counts, { nodes: 0, edges: 0 });
+    assert.ok(document.querySelector("#graph-status").textContent.includes("0 条边"));
+    pending[0](full);
+    await older;
+    assert.deepEqual(seam.counts, { nodes: 0, edges: 0 });
+    assert.equal(canvas().innerHTML, "");
+  } finally { globalThis.fetch = originalFetch; }
+});
+
 console.log(JSON.stringify(summary, null, 2));

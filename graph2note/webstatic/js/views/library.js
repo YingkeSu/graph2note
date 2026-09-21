@@ -76,6 +76,9 @@ function pendingDocIds(topic) {
 
 function renderSuggestionSection() {
   if (!el.collectionSuggestions) return;
+  const status = document.getElementById("collection-suggestions-status");
+  const pending = normalizeSuggestions(suggestionPayload).pendingCount;
+  if (status) status.textContent = pending ? `${pending} 篇待确认` : "归类建议";
   el.collectionSuggestions.innerHTML = suggestionsHtml(suggestionPayload, esc);
   wireSuggestionActions(el.collectionSuggestions, {
     generate: () => generateSuggestions(),
@@ -273,6 +276,10 @@ function syncLibraryFilters() {
     const active = button.dataset.libraryFilter === state.libraryFilter;
     button.classList.toggle("active", active);
     button.setAttribute("aria-pressed", String(active));
+    if (active) {
+      const label = document.getElementById("library-view-label");
+      if (label) label.textContent = state.libraryFilter === "all" ? "筛选与显示" : `${button.textContent} · 显示`;
+    }
   });
 }
 
@@ -296,7 +303,14 @@ function filterLibraryDocuments(docs) {
 export function wireLibraryFilters() {
   if (el.libraryFilters) {
     el.libraryFilters.querySelectorAll("button[data-library-filter]").forEach((button) => {
-      button.addEventListener("click", () => go(libraryHash({ filter: button.dataset.libraryFilter })));
+      button.addEventListener("click", () => {
+        go(libraryHash({ filter: button.dataset.libraryFilter }));
+        const options = document.getElementById("library-view-options");
+        if (options) {
+          options.open = false;
+          options.querySelector("summary").focus();
+        }
+      });
     });
   }
   if (el.libraryDensity) {

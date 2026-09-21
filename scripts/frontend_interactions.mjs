@@ -26,13 +26,17 @@ try {
   await check('desktop navigation, filter state and density persist',async()=>{
     await visit('library');
     assert.equal(await page.locator('.doc-card:not(.doc-card-skeleton)').count(),43,'Use the isolated 43-document fixture');
+    await page.locator('#library-view-options > summary').click();
     await page.getByRole('button',{name:'最近编辑',exact:true}).click();
     await page.waitForFunction(()=>document.querySelectorAll('.doc-card').length===12);
     assert.equal(await page.getByRole('button',{name:'最近编辑',exact:true}).getAttribute('aria-pressed'),'true');
+    await page.locator('#library-view-options > summary').click();
     await page.getByRole('button',{name:'舒适',exact:true}).click();
     await page.reload({waitUntil:'networkidle'});
     assert.equal(await page.locator('#library-grid').getAttribute('data-density'),'comfortable');
+    await page.locator('#library-view-options > summary').click();
     await page.getByRole('button',{name:'紧凑',exact:true}).click();
+    await page.locator('#nav-review-group > summary').click();
     await page.locator('#nav-timeline').click();
     // The hash assignment resolves before the queued hashchange render runs, so
     // wait for the view to appear (its hook runs first) before asserting nav state.

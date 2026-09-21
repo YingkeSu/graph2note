@@ -6,6 +6,7 @@
   <title>graph2note — 手稿电子化</title>
   <link rel="stylesheet" href="/static/style.css" />
   <link rel="stylesheet" href="/static/reading.css" />
+  <link rel="stylesheet" href="/static/workspace.css" />
   <!-- Client-side preview: marked (markdown) + KaTeX (math).  This is a
        zero-build local tool and the desktop/browser panel is offline, so the
        Markdown engine is vendored locally (X5) instead of pulled from a CDN;
@@ -41,30 +42,43 @@
       <div class="sidebar-wordmark">graph2note<small>本地知识库</small></div>
       <nav class="sidebar-nav" id="sidebar-nav" aria-label="视图导航">
         <button class="nav-item" id="nav-library" data-view="library" data-route="#library" title="文档库">文档库</button>
-        <button class="nav-item" id="nav-timeline" data-view="timeline" data-route="#timeline/day" title="时间轴">时间轴</button>
         <button class="nav-item" id="nav-graph" data-view="graph" data-route="#graph" title="知识图谱">知识图谱</button>
-        <button class="nav-item" id="nav-dashboard" data-view="dashboard" data-route="#dashboard" title="数据看板">数据看板</button>
-        <button class="nav-item" id="nav-reports" data-view="reports" data-route="#reports" title="科研周报">科研周报</button>
-        <button class="nav-item" id="nav-inbox" data-view="inbox" data-route="#inbox" title="待整理">待整理</button>
-        <button class="nav-item" id="nav-tags" data-view="tags" data-route="#tags" title="标签词表">标签词表</button>
         <button class="nav-item" id="nav-ask" data-view="ask" data-route="#ask" title="PDF 问答（对话式，多轮追问）">问答</button>
+        <details class="nav-group" id="nav-review-group">
+          <summary>回顾与分析</summary>
+          <div class="nav-group-items">
+            <button class="nav-item" id="nav-timeline" data-view="timeline" data-route="#timeline/day">时间轴</button>
+            <button class="nav-item" id="nav-reports" data-view="reports" data-route="#reports">科研周报</button>
+            <button class="nav-item" id="nav-dashboard" data-view="dashboard" data-route="#dashboard">数据看板</button>
+          </div>
+        </details>
       </nav>
 
-      <section class="sidebar-collections" aria-label="集合">
-        <div class="sidebar-section-head">
-          <h3>集合</h3>
-        </div>
-        <form id="collection-create-form" class="tag-create-form">
-          <input id="collection-create-input" aria-label="新建集合名称" type="text" placeholder="新建集合" />
-          <button class="btn small" type="submit">添加</button>
-        </form>
+      <details class="sidebar-collections" id="collection-browser" open>
+        <summary>集合</summary>
         <div id="collection-tree" class="collection-tree"></div>
-      </section>
+        <details class="collection-create disclosure" id="collection-create-disclosure">
+          <summary>新建集合</summary>
+          <form id="collection-create-form" class="tag-create-form">
+            <input id="collection-create-input" aria-label="新建集合名称" type="text" placeholder="集合名称" required />
+            <button class="btn small" type="submit">添加</button>
+          </form>
+        </details>
+      </details>
 
-      <nav class="sidebar-secondary" id="sidebar-secondary" aria-label="次级入口">
-        <button class="nav-item" id="nav-settings" data-view="settings" data-route="#settings" title="LLM 设置">LLM 设置</button>
-        <button class="nav-item" id="nav-vault-export" data-view="vault-export" data-route="#vault-export" title="导出 Obsidian Vault">导出 Vault</button>
-        <!-- R1 修复报告入口由 /static/repair.js 注入，保持顶栏 ≤4 项。 -->
+      <nav class="sidebar-secondary" aria-label="管理">
+        <details class="nav-group" id="nav-manage-group">
+          <summary>管理</summary>
+          <div class="nav-group-items" id="sidebar-secondary">
+            <span class="nav-group-label">整理文档</span>
+            <button class="nav-item" id="nav-inbox" data-view="inbox" data-route="#inbox">待整理</button>
+            <button class="nav-item" id="nav-tags" data-view="tags" data-route="#tags">标签词表</button>
+            <span class="nav-group-label">设置与工具</span>
+            <button class="nav-item" id="nav-settings" data-view="settings" data-route="#settings" title="LLM 设置">模型设置</button>
+            <button class="nav-item" id="nav-vault-export" data-view="vault-export" data-route="#vault-export" title="导出 Obsidian Vault">导出 Vault</button>
+            <!-- 修复报告仍由 repair.js 注入此分组。 -->
+          </div>
+        </details>
       </nav>
     </aside>
 
@@ -83,6 +97,8 @@
         <button class="btn primary" id="nav-upload" data-route="#upload" title="解析新手稿">新解析</button>
       </header>
 
+      <div id="workspace-tabs" class="workspace-tabs" role="tablist" aria-label="打开的视图"></div>
+
       <!-- ============ 内容区：按视图切换 ============ -->
       <main class="content" id="content" tabindex="-1">
         <!-- Library list state (home).  U1: 只保留文档网格为主，集合树/词表/
@@ -92,19 +108,29 @@
             <h2>本地文档库</h2>
             <span class="dim" id="library-count"></span>
             <span class="dim" id="library-filter-label"></span>
-            <div class="library-filters" id="library-filters" aria-label="文档过滤">
-              <button class="filter-chip" type="button" data-library-filter="all">全部</button>
-              <button class="filter-chip" type="button" data-library-filter="today">今日新增</button>
-              <button class="filter-chip" type="button" data-library-filter="week">本周新增</button>
-              <button class="filter-chip" type="button" data-library-filter="recent">最近编辑</button>
-            </div>
-            <div class="library-density" id="library-density" role="group" aria-label="网格密度">
-              <button class="density-chip" type="button" data-density="compact" title="紧凑（默认）" aria-pressed="true">紧凑</button>
-              <button class="density-chip" type="button" data-density="comfortable" title="舒适" aria-pressed="false">舒适</button>
-            </div>
+            <details class="view-options disclosure" id="library-view-options" data-popover>
+              <summary><span id="library-view-label">筛选与显示</span></summary>
+              <div class="view-options-panel">
+                <span class="control-label">文档范围</span>
+                <div class="library-filters" id="library-filters" role="group" aria-label="文档过滤">
+                  <button class="filter-chip" type="button" data-library-filter="all">全部</button>
+                  <button class="filter-chip" type="button" data-library-filter="today">今日新增</button>
+                  <button class="filter-chip" type="button" data-library-filter="week">本周新增</button>
+                  <button class="filter-chip" type="button" data-library-filter="recent">最近编辑</button>
+                </div>
+                <span class="control-label">显示密度</span>
+                <div class="library-density" id="library-density" role="group" aria-label="网格密度">
+                  <button class="density-chip" type="button" data-density="compact" title="紧凑（默认）" aria-pressed="true">紧凑</button>
+                  <button class="density-chip" type="button" data-density="comfortable" title="舒适" aria-pressed="false">舒适</button>
+                </div>
+              </div>
+            </details>
           </div>
           <!-- auto-organization issue 02: 归类建议复核区（library.js 渲染） -->
-          <section id="collection-suggestions" class="collection-suggestions" aria-label="归类建议"></section>
+          <details class="library-organize disclosure" id="library-organize">
+            <summary>整理文档<span class="dim" id="collection-suggestions-status">归类建议</span></summary>
+            <section id="collection-suggestions" class="collection-suggestions" aria-label="归类建议"></section>
+          </details>
           <div id="library-grid" class="library-grid"></div>
           <div id="library-empty" class="library-empty hidden">
             <div class="empty-icon">🗂</div>
@@ -282,48 +308,55 @@
         <!-- Read-only relationship graph (issue 05; interactions U4) -->
         <section id="graph-zone" class="graph-zone hidden">
           <div class="graph-head">
-            <div>
-              <h2>知识图谱</h2>
-              <p class="dim">发现文档之间的联系。单击聚焦相关内容，双击打开；滚轮缩放，拖拽平移。</p>
-            </div>
+            <h2>知识图谱</h2>
             <div class="graph-legend" aria-label="关系来源图例">
               <span><i class="graph-legend-dot topic"></i>主题</span>
               <span><i class="graph-legend-dot tag"></i>标签</span>
               <span><i class="graph-legend-dot manual"></i>手工</span>
             </div>
+            <button id="graph-filter-toggle" class="graph-button" type="button" aria-controls="graph-filters" aria-expanded="true">隐藏筛选</button>
           </div>
-          <div id="graph-toolbar" class="graph-toolbar" role="toolbar" aria-label="图谱视图控制">
-            <div class="graph-toolbar-group" role="group" aria-label="缩放">
-              <button type="button" id="graph-zoom-out" class="icon-btn" title="缩小">－</button>
-              <span id="graph-zoom-value" class="graph-zoom-value" aria-live="polite">100%</span>
-              <button type="button" id="graph-zoom-in" class="icon-btn" title="放大">＋</button>
+          <div class="graph-workspace">
+            <div class="graph-stage">
+              <div id="graph-empty" class="graph-empty hidden">
+                <div class="empty-icon">◎</div>
+                <p>暂无可导航的关系图谱。</p>
+                <span class="dim">文档、主题或标签进入文档库后会显示在这里。</span>
+              </div>
+              <div id="graph-scroll" class="graph-scroll">
+                <svg id="graph-canvas" class="graph-canvas" role="group" aria-label="文档关系图谱"></svg>
+              </div>
+              <div id="graph-toolbar" class="graph-toolbar" role="toolbar" aria-label="图谱视图控制">
+                <div class="graph-toolbar-group" role="group" aria-label="缩放">
+                  <button type="button" id="graph-zoom-out" class="icon-btn graph-button" aria-label="缩小图谱" title="缩小">−</button>
+                  <span id="graph-zoom-value" class="graph-zoom-value" aria-live="polite">100%</span>
+                  <button type="button" id="graph-zoom-in" class="icon-btn graph-button" aria-label="放大图谱" title="放大">＋</button>
+                </div>
+                <button type="button" id="graph-fit" class="graph-button">适应视图</button>
+                <button type="button" id="graph-reset" class="graph-button">重置</button>
+              </div>
             </div>
-            <div class="graph-toolbar-group">
-              <button type="button" id="graph-fit" class="graph-button">适应视图</button>
-              <button type="button" id="graph-reset" class="graph-button">重置</button>
-              <button type="button" id="graph-clusters-toggle" class="graph-button">聚类收敛</button>
-            </div>
-            <div id="graph-status" class="graph-status" role="status" aria-live="polite"></div>
+            <aside id="graph-filters" class="graph-filters" aria-label="图谱过滤">
+              <div class="graph-panel-heading">图谱选项</div>
+              <details open>
+                <summary>关系来源</summary>
+                <div id="graph-source-chips" class="graph-chip-group"></div>
+              </details>
+              <details open>
+                <summary>范围</summary>
+                <div id="graph-set-chips" class="graph-chip-group"></div>
+                <div id="graph-tag-chips" class="graph-chip-group"></div>
+                <button type="button" id="graph-clear-filters" class="graph-chip graph-chip-clear">清除过滤</button>
+              </details>
+              <details open>
+                <summary>显示</summary>
+                <button type="button" id="graph-clusters-toggle" class="graph-button">聚类收敛</button>
+                <p class="dim">文档较多时，按主题聚合；点击聚合节点展开。</p>
+              </details>
+              <p class="graph-help dim">单击文档聚焦关系，再次点击打开。<br>滚轮缩放 · 拖拽平移<br>Tab 选择节点 · Enter 打开或聚焦</p>
+            </aside>
           </div>
-          <div id="graph-filters" class="graph-filters" aria-label="图谱过滤">
-            <div class="graph-filter-row">
-              <span class="graph-filter-label">关系来源</span>
-              <span id="graph-source-chips" class="graph-chip-group"></span>
-            </div>
-            <div class="graph-filter-row">
-              <span id="graph-set-chips" class="graph-chip-group"></span>
-              <span id="graph-tag-chips" class="graph-chip-group"></span>
-              <button type="button" id="graph-clear-filters" class="graph-chip graph-chip-clear">清除过滤</button>
-            </div>
-          </div>
-          <div id="graph-empty" class="graph-empty hidden">
-            <div class="empty-icon">◎</div>
-            <p>暂无可导航的关系图谱。</p>
-            <span class="dim">文档、主题或标签进入文档库后会显示在这里。</span>
-          </div>
-          <div id="graph-scroll" class="graph-scroll">
-            <svg id="graph-canvas" class="graph-canvas" role="img" aria-label="文档关系图谱"></svg>
-          </div>
+          <div id="graph-status" class="graph-status" role="status" aria-live="polite"></div>
         </section>
 
         <!-- Obsidian vault export (one-way) -->

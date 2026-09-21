@@ -19,16 +19,17 @@
 /* ---------- visual constants (shared with graph.js and the tests) ---------- */
 
 export const LAYOUT = {
-  documentRadius: 34,
-  topicRadius: 30,
-  tagRadius: 30,
-  clusterRadius: 32,
-  collectionRadius: 30,
-  labelCharWidth: 18,
-  labelHeight: 22,
+  documentRadius: 6,
+  topicRadius: 9,
+  tagRadius: 7,
+  clusterRadius: 12,
+  collectionRadius: 9,
+  labelCharWidth: 12,
+  labelHeight: 16,
   labelPadX: 10,
   labelPadY: 3,
-  maxLabelChars: 7,
+  labelOffset: 18,
+  maxLabelChars: 10,
   nodeGap: 14,
   margin: 36,
   iterations: 240,
@@ -74,7 +75,7 @@ export function labelWidth(node) {
   return chars * LAYOUT.labelCharWidth;
 }
 
-/* The node's bounding box in layout units.  Labels render at 18px inside the
+/* The node's bounding box in layout units.  Labels render at 12px below the
    circle, so for CJK text the glyph run can be taller/wider than the circle
    (`labelCharWidth` is a conservative estimate of one glyph's advance).  The box
    is therefore the union of the circle and the reserved label rectangle — the
@@ -84,7 +85,8 @@ export function labelWidth(node) {
 export function nodeBox(node, x, y) {
   const radius = nodeRadius(node);
   const halfWidth = Math.max(radius, labelWidth(node) / 2 + LAYOUT.labelPadX);
-  const halfHeight = Math.max(radius, LAYOUT.labelHeight / 2 + LAYOUT.labelPadY);
+  // Conservatively reserve both sides of the below-node label.
+  const halfHeight = radius + LAYOUT.labelOffset + LAYOUT.labelPadY;
   return { left: x - halfWidth, right: x + halfWidth, top: y - halfHeight, bottom: y + halfHeight };
 }
 

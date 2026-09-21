@@ -47,7 +47,7 @@ packages = [
 ]
 
 [tool.setuptools.package-data]
-graph2note = ["webstatic/*"]
+graph2note = ["webstatic/*", "webstatic/js/*.js", "webstatic/js/views/*.js", "webstatic/vendor/*"]
 
 
 [tool.pytest.ini_options]
