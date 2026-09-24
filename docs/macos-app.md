@@ -13,9 +13,9 @@ uv sync --extra web --extra macos
 open dist/Graph2Note.app
 ```
 
-构建产物位于 `dist/Graph2Note.app`。当前项目根目录存在 `.env` 时，构建脚本会
-把它带入本地应用包，以便个人应用继续使用已有的 LLM 配置；该文件不会被提交到
-版本库。也可以把自己的配置放在：
+构建产物位于 `dist/Graph2Note.app`。构建不会收集项目根目录的 `.env`，并会在
+产物中发现 `.env` 时拒绝发布。内置与自定义供应商的 API Key 均可在应用内的
+「模型设置」输入并保存到本机，保存后不会在界面中回显。旧配置仍可放在：
 
 ```text
 ~/Library/Application Support/Graph2Note/.env
@@ -27,7 +27,7 @@ open dist/Graph2Note.app
 ~/Library/Application Support/Graph2Note/
 ├── storage/            # 文档库（GRAPH2NOTE_STORAGE 可覆盖）
 ├── llm-settings.json   # 模型/供应商设置（GRAPH2NOTE_SETTINGS_FILE 可覆盖）
-├── .env                # 可选：本机密钥（不进入应用包外的提交）
+├── .env                # 可选：兼容旧配置，不随应用打包
 └── launcher.log        # 启动日志（含 storage=… settings=… 定位行）
 ```
 
