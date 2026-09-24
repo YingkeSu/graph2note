@@ -1009,6 +1009,15 @@ def create_app(
         except SettingsError as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
+    @app.put("/api/llm/builtin-providers/{provider_id}/key")
+    def llm_builtin_key_update(provider_id: str, body: dict | None = None):
+        try:
+            return app.state.llm_settings.set_builtin_api_key(
+                provider_id, (body or {}).get("api_key")
+            )
+        except SettingsError as exc:
+            raise HTTPException(status_code=422, detail=str(exc)) from exc
+
     # ---- Custom OpenAI-compatible providers (issue A3) --------------------
     # The API key is write-only: create/update accept it, every response only
     # carries a configured/not-configured boolean.

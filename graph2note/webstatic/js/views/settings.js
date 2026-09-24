@@ -39,7 +39,14 @@ function renderLlmChannels(snapshot) {
     <div class="llm-provider-card">
       <span>${esc(provider.name)}</span>
       <span class="dim">${provider.kind === "custom" ? "自定义 · " : ""}${provider.credential_configured ? "凭证已配置" : "未配置凭证"}</span>
+      ${provider.kind === "builtin" ? `<form class="llm-builtin-key-form" data-provider="${esc(provider.id)}" autocomplete="off">
+        <input type="password" name="api_key" autocomplete="new-password" aria-label="${esc(provider.name)} API Key" placeholder="输入 API Key（保存后不回显）" required />
+        <button type="submit" class="btn small">保存 Key</button>
+      </form>` : ""}
     </div>`).join("");
+  el.llmProviderList.querySelectorAll(".llm-builtin-key-form").forEach((form) => {
+    form.addEventListener("submit", saveBuiltinKey);
+  });
   el.llmChannelList.innerHTML = (snapshot.purposes || []).map((purpose) => {
     const current = snapshot.channels[purpose];
     const label = (snapshot.purpose_labels || {})[purpose] || purpose;
@@ -59,6 +66,28 @@ function renderLlmChannels(snapshot) {
     row.querySelector(".llm-provider").addEventListener("change", () => updateLlmModelOptions(row));
   });
   renderLlmCustom(snapshot);
+}
+
+async function saveBuiltinKey(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const input = form.querySelector('input[name="api_key"]');
+  const apiKey = input.value.trim();
+  if (!apiKey) return;
+  const button = form.querySelector("button");
+  button.disabled = true;
+  try {
+    state.llmSettings = await api(`/api/llm/builtin-providers/${encodeURIComponent(form.dataset.provider)}/key`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ api_key: apiKey }),
+    });
+    renderLlmChannels(state.llmSettings);
+    showToast("API Key 已保存在本机", "ok");
+  } catch (e) {
+    showToast("保存 API Key 失败：" + e.message, "err");
+    button.disabled = false;
+  }
 }
 
 function renderLlmHealth(payload) {

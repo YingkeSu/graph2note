@@ -39,6 +39,32 @@ def test_settings_snapshot_lists_registered_channels_without_credentials(tmp_pat
         assert "secret" not in provider
 
 
+def test_builtin_keys_are_entered_in_app_and_saved_locally(tmp_path, monkeypatch):
+    from eval.gateway import load_api_key
+    from graph2note.webapp import create_app
+
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "legacy-env-key")
+    settings_path = tmp_path / "llm-settings.json"
+    client = TestClient(create_app(storage_dir=tmp_path))
+    key = "test-local-key-12345"
+    response = client.put("/api/llm/builtin-providers/deepseek/key", json={"api_key": key})
+    assert response.status_code == 200
+    assert key not in response.text
+    assert next(p for p in response.json()["providers"] if p["id"] == "deepseek")["credential_configured"]
+    assert load_api_key("deepseek") == key
+    assert settings_path.stat().st_mode & 0o777 == 0o600
+    assert json.loads(settings_path.read_text())["builtin_api_keys"]["deepseek"] == key
+
+    # A later model change preserves the key, and a restarted app reads it.
+    client.put("/api/llm/settings", json={"channels": {
+        "classify": {"provider": "deepseek", "model": "deepseek-v4-flash"},
+    }})
+    restarted = TestClient(create_app(storage_dir=tmp_path))
+    assert key not in restarted.get("/api/llm/settings").text
+    assert load_api_key("deepseek") == key
+    assert restarted.put("/api/llm/builtin-providers/unknown/key", json={"api_key": key}).status_code == 422
+
+
 @pytest.mark.parametrize("gateway", ["opencode", "deepseek", "kimi"])
 def test_diagram_default_channel_is_deepseek_vision_for_every_gateway(
     tmp_path, monkeypatch, gateway

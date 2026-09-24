@@ -18,12 +18,6 @@ hiddenimports = (
     + collect_submodules("webview")
 )
 
-# Keep a local build's .env available to the personal app without ever
-# committing it. If absent, the app can use Application Support/.env.
-env_file = ROOT / ".env"
-if env_file.is_file():
-    datas.append((str(env_file), "."))
-
 a = Analysis(
     [str(ROOT / "macos" / "launcher.py")],
     pathex=[str(ROOT)],

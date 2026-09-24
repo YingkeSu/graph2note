@@ -34,5 +34,10 @@ if [[ ! -d "$APP" ]]; then
   exit 1
 fi
 
+if find "$APP" -name .env -print -quit | grep -q .; then
+  echo "拒绝发布：应用包中发现 .env" >&2
+  exit 1
+fi
+
 echo "已生成：$APP"
 echo "双击该应用即可启动 Graph2Note。"

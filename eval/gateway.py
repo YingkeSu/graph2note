@@ -133,6 +133,23 @@ def _dotenv_get(key: str) -> str:
 # 常量 GATEWAYS 仍是内置供应商（Kimi/DeepSeek/opencode）的唯一真相；自定义供应商以只读的
 # 合并视图叠加在上层，端点/认证/模型名透传走同一 post_gateway choke point。
 _custom_provider_source = None  # Callable[[], Mapping[str, dict]] | None
+_builtin_credential_source = None
+
+
+def configure_builtin_credentials(source) -> None:
+    """Use locally saved credentials for built-in providers when available."""
+    global _builtin_credential_source
+    _builtin_credential_source = source
+
+
+def builtin_api_key(provider: str) -> str:
+    source = _builtin_credential_source
+    if source is None or provider not in GATEWAYS:
+        return ""
+    try:
+        return str(source(provider) or "").strip()
+    except (OSError, ValueError, TypeError):
+        return ""
 
 
 def configure_custom_providers(source) -> None:
@@ -356,7 +373,7 @@ def _redact_secrets(text: str, *secrets: str) -> str:
 
 
 def load_api_key(provider: str | None = None) -> str:
-    """按供应商取凭证：内置走 env/.env，自定义读本机设置文件条目（绝不回写日志）。"""
+    """按供应商取凭证：本机设置优先，兼容旧 env/.env。"""
     cfg = gateway_config(provider)
     if cfg.get("custom"):
         key = str(cfg.get("api_key") or "").strip()
@@ -366,10 +383,10 @@ def load_api_key(provider: str | None = None) -> str:
             f"未找到自定义供应商 {cfg.get('label')!r} 的 API Key（请在设置页填写）"
         )
     key_env = cfg["key_env"]
-    key = os.environ.get(key_env, "").strip() or _dotenv_get(key_env)
+    key = builtin_api_key(provider or active_gateway_name()) or os.environ.get(key_env, "").strip() or _dotenv_get(key_env)
     if key:
         return key
-    raise GatewayError(f"未找到 {key_env}（环境变量或仓库根 .env）")
+    raise GatewayError(f"未找到 {key_env}（请在应用的模型设置中填写 API Key）")
 
 
 def fetch_provider_models(provider: str, *, timeout: float = 30.0,

@@ -6,8 +6,8 @@ The settings file holds two things:
 - ``custom_providers``: user-defined OpenAI-compatible vendor entries (issue A3),
   including their API key.
 
-Built-in provider credentials stay in the existing runtime environment/.env lookup
-and are represented in public snapshots only as a configured/not-configured boolean.
+Built-in provider credentials are saved locally and take precedence over the
+legacy environment/.env lookup. Public snapshots expose only a boolean.
 Custom provider keys live in this file (inside the gitignored storage dir) and are
 **write-only** over the API: GET/UI always returns only a "已设置/未设置" boolean, never
 the plaintext.  A custom vendor is a plain OpenAI Chat Completions endpoint
@@ -29,6 +29,8 @@ from eval.gateway import (
     GATEWAYS,
     _dotenv_get,
     active_gateway_name,
+    builtin_api_key,
+    configure_builtin_credentials,
     configure_custom_providers,
     fetch_provider_models as _gateway_fetch_models,
     gateway_config,
@@ -191,7 +193,8 @@ def _credential_configured(cfg: dict) -> bool:
     if cfg.get("custom"):
         return bool(str(cfg.get("api_key") or "").strip())
     key_env = cfg.get("key_env")
-    return bool(os.environ.get(key_env, "").strip() or _dotenv_get(key_env))
+    provider = next((name for name, value in GATEWAYS.items() if value is cfg), "")
+    return bool(builtin_api_key(provider) or os.environ.get(key_env, "").strip() or _dotenv_get(key_env))
 
 
 def _secret_values(cfg: dict) -> list[str]:
@@ -199,7 +202,8 @@ def _secret_values(cfg: dict) -> list[str]:
         values = [str(cfg.get("api_key") or "")]
     else:
         key_env = cfg.get("key_env")
-        values = [os.environ.get(key_env, "").strip(), _dotenv_get(key_env)]
+        provider = next((name for name, value in GATEWAYS.items() if value is cfg), "")
+        values = [builtin_api_key(provider), os.environ.get(key_env, "").strip(), _dotenv_get(key_env)]
     return [v for v in values if v]
 
 
@@ -314,6 +318,27 @@ class LLMSettingsStore:
     def provider_specs(self) -> dict[str, dict[str, Any]]:
         """Transport-only view consumed by ``eval.gateway`` (includes the key)."""
         return {entry["id"]: dict(entry) for entry in self._custom_specs()}
+
+    def builtin_api_key(self, provider: str) -> str:
+        if provider not in GATEWAYS:
+            return ""
+        keys = self._read_raw().get("builtin_api_keys")
+        return str(keys.get(provider) or "").strip() if isinstance(keys, dict) else ""
+
+    def set_builtin_api_key(self, provider: str, api_key: str) -> dict[str, Any]:
+        if provider not in GATEWAYS:
+            raise SettingsError(f"未知内置供应商：{provider}")
+        if not isinstance(api_key, str) or not api_key.strip():
+            raise SettingsError("API Key 不能为空")
+        if len(api_key) > 4096:
+            raise SettingsError("API Key 过长")
+        raw = self._read_raw()
+        keys = raw.get("builtin_api_keys")
+        keys = dict(keys) if isinstance(keys, dict) else {}
+        keys[provider] = api_key.strip()
+        entries = self._custom_specs(raw)
+        self._write(self._read_channels(raw, _custom_map(entries)), entries, builtin_api_keys=keys)
+        return self.snapshot()
 
     def _read_channels(self, raw: dict | None = None,
                        custom_map: dict[str, dict[str, Any]] | None = None
@@ -591,7 +616,8 @@ class LLMSettingsStore:
         )
 
     def _write(self, channels: dict[str, dict[str, str]],
-               custom_entries: list[dict[str, Any]]) -> None:
+               custom_entries: list[dict[str, Any]], *,
+               builtin_api_keys: dict[str, str] | None = None) -> None:
         self.path.parent.mkdir(parents=True, exist_ok=True)
         fd, temp_name = tempfile.mkstemp(
             prefix=f".{self.path.name}.", suffix=".tmp", dir=str(self.path.parent)
@@ -599,6 +625,8 @@ class LLMSettingsStore:
         payload = {
             "version": 2,
             "channels": channels,
+            "builtin_api_keys": (builtin_api_keys if builtin_api_keys is not None
+                                 else self._read_raw().get("builtin_api_keys", {})),
             "custom_providers": [
                 {
                     "id": e["id"],
@@ -715,6 +743,7 @@ def _default_probe(provider: str, purpose: str, model: str) -> dict[str, str]:
 # 把自定义供应商条目接到传输层：gateway 不反向 import 本模块，而是按需拉取本进程
 # 当前设置路径下的条目（含 key）。内置供应商不受影响；无来源时网关只认内置。
 configure_custom_providers(lambda: runtime_settings_store().provider_specs())
+configure_builtin_credentials(lambda provider: runtime_settings_store().builtin_api_key(provider))
 
 
 __all__ = [
